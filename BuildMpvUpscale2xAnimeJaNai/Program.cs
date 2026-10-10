@@ -71,6 +71,8 @@ const string AjiVersion           = "v0.9.0";       // github.com/the-database/a
 const string SevenZipVersion      = "2602";         // 7-zip "extra" (Windows) / linux-x64 standalone console version
 const string MpvNetVersion        = "v7.1.2.0";
 const string ManagerVersion       = "0.6.0";        // github.com/the-database/AnimeJaNaiManager release tag (AnimeJaNai Manager; preserves the RIFE ensemble flag across profile export/import)
+// HDR fork: Manager with the display upscaling / HDR settings (github.com/Ta2b/AnimeJaNaiManager-HDR).
+const string ManagerHdrRelease    = "hdr-build-1";
 
 // DirectML backend runtime (backend=DirectML in animejanai.conf). These are
 // the last DirectML-flavored releases: Microsoft moved DML to sustained
@@ -723,6 +725,13 @@ void GenerateInputConf()
         "#@ANIMEJANAI-MANAGED-END (add your keybindings below this line)\n" +
         "\n" +
         "# ===== Your keybindings below =====\n";
+    // HDR fork: ship the personal section (profile keys, HDR grade toggle, diagnostic, Manager HDR).
+    var user = Path.Combine(pc, "input-user.conf");
+    if (File.Exists(user))
+    {
+        conf += File.ReadAllText(user).Replace("\r\n", "\n");
+        File.Delete(user);
+    }
     File.WriteAllText(Path.Combine(pc, "input.conf"), conf);
 }
 
@@ -816,6 +825,24 @@ async Task InstallAnimeJaNaiManager()
         await RunProcess("tar", $"--zstd -xf \"{targetPath}\" -C \"{installDirectory}\"");
 
     File.Delete(targetPath);
+
+    // HDR fork: the Manager variant opened by Ctrl+E (the official one stays as fallback).
+    if (plat.IsWindows)
+    {
+        var hdrUrl = $"https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/{ManagerHdrRelease}/AnimeJaNaiManager-HDR.exe";
+        var hdrPath = Path.Combine(installDirectory, "AnimeJaNaiManager-HDR.exe");
+        try
+        {
+            await DownloadFileAsync(hdrUrl, hdrPath, (progress) =>
+            {
+                Console.WriteLine($"Downloading AnimeJaNai Manager (HDR) ({progress}%)...");
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"  WARNING: AnimeJaNai Manager (HDR) not available ({e.Message}); Ctrl+E opens the official Manager.");
+        }
+    }
 }
 
 // The TensorRT SLA requires this attribution when redistributing the
