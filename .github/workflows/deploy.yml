@@ -1,10 +1,11 @@
 name: Deploy
 
-# HDR fork: pushing a version tag (e.g. 3.6.3.1) builds and publishes the Windows release,
-# exactly like a manual dispatch. The updater of this fork reads these releases.
+# HDR fork: a push to the `release` branch builds and publishes the Windows release for the
+# version in release-version.txt (e.g. 3.6.3.1), exactly like a manual dispatch. The release
+# action creates the tag. The updater of this fork reads these releases.
 on:
   push:
-    tags: ['*.*.*.*']
+    branches: [release]
   workflow_dispatch:
     inputs:
       release_version:
@@ -17,8 +18,6 @@ on:
         description: 'Build only the Windows artifacts (skip the Linux leg)'
         default: 'true'  # HDR fork: the Linux build image belongs to the upstream project
 
-env:
-  VERSION: ${{ github.event.inputs.release_version || github.ref_name }}
 
 jobs:
   deploy:
@@ -30,6 +29,14 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+
+    - name: Resolve release version
+      shell: pwsh
+      run: |
+        $ver = "${{ github.event.inputs.release_version }}"
+        if (-not $ver) { $ver = (Get-Content release-version.txt -Raw).Trim() }
+        if ($ver -notmatch '^\d+(\.\d+){2,3}$') { throw "Invalid release version '$ver'" }
+        "VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v4
