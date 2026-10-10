@@ -26,18 +26,19 @@
 
 ; The player application is "mpv-AnimeJaNai" (AnimeJaNai alone is the upscaling
 ; model family; this is the mpv-based player that runs it).
-#define AppName "mpv-AnimeJaNai"
-#define Publisher "the-database"
+#define AppName "mpv-AnimeJaNai HDR"
+#define Publisher "Ta2b (fork of the-database/mpv-upscale-2x_animejanai)"
 #define PlayerExe "mpvnet.exe"
 #define ManagerExe "AnimeJaNaiManager.exe"
 #define UpdaterExe "AnimeJaNaiUpdater.exe"
 
 [Setup]
-AppId={{8B2F4E1A-9C3D-4A7E-B5F6-AJANAI340MPV}
+; HDR fork: own AppId so it installs next to the official player instead of replacing it.
+AppId={{F5429B34-03B2-41B7-A958-ACEC6CD59EFF}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#Publisher}
-AppPublisherURL=https://github.com/the-database/mpv-upscale-2x_animejanai
+AppPublisherURL=https://github.com/Ta2b/mpv-AnimeJaNai-HDR
 WizardStyle=modern
 ; Per-user install: no elevation, lands in %LOCALAPPDATA%\Programs\AnimeJaNai,
 ; directory still changeable on the standard page.
@@ -47,7 +48,7 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\{#PlayerExe}
 UninstallDisplayName={#AppName} {#AppVersion}
-OutputBaseFilename=mpv-AnimeJaNai-Setup-{#AppVersion}
+OutputBaseFilename=mpv-AnimeJaNai-HDR-Setup-{#AppVersion}
 Compression=lzma2/max
 SolidCompression=yes
 ArchitecturesAllowed=x64compatible
@@ -74,14 +75,19 @@ Source: "{#SourceDir}\portable_config\mpv.conf";         DestDir: "{app}\portabl
 Source: "{#SourceDir}\portable_config\input.conf";       DestDir: "{app}\portable_config";  Flags: onlyifdoesntexist
 Source: "{#SourceDir}\portable_config\saved-props.json"; DestDir: "{app}\portable_config";  Flags: onlyifdoesntexist
 Source: "{#SourceDir}\portable_config\settings.xml";     DestDir: "{app}\portable_config";  Flags: onlyifdoesntexist
+; HDR fork: display upscaling / HDR settings and the per-GPU profile banks are user-owned too.
+Source: "{#SourceDir}\portable_config\script-opts\animejanai_hdr_auto.conf"; DestDir: "{app}\portable_config\script-opts"; Flags: onlyifdoesntexist
+Source: "{#SourceDir}\portable_config\profiles\nvidia\animejanai.conf"; DestDir: "{app}\portable_config\profiles\nvidia"; Flags: onlyifdoesntexist
+Source: "{#SourceDir}\portable_config\profiles\amd\animejanai.conf"; DestDir: "{app}\portable_config\profiles\amd"; Flags: onlyifdoesntexist
 
-Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "{#UpdaterExe},animejanai\animejanai.conf,portable_config\mpv.conf,portable_config\input.conf,portable_config\saved-props.json,portable_config\settings.xml"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "{#UpdaterExe},animejanai\animejanai.conf,portable_config\mpv.conf,portable_config\input.conf,portable_config\saved-props.json,portable_config\settings.xml,portable_config\script-opts\animejanai_hdr_auto.conf,portable_config\profiles\nvidia\animejanai.conf,portable_config\profiles\amd\animejanai.conf"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#PlayerExe}"
 ; The companion tool keeps its own name ("AnimeJaNai Manager" - it manages the
 ; AnimeJaNai models/components), matching its window title.
 Name: "{group}\AnimeJaNai Manager"; Filename: "{app}\{#ManagerExe}"
+Name: "{group}\AnimeJaNai Manager (HDR)"; Filename: "{app}\AnimeJaNaiManager-HDR.exe"
 Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#PlayerExe}"; Tasks: desktopicon
 

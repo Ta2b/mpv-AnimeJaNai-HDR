@@ -8,6 +8,8 @@ Fork de [the-database/mpv-upscale-2x_animejanai](https://github.com/the-database
 - **Réglages dans le Manager** (Ctrl+E → [AnimeJaNai Manager HDR](https://github.com/Ta2b/AnimeJaNaiManager-HDR)) : mise à l'échelle finale, conversion SDR → HDR, moteur, intensités, et écran par GPU (HDR Windows automatique ou suivi, pic, gamut, OLED).
 - Les fichiers du fork sont dans `user-scripts/`, `user-shaders/`, `hdr-tools/`, `profiles/` et `script-opts/` ; l'Updater officiel ne les remplace pas.
 
+**Releases** : mêmes fichiers que le projet original (installateur `mpv-AnimeJaNai-HDR-Setup-<version>.exe`, paquet complet `.7z`, overlay de mise à jour, `manifest.json`, packs de composants TensorRT / RIFE). Les versions suivent celle de base plus un numéro de révision du fork (`3.6.3.1`, `3.6.3.2`…). Pousser un tag de ce format lance le workflow *Deploy*, qui compile et publie la release. L'Updater (Ctrl+U) et les composants du Manager se servent de ces releases. L'installateur a son propre identifiant et s'installe à côté du lecteur officiel, sans le remplacer.
+
 Fichiers : `BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/` (overlay), avec la documentation dans `docs/ANALYSE.md` et `docs/PARTAGE.md`. Le constructeur (`Program.cs`) ajoute la section personnelle d'`input.conf` et télécharge le Manager HDR.
 
 ---

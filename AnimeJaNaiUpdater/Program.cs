@@ -25,7 +25,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using static Downloader;
 
-const string Repo = "the-database/mpv-upscale-2x_animejanai";
+// HDR fork: updates, component packs and manifests come from the fork's releases.
+const string Repo = "Ta2b/mpv-AnimeJaNai-HDR";
 string apiLatest = $"https://api.github.com/repos/{Repo}/releases/latest";
 
 // Single-file exe: BaseDirectory is the folder the exe runs from = the install root.
