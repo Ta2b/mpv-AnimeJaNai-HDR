@@ -955,6 +955,9 @@ void WriteVersionAndManifest()
             "portable_config/saved-props.json",
             "portable_config/settings.xml",
             "portable_config/screenshots",
+            // HDR fork: user-owned display upscaling / HDR settings and profile banks.
+            "portable_config/script-opts/animejanai_hdr_auto.conf",
+            "portable_config/profiles",
         },
     };
 

@@ -1,6 +1,10 @@
 name: Deploy
 
+# HDR fork: pushing a version tag (e.g. 3.6.3.1) builds and publishes the Windows release,
+# exactly like a manual dispatch. The updater of this fork reads these releases.
 on:
+  push:
+    tags: ['*.*.*.*']
   workflow_dispatch:
     inputs:
       release_version:
@@ -11,12 +15,17 @@ on:
         default: 'false'
       windows_only:
         description: 'Build only the Windows artifacts (skip the Linux leg)'
-        default: 'false'
+        default: 'true'  # HDR fork: the Linux build image belongs to the upstream project
+
+env:
+  VERSION: ${{ github.event.inputs.release_version || github.ref_name }}
 
 jobs:
   deploy:
     if: ${{ github.event.inputs.linux_only != 'true' }}
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout repository
@@ -33,13 +42,13 @@ jobs:
     - name: Run the console app
       # --packs also emits component-*.7z + packs.json (publish/packs-v<ver>/) for the
       # AnimeJaNai Manager (updater --components/--install/--remove/--auto).
-      run: ./publish/BuildMpvUpscale2xAnimeJaNai.exe ${{ github.event.inputs.release_version }} --packs
+      run: ./publish/BuildMpvUpscale2xAnimeJaNai.exe ${{ env.VERSION }} --packs
 
     - name: Build updater and add it to the package
       shell: pwsh
       run: |
         dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release -o updater-publish
-        Copy-Item updater-publish/AnimeJaNaiUpdater.exe "publish/mpv-upscale-2x_animejanai-v${{ github.event.inputs.release_version }}/AnimeJaNaiUpdater.exe" -Force
+        Copy-Item updater-publish/AnimeJaNaiUpdater.exe "publish/mpv-upscale-2x_animejanai-v${{ env.VERSION }}/AnimeJaNaiUpdater.exe" -Force
 
     - name: Install 7zip
       run: choco install 7zip -y
@@ -51,7 +60,7 @@ jobs:
       shell: pwsh
       run: |
         choco install innosetup -y
-        $ver = "${{ github.event.inputs.release_version }}"
+        $ver = "${{ env.VERSION }}"
         & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" `
           "/DAppVersion=$ver" `
           "/DSourceDir=$(Resolve-Path "publish/mpv-upscale-2x_animejanai-v$ver")" `
@@ -61,12 +70,12 @@ jobs:
     # The "full package" is the slim core: hardware-specific components ship
     # as the component-*.7z assets and install on demand via the Manager.
     - name: Create 7zip archive of the artifact (full package)
-      run: 7z a -t7z -mx=9 -v1900m mpv-upscale-2x_animejanai-full-package-${{ github.event.inputs.release_version }}.7z ./publish/mpv-upscale-2x_animejanai-v${{ github.event.inputs.release_version }}
+      run: 7z a -t7z -mx=9 -v1900m mpv-upscale-2x_animejanai-full-package-${{ env.VERSION }}.7z ./publish/mpv-upscale-2x_animejanai-v${{ env.VERSION }}
 
     - name: Create overlay archive and stage manifest
       shell: pwsh
       run: |
-        $ver = "${{ github.event.inputs.release_version }}"
+        $ver = "${{ env.VERSION }}"
         $pkg = "publish/mpv-upscale-2x_animejanai-v$ver"
         # manifest.json is uploaded as a standalone asset so the updater can compare deps before downloading.
         Copy-Item "$pkg/manifest.json" "manifest.json" -Force
@@ -81,12 +90,19 @@ jobs:
     - name: Create GitHub Release
       uses: ncipollo/release-action@v1
       with:
-        tag: ${{ github.event.inputs.release_version }}
-        name: ${{ github.event.inputs.release_version }}
-        draft: true
+        tag: ${{ env.VERSION }}
+        name: ${{ env.VERSION }}
+        # HDR fork: published directly (the updater cannot see drafts).
+        draft: false
         prerelease: false
+        makeLatest: true
         allowUpdates: true
-        artifacts: "mpv-AnimeJaNai-Setup-${{ github.event.inputs.release_version }}.exe,mpv-upscale-2x_animejanai-full-package-${{ github.event.inputs.release_version }}.7z.*,mpv-upscale-2x_animejanai-overlay-${{ github.event.inputs.release_version }}.7z,manifest.json,publish/packs-v${{ github.event.inputs.release_version }}/component-*.7z,publish/packs-v${{ github.event.inputs.release_version }}/packs.json"
+        body: |
+          mpv-AnimeJaNai HDR ${{ env.VERSION }} - fork of the-database/mpv-upscale-2x_animejanai.
+          SDR to HDR for NVIDIA (RTX Video HDR + RTX VSR) and AMD (mpv HDR + AMD VideoSR), one HDR grade
+          (deeper blacks, local highlights, vibrance, skin protection), settings in AnimeJaNai Manager (HDR).
+          Install: the Setup exe, or extract the full package and run mpvnet.exe.
+        artifacts: "mpv-AnimeJaNai-HDR-Setup-${{ env.VERSION }}.exe,mpv-upscale-2x_animejanai-full-package-${{ env.VERSION }}.7z.*,mpv-upscale-2x_animejanai-overlay-${{ env.VERSION }}.7z,manifest.json,publish/packs-v${{ env.VERSION }}/component-*.7z,publish/packs-v${{ env.VERSION }}/packs.json"
         token: ${{ secrets.GITHUB_TOKEN }}
 
   # Linux leg. Runs in the old-baseline build image (Ubuntu 22.04 + CUDA toolkit
@@ -97,7 +113,7 @@ jobs:
   # release tag, suffixed with the RID so they don't collide with the Windows
   # assets; the updater resolves its platform's assets by that suffix.
   deploy-linux:
-    if: ${{ github.event.inputs.windows_only != 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.windows_only == 'false' }}
     runs-on: ubuntu-latest
     defaults:
       run:
