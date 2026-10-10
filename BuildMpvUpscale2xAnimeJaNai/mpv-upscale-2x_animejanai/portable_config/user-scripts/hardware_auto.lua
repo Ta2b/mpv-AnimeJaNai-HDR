@@ -25,18 +25,19 @@ mp.add_hook('on_load',-50,prepare)
 mp.register_script_message('animejanai-select',function(value)
     local slot=tonumber(value)
     if not slot or slot~=math.floor(slot) or slot<0 or slot>4 then return end
-    if slot==4 and hw.vendor~='amd' then
-        mp.osd_message('Ctrl+4 : interpolation AMF reservee a AMD',4)
+    local bank=policy.read_bank(hw.conf)
+    local profile=bank and bank.slots[slot]
+    -- A readable bank without this slot (or an untouched "New Profile"): nothing to select.
+    if slot>0 and bank and (not profile or not profile.name or profile.name=='New Profile') then
+        mp.osd_message('Profil '..slot..' vide dans la banque '..(hw.vendor=='nvidia' and 'NVIDIA' or 'AMD')..' (AnimeJaNai Manager, Ctrl+E)',4)
         return
     end
     mp.commandv('script-message','aji-slot',tostring(slot))
-    local bank=policy.read_bank(hw.conf)
-    local profile=bank and bank.slots[slot]
     local label=slot==0 and 'AnimeJaNai desactive' or
         'Profil '..slot..' : '..tostring(profile and profile.name or 'personnalise')
     if slot>0 then
-        label=label..' | '..(slot==4 and 'AMF x2 demande (essai)' or
-            (profile and (profile.rife and 'RIFE configure' or 'cadence originale') or 'interpolation inconnue'))
+        label=label..' | '..(profile and (profile.rife and 'RIFE configure' or 'cadence originale') or 'interpolation inconnue')
+        if options.frame_generation=='amf' and hw.vendor=='amd' then label=label..' + AMD AMF x2' end
     end
     local w,h=policy.target_resolution(options,mp.get_property_native('display-width'),mp.get_property_native('display-height'))
     local target=w and string.format('%dx%d',w,h) or hw.target

@@ -15,7 +15,7 @@ end
 
 function M.options()
     local o = {mode='follow',amd_mode='enable',diagnostic=true,max_attempts=3,idle_restore_seconds=2,
-        vsr='auto',target_resolution='auto',gpu_vendor='auto',hdr_conversion=true,hdr_backend='auto',
+        vsr='auto',target_resolution='auto',frame_generation='off',gpu_vendor='auto',hdr_conversion=true,hdr_backend='auto',
         -- Display description, per GPU: *_nvidia = this PC, *_amd = AMD/Intel PC.
         peak_nvidia='1000',peak_amd='auto',gamut_nvidia='display-p3',gamut_amd='display-p3',
         oled_nvidia='yes',oled_amd='auto',
@@ -62,6 +62,7 @@ function M.options()
         local oled = tostring(o['oled_'..gpu]):lower()
         o['oled_'..gpu] = (oled == 'yes' or oled == 'no') and oled or 'auto'
     end
+    o.frame_generation = tostring(o.frame_generation):lower() == 'amf' and 'amf' or 'off'
     o.hdr_conversion = bool(o.hdr_conversion)
     o.grade = bool(o.grade)
     o.grade_native_hdr = bool(o.grade_native_hdr)

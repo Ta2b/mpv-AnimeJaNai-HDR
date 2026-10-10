@@ -23,7 +23,7 @@ La carte est détectée au démarrage ; la carte dédiée est préférée à l�
 | **Ctrl+1** | Profil 1 « 1080p » : réduction 540p, RIFE ×2 sur NVIDIA, puis ×2 et VSR. |
 | **Ctrl+2** | Profil 2 « 4K » : 1080p natif → 2160p, sans RIFE. Le plus net. |
 | **Ctrl+3** | Profil 3 « 2K », par défaut : réduction 720p, RIFE ×2 sur NVIDIA, ×2 → 1440p, VSR → écran. |
-| **Ctrl+4** | AMD uniquement : profil 2K + AMF ×2 expérimental (sources ≤ 31 i/s). |
+| **Ctrl+4** | Profil 4 de la banque, s'il existe (sur AMD : variante libre du 2K). Un profil vide est refusé avec un message. |
 | **Ctrl+G** | Grading HDR avec / sans, pour comparer. Le HDR et la chaîne vidéo restent actifs. |
 | **b** | Debanding activé / désactivé. |
 | **Ctrl+Alt+H** | Diagnostic : sortie, écran, VSR, HDR Windows, TrueHDR, cible MPV, grading et ses paramètres, profil AnimeJaNai, images perdues. |
@@ -32,11 +32,12 @@ Ctrl+E ouvre le Manager, Ctrl+U installe une mise à jour. Fermer complètement 
 
 ## Réglages dans le Manager (Ctrl+E)
 
-**Ctrl+E** ouvre `AnimeJaNaiManager-HDR.exe` : le Manager 0.6.0 compilé avec une rubrique supplémentaire dans **Global Settings**, sous *GPU Subtitle Rendering*. L'original reste accessible par le menu AnimeJaNai.
+**Ctrl+E** ouvre `AnimeJaNaiManager-HDR.exe` : le Manager officiel (0.6.0 pour AnimeJaNai 3.6.3, 0.8.0 pour 3.8.0) avec une rubrique supplémentaire dans **Global Settings**, sous *GPU Subtitle Rendering*. Si cet exe est absent, Ctrl+E ouvre le Manager d'origine et le signale.
 
 | Réglage du Manager | Clé du fichier |
 |---|---|
 | Upscale to Display : Auto / RTX Video Super Resolution / AMD VideoSR / Standard / Off | `vsr` |
+| Extra Frame Generation : Off / AMD AMF x2 | `frame_generation` |
 | Target Resolution | `target_resolution` |
 | SDR to HDR Conversion (grise tout ce qui suit quand décoché) | `hdr_conversion` |
 | SDR to HDR Backend : Auto / RTX Video HDR / mpv | `hdr_backend` |
@@ -85,10 +86,17 @@ Faire aussi l’**étalonnage HDR Windows** sur ce PC.
 | `target_resolution` | `auto` ou une taille fixe, par exemple `2560x1440`. |
 | `mode` / `amd_mode` | `enable` : MPV active le HDR Windows puis le restaure. `follow` : suivre l’état de Windows. |
 
+## Génération d'images en plus de RIFE
+
+- **AMD AMF x2** (*Extra Frame Generation* dans le Manager, `frame_generation=amf`) : filtre `amf_frc` du lecteur, placé après AnimeJaNai et RIFE, actif sur **tous les profils** et même avec AnimeJaNai désactivé. Il est ignoré au-delà de 31 i/s en source. S'il échoue, il est désactivé jusqu'au redémarrage du lecteur.
+- **NVIDIA Smooth Motion** : fonction du pilote, à activer dans l'app NVIDIA, *Graphics* → *Program Settings* → `mpvnet.exe` → *Smooth Motion*. Elle double les images affichées, RIFE compris. Aucun réglage du lecteur ne la pilote.
+- **AMD Fluid Motion Frames** : fonction du pilote, dans AMD Software: Adrenalin Edition.
+- N'activer qu'une génération d'images à la fois, en plus de RIFE.
+
 ## Points propres à AMD (non testés sur la RX 9070 XT)
 
 - AMD VideoSR passe par la RAM (sortie AMF téléchargée en P010) : coût à mesurer. En cas d’échec, repli classique pour le fichier courant.
-- AMF ×2 (Ctrl+4) : filtre natif `amf_frc`, appliqué après AnimeJaNai. En cas d’erreur, retour automatique au profil 2 ; il peut falloir rouvrir le fichier. Le cumul avec RIFE est possible en activant RIFE dans le profil AMD 4.
+- AMF ×2 : voir la section précédente. Le cumul avec RIFE est possible en activant RIFE dans un profil AMD.
 - Commencer par Ctrl+3 et vérifier les images perdues avec Ctrl+Alt+H.
 
 ## Banques de profils

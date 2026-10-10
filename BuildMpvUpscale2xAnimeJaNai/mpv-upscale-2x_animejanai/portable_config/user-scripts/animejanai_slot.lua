@@ -10,6 +10,8 @@
 
 local mp = require 'mp'
 local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.lua'}))
+-- Extra frame generation after AnimeJaNai/RIFE: AMD AMF x2, for every profile (Manager setting).
+local amf_enabled = policy.options().frame_generation == 'amf'
 local selection_generation = 0
 local amf_requested = false
 
@@ -38,9 +40,10 @@ mp.register_script_message('aji-slot', function(slot)
             mp.msg.warn('Could not remove the previous AMD FRC; slot change cancelled')
             return
         end
-        amf_requested = hw.vendor == 'amd' and slot == 4
-        mp.set_property_native('user-data/animejanai-interpolation',
-            profile and (profile.rife and 'RIFE configure' or 'cadence originale') or 'interpolation inconnue')
+        amf_requested = hw.vendor == 'amd' and amf_enabled
+        local base = slot == 0 and 'AnimeJaNai desactive' or
+            (profile and (profile.rife and 'RIFE configure' or 'cadence originale') or 'interpolation inconnue')
+        mp.set_property_native('user-data/animejanai-interpolation', base)
     end
     local vf = mp.get_property_native('vf') or {}
     local found = false
@@ -56,7 +59,7 @@ mp.register_script_message('aji-slot', function(slot)
         local selected=mp.commandv('vf-command','aji','slot',tostring(slot))
         if not selected then return end
         mp.set_property_native('user-data/animejanai-active-slot',slot)
-        if hw.vendor == 'amd' and slot == 4 then
+        if amf_requested then
             local native_fps=mp.get_property_native('container-fps')
             local fps=tonumber(native_fps) or 0
             if fps>0 and fps<=31 then
@@ -68,16 +71,16 @@ mp.register_script_message('aji-slot', function(slot)
                 local ok,result=pcall(mp.commandv,'vf','append','@amfinput:d3d11vpp=format=p010')
                 if ok and result then ok,result=pcall(mp.commandv,'vf','append',spec) end
                 if ok and result then
-                    mp.set_property_native('user-data/animejanai-interpolation','AMD AMF x2 : filtre present (essai)')
+                    mp.set_property_native('user-data/animejanai-interpolation',
+                        tostring(mp.get_property_native('user-data/animejanai-interpolation'))..' + AMD AMF x2')
                 else
                     remove_amf()
                     amf_requested=false
-                    mp.commandv('script-message','aji-slot','2')
-                    mp.msg.warn('AMD AMF insertion failed; returning to the original-cadence preset')
-                    mp.osd_message('AMD AMF indisponible ; Ctrl+2 pour la cadence originale',5)
+                    mp.msg.warn('AMD AMF insertion failed; playing without extra frame generation')
+                    mp.osd_message('AMD AMF x2 indisponible : lecture sans generation d images',5)
                 end
             else
-                mp.osd_message('AMD AMF : cadence inconnue ou >31 images/s ; interpolation ignoree',5)
+                mp.osd_message('AMD AMF x2 : cadence inconnue ou > 31 images/s ; ignore',5)
             end
         end
         if mp.get_property_native('pause') then mp.command('no-osd seek 0 exact') end
@@ -89,12 +92,13 @@ mp.register_event('end-file',function(event)
     -- FRC format initialization happens after vf append may have succeeded.
     -- Recover the selection for subsequent files; never auto-reload in a loop.
     if event.reason=='error' and amf_requested then
+        -- Disabled for the rest of this session; the Manager setting stays as chosen.
         selection_generation=selection_generation+1
         amf_requested=false
+        amf_enabled=false
         remove_amf()
-        mp.commandv('script-message','aji-slot','2')
-        mp.osd_message('Echec du mode AMD AMF ; retour Ctrl+2. Rouvrir la video si necessaire.',8)
-        mp.msg.warn('Playback failed with AMD AMF selected; reset to slot 2. Reopen the file if needed.')
+        mp.osd_message('Echec de AMD AMF x2 : desactive jusqu au redemarrage. Rouvrir la video.',8)
+        mp.msg.warn('Playback failed with AMD AMF x2; disabled for this session. Reopen the file.')
     end
 end)
 

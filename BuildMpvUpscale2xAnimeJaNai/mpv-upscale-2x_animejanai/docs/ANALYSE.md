@@ -64,6 +64,12 @@ Résultat : peau à 250, 330 et 400 nits inchangée ; un reflet blanc sur la pea
 
 Réglages NVIDIA (RTX Video HDR) : les quatre curseurs sont en butée. *Middle grey* à 100 nits éclaircit fortement les tons moyens, dont la peau, et l'EOTF Boost de l'écran les éclaircit encore. Contraste et saturation au maximum poussent aussi les teints et écrêtent les hautes lumières de la peau. Conseillé : *Middle grey* vers 50, contraste et saturation baissés, en comparant TrueHDR seul avec Ctrl+G.
 
+## Base AnimeJaNai 3.8.0 et génération d'images (11 octobre)
+
+- Le fork suit maintenant **AnimeJaNai 3.8.0** et le **Manager 0.8.0**. Il récupère ainsi le choix automatique de la fréquence d'écran (*Automatic Display Refresh Rate*, Global Settings) : une fréquence multiple de la cadence vidéo pour tout l'épisode, par exemple 144 Hz pour du RIFE ×2 à 47,952 i/s, ce qui règle la saccade à 165 Hz. Il faut le lecteur mpv de la 3.7.0 ou plus récent ; celui de la 3.6.3 n'a pas `display-rate-match`.
+- **AMD AMF x2** n'est plus lié au profil 4 : c'est une option globale (*Extra Frame Generation*) appliquée à tous les profils sur AMD. Le profil AMD 4 devient une variante libre du 2K. Ctrl+1…4 refusent un profil vide au lieu de sélectionner un slot sans chaîne.
+- NVIDIA Smooth Motion et AMD Fluid Motion Frames sont des fonctions du pilote : le Manager indique où les activer.
+
 ## Ce qui a été retiré
 
 - `rtx-hdr-peps.hook` : courbe en S centrée sur 500 nits en lumière linéaire, qui **assombrissait les tons moyens de 10 à 17 %** et n’ajoutait que +2 % aux hautes lumières.
