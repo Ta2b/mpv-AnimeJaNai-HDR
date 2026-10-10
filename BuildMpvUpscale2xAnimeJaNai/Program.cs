@@ -915,6 +915,12 @@ void WriteVersionAndManifest()
     overlayPaths.AddRange(plat.ManagerOverlay);
     overlayPaths.Add("portable_config/scripts");
     overlayPaths.Add("portable_config/shaders");
+    // HDR fork: fork-managed code rides the overlay so fork updates deliver it. The user's
+    // HDR settings (script-opts) and profile banks (profiles) stay in user_preserve.
+    overlayPaths.Add("portable_config/user-scripts");
+    overlayPaths.Add("portable_config/user-shaders");
+    overlayPaths.Add("portable_config/hdr-tools");
+    if (plat.IsWindows) overlayPaths.Add("AnimeJaNaiManager-HDR.exe");
     // Managed defaults files, overwritten on update. The user-facing
     // mpv.conf/input.conf (which carry these) are preserved (user_preserve).
     overlayPaths.Add("portable_config/mpv-animejanai.conf");

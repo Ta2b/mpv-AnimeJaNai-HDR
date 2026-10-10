@@ -7,7 +7,7 @@ Fork de [the-database/mpv-upscale-2x_animejanai](https://github.com/the-database
 - **Fréquence d'écran automatique** (3.8.0) : une fréquence multiple de la cadence vidéo, RIFE compris.
 - **Grading HDR commun** (`user-shaders/anime-hdr-grade.hook`) : noirs plus profonds, éclats locaux jusqu'au pic de l'écran, vibrance ICtCp limitée au gamut P3, peau protégée. **Ctrl+G** compare avec et sans.
 - **Réglages dans le Manager** (Ctrl+E → [AnimeJaNai Manager HDR](https://github.com/Ta2b/AnimeJaNaiManager-HDR)) : mise à l'échelle finale, conversion SDR → HDR, moteur, intensités, et écran par GPU (HDR Windows automatique ou suivi, pic, gamut, OLED).
-- Les fichiers du fork sont dans `user-scripts/`, `user-shaders/`, `hdr-tools/`, `profiles/` et `script-opts/` ; l'Updater officiel ne les remplace pas.
+- Les fichiers du fork sont dans `user-scripts/`, `user-shaders/` et `hdr-tools/` (mis à jour par l'Updater du fork), plus `profiles/` et `script-opts/` (tes réglages, jamais écrasés).
 
 **Releases** : mêmes fichiers que le projet original (installateur `mpv-AnimeJaNai-HDR-Setup-<version>.exe`, paquet complet `.7z`, overlay de mise à jour, `manifest.json`, packs de composants TensorRT / RIFE). Les versions suivent celle de base plus un numéro de révision du fork (`3.8.0.1`, `3.8.0.2`…). Pour publier une version : mettre son numéro dans `release-version.txt` puis pousser sur la branche `release` ; le workflow *Deploy* compile et publie la release (il crée le tag lui-même). L'Updater (Ctrl+U) et les composants du Manager se servent de ces releases. L'installateur a son propre identifiant et s'installe à côté du lecteur officiel, sans le remplacer.
 
