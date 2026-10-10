@@ -1,3 +1,17 @@
+# mpv-AnimeJaNai HDR (fork)
+
+Fork de [the-database/mpv-upscale-2x_animejanai](https://github.com/the-database/mpv-upscale-2x_animejanai), basé sur la version **3.6.3**, branche `hdr`. Il ajoute une conversion SDR → HDR soignée pour l'anime et s'adapte tout seul aux cartes NVIDIA et AMD :
+
+- **NVIDIA** : RTX Video HDR (TrueHDR) et RTX Video Super Resolution après AnimeJaNai/RIFE (TensorRT).
+- **AMD / Intel** : HDR calculé par mpv, AMD VideoSR, inférence DirectML, AMF ×2 en option.
+- **Grading HDR commun** (`user-shaders/anime-hdr-grade.hook`) : noirs plus profonds, éclats locaux jusqu'au pic de l'écran, vibrance ICtCp limitée au gamut P3, peau protégée. **Ctrl+G** compare avec et sans.
+- **Réglages dans le Manager** (Ctrl+E → [AnimeJaNai Manager HDR](https://github.com/Ta2b/AnimeJaNaiManager-HDR)) : mise à l'échelle finale, conversion SDR → HDR, moteur, intensités, et écran par GPU (HDR Windows automatique ou suivi, pic, gamut, OLED).
+- Les fichiers du fork sont dans `user-scripts/`, `user-shaders/`, `hdr-tools/`, `profiles/` et `script-opts/` ; l'Updater officiel ne les remplace pas.
+
+Fichiers : `BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/` (overlay), avec la documentation dans `docs/ANALYSE.md` et `docs/PARTAGE.md`. Le constructeur (`Program.cs`) ajoute la section personnelle d'`input.conf` et télécharge le Manager HDR.
+
+---
+
 # Upscaling Anime with mpv-AnimeJaNai
 [![Discord](https://img.shields.io/discord/1121653618173546546?label=Discord&logo=Discord&logoColor=white)](https://discord.gg/EeFfZUBvxj)
 
