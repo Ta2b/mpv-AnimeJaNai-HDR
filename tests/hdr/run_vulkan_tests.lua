@@ -16,9 +16,10 @@ os.remove(ROOT..'/cache/animejanai-rtx-state.json')
 
 -- Pure functions
 local R=dofile(ROOT..'/hdr-tools/rtx-stage.lua')
-local want={hdr=true,vsr=true,w=3840,h=2160,quality=2,contrast=100,saturation=100,middle_gray=50,peak=1000}
-check('echo format', R.echo(want)=='RTX Video Settings: hdr=yes vsr=yes target=3840x2160 vsr_quality=2 contrast=100 saturation=100 middle_gray=50 peak=1000', R.echo(want))
+local want={hdr=true,vsr=true,w=3840,h=2160,quality=2,contrast=100,saturation=100,middle_gray=50,peak=1000,held=true,held_threshold=0.40}
+check('echo format', R.echo(want)=='RTX Video Settings: hdr=yes vsr=yes target=3840x2160 vsr_quality=2 contrast=100 saturation=100 middle_gray=50 peak=1000 skip_held_frames=yes held_threshold=40', R.echo(want))
 check('text has one key per line', R.text(want):match('\nhdr=yes\nvsr=yes\ntarget=3840x2160\n')~=nil, R.text(want))
+check('held frames off by default in the pure function', R.echo({}):match('skip_held_frames=no held_threshold=40$')~=nil, R.echo({}))
 check('no target: no upscale', R.echo({hdr=true,vsr=true}):match('vsr=no target=0x0')~=nil, R.echo({hdr=true,vsr=true}))
 check('values clamped like the engine', R.echo({peak=5000,quality=9,middle_gray=1}):match('vsr_quality=4 .*middle_gray=10 peak=2000')~=nil)
 local a=R.applied('x\n'..R.echo(want)..'\n\n1. Applied Model: m\n2. Applied RTX Video: Super Resolution (quality 2) and TrueHDR (peak 1000 nits);    New Video Resolution: 3840x2160\n')
