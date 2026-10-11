@@ -128,7 +128,7 @@ Pendant une vidéo en sortie HDR, Ctrl+Alt+P remplace l'image par des patchs de 
 | NVIDIA Smooth Motion | sans effet | actif (le compteur NVIDIA double) |
 | Grading, sous-titres, mire | identiques | identiques |
 
-Le mode Vulkan demande `aji_trt_rtx.dll`, `aji_rtx.dll`, `nvngx_truehdr.dll`, `nvngx_vsr.dll` et `cudart64_12.dll` dans `animejanai/inference`. Ces fichiers ne font pas partie des versions publiées ; ils se compilent avec `D:\AnimeJaNai-devji-rtx` et ne sont pas touchés par les mises à jour. S'ils manquent, ou quand aucune chaîne AnimeJaNai n'est active (Ctrl+0, source hors plage), le lecteur convertit lui-même en HDR, comme sur AMD. Le moteur d'origine `aji_trt.dll` n'est pas modifié : Direct3D 11 fonctionne exactement comme avant.
+Le mode Vulkan demande `aji_trt_rtx.dll`, `aji_rtx.dll`, `nvngx_truehdr.dll`, `nvngx_vsr.dll` et `cudart64_12.dll` dans `animejanai/inference`. Ces fichiers ne font pas partie des versions publiées ; ils se compilent avec `D:\AnimeJaNai-dev\aji-rtx` et ne sont pas touchés par les mises à jour. S'ils manquent, ou quand aucune chaîne AnimeJaNai n'est active (Ctrl+0, source hors plage), le lecteur convertit lui-même en HDR, comme sur AMD. Le moteur d'origine `aji_trt.dll` n'est pas modifié : Direct3D 11 fonctionne exactement comme avant.
 
 Limites du mode Vulkan : TrueHDR reçoit du 8 bits ; RIFE doit rester « avant la mise à l'échelle » (réglage des profils fournis) ; un profil NVIDIA de l'application NVIDIA est lié au dossier du lecteur, donc Smooth Motion se règle pour le `mpvnet.exe` de ce dossier. AMD et Intel utilisent toujours Direct3D 11.
 
