@@ -21,7 +21,7 @@ Anime en HDR qui ressort sur le MSI MAG 272UP QD-OLED (Peak 1000 / EOTF Boost) :
 
 ## Le shader de grading
 
-Sept passes sur `OUTPUT`. Les quatre premières construisent, en basse résolution, une carte de la luminance locale (1/8) et de la luminance de zone (1/32, flou gaussien d’environ 2,5 % de l’image). Deux passes de calcul mesurent la luminance moyenne de l'image et lissent la carte des zones dans le temps (voir *Version 3.8.0.2*). La dernière traite chaque pixel en lumière linéaire absolue :
+Neuf passes sur `OUTPUT`. Les quatre premières construisent, en basse résolution, une carte de la luminance locale (1/8) et de la luminance de zone (1/32, flou gaussien d’environ 2,5 % de l’image). Deux passes de calcul mesurent la luminance moyenne de l'image et lissent la carte des zones dans le temps (voir *Version 3.8.0.2*). La dernière traite chaque pixel en lumière linéaire absolue :
 
 | Étape | Effet | Détail |
 |---|---|---|
@@ -46,7 +46,7 @@ Les canaux RGB sont multipliés ensemble pour les noirs, les éclats et l’épa
 | Primaires saturées | inchangées | inchangées |
 | Bleu ciel moyen (B 110 nits) | B 128 | — |
 
-Coût mesuré sur RTX 4070 Ti : environ 3,5 ms par image en 3840x2160, soit près de 17 % du temps GPU à 48 i/s. Ce n'est pas négligeable : voir *Charge GPU mesurée*. Non mesuré sur RX 9070 XT.
+Coût mesuré sur RTX 4070 Ti en 3840x2160 : environ 1,4 ms par image depuis la 3.8.0.3. Jusqu'à la 3.8.0.2, la passe de statistiques de scène (réduction parallèle dans une passe de calcul) prenait à elle seule 3 ms ; la moyenne de scène vient maintenant de deux petites passes de rendu. Non mesuré sur RX 9070 XT.
 
 ## Correctif du 11 octobre : peau trop claire et scintillante en RTX
 
@@ -98,20 +98,22 @@ Réglages NVIDIA (RTX Video HDR) : les quatre curseurs sont en butée. *Middle g
 
 ## Charge GPU mesurée (11 octobre, RTX 4070 Ti)
 
-Lecture du clip de benchmark 1080p à 23,976 i/s en plein écran 3840x2160, TrueHDR, RTX VSR et grading actifs. Images perdues par seconde après 15 s de lecture (`frame-drop-count`), sur 36 à 44 s par essai.
+Lecture du clip de benchmark 1080p à 23,976 i/s en plein écran 3840x2160, TrueHDR, RTX VSR et grading actifs. Images perdues par seconde après 15 s de lecture (`frame-drop-count`), sur 36 à 50 s par essai.
 
-| Profil | Images perdues | Charge GPU |
+| Profil | 3.8.0.2 | 3.8.0.3 |
 |---|---|---|
-| 1 « 1080p » : 540p, RIFE ×2, Balanced, VSR ×2 | 0 | 73 % |
-| 2 « 4K » : 1080p natif, Balanced, sans RIFE | 0 | 68 % |
-| 3 « 2K » : 720p, RIFE ×2, Balanced, VSR ×1,5 | **environ 30 sur 48** (6 essais sur 6) | 87 % |
-| 4 « 2K Performance » : comme le 3 avec le modèle Performance | 0 (5 essais, un à 1,3) | 81 à 88 % |
+| 1 « 1080p » : 540p, RIFE ×2, Balanced, VSR ×2 | 0 perte, GPU 73 % | non remesuré |
+| 2 « 4K » : 1080p natif, Balanced, sans RIFE | 0 perte, GPU 68 % | non remesuré |
+| 3 « 2K » : 720p, RIFE ×2, Balanced, VSR ×1,5 | **environ 30 sur 48** (6 essais sur 6), GPU 87 % | 0 sur 4 essais, 3,8 sur un cinquième, GPU 87 à 90 % |
+| 4 « 2K Performance » : comme le 3 avec le modèle Performance | 0 (5 essais, un à 1,3), GPU 81 à 88 % | 0, GPU 71 % |
 
-Le profil 3 seul (AnimeJaNai Balanced + RIFE, sans TrueHDR ni VSR) occupe déjà 75 % du GPU et ne perd rien. TrueHDR en plus passe encore. Un traitement de plus en 2160p (RTX VSR, ou le grading en plein écran) dépasse la carte, et le lecteur jette alors environ deux images sur trois. Le profil 4 est donc le profil par défaut de la banque NVIDIA ; Ctrl+3 reste disponible pour comparer.
+La cause des pertes de la 3.8.0.2 était la passe de statistiques du shader de grading : 3 ms par image, pendant lesquelles le reste de la chaîne attendait. Le rendu final est passé de 4,6 à 2,0 ms par image.
 
-Ce qui ne change rien, mesuré : séparer TrueHDR et VSR en deux filtres, `vsr=classic`, des filtres d'échelle bilinéaires. Aucun thread du lecteur n'est saturé (64 % d'un cœur au plus) et le rendu final prend 5 ms par image : la limite est le calcul GPU, pas le passage CUDA → D3D11 par la RAM. L'intégration du SDK NVIDIA RTX Video en CUDA ne lèverait donc pas cette limite.
+Le profil 3 tient maintenant, mais près de la limite de la carte : une scène plus lourde peut encore perdre des images. Le profil 4 garde de la marge et reste le profil par défaut de la banque NVIDIA ; Ctrl+3 rappelle le modèle Balanced.
 
-RIFE ×5/2 (59,94 i/s) dépasse aussi la carte, y compris sans TrueHDR ni VSR et en rendu Vulkan sans copie.
+Ce qui ne change rien, mesuré : séparer TrueHDR et VSR en deux filtres, `vsr=classic`, des filtres d'échelle bilinéaires, RIFE après la mise à l'échelle (pire : GPU 94 %), RIFE 4.22 lite. Aucun thread du lecteur n'est saturé (64 % d'un cœur au plus) : la limite est le calcul GPU, pas le passage CUDA → D3D11 par la RAM.
+
+RIFE ×5/2 (59,94 i/s) dépasse la carte, y compris sans TrueHDR ni VSR et en rendu Vulkan sans copie. Sans RIFE, Balanced en 720p → 1440p n'occupe que 51 % du GPU.
 
 ## Ce qui a été retiré
 
