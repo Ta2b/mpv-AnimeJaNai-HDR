@@ -14,7 +14,7 @@ Anime en HDR qui ressort sur le MSI MAG 272UP QD-OLED (Peak 1000 / EOTF Boost) :
    - sans HDR ou sur source HDR native : seulement la mise à l’échelle.
 4. **Description de l’écran**, appliquée par le contrôleur dès que le HDR Windows est confirmé, à partir des réglages du GPU courant : `target-peak`, `target-contrast` (`inf` sur OLED) et `target-gamut`. Ces valeurs sont restaurées à la fin de la lecture.
 5. **Conversion SDR → HDR :**
-   - **RTX** (défaut NVIDIA) : TrueHDR produit du PQ marqué à 1000 nits. Avec `target-peak=1000`, libplacebo ne fait **aucun tone mapping** : les valeurs passent telles quelles. Vérifié dans le code de mpv/libplacebo et dans `libmpv-2.dll`.
+   - **RTX** (défaut NVIDIA) : TrueHDR produit du PQ marqué à 1000 nits. Avec `target-peak=1000`, libplacebo ne fait **aucun tone mapping** : les valeurs passent telles quelles. Vérifié dans le code de mpv/libplacebo et dans `libmpv-2.dll`. Le contrôleur coupe aussi la détection de pic (`hdr-compute-peak=no`) tant que TrueHDR est actif, puis la rétablit : en mode `auto`, mpv mesurait encore chaque image.
    - **MPV** (défaut AMD/Intel) : pas d’inverse tone mapping global. Le blanc SDR est placé à `paper_white` (203 nits) via `hdr-reference-white`, le noir est ramené à 0, et c’est le shader qui crée les éclats.
 6. **Grading** `user-shaders/anime-hdr-grade.hook`, sur l’image finale en PQ, identique pour tous les GPU. Seuls ses paramètres changent selon le moteur.
 7. Sous-titres composés après le grading (`blend-subtitles=no`), blancs à `subtitle_white` (200 nits par défaut, réglable dans le Manager).
@@ -115,11 +115,31 @@ Ce qui ne change rien, mesuré : séparer TrueHDR et VSR en deux filtres, `vsr=c
 
 RIFE ×5/2 (59,94 i/s) dépasse la carte, y compris sans TrueHDR ni VSR et en rendu Vulkan sans copie. Sans RIFE, Balanced en 720p → 1440p n'occupe que 51 % du GPU.
 
+## Mesures sur un épisode réel (11 octobre, soir)
+
+Épisode 1080p à 23,976 i/s lu en plein écran 3840x2160, à partir de la 5e minute, TrueHDR, RTX VSR et grading actifs, synchronisation audio (réglage par défaut). Images perdues (`frame-drop-count`) sur 25 à 30 s après 15 s de lecture. Le PC servait à autre chose pendant les essais (GPU à 12 % au repos) : les charges sont des majorants.
+
+| Écran | Profil | Sortie | Images perdues | GPU moyen / max |
+|---|---|---|---|---|
+| 165 Hz | 4 « 2K Performance », RIFE ×2 | 47,952 i/s | 0 sur 3 essais ; une salve isolée sur 3 autres (4, 41 et 46 images en 1 à 3 s) | 64 à 82 % / 77 à 93 % |
+| 165 Hz | 2 « 4K », sans RIFE | 23,976 i/s | 0 | 58 % / 73 % |
+| 120 Hz | 4, RIFE ×2 | 47,952 i/s | une salve de 32 images | 81 % / 93 % |
+| 120 Hz | 2, sans RIFE | 23,976 i/s | 0 | 59 % / 84 % |
+| 120 Hz | 4, RIFE calé (maximum 2) : ×5/3 | 39,960 i/s | 0 | 84 % / 96 % |
+| 120 Hz | 3 « 2K » Balanced, RIFE calé : ×5/3 | 39,960 i/s | 0 | 85 % / 90 % |
+| 120 Hz | 4, RIFE calé (maximum 3) : ×5/2 | 59,940 i/s | **49 par seconde** | 88 % / 92 % |
+
+- **Le profil 4 n'a pas la marge mesurée sur le clip de benchmark** : sur un épisode, la carte tourne autour de 80 % et un essai sur deux perd une salve d'images. Pendant ces salves le filtre continue de livrer ses images au bon rythme ; c'est l'affichage qui en saute. Cause non isolée. Elles apparaissent aussi sans le shader de grading.
+- **Cadence.** L'écran ne propose que 60, 120 et 165 Hz en 3840x2160 (liste des modes Windows). À 165 Hz, aucun facteur RIFE ne tombe juste : avec ×2, chaque image dure 3 ou 4 rafraîchissements. À 120 Hz, *Match RIFE to Display Refresh* choisit ×5/3 : 39,96 i/s, chaque image dure exactement 3 rafraîchissements, sans perte. Le prix : une image sur cinq seulement vient de la source (une sur deux en ×2). Sans RIFE, 120 Hz tombe juste aussi (5 rafraîchissements par image).
+- **`video-sync=display-resample`** (profil `[anime-cadence-ecran]`) : à 120 Hz sans RIFE, 5,000 rafraîchissements par image et aucune perte. À 165 Hz avec RIFE ×2, environ **20 images perdues par seconde**, GPU à 92 % : à n'utiliser que lorsque la cadence tombe juste.
+- **Source HDR native** (film 3840x1604 AV1 HDR10+) : aucune chaîne AnimeJaNai ne s'applique, sur les profils 2 et 4 comme avec AnimeJaNai désactivé. La chaîne 2 des profils s'arrête à 2560x1604 et `max_fps=0` y signifie « sans limite ». L'image passe telle quelle en P010, PQ et BT.2020 conservés, puis reçoit le grading (`grade_native_hdr=yes`). GPU à 17 %, aucune perte.
+- **Correctif.** Avec `rife_display_sync=yes`, `hardware_auto.lua` s'arrêtait sur une erreur Lua à chaque fichier : la cadence source n'est pas encore disponible à ce stade du chargement. Le calage n'avait donc jamais fonctionné dans le lecteur, et Ctrl+0…4 comme Ctrl+E s'arrêtaient avec le script. La cadence est maintenant lue sur la piste vidéo ; les lignes « RIFE calé » du tableau ont été mesurées après ce correctif.
+
 ## Ce qui a été retiré
 
 - `rtx-hdr-peps.hook` : courbe en S centrée sur 500 nits en lumière linéaire, qui **assombrissait les tons moyens de 10 à 17 %** et n’ajoutait que +2 % aux hautes lumières.
 - `mpv-hdr-peps.hook` et son style (`mpv_*`), remplacés par le shader commun. L’inverse tone mapping `spline` envoyait tous les blancs SDR vers le pic : grands aplats éblouissants, limitateur de luminosité (ABL) de l’OLED sollicité, aucune distinction avec les vrais éclats.
-- Profils `[anime-rtx-hdr]` et `[msi-peak-1000]` : remplacés par le contrôleur. `hdr-contrast-recovery=0.30`, `hdr-compute-peak=no` et `tone-mapping` n’avaient aucun effet sur la sortie TrueHDR, puisque libplacebo n’y fait aucun tone mapping.
+- Profils `[anime-rtx-hdr]` et `[msi-peak-1000]` : remplacés par le contrôleur. `hdr-contrast-recovery=0.30` et `tone-mapping` n’avaient aucun effet sur la sortie TrueHDR, puisque libplacebo n’y fait aucun tone mapping. `hdr-compute-peak=no` est revenu depuis, posé par le contrôleur sur la seule sortie TrueHDR.
 - `saturation=22` (saturation YUV globale), remplacée par la vibrance ICtCp limitée au gamut.
 - Profils de comparaison `[anime-couleurs-vives]`, `[anime-couleurs-neutres]`, `[anime-hdr-contraste]`, `[anime-hdr-fidele]` : remplacés par **Ctrl+G**.
 - Réglages neutres redondants (`gamma/contrast/saturation/brightness/hue=0`), commentaires dupliqués, variable `vsr_scale` jamais lue, `policy.hdr_conversion`.
@@ -138,6 +158,7 @@ RIFE ×5/2 (59,94 i/s) dépasse la carte, y compris sans TrueHDR ni VSR et en re
 | Priorité | Action | Pourquoi |
 |---|---|---|
 | Haute | Étalonnage HDR Windows dans le mode d’écran utilisé (EOTF Boost), pic réglé à 1000 | Le pilote NVIDIA choisit le pic de TrueHDR d’après les informations de l’écran dans Windows ; mpv suppose 1000 nits. |
+| Moyenne | Sans mode 144 Hz : écran à **120 Hz** et *Match RIFE to Display Refresh* (maximum 2) | RIFE passe à ×5/3 : 39,96 i/s, 3 rafraîchissements par image, aucune perte mesurée sur les profils 3 et 4. À comparer à l'œil avec ×2 à 165 Hz, plus fluide mais irrégulier. |
 | Haute | Créer un mode personnalisé **144 Hz** (NVIDIA Control Panel), puis *Match RIFE to Display Refresh* dans le Manager | RIFE ×2 donne 47,952 i/s. 144 Hz = 3 × 48 : cadence parfaite. Le MAG 272UP n'offre que 60, 120 et 165 Hz en 4K : à 165 Hz chaque image dure 3 ou 4 rafraîchissements, à 120 Hz 2 ou 3. RIFE ×5/2 (59,94 i/s, exact à 120 Hz) dépasse la RTX 4070 Ti sur le profil 3 : environ 45 images perdues par seconde, mesuré. Sans RIFE (Ctrl+2), 120 Hz est exact. |
 | Moyenne | Comparer Ctrl+2 (1080p natif → 4K, sans RIFE) et Ctrl+4 (720p → RIFE → 1440p → VSR) | Ctrl+4 jette du détail source en descendant à 720p. Si la fluidité RIFE compte moins que la netteté, Ctrl+2 est plus fidèle, et garde le modèle Balanced. |
 | Haute | NVIDIA App > RTX Video HDR : *Middle grey* vers 50, contraste et saturation baissés | Ces curseurs sont en butée : tons moyens et peau trop clairs, teints trop saturés, hautes lumières écrêtées. |

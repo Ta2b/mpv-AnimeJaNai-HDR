@@ -1,16 +1,16 @@
 # MPV AnimeJaNai — installation personnelle
 
-Lancer **mpvnet.exe**. Ctrl+E ouvre **AnimeJaNaiManager-HDR.exe**, le Manager avec une rubrique *Upscale / HDR* dans Global Settings. Il réutilise la fenêtre existante grâce à `portable_config/mpvnet.conf`. Le dossier contient AnimeJaNai 3.6.3 avec les chemins NVIDIA et AMD configurés.
+Lancer **mpvnet.exe**. Ctrl+E ouvre **AnimeJaNaiManager-HDR.exe**, le Manager avec une rubrique *Upscale / HDR* dans Global Settings. Il réutilise la fenêtre existante grâce à `portable_config/mpvnet.conf`. Le dossier contient AnimeJaNai 3.8.0 dans sa version HDR (paquets 3.8.0.x du dépôt `Ta2b/mpv-AnimeJaNai-HDR`), avec les chemins NVIDIA et AMD configurés.
 
 | Emplacement | Fonction |
 |---|---|
 | `portable_config/mpv.conf` | Sortie vidéo D3D11, base HDR, debanding, sous-titres et profils manuels |
 | `portable_config/input.conf` | Raccourcis et menus personnels |
 | `portable_config/script-opts/animejanai_hdr_auto.conf` | **Tous les réglages** : GPU, mise à l’échelle, moteur HDR, écran par GPU (`*_nvidia` / `*_amd`), grading |
-| `portable_config/scripts/` | Scripts officiels, remplaçables par l’Updater |
-| `portable_config/user-scripts/` | Adaptation du backend, profils/AMF, contrôleur HDR (TrueHDR, VSR, grading) |
+| `portable_config/scripts/` | Scripts officiels, remplacés à chaque mise à jour |
+| `portable_config/user-scripts/` | Adaptation du backend, profils/AMF, contrôleur HDR (TrueHDR, VSR, grading). Remplacés à chaque mise à jour |
 | `portable_config/hdr-tools/` | Chargeur, détection GPU, plan de grading (`hdr-grade.lua`) et exécutables HDR Windows |
-| `portable_config/shaders/` | Shaders officiels, remplaçables par l’Updater |
+| `portable_config/shaders/` | Shaders officiels, remplacés à chaque mise à jour |
 | `portable_config/user-shaders/anime-hdr-grade.hook` | Grading HDR unique pour NVIDIA et AMD : noirs, éclats, vibrance, stabilité temporelle, ABL OLED |
 | `portable_config/user-shaders/anime-hdr-calibration.hook` | Mire d'étalonnage HDR (Ctrl+Alt+P) |
 | `animejanai/diagnostic-hdr.txt` | Dernier diagnostic Ctrl+Alt+H |
@@ -33,4 +33,4 @@ Les DLL et exécutables à la racine sont les composants du lecteur et de son in
 
 Le cache de shaders `portable_config/cache/` et les sauvegardes du Manager peuvent réapparaître : ils sont générés pendant l’utilisation. Les moteurs `.engine` sont conservés pour éviter de longues recompilations. Ne pas déplacer les dossiers techniques sans adapter les chemins des filtres et du programme de mise à jour.
 
-Raccourcis personnels : Ctrl+0…4 profils, **Ctrl+G** grading réglages / *Natural* / sans, **Ctrl+Alt+P** mire d'étalonnage, Ctrl+Alt+H diagnostic, b debanding. Les réglages enregistrés dans le Manager s'appliquent sans relancer le lecteur. Ctrl+U reste disponible. `mpv.conf` charge `hdr-tools/user-script-loader.lua`, qui découvre les scripts officiels et personnels dans des clients distincts. Une version personnelle de même nom prend la priorité : les deux contrôleurs ne tournent jamais en parallèle. Le backend personnel exécute le backend officiel actualisé avec la banque sélectionnée ; le contrôleur des slots/AMF reste personnel. La préservation est vérifiée avec les opérations de copie et de synchronisation de l’Updater 3.6.3, en modes léger et complet. Une future modification des API MPV/AnimeJaNai peut toujours demander une adaptation ; voir `docs/PARTAGE.md`.
+Raccourcis personnels : Ctrl+0…4 profils, **Ctrl+G** grading réglages / *Natural* / sans, **Ctrl+Alt+P** mire d'étalonnage, Ctrl+Alt+H diagnostic, b debanding. Les réglages enregistrés dans le Manager s'appliquent sans relancer le lecteur. Ctrl+U reste disponible. `mpv.conf` charge `hdr-tools/user-script-loader.lua`, qui découvre les scripts officiels et personnels dans des clients distincts. Une version personnelle de même nom prend la priorité : les deux contrôleurs ne tournent jamais en parallèle. Le backend personnel exécute le backend officiel actualisé avec la banque sélectionnée ; le contrôleur des slots/AMF reste personnel. `AnimeJaNaiUpdater.exe` télécharge les versions de `Ta2b/mpv-AnimeJaNai-HDR`, pas celles du projet d'origine : scripts, shaders, outils HDR et Manager HDR sont remplacés ensemble, les réglages et les profils sont conservés. Une modification faite à la main dans `user-scripts/`, `user-shaders/` ou `hdr-tools/` est donc perdue à la mise à jour suivante : la faire dans le dépôt. Voir `docs/PARTAGE.md`.

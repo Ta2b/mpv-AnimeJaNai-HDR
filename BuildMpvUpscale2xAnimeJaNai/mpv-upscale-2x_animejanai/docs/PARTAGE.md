@@ -93,8 +93,8 @@ Faire aussi l’**étalonnage HDR Windows** sur ce PC.
 | `vsr` | `auto`, `nvidia`, `amd`, `classic` (D3D11), `no`. Une valeur incompatible avec la carte se replie sur `classic`. |
 | `target_resolution` | `auto` ou une taille fixe, par exemple `2560x1440`. |
 | `mode` / `amd_mode` | `enable` : MPV active le HDR Windows puis le restaure. `follow` : suivre l’état de Windows. |
-| `rife_display_sync` | `yes` : le facteur RIFE de la vidéo est choisi pour que chaque image reste affichée le même nombre de rafraîchissements (23,976 i/s : ×2 à 144 Hz, ×5/2 à 60 Hz si `rife_max_factor=3`). Sans facteur adapté, celui du profil est gardé. Ignoré quand AnimeJaNai règle lui-même la fréquence de l'écran (`display_rate_match=yes`, AnimeJaNai 3.8). |
-| `rife_max_factor` | Facteur maximal autorisé pour ce calage (2 par défaut). |
+| `rife_display_sync` | `yes` : le facteur RIFE de la vidéo est choisi pour que chaque image reste affichée le même nombre de rafraîchissements (23,976 i/s : ×2 à 144 Hz, ×5/3 à 120 Hz, ×5/2 à 60 Hz ou 120 Hz si `rife_max_factor=3`). Sans facteur adapté, celui du profil est gardé. Ignoré quand AnimeJaNai règle lui-même la fréquence de l'écran (`display_rate_match=yes`, AnimeJaNai 3.8). |
+| `rife_max_factor` | Facteur maximal autorisé pour ce calage (2 par défaut). À 3, un écran à 120 Hz reçoit ×5/2 (59,94 i/s), trop lourd pour une RTX 4070 Ti : environ 49 images perdues par seconde. |
 
 ## Mire d'étalonnage (Ctrl+Alt+P)
 
@@ -123,4 +123,10 @@ Les banques éditables sont `portable_config/profiles/nvidia/animejanai.conf` et
 
 ## Mises à jour AnimeJaNai
 
-L’Updater remplace `scripts/`, `shaders/`, `mpv-animejanai.conf` et `input-animejanai.conf`. Il préserve `mpv.conf`, `input.conf` (section personnelle sous le marqueur) et ne touche pas `user-scripts/`, `user-shaders/`, `hdr-tools/`, `profiles/` ni `script-opts/`. Ne pas repasser `load-scripts=yes`, sinon les contrôleurs officiels tourneraient en double. Après une mise à jour majeure, relancer et vérifier Ctrl+Alt+H.
+`AnimeJaNaiUpdater.exe` (Ctrl+U) télécharge les versions du dépôt `Ta2b/mpv-AnimeJaNai-HDR`, pas celles du projet d'origine. Ne pas utiliser l'installeur ni l'Updater d'origine sur ce dossier : ils remettraient les scripts et le Manager sans HDR.
+
+Une mise à jour remplace `scripts/`, `shaders/`, `user-scripts/`, `user-shaders/`, `hdr-tools/`, `mpv-animejanai.conf`, `input-animejanai.conf`, les modèles AnimeJaNai, les deux Managers et les bibliothèques `aji`. Elle conserve `mpv.conf`, `input.conf` (section personnelle sous le marqueur), `script-opts/animejanai_hdr_auto.conf`, `profiles/` et `animejanai/animejanai.conf`. Une modification faite à la main dans un dossier remplacé est perdue : la faire dans le dépôt, puis publier une version.
+
+Les bibliothèques `aji` et le lecteur sont ceux du projet d'origine, sans modification (`aji` v0.11.1, mêmes empreintes). Ce qui est propre à ce fork : les scripts de `user-scripts/` et `hdr-tools/`, le shader de grading et le Manager HDR.
+
+Ne pas repasser `load-scripts=yes`, sinon les contrôleurs officiels tourneraient en double. Après une mise à jour majeure, relancer et vérifier Ctrl+Alt+H.
