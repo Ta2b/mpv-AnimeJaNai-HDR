@@ -23,7 +23,9 @@ function M.options()
         grade=true,paper_white=203,shadows=0.30,highlights=0.85,highlights_rtx=0.50,
         vibrance=0.30,vibrance_rtx=0.20,grade_native_hdr=false,subtitle_white=200,
         -- RIFE output rate matched to the display refresh (factor p/q, at most rife_max_factor).
-        rife_display_sync=false,rife_max_factor=2}
+        rife_display_sync=false,rife_max_factor=2,
+        -- Vulkan output (NVIDIA): RTX Video runs inside the engine instead of D3D11 filters.
+        render_api='d3d11',rtx_vsr_quality=2,rtx_contrast=100,rtx_saturation=100,rtx_middle_gray=50}
     require('mp.options').read_options(o,'animejanai_hdr_auto')
     local warn = require('mp.msg').warn
     local vsr=tostring(o.vsr):lower()
@@ -77,7 +79,18 @@ function M.options()
     o.subtitle_white = number(o.subtitle_white, 200, 80, 1000)
     o.rife_display_sync = bool(o.rife_display_sync)
     o.rife_max_factor = number(o.rife_max_factor, 2, 1, 8)
+    o.render_api = tostring(o.render_api):lower() == 'vulkan' and 'vulkan' or 'd3d11'
+    o.rtx_vsr_quality = number(o.rtx_vsr_quality, 2, 1, 4)
+    o.rtx_contrast = number(o.rtx_contrast, 100, 0, 200)
+    o.rtx_saturation = number(o.rtx_saturation, 100, 0, 200)
+    o.rtx_middle_gray = number(o.rtx_middle_gray, 50, 10, 100)
     return o
+end
+
+-- Vulkan output is the NVIDIA path only: TensorRT frames stay in CUDA up to the VO, and
+-- RTX Video runs inside the engine. AMD/Intel always use D3D11 (DirectML).
+function M.vulkan(vendor, o)
+    return vendor == 'nvidia' and o.render_api == 'vulkan'
 end
 
 function M.select_gpu(adapters, override)
