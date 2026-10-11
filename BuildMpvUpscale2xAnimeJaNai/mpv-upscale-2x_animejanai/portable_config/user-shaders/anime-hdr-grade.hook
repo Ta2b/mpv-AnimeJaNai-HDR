@@ -177,55 +177,73 @@ vec4 hook() {
 
 //!HOOK OUTPUT
 //!BIND AJG_AREA
+//!SAVE AJG_MEAN8
+//!WIDTH 8
+//!HEIGHT 8
+//!COMPONENTS 2
+//!DESC AnimeJaNai HDR grade - moyenne de scene 8x8
+
+// Moyenne de la carte de zone par 1/64 d'image : PQ et lumiere lineaire (nits / 10000).
+// 16 x 16 lectures bilineaires reparties sur la zone couverte par chaque texel.
+float stats_linear(float e) {
+    float p = pow(clamp(e, 0.0, 1.0), 1.0 / 78.84375);
+    return pow(max(p - 0.8359375, 0.0) / max(18.8515625 - 18.6875 * p, 1e-6), 6.27739463);
+}
+vec4 hook() {
+    vec2 acc = vec2(0.0);
+    for (int j = 0; j < 16; j++)
+    for (int i = 0; i < 16; i++) {
+        vec2 o = ((vec2(float(i), float(j)) + 0.5) / 16.0 - 0.5) / 8.0;
+        float v = AJG_AREA_tex(AJG_AREA_pos + o).x;
+        acc += vec2(v, stats_linear(v));
+    }
+    return vec4(acc / 256.0, 0.0, 1.0);
+}
+
+//!HOOK OUTPUT
+//!BIND AJG_MEAN8
+//!SAVE AJG_MEAN
+//!WIDTH 1
+//!HEIGHT 1
+//!COMPONENTS 2
+//!DESC AnimeJaNai HDR grade - moyenne de scene
+
+vec4 hook() {
+    vec2 acc = vec2(0.0);
+    for (int j = 0; j < 8; j++)
+    for (int i = 0; i < 8; i++)
+        acc += AJG_MEAN8_tex((vec2(float(i), float(j)) + 0.5) / 8.0).xy;
+    return vec4(acc / 64.0, 0.0, 1.0);
+}
+
+//!HOOK OUTPUT
+//!BIND AJG_AREA
+//!BIND AJG_MEAN
 //!BIND AJG_STATE
 //!SAVE AJG_STATS
 //!WIDTH 1
 //!HEIGHT 1
-//!COMPUTE 1 1 16 16
+//!COMPUTE 1 1
 //!DESC AnimeJaNai HDR grade - statistiques de scene
 
-// Un seul groupe de 256 threads : moyenne de la carte de zone (PQ et nits),
-// detection des changements de plan, APL lisse dans le temps.
-shared float s_pq[256];
-shared float s_nits[256];
-float stats_nits(float e) {
-    float p = pow(clamp(e, 0.0, 1.0), 1.0 / 78.84375);
-    return 10000.0 * pow(max(p - 0.8359375, 0.0) / max(18.8515625 - 18.6875 * p, 1e-6), 6.27739463);
-}
+// Detection des changements de plan et APL lisse dans le temps. Les moyennes viennent
+// des deux passes precedentes : une reduction en boucle dans cette passe de calcul
+// coutait 3 ms par image en D3D11.
 void hook() {
-    uint id = gl_LocalInvocationIndex;
     ivec2 size = ivec2(AJG_AREA_size);
-    int n = size.x * size.y;
-    float spq = 0.0, snits = 0.0;
-    for (int i = int(id); i < n; i += 256) {
-        float v = texelFetch(AJG_AREA_raw, ivec2(i % size.x, i / size.x), 0).x;
-        spq += v;
-        snits += stats_nits(v);
-    }
-    s_pq[id] = spq;
-    s_nits[id] = snits;
-    barrier();
-    for (uint step = 128u; step > 0u; step >>= 1) {
-        if (id < step) {
-            s_pq[id] += s_pq[id + step];
-            s_nits[id] += s_nits[id + step];
-        }
-        barrier();
-    }
-    if (id == 0u) {
-        float mean_pq = s_pq[0] / float(max(n, 1));
-        float mean_nits = s_nits[0] / float(max(n, 1));
-        // Changement de plan, premiere image ou nouvelle taille : pas d'historique.
-        bool reset = ready < 0.5 || width != size.x || height != size.y
-                  || abs(mean_pq - prev_pq) > 0.06;
-        cut = reset ? 1.0 : 0.0;
-        apl = reset ? mean_nits : mix(apl, mean_nits, 0.1);
-        prev_pq = mean_pq;
-        width = size.x;
-        height = size.y;
-        ready = 1.0;
-        imageStore(out_image, ivec2(0, 0), vec4(apl, cut, mean_nits, 1.0));
-    }
+    vec2 mean = AJG_MEAN_tex(vec2(0.5)).xy;
+    float mean_pq = mean.x;
+    float mean_nits = 10000.0 * mean.y;
+    // Changement de plan, premiere image ou nouvelle taille : pas d'historique.
+    bool reset = ready < 0.5 || width != size.x || height != size.y
+              || abs(mean_pq - prev_pq) > 0.06;
+    cut = reset ? 1.0 : 0.0;
+    apl = reset ? mean_nits : mix(apl, mean_nits, 0.1);
+    prev_pq = mean_pq;
+    width = size.x;
+    height = size.y;
+    ready = 1.0;
+    imageStore(out_image, ivec2(0, 0), vec4(apl, cut, mean_nits, 1.0));
 }
 
 //!HOOK OUTPUT
