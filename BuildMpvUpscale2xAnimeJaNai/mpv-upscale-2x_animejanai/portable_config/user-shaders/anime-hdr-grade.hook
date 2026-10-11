@@ -89,6 +89,48 @@
 //!MAXIMUM 1.0
 1.0
 
+//!PARAM emulate
+//!DESC 1 = aspect RTX TrueHDR applique au SDR converti par MPV
+//!TYPE float
+//!MINIMUM 0.0
+//!MAXIMUM 1.0
+0.0
+
+//!PARAM sdr_white
+//!DESC Aspect TrueHDR : niveau du blanc SDR a l'entree (nits)
+//!TYPE float
+//!MINIMUM 50.0
+//!MAXIMUM 1000.0
+203.0
+
+//!PARAM em_base
+//!DESC Aspect TrueHDR : echelle des tons moyens (4 x gris moyen)
+//!TYPE float
+//!MINIMUM 40.0
+//!MAXIMUM 400.0
+200.0
+
+//!PARAM em_lo
+//!DESC Aspect TrueHDR : exposant du contraste sous le pivot
+//!TYPE float
+//!MINIMUM 1.0
+//!MAXIMUM 2.0
+1.0
+
+//!PARAM em_hi
+//!DESC Aspect TrueHDR : exposant du contraste au-dessus du pivot
+//!TYPE float
+//!MINIMUM 1.0
+//!MAXIMUM 2.0
+1.0
+
+//!PARAM em_sat
+//!DESC Aspect TrueHDR : facteur de saturation
+//!TYPE float
+//!MINIMUM 1.0
+//!MAXIMUM 1.5
+1.0
+
 //!HOOK OUTPUT
 //!BIND HOOKED
 //!SAVE AJG_LOCAL
@@ -349,6 +391,35 @@ float highlight_ratio(float y, float isolation, float skin, float abl_scale) {
     return out_y / y;
 }
 
+// Aspect RTX TrueHDR pour le SDR converti par MPV. Courbes mesurees sur le SDK RTX Video
+// (mires grises et colorees, gris moyen 50) : TrueHDR s'y comporte comme une courbe globale.
+//   base      : em_base * s^2 * exp(ln(peak / em_base) * s^6), s = signal SDR (0..1) ;
+//               le blanc SDR arrive au pic, les tons moyens restent vers 50 nits ;
+//   contraste : puissance autour du pivot (em_lo dessous, em_hi dessus, sans depasser le pic) ;
+//   saturation: ecart a la luminance multiplie par em_sat.
+// Ecart mesure avec TrueHDR : +/- 6 % sur les gris, +/- 7 % sur les couleurs courantes.
+vec3 truehdr_look(vec3 nits) {
+    const vec3 luma = vec3(0.2627, 0.6780, 0.0593);
+    vec3 x = max(nits, 0.0) / sdr_white;
+    float Y = dot(x, luma);
+    float idx = clamp(Y + 0.15 * (max(x.r, max(x.g, x.b)) - Y), 0.0, 1.0);
+    if (idx < 1e-6) return vec3(0.0);
+    float s2 = pow(idx, 2.0 / 2.4);
+    vec3 c = x * (em_base * s2 / idx * exp(log(peak / em_base) * s2 * s2 * s2));
+    float Yn = max(dot(c, luma), 1e-6);
+    float P = 0.2575 * em_base;
+    float Y2;
+    if (Yn < P) {
+        Y2 = P * pow(Yn / P, em_lo);
+    } else {
+        float span = log(peak / P);
+        float u = min(log(Yn / P) / span, 1.0);
+        Y2 = P * exp(u * (em_hi - (em_hi - 1.0) * u) * span);
+    }
+    c *= Y2 / Yn;
+    return max(vec3(Y2) + em_sat * (c - vec3(Y2)), 0.0);
+}
+
 // Plus grand t dans [0, 1] tel que a + (b - a) * t reste dans [0, peak].
 float gamut_room(vec3 a, vec3 b) {
     vec3 d = b - a;
@@ -363,8 +434,12 @@ float gamut_room(vec3 a, vec3 b) {
 vec4 hook() {
     vec4 px = HOOKED_tex(HOOKED_pos);
     vec3 lin = pq_to_nits(px.rgb);
+    // L'isolement se mesure sur l'image d'origine, comme les cartes de zone.
+    float y_src = dot(lin, vec3(0.2627, 0.6780, 0.0593));
+    if (emulate > 0.5) lin = truehdr_look(lin);
     bool p3 = gamut_p3 > 0.5;
     vec3 c = p3 ? BT2020_TO_P3 * lin : lin;
+    if (emulate > 0.5) c = max(c, 0.0);
 
     // Isolement : la zone de ~8 px est-elle nettement plus lumineuse que son
     // voisinage (~2,5 % de l'image) ? Mesure en PQ = ecart perceptuel, sur des
@@ -372,7 +447,7 @@ vec4 hook() {
     // sa zone (etincelle de 1 a 4 px, > 0,08 PQ) compte individuellement.
     float m = max3(c);
     float y = dot(c, p3 ? vec3(0.2289746, 0.6917385, 0.0792869) : vec3(0.2627, 0.6780, 0.0593));
-    float y_pq = nits_to_pq(vec3(max(y, 0.0))).x;
+    float y_pq = nits_to_pq(vec3(max(y_src, 0.0))).x;
     float local_pq = max(AJG_LOCAL_tex(AJG_LOCAL_pos).x, y_pq - 0.08);
     float isolation = smoothstep(0.05, 0.25, local_pq - AJG_AREAT_tex(AJG_AREAT_pos).x);
     // Limiteur OLED : APL lisse de ~80 a ~250 nits (plein ecran d'un QD-OLED en Peak 1000).

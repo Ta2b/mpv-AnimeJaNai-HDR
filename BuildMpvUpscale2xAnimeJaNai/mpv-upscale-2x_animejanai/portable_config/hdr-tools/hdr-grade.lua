@@ -4,7 +4,8 @@ local M = {}
 
 M.shader = '~~/user-shaders/anime-hdr-grade.hook'
 M.prefix = 'anime-hdr-grade/'
-M.keys = {'peak','paper','in_max','shadows','shadow_knee','area_gain','spec_gain','vibrance','abl','gamut_p3'}
+M.keys = {'peak','paper','in_max','shadows','shadow_knee','area_gain','spec_gain','vibrance','abl','gamut_p3',
+    'emulate','sdr_white','em_base','em_lo','em_hi','em_sat'}
 -- Render options owned by the controller; restored to their startup values otherwise.
 M.render_keys = {'target-trc','target-peak','target-contrast','target-gamut','hdr-reference-white',
     'sub-hdr-peak','image-subs-hdr-peak','hdr-compute-peak'}
@@ -70,7 +71,8 @@ function M.plan(o, ctx, preset)
     if mpv_sdr then
         -- SDR white placed at paper white; the shader creates the highlights.
         render['target-trc'] = 'pq'
-        render['hdr-reference-white'] = tostring(paper)
+        -- TrueHDR look: the shader rebuilds the tone curve from SDR placed at 203 nits.
+        render['hdr-reference-white'] = tostring(o.mpv_truehdr_look and 203 or paper)
     end
     if ctx.backend == 'rtx' and ctx.source == 'sdr' and ctx.truehdr then
         -- TrueHDR is tagged at the display peak and must pass through as it is. With peak
@@ -95,7 +97,18 @@ function M.plan(o, ctx, preset)
         gamut_p3 = (render['target-gamut'] == 'display-p3') and 1 or 0,
         -- OLED: highlights are moderated on bright scenes, where the panel limits its power anyway.
         abl = display.oled == 'yes' and 0.6 or 0}
-    if graded == 'mpv' then
+    -- TrueHDR look (measured on the RTX Video SDK): the shader first applies TrueHDR's tone
+    -- curve, contrast and saturation to MPV's SDR, then the same grade as on real TrueHDR.
+    local look = graded == 'mpv' and o.mpv_truehdr_look and true or false
+    p.emulate, p.sdr_white, p.em_base, p.em_lo, p.em_hi, p.em_sat = 0, 203, 200, 1, 1, 1
+    if look then
+        local contrast = clamp(((o.mpv_contrast or 100) - 100) / 100, 0, 1)
+        local saturation = clamp(((o.mpv_saturation or 100) - 100) / 100, 0, 1)
+        p.emulate = 1
+        p.em_base = clamp(4 * (o.mpv_middle_gray or 50), 40, math.min(400, 0.5 * peak))
+        p.em_lo, p.em_hi, p.em_sat = 1 + 0.38 * contrast, 1 + 0.29 * contrast, 1 + 0.2 * saturation
+    end
+    if graded == 'mpv' and not look then
         -- SDR stops at paper white: isolated whites may reach the peak,
         -- large white areas only +50 % at highlights=1.
         local room = peak / paper
