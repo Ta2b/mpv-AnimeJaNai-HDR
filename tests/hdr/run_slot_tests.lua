@@ -67,6 +67,20 @@ check('rife sync: 165 Hz without exact factor keeps the bank', tostring(S.props.
 f1=io.open(bank,'w'); f1:write(rb:gsub('default_slot=3','default_slot=3\ndisplay_rate_match=yes')); f1:close()
 S.props['display-fps']=60; S.hook('on_preloaded')
 check('rife sync: off while automatic refresh is active', tostring(S.props.vf[1].params.conf):match('animejanai%.conf$')~=nil and tostring(mp.get_property_native('user-data/animejanai-rife-sync')):match('automatique')~=nil)
+-- Real player: no video track is selected yet in on_preloaded, so container-fps is unavailable.
+f1=io.open(bank,'w'); f1:write(rb); f1:close()
+for k in pairs(package.loaded) do if k:match('^mp') then package.loaded[k]=nil end end
+S=H.new{root=ROOT,vendor='nvidia',props={['display-fps']=120,pause=false,
+  ['track-list']={{type='video',albumart=true,['demux-fps']=1},{type='audio'},{type='video',albumart=false,['demux-fps']=23.976}}}}
+dofile(ROOT..'/user-scripts/hardware_auto.lua'); dofile(ROOT..'/user-scripts/animejanai_slot.lua')
+S.hook('on_load')
+local ok,err=pcall(S.hook,'on_preloaded')
+check('rife sync: no error without container-fps', ok, err)
+check('rife sync: rate read from the video track (5/2 at 120 Hz, max 3)', tostring(mp.get_property_native('user-data/animejanai-rife-sync')):match('x5/2')~=nil, mp.get_property_native('user-data/animejanai-rife-sync'))
+S.props['track-list']=nil; S.props['display-fps']=nil; os.remove(ROOT..'/cache/animejanai-display.json')
+ok,err=pcall(S.hook,'on_preloaded')
+check('rife sync: no error without any rate', ok, err)
+check('rife sync: unknown rates keep the bank', tostring(S.props.vf[1].params.conf):match('animejanai%.conf$')~=nil, S.props.vf[1].params.conf)
 local c=io.open(conf,'w'); c:write(saved); c:close()
 print(pass..' passed, '..fail..' failed')
 os.exit(fail==0 and 0 or 1)
