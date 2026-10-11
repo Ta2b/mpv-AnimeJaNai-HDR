@@ -72,7 +72,7 @@ const string SevenZipVersion      = "2602";         // 7-zip "extra" (Windows) /
 const string MpvNetVersion        = "v7.1.2.0";
 const string ManagerVersion       = "0.8.0";        // github.com/the-database/AnimeJaNaiManager release tag (AnimeJaNai Manager; temporal model settings)
 // HDR fork: Manager with the display upscaling / HDR settings (github.com/Ta2b/AnimeJaNaiManager-HDR).
-const string ManagerHdrRelease    = "hdr-build-2";
+const string ManagerHdrRelease    = "latest-hdr-settings-0.8"; // rolling release of the 0.8-based branch
 
 // DirectML backend runtime (backend=DirectML in animejanai.conf). These are
 // the last DirectML-flavored releases: Microsoft moved DML to sustained
