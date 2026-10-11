@@ -50,6 +50,20 @@ mp.observe_property('display-fps','native',function(_,fps)
     if fps and fps>20 then write_file(display_cache,utils.format_json({fps=fps})) end
 end)
 
+-- get_property_native returns nil plus an error text while a property is unavailable.
+local function number(name) return tonumber((mp.get_property_native(name))) end
+-- No video track is selected yet in on_preloaded: container-fps is still unavailable there,
+-- so read the rate of the first real video track from the demuxer.
+local function source_fps()
+    local fps=number('container-fps')
+    if fps and fps>0 then return fps end
+    for _,track in ipairs(mp.get_property_native('track-list') or {}) do
+        fps=tonumber(track['demux-fps'])
+        if track.type=='video' and not track.albumart and not track.image and fps and fps>0 then return fps end
+    end
+    return nil
+end
+
 -- After the file is opened (frame rate known), before the filters start: RIFE factor p/q so
 -- that every interpolated frame stays on screen for the same number of refreshes.
 local function match_rife()
@@ -63,8 +77,8 @@ local function match_rife()
     elseif rife_sync.display_rate_match(text) then
         status='frequence automatique d AnimeJaNai active : facteur du profil conserve'
     else
-        local source=tonumber(mp.get_property_native('container-fps'))
-        local display=tonumber(mp.get_property_native('display-fps'))
+        local source=source_fps()
+        local display=number('display-fps')
         if not display then
             local cached=utils.parse_json(read_file(display_cache) or '')
             display=type(cached)=='table' and tonumber(cached.fps) or nil

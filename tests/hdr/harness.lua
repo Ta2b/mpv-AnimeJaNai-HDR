@@ -30,7 +30,9 @@ function H.new(opts)
   end
   S.set=setn
   local mp = {}
-  mp.get_property_native=function(n) return getn(n) end
+  -- Like mpv: an unavailable property returns nil plus an error text (a second value that
+  -- breaks tonumber(mp.get_property_native(...))).
+  mp.get_property_native=function(n) local v=getn(n); if v==nil then return nil,'property unavailable' end; return v end
   mp.get_property=function(n) local v=getn(n); if v==nil then return nil end; if type(v)=='table' then return 'table' end; return tostring(v) end
   mp.get_property_number=function(n,d) return tonumber(getn(n)) or d end
   mp.get_property_bool=function(n) return getn(n)==true end
