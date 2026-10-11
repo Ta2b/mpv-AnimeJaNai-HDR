@@ -93,6 +93,22 @@ function M.vulkan(vendor, o)
     return vendor == 'nvidia' and o.render_api == 'vulkan'
 end
 
+-- Engine with the RTX Video stage, used only by the Vulkan output. The stock engine and its
+-- dispatcher are left as they are, so the D3D11 output and updates are not affected.
+M.rtx_engine = '~~/../animejanai/inference/aji_trt_rtx.dll'
+-- Call once per script: later configure_filters calls point the filter at that engine when
+-- the Vulkan output is selected and the engine is installed.
+function M.select_engine(mp, utils, vendor, o)
+    M.engine_lib = nil
+    if not M.vulkan(vendor, o) then return false end
+    local needed = {M.rtx_engine, '~~/../animejanai/inference/aji_rtx.dll'}
+    for _, path in ipairs(needed) do
+        if not utils.file_info(mp.command_native({'expand-path', path})) then return false end
+    end
+    M.engine_lib = M.rtx_engine
+    return true
+end
+
 function M.select_gpu(adapters, override)
     local chosen, best = nil, -1
     for _, a in ipairs(adapters or {}) do
@@ -199,8 +215,11 @@ function M.configure_filters(list, vendor, conf, slot, preload)
     for _, f in ipairs(output) do
         if f.label == 'aji' and f.name == 'animejanai' then
             f.params = f.params or {}
-            if f.params.conf == conf and (not preload or tostring(f.params.slot) == wanted) then return list, false end
+            local lib = M.engine_lib or f.params.lib
+            if f.params.conf == conf and f.params.lib == lib
+                and (not preload or tostring(f.params.slot) == wanted) then return list, false end
             f.params.conf = conf
+            f.params.lib = lib
             f.params.slot = wanted
             return output, true
         end

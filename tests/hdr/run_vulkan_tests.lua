@@ -79,6 +79,21 @@ S=boot('vulkan')
 S.fire('start-file')
 check('next session: settings before any window', read(rtxconf)==R.text(want), read(rtxconf))
 
+-- The Vulkan engine library is selected only when it is installed
+for k in pairs(package.loaded) do if k:match('^mp') then package.loaded[k]=nil end end
+write(conf,(saved:gsub('render_api=%w+','render_api=vulkan')))
+S=H.new{root=ROOT,vendor='nvidia'}
+local policy=dofile(ROOT..'/hdr-tools/gpu-policy.lua')
+local utils=package.loaded['mp.utils']
+check('engine: not installed', not policy.select_engine(mp,utils,'nvidia',policy.options()) and policy.engine_lib==nil)
+local vf=select(1,policy.configure_filters(S.props.vf,'nvidia','c.conf',4,true))
+check('engine: stock library kept', vf[1].params.lib==nil, vf[1].params.lib)
+S.files={[ROOT..'/../animejanai/inference/aji_trt_rtx.dll']={},[ROOT..'/../animejanai/inference/aji_rtx.dll']={}}
+check('engine: installed', policy.select_engine(mp,utils,'nvidia',policy.options()))
+vf=select(1,policy.configure_filters(S.props.vf,'nvidia','c.conf',4,true))
+check('engine: Vulkan library selected', tostring(vf[1].params.lib):match('aji_trt_rtx%.dll$')~=nil, vf[1].params.lib)
+check('engine: never on AMD', not policy.select_engine(mp,utils,'amd',policy.options()))
+
 -- D3D11: the engine gets no settings, the D3D11 tail is used
 S=boot('d3d11')
 check('d3d11: settings file removed', read(rtxconf)==nil)
