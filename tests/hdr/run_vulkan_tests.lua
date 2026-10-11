@@ -102,6 +102,26 @@ start(S)
 check('d3d11: usual tail', labels(S):match('bridge,truehdr$')~=nil, labels(S))
 check('d3d11: no tag', not labels(S):match('hdrtag'), labels(S))
 
+-- TrueHDR look for the MPV conversion: curve parameters and the grade used on real TrueHDR
+local G=dofile(ROOT..'/hdr-tools/hdr-grade.lua')
+local base={paper_white=203,shadows=0.3,highlights=0.85,highlights_rtx=0.5,vibrance=0.3,vibrance_rtx=0.2,grade=true,
+  peak_nvidia='1000',gamut_nvidia='display-p3',oled_nvidia='yes',subtitle_white=200}
+local ctx={vendor='nvidia',backend='mpv',source='sdr',windows='on',truehdr=false,target_gamma='pq',target_peak=1000,enabled=true,original={}}
+local plan=G.plan(base,ctx)
+check('look off: original MPV conversion', plan.params.emulate==0 and plan.render['hdr-reference-white']=='203' and plan.params.in_max==203, plan.params.emulate)
+local with={}; for k,v in pairs(base) do with[k]=v end
+with.mpv_truehdr_look=true; with.mpv_contrast=200; with.mpv_saturation=200; with.mpv_middle_gray=50
+plan=G.plan(with,ctx)
+local q=plan.params
+check('look on: curve parameters', q.emulate==1 and q.em_base==200 and math.abs(q.em_lo-1.38)<1e-9 and math.abs(q.em_hi-1.29)<1e-9 and math.abs(q.em_sat-1.2)<1e-9, q.em_lo)
+check('look on: graded like TrueHDR', plan.mode=='mpv' and q.area_gain==1 and q.in_max==1000 and q.paper==500 and q.vibrance==0.2, q.area_gain)
+check('look on: SDR placed at 203 nits', plan.render['hdr-reference-white']=='203' and plan.render['target-trc']=='pq')
+with.mpv_contrast=100; with.mpv_saturation=100
+q=G.plan(with,ctx).params
+check('look on, neutral sliders', q.em_lo==1 and q.em_hi==1 and q.em_sat==1)
+local keys={}; for _,k in ipairs(G.keys) do keys[k]=true end
+check('look: every parameter reaches the shader', keys.emulate and keys.sdr_white and keys.em_base and keys.em_lo and keys.em_hi and keys.em_sat)
+
 write(conf,saved)
 os.remove(stats); os.remove(rtxconf); os.remove(ROOT..'/cache/animejanai-rtx-state.json')
 print(pass..' passed, '..fail..' failed')

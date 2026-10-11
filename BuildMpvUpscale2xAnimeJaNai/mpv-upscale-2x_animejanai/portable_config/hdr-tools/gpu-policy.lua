@@ -27,7 +27,9 @@ function M.options()
         -- Vulkan output (NVIDIA): RTX Video runs inside the engine instead of D3D11 filters.
         render_api='d3d11',rtx_vsr_quality=2,rtx_contrast=100,rtx_saturation=100,rtx_middle_gray=50,
         -- Vulkan engine: a frame identical to the last processed one reuses its result.
-        skip_held_frames=true,held_threshold=0.40}
+        skip_held_frames=true,held_threshold=0.40,
+        -- MPV conversion with the look of RTX TrueHDR (curve measured on the RTX Video SDK).
+        mpv_truehdr_look=false,mpv_contrast=100,mpv_saturation=100,mpv_middle_gray=50}
     require('mp.options').read_options(o,'animejanai_hdr_auto')
     local warn = require('mp.msg').warn
     local vsr=tostring(o.vsr):lower()
@@ -88,6 +90,10 @@ function M.options()
     o.rtx_middle_gray = number(o.rtx_middle_gray, 50, 10, 100)
     o.skip_held_frames = bool(o.skip_held_frames)
     o.held_threshold = number(o.held_threshold, 0.40, 0, 2)
+    o.mpv_truehdr_look = bool(o.mpv_truehdr_look)
+    o.mpv_contrast = number(o.mpv_contrast, 100, 100, 200)
+    o.mpv_saturation = number(o.mpv_saturation, 100, 100, 200)
+    o.mpv_middle_gray = number(o.mpv_middle_gray, 50, 25, 100)
     return o
 end
 
