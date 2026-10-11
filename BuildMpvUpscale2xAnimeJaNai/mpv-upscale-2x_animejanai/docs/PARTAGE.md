@@ -50,7 +50,7 @@ Ctrl+E ouvre le Manager, Ctrl+U installe une mise à jour. Fermer complètement 
 
 Le Manager écrit directement `script-opts/animejanai_hdr_auto.conf` en conservant les commentaires. Les pourcentages correspondent aux fractions du fichier (85 % = 0.85). Le bloc *(this PC)* indique l'écran utilisé sur le PC courant. Relancer le lecteur après une modification.
 
-Source : branche `hdr-settings` du dépôt GitHub `Ta2b/AnimeJaNaiManager-HDR`. Chaque push recompile l'exe dans une release GitHub. L'Updater ne remplace pas ce fichier : après une mise à jour majeure d'AnimeJaNai, il faudra reporter ces changements sur le Manager correspondant.
+Téléchargement : release `latest-hdr-settings` (base 0.6.0, pour AnimeJaNai 3.6.3) ou `latest-hdr-settings-0.8` (base 0.8.0, pour 3.8.0) du dépôt GitHub `Ta2b/AnimeJaNaiManager-HDR`, à placer à côté de `AnimeJaNaiManager.exe`. Chaque push sur une de ces branches recompile l'exe et met à jour sa release. L'Updater ne remplace pas ce fichier : après une mise à jour majeure d'AnimeJaNai, il faudra reporter ces changements sur le Manager correspondant.
 
 ## Réglages : `portable_config/script-opts/animejanai_hdr_auto.conf`
 
