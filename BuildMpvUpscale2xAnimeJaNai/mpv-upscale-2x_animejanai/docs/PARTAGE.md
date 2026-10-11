@@ -22,8 +22,8 @@ La carte est détectée au démarrage ; la carte dédiée est préférée à l�
 | **Ctrl+0** | Désactiver AnimeJaNai (HDR et mise à l’échelle finale restent actifs). |
 | **Ctrl+1** | Profil 1 « 1080p » : réduction 540p, RIFE ×2 sur NVIDIA, puis ×2 et VSR. |
 | **Ctrl+2** | Profil 2 « 4K » : 1080p natif → 2160p, sans RIFE. Le plus net. |
-| **Ctrl+3** | Profil 3 « 2K », par défaut : réduction 720p, RIFE ×2 sur NVIDIA, ×2 → 1440p, VSR → écran. |
-| **Ctrl+4** | Profil 4 de la banque, s'il existe (sur AMD : variante libre du 2K). Un profil vide est refusé avec un message. |
+| **Ctrl+3** | Profil 3 « 2K » : réduction 720p, RIFE ×2 sur NVIDIA, ×2 → 1440p, VSR → écran. Sur NVIDIA, modèle Balanced : trop lourd pour une RTX 4070 Ti avec TrueHDR et VSR en 2160p (voir `ANALYSE.md`). |
+| **Ctrl+4** | Profil 4. Sur NVIDIA : « 2K Performance », par défaut, le profil 3 avec le modèle Performance. Sur AMD : variante libre du 2K. Un profil vide est refusé avec un message. |
 | **Ctrl+G** | Grading HDR : réglages du Manager → look *Natural* → sans grading, puis retour. Le HDR et la chaîne vidéo restent actifs. |
 | **Ctrl+Alt+P** | Mire d'étalonnage HDR (voir plus bas). Même touche pour la retirer ; elle disparaît aussi à la fin de la vidéo. |
 | **b** | Debanding activé / désactivé. |

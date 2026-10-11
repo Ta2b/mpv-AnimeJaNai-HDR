@@ -46,7 +46,7 @@ Les canaux RGB sont multipliés ensemble pour les noirs, les éclats et l’épa
 | Primaires saturées | inchangées | inchangées |
 | Bleu ciel moyen (B 110 nits) | B 128 | — |
 
-Coût : sept passes légères, dont six en 1/64e de résolution ou moins. C’est négligeable sur RTX 4070 Ti et RX 9070 XT ; la mesure réelle reste à faire sur les deux PC.
+Coût mesuré sur RTX 4070 Ti : environ 3,5 ms par image en 3840x2160, soit près de 17 % du temps GPU à 48 i/s. Ce n'est pas négligeable : voir *Charge GPU mesurée*. Non mesuré sur RX 9070 XT.
 
 ## Correctif du 11 octobre : peau trop claire et scintillante en RTX
 
@@ -96,6 +96,23 @@ Réglages NVIDIA (RTX Video HDR) : les quatre curseurs sont en butée. *Middle g
 
 **Non réalisé.** Supprimer le passage CUDA → D3D11 par la RAM demanderait le SDK NVIDIA RTX Video et des versions natives du filtre AnimeJaNai et de mpv : hors de portée de ce fork. Le chemin AMD (DirectML, VideoSR, AMF) n'est toujours pas testé sur une vraie RX 9070 XT.
 
+## Charge GPU mesurée (11 octobre, RTX 4070 Ti)
+
+Lecture du clip de benchmark 1080p à 23,976 i/s en plein écran 3840x2160, TrueHDR, RTX VSR et grading actifs. Images perdues par seconde après 15 s de lecture (`frame-drop-count`), sur 36 à 44 s par essai.
+
+| Profil | Images perdues | Charge GPU |
+|---|---|---|
+| 1 « 1080p » : 540p, RIFE ×2, Balanced, VSR ×2 | 0 | 73 % |
+| 2 « 4K » : 1080p natif, Balanced, sans RIFE | 0 | 68 % |
+| 3 « 2K » : 720p, RIFE ×2, Balanced, VSR ×1,5 | **environ 30 sur 48** (6 essais sur 6) | 87 % |
+| 4 « 2K Performance » : comme le 3 avec le modèle Performance | 0 (5 essais, un à 1,3) | 81 à 88 % |
+
+Le profil 3 seul (AnimeJaNai Balanced + RIFE, sans TrueHDR ni VSR) occupe déjà 75 % du GPU et ne perd rien. TrueHDR en plus passe encore. Un traitement de plus en 2160p (RTX VSR, ou le grading en plein écran) dépasse la carte, et le lecteur jette alors environ deux images sur trois. Le profil 4 est donc le profil par défaut de la banque NVIDIA ; Ctrl+3 reste disponible pour comparer.
+
+Ce qui ne change rien, mesuré : séparer TrueHDR et VSR en deux filtres, `vsr=classic`, des filtres d'échelle bilinéaires. Aucun thread du lecteur n'est saturé (64 % d'un cœur au plus) et le rendu final prend 5 ms par image : la limite est le calcul GPU, pas le passage CUDA → D3D11 par la RAM. L'intégration du SDK NVIDIA RTX Video en CUDA ne lèverait donc pas cette limite.
+
+RIFE ×5/2 (59,94 i/s) dépasse aussi la carte, y compris sans TrueHDR ni VSR et en rendu Vulkan sans copie.
+
 ## Ce qui a été retiré
 
 - `rtx-hdr-peps.hook` : courbe en S centrée sur 500 nits en lumière linéaire, qui **assombrissait les tons moyens de 10 à 17 %** et n’ajoutait que +2 % aux hautes lumières.
@@ -120,7 +137,7 @@ Réglages NVIDIA (RTX Video HDR) : les quatre curseurs sont en butée. *Middle g
 |---|---|---|
 | Haute | Étalonnage HDR Windows dans le mode d’écran utilisé (EOTF Boost), pic réglé à 1000 | Le pilote NVIDIA choisit le pic de TrueHDR d’après les informations de l’écran dans Windows ; mpv suppose 1000 nits. |
 | Haute | Créer un mode personnalisé **144 Hz** (NVIDIA Control Panel), puis *Match RIFE to Display Refresh* dans le Manager | RIFE ×2 donne 47,952 i/s. 144 Hz = 3 × 48 : cadence parfaite. Le MAG 272UP n'offre que 60, 120 et 165 Hz en 4K : à 165 Hz chaque image dure 3 ou 4 rafraîchissements, à 120 Hz 2 ou 3. RIFE ×5/2 (59,94 i/s, exact à 120 Hz) dépasse la RTX 4070 Ti sur le profil 3 : environ 45 images perdues par seconde, mesuré. Sans RIFE (Ctrl+2), 120 Hz est exact. |
-| Moyenne | Comparer Ctrl+2 (1080p natif → 4K, sans RIFE) et Ctrl+3 (720p → RIFE → 1440p → VSR) | Ctrl+3 jette du détail source en descendant à 720p. Si la fluidité RIFE compte moins que la netteté, Ctrl+2 est plus fidèle. |
+| Moyenne | Comparer Ctrl+2 (1080p natif → 4K, sans RIFE) et Ctrl+4 (720p → RIFE → 1440p → VSR) | Ctrl+4 jette du détail source en descendant à 720p. Si la fluidité RIFE compte moins que la netteté, Ctrl+2 est plus fidèle, et garde le modèle Balanced. |
 | Haute | NVIDIA App > RTX Video HDR : *Middle grey* vers 50, contraste et saturation baissés | Ces curseurs sont en butée : tons moyens et peau trop clairs, teints trop saturés, hautes lumières écrêtées. |
 | Moyenne | Régler `shadows`, `highlights`, `vibrance` sur 2–3 épisodes de référence, avec Ctrl+G pour comparer et Ctrl+Alt+P pour vérifier noirs et pic | L’EOTF Boost éclaircit déjà les tons moyens côté écran. |
 | Basse | Remplir `peak_amd` et `oled_amd` selon l’écran du PC AMD | `auto` suit Windows, souvent approximatif. |
