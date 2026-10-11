@@ -28,7 +28,20 @@ local function set_active_conf(path)
 end
 set_active_conf(hw.conf)
 
+-- Vulkan output must be chosen before the VO exists; it is not switched during a session.
+local vulkan = policy.vulkan(hw.vendor, options)
+if vulkan and not policy.select_engine(mp, utils, hw.vendor, options) then
+    mp.msg.warn('Vulkan output without aji_trt_rtx.dll / aji_rtx.dll: MPV converts SDR to HDR')
+end
+local function select_api()
+    if not vulkan then return end
+    mp.set_property('gpu-api','vulkan')
+    mp.set_property('gpu-context','winvk')
+end
+select_api()
+
 local function prepare()
+    select_api()
     if hw.vendor ~= 'nvidia' then
         mp.set_property('gpu-api','d3d11')
         mp.set_property('gpu-context','d3d11')

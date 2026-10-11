@@ -117,6 +117,23 @@ Pendant une vidéo en sortie HDR, Ctrl+Alt+P remplace l'image par des patchs de 
 - AMF ×2 : voir la section précédente. Le cumul avec RIFE est possible en activant RIFE dans un profil AMD.
 - Commencer par Ctrl+3 et vérifier les images perdues avec Ctrl+Alt+H.
 
+## Sortie Vulkan ou Direct3D 11 (NVIDIA)
+
+*Render API* dans le Manager (`render_api` dans le fichier) choisit comment le lecteur affiche l'image sur une carte NVIDIA. Relancer le lecteur après un changement.
+
+| | Direct3D 11 (défaut) | Vulkan |
+|---|---|---|
+| RTX TrueHDR et RTX VSR | filtres du lecteur, curseurs de l'application NVIDIA | dans le moteur AnimeJaNai, en CUDA ; curseurs dans le Manager (`rtx_vsr_quality`, `rtx_contrast`, `rtx_saturation`, `rtx_middle_gray`) |
+| Trajet des images | passage par la mémoire vive entre CUDA et D3D11 | elles restent dans la mémoire du GPU |
+| NVIDIA Smooth Motion | sans effet | actif (le compteur NVIDIA double) |
+| Grading, sous-titres, mire | identiques | identiques |
+
+Le mode Vulkan demande `aji_trt_rtx.dll`, `aji_rtx.dll`, `nvngx_truehdr.dll`, `nvngx_vsr.dll` et `cudart64_12.dll` dans `animejanai/inference`. Ces fichiers ne font pas partie des versions publiées ; ils se compilent avec `D:\AnimeJaNai-dev\aji-rtx` et ne sont pas touchés par les mises à jour. S'ils manquent, ou quand aucune chaîne AnimeJaNai n'est active (Ctrl+0, source hors plage), le lecteur convertit lui-même en HDR, comme sur AMD. Le moteur d'origine `aji_trt.dll` n'est pas modifié : Direct3D 11 fonctionne exactement comme avant.
+
+Limites du mode Vulkan : TrueHDR reçoit du 8 bits ; RIFE doit rester « avant la mise à l'échelle » (réglage des profils fournis) ; un profil NVIDIA de l'application NVIDIA est lié au dossier du lecteur, donc Smooth Motion se règle pour le `mpvnet.exe` de ce dossier. AMD et Intel utilisent toujours Direct3D 11.
+
+Mesures sur RTX 4070 Ti, épisode 1080p, 3840x2160 HDR : profil 2 (TrueHDR seul) 53 % de GPU, profil 4 (RIFE x2, VSR qualité 2, TrueHDR) 84 % en moyenne et 98 % en pointe, sans image perdue en 24 s.
+
 ## Banques de profils
 
 Les banques éditables sont `portable_config/profiles/nvidia/animejanai.conf` et `portable_config/profiles/amd/animejanai.conf`. Au démarrage, la banque du GPU est copiée dans `animejanai/animejanai.conf`, la copie que le Manager édite (Ctrl+E). Au démarrage suivant, les modifications faites dans le Manager sont reportées dans leur banque. `profiles/active-bank.json` sert à attribuer ces modifications à la bonne banque : le garder. Si les deux fichiers ont été modifiés séparément, le conflit est signalé et aucun fichier n’est écrasé.

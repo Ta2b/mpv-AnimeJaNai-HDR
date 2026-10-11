@@ -39,6 +39,10 @@ local remove_failures=0
 local vsr_input, vsr_expected, vsr_wait, vsr_errors = nil, nil, false, 0
 local amd_sr_failed, amdsr_scale = false, 1
 local target_width,target_height
+-- Vulkan output: RTX Video runs inside the engine (hdr-tools/rtx-stage.lua).
+local rtx = dofile(mp.command_native({'expand-path','~~/hdr-tools/rtx-stage.lua'}))
+local vulkan = policy.vulkan(hardware.vendor,options)
+local stage = {applied=rtx.applied(''),fresh=false,backend=nil}
 
 local function native(name) return (mp.get_property_native(name)) end
 local function support(v) return v==true or v=='true' or v=='yes' or v=='1' end
@@ -76,6 +80,10 @@ local function count(label)
     return n
 end
 local function truehdr_output()
+    if vulkan then
+        return stage.fresh and stage.applied.hdr and count('hdrtag')>0
+            and native('video-out-params/gamma')=='pq'
+    end
     for _,f in ipairs(native('vf') or {}) do
         if f.label=='truehdr' and f.enabled~=false then
             return native('video-out-params/gamma')=='pq'
@@ -84,7 +92,7 @@ local function truehdr_output()
     return false
 end
 local function apply_grade(kind,state)
-    local plan=grade.plan(options,{vendor=hardware.vendor,backend=hdr_backend,source=kind,
+    local plan=grade.plan(options,{vendor=hardware.vendor,backend=stage.backend or hdr_backend,source=kind,
         windows=state,truehdr=truehdr_output(),target_gamma=native('video-target-params/gamma'),
         target_peak=native('video-target-params/max-luma'),enabled=grade_choice~='off',original=original},
         grade_choice=='natural' and grade.presets.natural or nil)
@@ -180,6 +188,7 @@ local function adaptive_scale(list)
     return tonumber(string.format('%.8f',factor))
 end
 local function filters(want,allow_vsr)
+    if vulkan then return end  -- no D3D11 filter exists on a Vulkan output
     local list=native('vf') or {}
     for _,f in ipairs(list) do
         -- FFmpeg initialization can fail after vf append has returned success.
@@ -257,6 +266,91 @@ local function filters(want,allow_vsr)
     if filter_failures>=3 then msg.error('Filter failure budget exhausted; retry on next file or display-state change') end
 end
 
+-- ===== Vulkan output: RTX Video inside the engine =====
+-- The engine applies Super Resolution and TrueHDR itself (aji_rtx, CUDA). This script only
+-- writes its settings, tags the converted frames as PQ / BT.2020 and keeps the two in step.
+local rtx_path = mp.command_native({'expand-path',rtx.file})
+local stats_path = mp.command_native({'expand-path','~~/../animejanai/currentanimejanai.log'})
+local state_path = mp.command_native({'expand-path','~~/cache/animejanai-rtx-state.json'})
+local rtx_written, rtx_wanted, file_started, reconfigured = nil, nil, 0, 0
+local function read_all(path)
+    local f=io.open(path,'r')
+    if not f then return nil end
+    local s=f:read('*a')
+    f:close()
+    return s
+end
+local remembered = utils.parse_json(read_all(state_path) or '')
+if type(remembered)~='table' then remembered={} end
+-- Before the first window exists, the display size and the Windows HDR state are the ones
+-- of the last session.
+local function stage_settings(state)
+    local w,h=target_width,target_height
+    if not w then w,h=policy.target_resolution(options,remembered.w,remembered.h) end
+    state=state or native('user-data/display-info/hdr-status') or remembered.hdr
+    local display=grade.display(options,hardware.vendor)
+    return {hdr=hdr_backend=='rtx' and state=='on',vsr=upscaler=='nvidia',w=w,h=h,
+        quality=options.rtx_vsr_quality,contrast=options.rtx_contrast,saturation=options.rtx_saturation,
+        middle_gray=options.rtx_middle_gray,
+        peak=tonumber(display.peak) or tonumber(native('video-target-params/max-luma')) or 1000},state
+end
+local function write_stage(state)
+    if not vulkan then
+        -- D3D11 output: the engine must not convert anything.
+        if rtx_written~='' then os.remove(rtx_path); rtx_written='' end
+        return
+    end
+    local settings,known=stage_settings(state)
+    rtx_wanted=settings
+    local text=rtx.text(settings)
+    if text~=rtx_written then
+        local f=io.open(rtx_path,'w')
+        if f then f:write(text); f:close(); rtx_written=text end
+    end
+    if target_width and (known=='on' or known=='off')
+        and (remembered.w~=target_width or remembered.h~=target_height or remembered.hdr~=known) then
+        remembered={w=target_width,h=target_height,hdr=known}
+        local f=io.open(state_path,'w')
+        if f then f:write(utils.format_json(remembered)); f:close() end
+    end
+end
+local function set_tag(want)
+    local n=count('hdrtag')
+    if want and n==0 then vf_command('append',rtx.tag)
+    elseif not want then for _=1,n do vf_command('remove','@hdrtag') end end
+end
+-- Returns false while the engine has to configure again with new settings.
+local function vulkan_tail(kind,state)
+    if count('bridge')+count('truehdr')+count('vsr')+count('qhd')+count('amdsr')>0 then remove_pair() end
+    write_stage(state)
+    local info=utils.file_info(stats_path)
+    stage.fresh=info~=nil and (info.mtime or 0)>=file_started
+    stage.applied=rtx.applied(stage.fresh and read_all(stats_path) or '')
+    stage.backend=nil
+    if not stage.fresh then
+        -- Engine not configured yet for this file: tag according to what was requested.
+        set_tag(rtx_wanted.hdr and kind~='hdr')
+        return true
+    end
+    if stage.applied.echo and stage.applied.echo~=rtx.echo(rtx_wanted) then
+        if mp.get_time()-reconfigured>3 then
+            reconfigured=mp.get_time()
+            local slot=tonumber(native('user-data/animejanai-active-slot'))
+            if slot and slot~=0 then
+                msg.info('RTX Video settings changed; engine reconfigured')
+                mp.commandv('vf-command','aji','slot','0')
+                mp.add_timeout(.3,function() mp.commandv('vf-command','aji','slot',tostring(slot)) end)
+            end
+        end
+        return false
+    end
+    set_tag(stage.applied.hdr and kind=='sdr')
+    -- No active chain, or the stage is not installed: MPV converts, as on AMD.
+    if hdr_backend=='rtx' and kind=='sdr' and not stage.applied.hdr then stage.backend='mpv' end
+    return true
+end
+write_stage()
+
 -- ===== Diagnostic (Ctrl+Alt+H) =====
 local grade_labels={off='inactif (pas de sortie HDR)',neutral='neutre (sortie HDR sans grading)',
     mpv='SDR -> HDR par MPV',rtx='sur sortie RTX TrueHDR',native='sur source HDR native'}
@@ -314,15 +408,22 @@ local function report(reason,force)
     elseif count('qhd')>0 then vsr_status='D3D11 classique : filtre present'
     elseif upscaler=='no' then vsr_status='desactive (mise a l echelle finale du VO conservee)' end
     if amd_sr_failed then vsr_status=vsr_status..' | repli apres echec AMD VideoSR' end
+    if vulkan then
+        vsr_status=stage.applied.vsr and 'NVIDIA RTX VSR dans le moteur (CUDA)'
+            or (upscaler=='nvidia' and 'inactif (taille deja atteinte, ou aucune chaine)' or 'desactive')
+    end
     local lines={
         string.format('Sortie video (apres filtres) : %s | %s (estime)',resolution(out.w,out.h),rate(native('estimated-vf-fps'),'images/s')),
         string.format('Ecran : %s | %s',resolution(native('display-width'),native('display-height')),rate(native('display-fps'),'Hz')),
         'VSR : '..vsr_status..' | choix='..options.vsr,
         string.format('Apres AnimeJaNai : %s | cible : %s',vsr_input and resolution(vsr_input.w,vsr_input.h) or resolution(out.w,out.h),target_text()),
-        string.format('GPU : %s | conversion SDR -> HDR : %s',hardware.name,
-            ({rtx='RTX TrueHDR',mpv='MPV',none='desactivee'})[hdr_backend]),
+        string.format('GPU : %s | rendu : %s | conversion SDR -> HDR : %s',hardware.name,
+            vulkan and 'Vulkan' or 'D3D11',
+            ({rtx='RTX TrueHDR',mpv='MPV',none='desactivee'})[stage.backend or hdr_backend]),
         string.format('HDR Windows : %s | TrueHDR : %s | signal : %s',tostring(r.state or native('user-data/display-info/hdr-status') or 'inconnu'),
-            count('truehdr')>0 and 'filtre present' or 'inactif',tostring(native('video-target-params/gamma') or 'indisponible')),
+            vulkan and (stage.applied.hdr and 'dans le moteur (CUDA)' or 'inactif')
+                or (count('truehdr')>0 and 'filtre present' or 'inactif'),
+            tostring(native('video-target-params/gamma') or 'indisponible')),
         string.format('Cible MPV : pic %s nits | contraste %s | gamut %s | blanc SDR %s nits',tostring(native('target-peak')),
             tostring(native('target-contrast')),tostring(native('target-gamut')),tostring(native('hdr-reference-white'))),
         'Grading : '..(grade_labels[grade_state.mode] or grade_state.mode)..' | Ctrl+G : '..grade_labels_cycle[grade_choice],
@@ -387,6 +488,7 @@ local function reconcile()
     local supported=native('user-data/display-info/hdr-supported')
     if state==nil or uid==nil then filters(false,true);apply_grade(kind,'off');report('plugin-or-display-uninitialized');return end
     if not support(supported) or state=='unsupported' then
+        if vulkan then vulkan_tail(kind,'off') end
         filters(false,true);apply_grade(kind,'off');if leased_uid then release() end;report('hdr-unsupported');return
     end
     if state~='on' and state~='off' then report('display-transition-no-filter-mutation'); return end
@@ -400,7 +502,11 @@ local function reconcile()
     end
     local context=kind..':'..tostring(uid)..':'..tostring(last_result.state)
     if context~=filter_context then filter_context=context; filter_failures=0;remove_failures=0 end
-    filters(hdr_backend=='rtx' and kind=='sdr' and last_result.state=='on' and last_result.supported~=false,true)
+    if vulkan then
+        if not vulkan_tail(kind,last_result.state) then report('engine-reconfigure'); return end
+    else
+        filters(hdr_backend=='rtx' and kind=='sdr' and last_result.state=='on' and last_result.supported~=false,true)
+    end
     apply_grade(kind,last_result.state)
     report(last_result.reason)
 end
@@ -415,9 +521,16 @@ mp.register_event('start-file',function()
     amd_sr_failed=false;amdsr_scale=1
     -- Before any new source reaches the filters, discard conversion from the previous file.
     filter_failures=0;remove_failures=0;filter_context=nil;remove_pair();last_result=nil;acquire_key=nil
+    file_started=os.time();stage.fresh=false;stage.backend=nil;stage.applied=rtx.applied('')
+    write_stage()
     apply_grade('unknown','off')
 end)
-mp.register_event('file-loaded',function() loaded=true; schedule() end)
+mp.register_event('file-loaded',function()
+    loaded=true
+    -- Tag before the first frame: the engine converts from its very first output.
+    if vulkan and rtx_wanted and rtx_wanted.hdr then set_tag(true) end
+    schedule()
+end)
 mp.register_event('video-reconfig',function() vsr_wait=false;schedule() end)
 mp.register_event('end-file',function()
     active=false; loaded=false
@@ -498,6 +611,9 @@ end)
 mp.register_script_message('animejanai-reload-options',function()
     options = policy.options()
     derive_options()
+    if policy.vulkan(hardware.vendor,options)~=vulkan then
+        mp.osd_message('API de rendu modifiee : relancer le lecteur',6)
+    end
     filter_failures,remove_failures,vsr_errors=0,0,0
     vsr_wait=false; acquire_key=nil; filter_context=nil
     target_width,target_height=nil,nil

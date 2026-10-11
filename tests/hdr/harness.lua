@@ -115,7 +115,7 @@ function H.new(opts)
       local ok,v=pcall(f); return ok and v or nil end,
     format_json=function(t) local parts={} for k,v in pairs(t) do parts[#parts+1]='"'..k..'":"'..tostring(v)..'"' end return '{'..table.concat(parts,',')..'}' end,
     join_path=function(a,b) return a..'/'..b end, getpid=function() return 1234 end,
-    readdir=function() return {} end, file_info=function() return nil end}
+    readdir=function() return {} end, file_info=function(p) return S.files and S.files[p] or nil end}
   package.loaded['mp']=mp; package.loaded['mp.msg']=msgm; package.loaded['mp.options']=options; package.loaded['mp.utils']=utils
   _G.mp=mp
   if opts.computer ~= nil then

@@ -12,6 +12,8 @@ local mp = require 'mp'
 local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.lua'}))
 -- Extra frame generation after AnimeJaNai/RIFE: AMD AMF x2, for every profile (Manager setting).
 local amf_enabled = policy.options().frame_generation == 'amf'
+policy.select_engine(mp, require 'mp.utils',
+    (mp.get_property_native('user-data/animejanai-hardware') or {}).vendor, policy.options())
 local selection_generation = 0
 local amf_requested = false
 
