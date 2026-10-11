@@ -6,10 +6,13 @@ local root = mp.command_native({'expand-path','~~/'})
 local personal_dir = utils.join_path(root,'user-scripts')
 local official_dir = utils.join_path(root,'scripts')
 
+-- Retired scripts. An update does not delete files, so an older copy can still be there.
+local retired = {['hdr_composition_guard.lua']=true}
+
 local function discover(dir)
     local entries = {}
     for _,name in ipairs(utils.readdir(dir) or {}) do
-        if name:sub(1,1) ~= '.' then
+        if name:sub(1,1) ~= '.' and not retired[name:lower()] then
             local path = utils.join_path(dir,name)
             local info = utils.file_info(path)
             local ext = name:lower():match('%.([^%.]+)$')
@@ -30,7 +33,7 @@ local personal = discover(personal_dir)
 local overrides = {}
 for _,entry in ipairs(personal) do overrides[entry.name:lower()] = true end
 for _,name in ipairs({'animejanai_backend.lua','animejanai_slot.lua',
-        'hardware_auto.lua','animejanai_hdr_auto.lua','hdr_composition_guard.lua','display-info.dll'}) do
+        'hardware_auto.lua','animejanai_hdr_auto.lua','display-info.dll'}) do
     if not overrides[name] then
         mp.msg.error('Missing personal runtime: user-scripts/'..name)
         mp.osd_message('Configuration incomplete : user-scripts/'..name..' absent',10)
