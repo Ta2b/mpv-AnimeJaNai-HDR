@@ -292,6 +292,7 @@ local function stage_settings(state)
     return {hdr=hdr_backend=='rtx' and state=='on',vsr=upscaler=='nvidia',w=w,h=h,
         quality=options.rtx_vsr_quality,contrast=options.rtx_contrast,saturation=options.rtx_saturation,
         middle_gray=options.rtx_middle_gray,
+        held=options.skip_held_frames,held_threshold=options.held_threshold,
         peak=tonumber(display.peak) or tonumber(native('video-target-params/max-luma')) or 1000},state
 end
 local function write_stage(state)

@@ -12,7 +12,8 @@ local function clamp(v, lo, hi, default)
 end
 
 -- s: hdr, vsr (booleans), w, h (target size or nil), quality, contrast, saturation,
--- middle_gray, peak. Same value ranges as the engine, so that the echo compares equal.
+-- middle_gray, peak, held (boolean), held_threshold (8-bit levels). Same value ranges as the
+-- engine, so that the echo compares equal.
 function M.settings(s)
     local w, h = tonumber(s.w), tonumber(s.h)
     if not w or not h or w < 2 or h < 2 then w, h = 0, 0 end
@@ -25,6 +26,9 @@ function M.settings(s)
         {'saturation', clamp(s.saturation, 0, 200, 100)},
         {'middle_gray', clamp(s.middle_gray, 10, 100, 50)},
         {'peak', clamp(s.peak, 400, 2000, 1000)},
+        -- Held drawings: reuse the last result for a frame that matches the last processed one.
+        {'skip_held_frames', s.held and 'yes' or 'no'},
+        {'held_threshold', clamp((tonumber(s.held_threshold) or 0.40) * 100, 0, 200, 40)},
     }
 end
 

@@ -25,7 +25,9 @@ function M.options()
         -- RIFE output rate matched to the display refresh (factor p/q, at most rife_max_factor).
         rife_display_sync=false,rife_max_factor=2,
         -- Vulkan output (NVIDIA): RTX Video runs inside the engine instead of D3D11 filters.
-        render_api='d3d11',rtx_vsr_quality=2,rtx_contrast=100,rtx_saturation=100,rtx_middle_gray=50}
+        render_api='d3d11',rtx_vsr_quality=2,rtx_contrast=100,rtx_saturation=100,rtx_middle_gray=50,
+        -- Vulkan engine: a frame identical to the last processed one reuses its result.
+        skip_held_frames=true,held_threshold=0.40}
     require('mp.options').read_options(o,'animejanai_hdr_auto')
     local warn = require('mp.msg').warn
     local vsr=tostring(o.vsr):lower()
@@ -84,6 +86,8 @@ function M.options()
     o.rtx_contrast = number(o.rtx_contrast, 100, 0, 200)
     o.rtx_saturation = number(o.rtx_saturation, 100, 0, 200)
     o.rtx_middle_gray = number(o.rtx_middle_gray, 50, 10, 100)
+    o.skip_held_frames = bool(o.skip_held_frames)
+    o.held_threshold = number(o.held_threshold, 0.40, 0, 2)
     return o
 end
 

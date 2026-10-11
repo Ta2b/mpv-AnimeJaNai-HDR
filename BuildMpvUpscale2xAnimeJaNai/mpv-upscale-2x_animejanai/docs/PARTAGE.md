@@ -130,7 +130,9 @@ Pendant une vidéo en sortie HDR, Ctrl+Alt+P remplace l'image par des patchs de 
 
 Le mode Vulkan demande `aji_trt_rtx.dll`, `aji_rtx.dll`, `nvngx_truehdr.dll`, `nvngx_vsr.dll` et `cudart64_12.dll` dans `animejanai/inference`. Ces fichiers ne font pas partie des versions publiées ; ils se compilent avec `D:\AnimeJaNai-dev\aji-rtx` et ne sont pas touchés par les mises à jour. S'ils manquent, ou quand aucune chaîne AnimeJaNai n'est active (Ctrl+0, source hors plage), le lecteur convertit lui-même en HDR, comme sur AMD. Le moteur d'origine `aji_trt.dll` n'est pas modifié : Direct3D 11 fonctionne exactement comme avant.
 
-Limites du mode Vulkan : TrueHDR reçoit du 8 bits ; RIFE doit rester « avant la mise à l'échelle » (réglage des profils fournis) ; un profil NVIDIA de l'application NVIDIA est lié au dossier du lecteur, donc Smooth Motion se règle pour le `mpvnet.exe` de ce dossier. AMD et Intel utilisent toujours Direct3D 11.
+**Dessins tenus** (*Reuse Held Frames*, `skip_held_frames`) : un anime répète chaque dessin sur deux ou trois images. En mode Vulkan, une image dont tous les blocs de 32x32 pixels sont identiques à la dernière image traitée reprend son résultat, au lieu de repasser dans RIFE, le modèle, VSR et TrueHDR. `held_threshold` est l'écart toléré par bloc, en niveaux sur 255 (0,40 par défaut). Mesuré sur 60 s, sans image perdue dans les deux cas : profil 4, GPU de 90 % à 81 % ; profil 2, de 60 % à 52 %. La charge en pointe ne change pas : les scènes en mouvement sont traitées comme avant.
+
+Limites du mode Vulkan : RIFE doit rester « avant la mise à l'échelle » (réglage des profils fournis) ; un profil NVIDIA de l'application NVIDIA est lié au dossier du lecteur, donc Smooth Motion se règle pour le `mpvnet.exe` de ce dossier. AMD et Intel utilisent toujours Direct3D 11.
 
 Mesures sur RTX 4070 Ti, épisode 1080p, 3840x2160 HDR : profil 2 (TrueHDR seul) 53 % de GPU, profil 4 (RIFE x2, VSR qualité 2, TrueHDR) 84 % en moyenne et 98 % en pointe, sans image perdue en 24 s.
 
