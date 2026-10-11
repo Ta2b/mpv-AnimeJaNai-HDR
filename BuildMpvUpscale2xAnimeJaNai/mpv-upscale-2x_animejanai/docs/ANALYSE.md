@@ -69,6 +69,8 @@ Réglages NVIDIA (RTX Video HDR) : les quatre curseurs sont en butée. *Middle g
 - Le fork suit maintenant **AnimeJaNai 3.8.0** et le **Manager 0.8.0**. Il récupère ainsi le choix automatique de la fréquence d'écran (*Automatic Display Refresh Rate*, Global Settings) : une fréquence multiple de la cadence vidéo pour tout l'épisode, par exemple 144 Hz pour du RIFE ×2 à 47,952 i/s, ce qui règle la saccade à 165 Hz. Il faut le lecteur mpv de la 3.7.0 ou plus récent ; celui de la 3.6.3 n'a pas `display-rate-match`.
 - **AMD AMF x2** n'est plus lié au profil 4 : c'est une option globale (*Extra Frame Generation*) appliquée à tous les profils sur AMD. Le profil AMD 4 devient une variante libre du 2K. Ctrl+1…4 refusent un profil vide au lieu de sélectionner un slot sans chaîne.
 - NVIDIA Smooth Motion et AMD Fluid Motion Frames sont des fonctions du pilote : le Manager indique où les activer.
+- **Coordinateur HDR** : le processus `hdr-coordinator.exe` (.NET, verrou + état JSON sur disque) n'est plus lancé à chaque vérification (au moins une fois par seconde) mais seulement quand le contexte change, tant qu'une demande est en attente, et toutes les 5 s par sécurité. Un changement du HDR Windows fait hors du lecteur est donc détecté en 5 s au plus.
+- **Shader** : la conversion ICtCp de la vibrance réutilise celle de l'entrée pour les pixels que la courbe ne modifie pas (la majorité des tons moyens). Rendu identique au code de quantification près.
 
 ## Ce qui a été retiré
 

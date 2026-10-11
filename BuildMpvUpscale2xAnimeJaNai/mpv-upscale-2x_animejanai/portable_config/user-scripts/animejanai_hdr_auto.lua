@@ -327,7 +327,22 @@ local function report(reason,force)
 end
 
 -- ===== Reconciliation =====
+-- The coordinator is a separate process (lock + JSON state on disk). Leases follow the
+-- player PID, so a stable lease does not need renewing every second: ask again only when
+-- the context changes, while a request is still settling, or every 5 s (the display
+-- plugin can miss an external Windows change; the coordinator reads DisplayConfig).
+local acquire_key, acquire_time
+local function acquire(kind,uid,state)
+    local key=table.concat({token,kind,tostring(uid),tostring(state)},'|')
+    local r=last_result
+    local settled=r and r.state~='error' and r.state==state
+        and not tostring(r.reason or ''):match('^awaiting')
+    if settled and key==acquire_key and mp.get_time()-(acquire_time or 0)<5 then return r end
+    acquire_key,acquire_time=key,mp.get_time()
+    return call('acquire')
+end
 local function release()
+    acquire_key=nil
     last_result=call('release')
     apply_grade('unknown','off')
     if last_result.reason=='released' or last_result.reason=='restored-off' then leased_uid=nil end
@@ -349,7 +364,7 @@ local function reconcile()
         filters(false,true);apply_grade(kind,'off');if leased_uid then release() end;report('hdr-unsupported');return
     end
     if state~='on' and state~='off' then report('display-transition-no-filter-mutation'); return end
-    last_result=call('acquire'); leased_uid=uid
+    last_result=acquire(kind,uid,state); leased_uid=uid
     if last_result.state=='error' then filters(false);apply_grade(kind,'off');report(last_result.reason);return end
     -- Source classification never reads video-out-params (TrueHDR's own output).
     -- The coordinator queries DisplayConfig directly after every request.
@@ -373,7 +388,7 @@ mp.register_event('start-file',function()
     vsr_input=nil;vsr_expected=nil;vsr_wait=false;vsr_errors=0
     amd_sr_failed=false;amdsr_scale=1
     -- Before any new source reaches the filters, discard conversion from the previous file.
-    filter_failures=0;remove_failures=0;filter_context=nil;remove_pair();last_result=nil
+    filter_failures=0;remove_failures=0;filter_context=nil;remove_pair();last_result=nil;acquire_key=nil
     apply_grade('unknown','off')
 end)
 mp.register_event('file-loaded',function() loaded=true; schedule() end)
