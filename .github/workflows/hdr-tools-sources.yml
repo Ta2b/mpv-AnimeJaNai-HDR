@@ -38,6 +38,8 @@ jobs:
           rm -rf "hdr-tools-src/$exe"
           mkdir -p "hdr-tools-src/$exe"
           ilspycmd -p -o "hdr-tools-src/$exe" "$tools/$exe.exe"
+          # Framework references resolved on the runner: keep them as plain references.
+          sed -i '/<HintPath>.*\/dotnet\/shared\//d' "hdr-tools-src/$exe/$exe.csproj"
           sha256sum "$tools/$exe.exe" | cut -d' ' -f1 > "hdr-tools-src/$exe/SOURCE-SHA256.txt"
         done
 
