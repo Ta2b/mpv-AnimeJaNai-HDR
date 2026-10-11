@@ -14,6 +14,10 @@
 //   4. vibrance perceptuelle ICtCp, tons chair exclus, couleurs deja saturees menagees ;
 //   5. limite douce au gamut de l'ecran (P3) et au pic.
 // Les canaux RGB sont multiplies ensemble aux etapes 1 a 3 : la teinte ne bouge pas.
+//
+// Stabilite : la carte de zone est lissee d'une image a l'autre (buffer persistant) et
+// remise a zero a chaque changement de plan. Limiteur OLED (ABL) : sur une scene tres
+// claire, l'ecran baisse de toute facon sa luminosite ; les gains y sont moderes.
 
 //!PARAM peak
 //!DESC Pic de sortie (nits)
@@ -70,6 +74,13 @@
 //!MINIMUM 0.0
 //!MAXIMUM 0.8
 0.25
+
+//!PARAM abl
+//!DESC Moderation des eclats sur les scenes claires (limiteur OLED), 0 = aucune
+//!TYPE float
+//!MINIMUM 0.0
+//!MAXIMUM 1.0
+0.0
 
 //!PARAM gamut_p3
 //!DESC 1 = limiter au gamut Display P3 de l'ecran, 0 = conteneur BT.2020
@@ -154,10 +165,99 @@ vec4 hook() {
     return vec4(acc, 0.0, 0.0, 1.0);
 }
 
+//!BUFFER AJG_STATE
+//!VAR float apl
+//!VAR float prev_pq
+//!VAR float cut
+//!VAR float ready
+//!VAR int width
+//!VAR int height
+//!VAR float history[32768]
+//!STORAGE
+
+//!HOOK OUTPUT
+//!BIND AJG_AREA
+//!BIND AJG_STATE
+//!SAVE AJG_STATS
+//!WIDTH 1
+//!HEIGHT 1
+//!COMPUTE 1 1 16 16
+//!DESC AnimeJaNai HDR grade - statistiques de scene
+
+// Un seul groupe de 256 threads : moyenne de la carte de zone (PQ et nits),
+// detection des changements de plan, APL lisse dans le temps.
+shared float s_pq[256];
+shared float s_nits[256];
+float stats_nits(float e) {
+    float p = pow(clamp(e, 0.0, 1.0), 1.0 / 78.84375);
+    return 10000.0 * pow(max(p - 0.8359375, 0.0) / max(18.8515625 - 18.6875 * p, 1e-6), 6.27739463);
+}
+void hook() {
+    uint id = gl_LocalInvocationIndex;
+    ivec2 size = ivec2(AJG_AREA_size);
+    int n = size.x * size.y;
+    float spq = 0.0, snits = 0.0;
+    for (int i = int(id); i < n; i += 256) {
+        float v = texelFetch(AJG_AREA_raw, ivec2(i % size.x, i / size.x), 0).x;
+        spq += v;
+        snits += stats_nits(v);
+    }
+    s_pq[id] = spq;
+    s_nits[id] = snits;
+    barrier();
+    for (uint step = 128u; step > 0u; step >>= 1) {
+        if (id < step) {
+            s_pq[id] += s_pq[id + step];
+            s_nits[id] += s_nits[id + step];
+        }
+        barrier();
+    }
+    if (id == 0u) {
+        float mean_pq = s_pq[0] / float(max(n, 1));
+        float mean_nits = s_nits[0] / float(max(n, 1));
+        // Changement de plan, premiere image ou nouvelle taille : pas d'historique.
+        bool reset = ready < 0.5 || width != size.x || height != size.y
+                  || abs(mean_pq - prev_pq) > 0.06;
+        cut = reset ? 1.0 : 0.0;
+        apl = reset ? mean_nits : mix(apl, mean_nits, 0.1);
+        prev_pq = mean_pq;
+        width = size.x;
+        height = size.y;
+        ready = 1.0;
+        imageStore(out_image, ivec2(0, 0), vec4(apl, cut, mean_nits, 1.0));
+    }
+}
+
+//!HOOK OUTPUT
+//!BIND AJG_AREA
+//!BIND AJG_STATS
+//!BIND AJG_STATE
+//!SAVE AJG_AREAT
+//!WIDTH AJG_AREA.w
+//!HEIGHT AJG_AREA.h
+//!COMPUTE 16 16
+//!DESC AnimeJaNai HDR grade - lissage temporel de la zone
+
+void hook() {
+    ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = ivec2(AJG_AREA_size);
+    if (p.x >= size.x || p.y >= size.y) return;
+    float value = texelFetch(AJG_AREA_raw, p, 0).x;
+    int idx = p.y * size.x + p.x;
+    if (idx < 32768) {
+        // ~0,1 s de constante de temps a 48 i/s ; aucune trainee apres une coupure.
+        if (texelFetch(AJG_STATS_raw, ivec2(0, 0), 0).y < 0.5)
+            value = mix(history[idx], value, 0.3);
+        history[idx] = value;
+    }
+    imageStore(out_image, p, vec4(value, 0.0, 0.0, 1.0));
+}
+
 //!HOOK OUTPUT
 //!BIND HOOKED
 //!BIND AJG_LOCAL
-//!BIND AJG_AREA
+//!BIND AJG_AREAT
+//!BIND AJG_STATS
 //!DESC AnimeJaNai HDR grade - noirs, eclats, vibrance
 
 const mat3 BT2020_TO_P3 = mat3( 1.3435783, -0.0652975,  0.0028218,
@@ -215,8 +315,9 @@ float skin_mask(vec3 ictcp) {
 
 // Courbe des eclats sur la luminance Y (nits), monotone pour un isolement donne.
 // Y plutot que max RGB : un vert ou un jaune sature n'est pas pris pour du blanc.
-float highlight_ratio(float y, float isolation, float skin) {
+float highlight_ratio(float y, float isolation, float skin, float abl_scale) {
     float gain = mix(mix(area_gain, spec_gain, isolation), area_gain, skin);
+    gain = 1.0 + (gain - 1.0) * abl_scale;
     float out_y = y * (1.0 + smoothstep(0.5 * paper, paper, y) * (gain - 1.0));
     // Epaule : [genou, entree max x gain] -> [genou, pic], pente 1 au genou.
     // Sans gain (aplat en mode RTX), la courbe reste l'identite jusqu'au pic.
@@ -255,13 +356,15 @@ vec4 hook() {
     float y = dot(c, p3 ? vec3(0.2289746, 0.6917385, 0.0792869) : vec3(0.2627, 0.6780, 0.0593));
     float y_pq = nits_to_pq(vec3(max(y, 0.0))).x;
     float local_pq = max(AJG_LOCAL_tex(AJG_LOCAL_pos).x, y_pq - 0.08);
-    float isolation = smoothstep(0.05, 0.25, local_pq - AJG_AREA_tex(AJG_AREA_pos).x);
+    float isolation = smoothstep(0.05, 0.25, local_pq - AJG_AREAT_tex(AJG_AREAT_pos).x);
+    // Limiteur OLED : APL lisse de ~80 a ~250 nits (plein ecran d'un QD-OLED en Peak 1000).
+    float abl_scale = 1.0 - abl * smoothstep(80.0, 250.0, AJG_STATS_tex(vec2(0.5)).x);
     vec3 ictcp_in = to_ictcp(lin);
     float skin = skin_mask(ictcp_in);
     float r = 1.0;
     if (m > 1e-4 && y > 1e-4) {
         r = shadow_ratio(m);
-        r *= highlight_ratio(y * r, isolation, skin);
+        r *= highlight_ratio(y * r, isolation, skin, abl_scale);
         // Aucun canal au-dessus du pic, meme pour une couleur saturee tres lumineuse.
         r = min(r, peak / m);
         c *= r;

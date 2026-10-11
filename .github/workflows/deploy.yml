@@ -20,7 +20,11 @@ on:
 
 
 jobs:
+  hdr-tests:
+    uses: ./.github/workflows/hdr-tests.yml
+
   deploy:
+    needs: hdr-tests
     if: ${{ github.event.inputs.linux_only != 'true' }}
     runs-on: windows-latest
     permissions:

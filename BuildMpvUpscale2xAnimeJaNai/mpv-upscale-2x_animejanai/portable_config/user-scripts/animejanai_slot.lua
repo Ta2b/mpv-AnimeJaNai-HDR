@@ -52,7 +52,8 @@ mp.register_script_message('aji-slot', function(slot)
         mp.commandv('apply-profile',policy.upscale_profile(hw.vendor))
         vf = mp.get_property_native('vf') or {}
     end
-    local prepared, changed = policy.configure_filters(vf,hw.vendor,hw.conf,slot)
+    -- conf_active: the bank, or its runtime copy with RIFE matched to the display.
+    local prepared, changed = policy.configure_filters(vf,hw.vendor,hw.conf_active or hw.conf,slot)
     if changed then mp.set_property_native('vf',prepared) end
     local function apply()
         if current ~= selection_generation then return end
@@ -100,6 +101,13 @@ mp.register_event('end-file',function(event)
         mp.osd_message('Echec de AMD AMF x2 : desactive jusqu au redemarrage. Rouvrir la video.',8)
         mp.msg.warn('Playback failed with AMD AMF x2; disabled for this session. Reopen the file.')
     end
+end)
+
+-- Live reload from the Manager: extra frame generation follows the new setting at once.
+mp.register_script_message('animejanai-reload-options',function()
+    amf_enabled = policy.options().frame_generation == 'amf'
+    local slot = mp.get_property_native('user-data/animejanai-active-slot')
+    if slot then mp.commandv('script-message','aji-slot',tostring(slot)) end
 end)
 
 mp.register_event('start-file',function()

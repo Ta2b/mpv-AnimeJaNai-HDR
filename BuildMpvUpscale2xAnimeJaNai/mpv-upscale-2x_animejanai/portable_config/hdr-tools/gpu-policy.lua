@@ -21,7 +21,9 @@ function M.options()
         oled_nvidia='yes',oled_amd='auto',
         -- HDR grade shared by every GPU; *_rtx values apply on top of TrueHDR.
         grade=true,paper_white=203,shadows=0.30,highlights=0.85,highlights_rtx=0.50,
-        vibrance=0.30,vibrance_rtx=0.20,grade_native_hdr=false}
+        vibrance=0.30,vibrance_rtx=0.20,grade_native_hdr=false,subtitle_white=200,
+        -- RIFE output rate matched to the display refresh (factor p/q, at most rife_max_factor).
+        rife_display_sync=false,rife_max_factor=2}
     require('mp.options').read_options(o,'animejanai_hdr_auto')
     local warn = require('mp.msg').warn
     local vsr=tostring(o.vsr):lower()
@@ -72,6 +74,9 @@ function M.options()
     o.highlights_rtx = number(o.highlights_rtx, .50, 0, 1)
     o.vibrance = number(o.vibrance, .30, 0, .8)
     o.vibrance_rtx = number(o.vibrance_rtx, .20, 0, .8)
+    o.subtitle_white = number(o.subtitle_white, 200, 80, 1000)
+    o.rife_display_sync = bool(o.rife_display_sync)
+    o.rife_max_factor = number(o.rife_max_factor, 2, 1, 8)
     return o
 end
 
@@ -197,31 +202,88 @@ function M.hdr_backend(vendor, requested, conversion)
     return vendor == 'nvidia' and 'rtx' or 'mpv'
 end
 
+local function read_file(path)
+    local f = path and io.open(path, 'rb')
+    if not f then return nil end
+    local data = f:read('*a')
+    f:close()
+    return data
+end
+
+local function write_file(path, data)
+    local f = io.open(path, 'wb')
+    if not f then return false end
+    f:write(data)
+    f:close()
+    return true
+end
+
+local function powershell(mp, script, extra)
+    local args = {'powershell.exe','-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass',
+        '-File', mp.command_native({'expand-path','~~/hdr-tools/'..script})}
+    for _, a in ipairs(extra or {}) do args[#args+1] = a end
+    return {name='subprocess', playback_only=false, capture_stdout=true, capture_stderr=true, args=args}
+end
+
+-- Startup cost: each PowerShell launch takes roughly half a second. Both are skipped in the
+-- common case: the GPU is cached per computer (verified in the background), and the bank
+-- script only runs when there is something to synchronize.
 function M.detect(mp, utils, options)
     local cached = mp.get_property_native('user-data/animejanai-hardware')
     if type(cached) == 'table' and cached.vendor then return cached end
-    local ok, result = pcall(mp.command_native,{name='subprocess',playback_only=false,
-        capture_stdout=true,capture_stderr=true,args={
-            'powershell.exe','-NoLogo','-NoProfile','-NonInteractive',
-            '-ExecutionPolicy','Bypass','-File',
-            mp.command_native({'expand-path','~~/hdr-tools/detect-gpu.ps1'})}})
-    local adapters = ok and type(result) == 'table' and result.status == 0 and utils.parse_json(result.stdout or '') or nil
-    local hw = M.select_gpu(adapters,options.gpu_vendor)
-    hw.target = options.target_resolution=='auto' and 'ecran (auto)' or options.target_resolution
-    local bank=hw.vendor=='nvidia' and 'nvidia' or 'amd'
-    hw.bank=mp.command_native({'expand-path','~~/profiles/'..bank..'/animejanai.conf'})
-    local activated, activation=pcall(mp.command_native,{name='subprocess',playback_only=false,
-        capture_stdout=true,capture_stderr=true,args={
-            'powershell.exe','-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',
-            mp.command_native({'expand-path','~~/hdr-tools/select-profile-bank.ps1'}),'-Vendor',bank}})
-    local selected=activated and type(activation)=='table' and activation.status==0
-        and utils.parse_json(activation.stdout or '')
-    hw.conf=type(selected)=='table' and selected.conf or hw.bank
-    if hw.conf==hw.bank then
-        mp.msg.error('Profile bank activation failed; using bank directly. '..
-            tostring(type(activation)=='table' and activation.stderr or activation))
+    local computer = os.getenv('COMPUTERNAME') or ''
+    local cache_path = mp.command_native({'expand-path','~~/cache/animejanai-hardware.json'})
+    local disk = utils.parse_json(read_file(cache_path) or '')
+    local function remember(hw)
+        if hw.vendor ~= 'unknown' and computer ~= '' then
+            write_file(cache_path, utils.format_json({computer=computer, vendor=hw.vendor, name=hw.name}))
+        end
     end
-    mp.set_property_native('user-data/animejanai-hardware',hw)
+    local hw
+    if options.gpu_vendor == 'auto' and computer ~= '' and type(disk) == 'table'
+            and disk.computer == computer and disk.vendor then
+        hw = {vendor=disk.vendor, name=disk.name}
+        mp.command_native_async(powershell(mp, 'detect-gpu.ps1'), function(ok, result)
+            local adapters = ok and type(result) == 'table' and result.status == 0
+                and utils.parse_json(result.stdout or '')
+            if not adapters then return end
+            local now = M.select_gpu(adapters, options.gpu_vendor)
+            if now.vendor ~= 'unknown' and (now.vendor ~= hw.vendor or now.name ~= hw.name) then
+                remember(now)
+                mp.msg.warn('GPU changed: '..tostring(hw.name)..' -> '..tostring(now.name))
+                mp.osd_message('Carte graphique changee ('..tostring(now.name)..') : relancer le lecteur', 8)
+            end
+        end)
+    else
+        local ok, result = pcall(mp.command_native, powershell(mp, 'detect-gpu.ps1'))
+        local adapters = ok and type(result) == 'table' and result.status == 0
+            and utils.parse_json(result.stdout or '') or nil
+        hw = M.select_gpu(adapters, options.gpu_vendor)
+        remember(hw)
+    end
+    hw.target = options.target_resolution=='auto' and 'ecran (auto)' or options.target_resolution
+    local bank = hw.vendor=='nvidia' and 'nvidia' or 'amd'
+    hw.bank = mp.command_native({'expand-path','~~/profiles/'..bank..'/animejanai.conf'})
+    local active = mp.command_native({'expand-path','~~/../animejanai/animejanai.conf'})
+    -- Same test as select-profile-bank.ps1 for "nothing to do": the state names this bank and
+    -- both the active copy and the bank still carry the recorded SHA-256.
+    local sha256 = dofile(mp.command_native({'expand-path','~~/hdr-tools/sha256.lua'}))
+    local state = utils.parse_json(read_file(mp.command_native({'expand-path','~~/profiles/active-bank.json'})) or '')
+    local active_data, bank_data = read_file(active), read_file(hw.bank)
+    local recorded = type(state) == 'table' and state.vendor == bank and tostring(state.hash or ''):upper()
+    if recorded and active_data and bank_data and sha256(active_data) == recorded and sha256(bank_data) == recorded then
+        hw.conf = active
+    else
+        local activated, activation = pcall(mp.command_native, powershell(mp, 'select-profile-bank.ps1', {'-Vendor', bank}))
+        local selected = activated and type(activation) == 'table' and activation.status == 0
+            and utils.parse_json(activation.stdout or '')
+        hw.conf = type(selected) == 'table' and selected.conf or hw.bank
+        if hw.conf == hw.bank then
+            mp.msg.error('Profile bank activation failed; using bank directly. '..
+                tostring(type(activation) == 'table' and activation.stderr or activation))
+        end
+    end
+    mp.set_property_native('user-data/animejanai-hardware', hw)
     if hw.vendor == 'unknown' then
         mp.msg.warn('GPU detection failed; using the portable DirectML path. Set gpu_vendor if needed.')
     end

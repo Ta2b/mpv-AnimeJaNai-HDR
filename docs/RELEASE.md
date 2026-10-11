@@ -273,3 +273,27 @@ The updater polls
 nothing reaches users until the draft is published. While it is still a draft, test the
 component flow with `ANIMEJANAI_PACKS_DIR` pointed at a local `packs-v<ver>/` directory —
 draft assets 404 for the unauthenticated API.
+
+## HDR fork (Ta2b/mpv-AnimeJaNai-HDR)
+
+The HDR overlay lives in `BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/` on the
+`hdr-3.8` branch (AnimeJaNai 3.8.0 base). Releases of the fork:
+
+1. Run the tests locally if you can: `tests/hdr/run.sh` (LuaJIT / Lua 5.2) and
+   `python3 tests/hdr/shader_check.py` (mpv with a Vulkan driver, `xvfb-run`, numpy, Pillow).
+   The *HDR tests* workflow runs both on every push touching the overlay or the tests.
+2. Set the version in `release-version.txt` (four parts: upstream version + fork revision,
+   e.g. `3.8.0.2`), commit, and push the commit to the `release` branch
+   (`git push fork HEAD:release`). *Deploy* runs the HDR tests, then builds and publishes the
+   release; the release action creates the tag.
+3. The fork's updater reads these releases (`AnimeJaNaiUpdater` → `Ta2b/mpv-AnimeJaNai-HDR`).
+
+Other workflows:
+
+- *Upstream watch* (weekly) opens an issue labelled `upstream` for each new release of
+  `the-database/mpv-upscale-2x_animejanai` and `the-database/AnimeJaNaiManager`. Issues must be
+  enabled on the repository. To carry a release over: rebase the HDR branch on the new tag,
+  port the Manager HDR patch to the new Manager base, run the tests, then release as above.
+- *HDR tools sources* decompiles `hdr-coordinator.exe` and `hdr-composition-guard.exe` into
+  `hdr-tools-src/` whenever they change. `display-info.dll` comes from
+  [dyphire/mpv-display-plugin](https://github.com/dyphire/mpv-display-plugin).

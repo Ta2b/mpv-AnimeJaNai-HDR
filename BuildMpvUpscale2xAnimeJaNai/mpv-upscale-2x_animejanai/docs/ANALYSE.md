@@ -1,4 +1,4 @@
-# Rendu HDR — fonctionnement et réglages (10 octobre 2026)
+# Rendu HDR — fonctionnement et réglages (11 octobre 2026)
 
 ## Objectif
 
@@ -17,11 +17,11 @@ Anime en HDR qui ressort sur le MSI MAG 272UP QD-OLED (Peak 1000 / EOTF Boost) :
    - **RTX** (défaut NVIDIA) : TrueHDR produit du PQ marqué à 1000 nits. Avec `target-peak=1000`, libplacebo ne fait **aucun tone mapping** : les valeurs passent telles quelles. Vérifié dans le code de mpv/libplacebo et dans `libmpv-2.dll`.
    - **MPV** (défaut AMD/Intel) : pas d’inverse tone mapping global. Le blanc SDR est placé à `paper_white` (203 nits) via `hdr-reference-white`, le noir est ramené à 0, et c’est le shader qui crée les éclats.
 6. **Grading** `user-shaders/anime-hdr-grade.hook`, sur l’image finale en PQ, identique pour tous les GPU. Seuls ses paramètres changent selon le moteur.
-7. Sous-titres composés après le grading (`blend-subtitles=no`), blancs à 200 nits.
+7. Sous-titres composés après le grading (`blend-subtitles=no`), blancs à `subtitle_white` (200 nits par défaut, réglable dans le Manager).
 
 ## Le shader de grading
 
-Cinq passes sur `OUTPUT`. Les quatre premières construisent, en basse résolution, une carte de la luminance locale (1/8) et de la luminance de zone (1/32, flou gaussien d’environ 2,5 % de l’image). La dernière traite chaque pixel en lumière linéaire absolue :
+Sept passes sur `OUTPUT`. Les quatre premières construisent, en basse résolution, une carte de la luminance locale (1/8) et de la luminance de zone (1/32, flou gaussien d’environ 2,5 % de l’image). Deux passes de calcul mesurent la luminance moyenne de l'image et lissent la carte des zones dans le temps (voir *Version 3.8.0.2*). La dernière traite chaque pixel en lumière linéaire absolue :
 
 | Étape | Effet | Détail |
 |---|---|---|
@@ -46,7 +46,7 @@ Les canaux RGB sont multipliés ensemble pour les noirs, les éclats et l’épa
 | Primaires saturées | inchangées | inchangées |
 | Bleu ciel moyen (B 110 nits) | B 128 | — |
 
-Coût : cinq passes légères, dont quatre en 1/64e de résolution ou moins. C’est négligeable sur RTX 4070 Ti et RX 9070 XT ; la mesure réelle reste à faire sur les deux PC.
+Coût : sept passes légères, dont six en 1/64e de résolution ou moins. C’est négligeable sur RTX 4070 Ti et RX 9070 XT ; la mesure réelle reste à faire sur les deux PC.
 
 ## Correctif du 11 octobre : peau trop claire et scintillante en RTX
 
@@ -73,6 +73,29 @@ Réglages NVIDIA (RTX Video HDR) : les quatre curseurs sont en butée. *Middle g
 - **Démarrage d'un fichier** : la ligne `vf` officielle démarre le filtre sur le slot intégré Balanced (1002), puis le profil par défaut n'est appliqué qu'une fois le fichier chargé, ce qui charge un moteur TensorRT pour rien à chaque vidéo. Le filtre démarre maintenant directement sur le profil voulu : celui choisi pendant la session, sinon le profil par défaut de la banque. En cours de lecture, Ctrl+1…4 bascule toujours sans reconstruire la chaîne.
 - **Shader** : la conversion ICtCp de la vibrance réutilise celle de l'entrée pour les pixels que la courbe ne modifie pas (la majorité des tons moyens). Rendu identique au code de quantification près.
 
+## Version 3.8.0.2 (11 octobre)
+
+**Réglages appliqués en direct.** Le Manager envoie `animejanai-reload-options` au lecteur ouvert par le canal IPC `mpvpipe` après chaque enregistrement. Le contrôleur HDR relit le fichier et recalcule écran, moteur, mise à l'échelle, grading et sous-titres pour la vidéo en cours ; AMD AMF x2 suit le réglage immédiatement. Le calage RIFE s'applique à la vidéo suivante, car le facteur fait partie de la configuration du filtre au démarrage du fichier.
+
+**Looks et Ctrl+G.** Trois préréglages dans le Manager (*Natural*, *Vivid* = valeurs par défaut, *Maximum*), qui remplissent les curseurs. Ctrl+G passe des réglages du fichier au look *Natural* (noirs 0,15, éclats 0,50 / 0,25 en RTX, vibrance 0,15 / 0,10), puis au rendu sans grading.
+
+**Stabilité temporelle et coupes de scène.** Le shader garde un état entre les images (`//!BUFFER` persistant) :
+- une passe de calcul mesure la luminance moyenne de l'image (en PQ et en nits) ;
+- la carte des zones, qui décide si un éclat est isolé, est lissée dans le temps (30 % d'image nouvelle par image). Le grain, la compression et l'interpolation RIFE ne font plus varier le gain des éclats d'une image à l'autre ;
+- une variation de la luminance moyenne de plus de 0,06 PQ est traitée comme une coupe : l'état repart de l'image courante, sans traînée de la scène précédente. Vérifié : après une scène claire, une scène sombre est rendue exactement comme si elle était seule.
+
+**ABL des OLED.** Les dalles OLED baissent leur luminosité quand une grande partie de l'image est claire. Avec `oled_*=yes`, le gain des éclats et des aplats est réduit progressivement entre 80 et 250 nits de luminance moyenne (jusqu'à 60 %), pour ne pas pousser ce que l'écran rabaissera de toute façon. Mesures : scène claire, fond 218 → 202 nits ; scène sombre, éclat inchangé à 875 nits. Sur écran non OLED, le rendu est identique à la version précédente.
+
+**RIFE calé sur l'écran** (`rife_display_sync`, désactivé par défaut). Au chargement d'un fichier, le facteur RIFE p/q (q ≤ 4) est choisi pour que la cadence de sortie divise la fréquence de l'écran, avec 0,2 % de tolérance. La banque n'est pas modifiée : une copie `animejanai/animejanai-runtime.conf` est passée au filtre pour ce fichier. Exemples : 23,976 i/s à 144 Hz → ×2 ; à 60 Hz avec un maximum de 3 → ×5/2 ; à 165 Hz avec un maximum de 2 → aucun facteur exact, profil conservé. Avec AnimeJaNai 3.8, la fréquence automatique de l'écran (`display_rate_match`) reste prioritaire.
+
+**Démarrage plus rapide.** La détection du GPU est mise en cache par PC (`portable_config/cache/animejanai-hardware.json`) et revérifiée en arrière-plan ; un changement de carte est signalé à l'écran. Le script PowerShell de sélection de banque ne tourne plus que si la banque active ou la banque du GPU a changé (empreinte SHA-256 comparée à `active-bank.json`, calculée en Lua) ou si le GPU change. La fréquence de l'écran est aussi mise en cache.
+
+**Moteurs TensorRT.** Le panneau TensorRT du Manager affiche le nombre et la taille des moteurs, supprime ceux compilés pour une autre version de TensorRT ou un autre GPU, et peut tout supprimer après confirmation.
+
+**Mire d'étalonnage** (Ctrl+Alt+P) : patchs de 0,005 à 4000 nits encodés en PQ absolu, valeurs affichées ; voir `PARTAGE.md`.
+
+**Non réalisé.** Supprimer le passage CUDA → D3D11 par la RAM demanderait le SDK NVIDIA RTX Video et des versions natives du filtre AnimeJaNai et de mpv : hors de portée de ce fork. Le chemin AMD (DirectML, VideoSR, AMF) n'est toujours pas testé sur une vraie RX 9070 XT.
+
 ## Ce qui a été retiré
 
 - `rtx-hdr-peps.hook` : courbe en S centrée sur 500 nits en lumière linéaire, qui **assombrissait les tons moyens de 10 à 17 %** et n’ajoutait que +2 % aux hautes lumières.
@@ -87,7 +110,8 @@ Réglages NVIDIA (RTX Video HDR) : les quatre curseurs sont en butée. *Middle g
 ## Vérifications
 
 - Shader compilé et exécuté par libplacebo réel (mpv 0.37, Vulkan logiciel) en mode MPV et en mode RTX, avec mesures sur mires synthétiques. La compilation D3D11 (HLSL via SPIR-V) se fait au premier lancement sous Windows.
-- Contrôleur exécuté avec un mpv simulé (LuaJIT et Lua 5.1), 51 cas : NVIDIA RTX SDR, HDR natif, HDR Windows coupé, AMD MPV, écran AMD de 600 et 250 nits, bascule Ctrl+G, diagnostic, restauration en fin de fichier, conservation des autres shaders et de leurs options, absence de réécriture de propriétés en régime établi, détection GPU unique.
+- Contrôleur exécuté avec un mpv simulé (LuaJIT et Lua 5.2), 123 cas : NVIDIA RTX SDR, HDR natif, HDR Windows coupé, AMD MPV, écran AMD de 600 et 250 nits, cycle Ctrl+G, mire, application en direct, diagnostic, restauration en fin de fichier, conservation des autres shaders et de leurs options, absence de réécriture de propriétés en régime établi, cache de détection, slots et AMF, calage RIFE.
+- Intégration continue (dépôt GitHub, workflow *HDR tests*) : ces tests et les mesures du shader dans libplacebo (éclats, aplats, peau, ABL, coupe de scène, mire) tournent à chaque modification et avant chaque release.
 - Non vérifié ici : le rendu réel sur les deux écrans, la lecture sur RX 9070 XT (DirectML, VideoSR, AMF) et le pic que le pilote NVIDIA donne réellement à TrueHDR.
 
 ## Suggestions pour aller plus loin
@@ -95,9 +119,9 @@ Réglages NVIDIA (RTX Video HDR) : les quatre curseurs sont en butée. *Middle g
 | Priorité | Action | Pourquoi |
 |---|---|---|
 | Haute | Étalonnage HDR Windows dans le mode d’écran utilisé (EOTF Boost), pic réglé à 1000 | Le pilote NVIDIA choisit le pic de TrueHDR d’après les informations de l’écran dans Windows ; mpv suppose 1000 nits. |
-| Haute | Windows à **144 Hz** + `--profile=anime-cadence-ecran` | RIFE ×2 donne 47,952 i/s. 144 Hz = 3 × 48 : cadence parfaite. À 165 Hz, chaque image dure 3 ou 4 rafraîchissements, d’où une saccade. |
+| Haute | Windows à **144 Hz**, ou *Match RIFE to Display Refresh* dans le Manager | RIFE ×2 donne 47,952 i/s. 144 Hz = 3 × 48 : cadence parfaite. À 165 Hz, chaque image dure 3 ou 4 rafraîchissements, d’où une saccade. |
 | Moyenne | Comparer Ctrl+2 (1080p natif → 4K, sans RIFE) et Ctrl+3 (720p → RIFE → 1440p → VSR) | Ctrl+3 jette du détail source en descendant à 720p. Si la fluidité RIFE compte moins que la netteté, Ctrl+2 est plus fidèle. |
 | Haute | NVIDIA App > RTX Video HDR : *Middle grey* vers 50, contraste et saturation baissés | Ces curseurs sont en butée : tons moyens et peau trop clairs, teints trop saturés, hautes lumières écrêtées. |
-| Moyenne | Régler `shadows`, `highlights`, `vibrance` sur 2–3 épisodes de référence, avec Ctrl+G pour comparer | L’EOTF Boost éclaircit déjà les tons moyens côté écran. |
+| Moyenne | Régler `shadows`, `highlights`, `vibrance` sur 2–3 épisodes de référence, avec Ctrl+G pour comparer et Ctrl+Alt+P pour vérifier noirs et pic | L’EOTF Boost éclaircit déjà les tons moyens côté écran. |
 | Basse | Remplir `peak_amd` et `oled_amd` selon l’écran du PC AMD | `auto` suit Windows, souvent approximatif. |
 | Performance | NVIDIA : le passage CUDA → D3D11 (`format=p010`) transite par la RAM | Inévitable tant que TrueHDR/VSR n’existent qu’en D3D11 et TensorRT qu’en CUDA. |

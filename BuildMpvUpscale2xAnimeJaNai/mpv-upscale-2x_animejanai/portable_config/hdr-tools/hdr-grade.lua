@@ -4,9 +4,15 @@ local M = {}
 
 M.shader = '~~/user-shaders/anime-hdr-grade.hook'
 M.prefix = 'anime-hdr-grade/'
-M.keys = {'peak','paper','in_max','shadows','shadow_knee','area_gain','spec_gain','vibrance','gamut_p3'}
+M.keys = {'peak','paper','in_max','shadows','shadow_knee','area_gain','spec_gain','vibrance','abl','gamut_p3'}
 -- Render options owned by the controller; restored to their startup values otherwise.
-M.render_keys = {'target-trc','target-peak','target-contrast','target-gamut','hdr-reference-white'}
+M.render_keys = {'target-trc','target-peak','target-contrast','target-gamut','hdr-reference-white',
+    'sub-hdr-peak','image-subs-hdr-peak'}
+
+-- Ctrl+G "natural" step: a softer look on top of the same display description.
+M.presets = {
+    natural = {shadows = 0.15, highlights = 0.50, highlights_rtx = 0.25, vibrance = 0.15, vibrance_rtx = 0.10},
+}
 
 local function clamp(v, lo, hi) return math.max(lo, math.min(hi, v)) end
 
@@ -33,7 +39,13 @@ end
 --   enabled       runtime A/B switch (Ctrl+G)
 --   original      startup values of M.render_keys
 -- Returns {render = {option = value}, active = bool, params = {...}, mode = string}.
-function M.plan(o, ctx)
+function M.plan(o, ctx, preset)
+    if preset then
+        local merged = {}
+        for k, v in pairs(o) do merged[k] = v end
+        for k, v in pairs(preset) do merged[k] = v end
+        o = merged
+    end
     local original = ctx.original or {}
     local render = {}
     for _, k in ipairs(M.render_keys) do render[k] = original[k] end
@@ -46,6 +58,10 @@ function M.plan(o, ctx)
     if fixed_peak then render['target-peak'] = tostring(clamp(fixed_peak, 100, 10000)) end
     if display.oled == 'yes' then render['target-contrast'] = 'inf' end
     if display.gamut ~= 'auto' then render['target-gamut'] = display.gamut end
+    if o.subtitle_white then
+        render['sub-hdr-peak'] = tostring(o.subtitle_white)
+        render['image-subs-hdr-peak'] = tostring(o.subtitle_white)
+    end
 
     local peak = clamp(fixed_peak or number_or_nil(ctx.target_peak) or 1000, 100, 10000)
     -- Paper white stays below the peak so that highlights keep some headroom.
@@ -71,7 +87,9 @@ function M.plan(o, ctx)
     end
 
     local p = {peak = peak, paper = paper, shadows = o.shadows, shadow_knee = 0.25 * paper,
-        gamut_p3 = (render['target-gamut'] == 'display-p3') and 1 or 0}
+        gamut_p3 = (render['target-gamut'] == 'display-p3') and 1 or 0,
+        -- OLED: highlights are moderated on bright scenes, where the panel limits its power anyway.
+        abl = display.oled == 'yes' and 0.6 or 0}
     if graded == 'mpv' then
         -- SDR stops at paper white: isolated whites may reach the peak,
         -- large white areas only +50 % at highlights=1.

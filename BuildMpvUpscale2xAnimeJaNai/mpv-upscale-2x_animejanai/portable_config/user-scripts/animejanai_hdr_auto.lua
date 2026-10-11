@@ -9,20 +9,25 @@ local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.
 local grade = dofile(mp.command_native({'expand-path','~~/hdr-tools/hdr-grade.lua'}))
 local options = policy.options()
 local hardware = policy.detect(mp,utils,options)
-local upscaler = policy.upscaler(hardware.vendor,options.vsr)
-if (options.vsr=='nvidia' or options.vsr=='amd') and upscaler~=options.vsr then
-    msg.warn('Requested '..options.vsr..' upscale on '..hardware.vendor..'; using classic')
+local upscaler, hdr_backend
+-- Derived settings; re-run when the Manager asks for a live reload.
+local function derive_options()
+    upscaler = policy.upscaler(hardware.vendor,options.vsr)
+    if (options.vsr=='nvidia' or options.vsr=='amd') and upscaler~=options.vsr then
+        msg.warn('Requested '..options.vsr..' upscale on '..hardware.vendor..'; using classic')
+    end
+    options.mode = policy.settings(hardware.vendor,options).mode
+    hdr_backend = policy.hdr_backend(hardware.vendor,options.hdr_backend,options.hdr_conversion)
+    -- Without SDR -> HDR conversion the player never changes the Windows HDR setting.
+    if hdr_backend == 'none' then options.mode = 'follow' end
+    if options.mode ~= 'enable' and options.mode ~= 'follow' then
+        msg.error('Invalid mode='..tostring(options.mode)..'; using follow')
+        options.mode='follow'
+    end
+    options.max_attempts=math.max(1,math.min(5,math.floor(tonumber(options.max_attempts) or 3)))
+    options.idle_restore_seconds=math.max(0,tonumber(options.idle_restore_seconds) or 2)
 end
-options.mode = policy.settings(hardware.vendor,options).mode
-local hdr_backend = policy.hdr_backend(hardware.vendor,options.hdr_backend,options.hdr_conversion)
--- Without SDR -> HDR conversion the player never changes the Windows HDR setting.
-if hdr_backend == 'none' then options.mode = 'follow' end
-if options.mode ~= 'enable' and options.mode ~= 'follow' then
-    msg.error('Invalid mode='..tostring(options.mode)..'; using follow')
-    options.mode='follow'
-end
-options.max_attempts=math.max(1,math.min(5,math.floor(tonumber(options.max_attempts) or 3)))
-options.idle_restore_seconds=math.max(0,tonumber(options.idle_restore_seconds) or 2)
+derive_options()
 
 local helper=mp.command_native({'expand-path','~~/hdr-tools/hdr-coordinator.exe'})
 local pid=tostring(mp.get_property_native('pid') or utils.getpid())
@@ -53,9 +58,15 @@ local function update_target()
 end
 
 -- ===== HDR grade (both backends) =====
-local grade_enabled = true
+-- Ctrl+G cycles: the Manager's values ("custom") -> a natural preset -> off.
+local grade_cycle = {'custom','natural','off'}
+local grade_labels_cycle = {custom='personnalise (Manager)',natural='naturel',off='coupe (comparaison)'}
+local grade_choice = 'custom'
 local grade_state = {active=false,mode='off'}
 local grade_shader = mp.command_native({'expand-path',grade.shader})
+local calibration = false
+local calibration_shader = '~~/user-shaders/anime-hdr-calibration.hook'
+local calibration_osd = mp.create_osd_overlay('ass-events')
 local original = {}
 for _,name in ipairs(grade.render_keys) do original[name]=mp.get_property(name) end
 
@@ -75,7 +86,8 @@ end
 local function apply_grade(kind,state)
     local plan=grade.plan(options,{vendor=hardware.vendor,backend=hdr_backend,source=kind,
         windows=state,truehdr=truehdr_output(),target_gamma=native('video-target-params/gamma'),
-        target_peak=native('video-target-params/max-luma'),enabled=grade_enabled,original=original})
+        target_peak=native('video-target-params/max-luma'),enabled=grade_choice~='off',original=original},
+        grade_choice=='natural' and grade.presets.natural or nil)
     for _,name in ipairs(grade.render_keys) do
         local value=plan.render[name]
         if value and mp.get_property(name)~=value then mp.set_property(name,value) end
@@ -85,8 +97,12 @@ local function apply_grade(kind,state)
     local wanted_opts=grade.shader_opts(opts,plan.params)
     if not grade.same_map(opts,wanted_opts) then mp.set_property_native('glsl-shader-opts',wanted_opts) end
     local shaders=native('glsl-shaders') or {}
-    local wanted=grade.shader_list(shaders,plan.active,grade_shader)
-    if not grade.same_list(shaders,wanted) then mp.set_property_native('glsl-shaders',wanted) end
+    -- Calibration pattern: replaces the picture, so the grade must not run on top of it.
+    local wanted=grade.shader_list(shaders,plan.active and not calibration,grade_shader)
+    local with_pattern={}
+    for _,path in ipairs(wanted) do if path~=calibration_shader then with_pattern[#with_pattern+1]=path end end
+    if calibration then with_pattern[#with_pattern+1]=calibration_shader end
+    if not grade.same_list(shaders,with_pattern) then mp.set_property_native('glsl-shaders',with_pattern) end
     grade_state=plan
 end
 
@@ -309,7 +325,7 @@ local function report(reason,force)
             count('truehdr')>0 and 'filtre present' or 'inactif',tostring(native('video-target-params/gamma') or 'indisponible')),
         string.format('Cible MPV : pic %s nits | contraste %s | gamut %s | blanc SDR %s nits',tostring(native('target-peak')),
             tostring(native('target-contrast')),tostring(native('target-gamut')),tostring(native('hdr-reference-white'))),
-        'Grading : '..(grade_labels[grade_state.mode] or grade_state.mode)..(grade_enabled and '' or ' | coupe (Ctrl+G)'),
+        'Grading : '..(grade_labels[grade_state.mode] or grade_state.mode)..' | Ctrl+G : '..grade_labels_cycle[grade_choice],
     }
     local gp=grade_state.params
     if gp then
@@ -318,11 +334,21 @@ local function report(reason,force)
     end
     lines[#lines+1]='Profil AnimeJaNai : '..ai_status(p)
     lines[#lines+1]='Interpolation : '..tostring(native('user-data/animejanai-interpolation') or 'cadence originale')
+    local rife_status=native('user-data/animejanai-rife-sync')
+    if rife_status then lines[#lines+1]='RIFE cale sur l ecran : '..tostring(rife_status) end
     lines[#lines+1]='Lecture : '..tostring(native('hwdec-current') or 'logiciel')..' | source='..rate(native('container-fps'),'images/s')
     lines[#lines+1]='Images perdues : sortie='..tostring(native('frame-drop-count') or 0)..
         ' | decodage='..tostring(native('decoder-frame-drop-count') or 0)
     local display=table.concat(lines,'\n')
     msg.info(display)
+    -- Same report in a file, to attach to a bug report or compare two sessions.
+    local path=mp.command_native({'expand-path','~~/../animejanai/diagnostic-hdr.txt'})
+    local file=io.open(path,'w')
+    if file then
+        file:write(os.date('%Y-%m-%d %H:%M:%S'),'\n',line,'\n\n',display,'\n')
+        file:close()
+        display=display..'\n(copie : animejanai/diagnostic-hdr.txt)'
+    end
     mp.osd_message(display,12)
 end
 
@@ -395,6 +421,7 @@ mp.register_event('file-loaded',function() loaded=true; schedule() end)
 mp.register_event('video-reconfig',function() vsr_wait=false;schedule() end)
 mp.register_event('end-file',function()
     active=false; loaded=false
+    if calibration then calibration=false; calibration_osd:remove() end
     apply_grade('unknown','off')
     if restore_timer then restore_timer:kill() end
     restore_timer=mp.add_timeout(options.idle_restore_seconds,function()
@@ -427,10 +454,54 @@ mp.add_periodic_timer(1,function()
     if active then reconcile() elseif leased_uid and not restore_timer then release() end
 end)
 mp.register_script_message('animejanai-hdr-status',function() report(nil,true) end)
--- A/B comparison: the HDR output and the video tail stay; only the grade is switched.
+-- A/B comparison: the HDR output and the video tail stay; only the grade changes.
 mp.register_script_message('animejanai-grade-toggle',function()
-    grade_enabled=not grade_enabled
-    mp.osd_message('Grading HDR : '..(grade_enabled and 'actif' or 'coupe (comparaison)'),3)
+    for i,name in ipairs(grade_cycle) do
+        if name==grade_choice then grade_choice=grade_cycle[i%#grade_cycle+1]; break end
+    end
+    mp.osd_message('Grading HDR : '..grade_labels_cycle[grade_choice],3)
     reconcile()
+end)
+-- Calibration pattern (Ctrl+Alt+P): absolute-luminance patches with their values, to set
+-- the peak, the black depth and the paper white by eye on this display.
+local function calibration_labels()
+    local rows = {
+        {y=0.08, values={'0,005','0,01','0,02','0,05','0,1','0,2','0,5','1'}, title='Noirs (nits) : le dernier patch visible = limite des ombres'},
+        {y=0.62, values={'5','10','20','50','100','150','203','300'}, title='Rampe 0 -> 203 nits (blanc papier) et gris de reference'},
+        {y=0.94, values={'400','600','800','1000','1200','1500','2000','4000'}, title='Eclats (nits) : le premier patch qui ne s eclaircit plus = pic reel'},
+    }
+    local events = {}
+    for _, row in ipairs(rows) do
+        events[#events+1] = string.format('{\\an8\\pos(960,%d)\\fs28\\bord2}%s', math.floor(row.y*1080 - 40), row.title)
+        for i, v in ipairs(row.values) do
+            events[#events+1] = string.format('{\\an8\\pos(%d,%d)\\fs30\\bord2}%s', math.floor((i-0.5)*240), math.floor(row.y*1080), v)
+        end
+    end
+    events[#events+1] = '{\\an2\\pos(960,1075)\\fs24\\bord2}Ctrl+Alt+P pour quitter la mire'
+    calibration_osd.res_x, calibration_osd.res_y = 1920, 1080
+    calibration_osd.data = table.concat(events, '\n')
+    calibration_osd:update()
+end
+mp.register_script_message('animejanai-calibration',function()
+    if not calibration and native('video-target-params/gamma')~='pq' then
+        mp.osd_message('Mire HDR : la sortie n est pas en HDR (lancer une video avec le HDR Windows actif)',4)
+        return
+    end
+    calibration = not calibration
+    if calibration then calibration_labels() else calibration_osd:remove() end
+    reconcile()
+    if not loaded then apply_grade('unknown','off') end
+end)
+
+-- Live reload (sent by the Manager through the IPC pipe after it saves the settings).
+-- Display, grade, subtitle, backend and upscaling settings apply to the current video.
+mp.register_script_message('animejanai-reload-options',function()
+    options = policy.options()
+    derive_options()
+    filter_failures,remove_failures,vsr_errors=0,0,0
+    vsr_wait=false; acquire_key=nil; filter_context=nil
+    target_width,target_height=nil,nil
+    reconcile()
+    mp.osd_message('Reglages HDR appliques',2)
 end)
 msg.info('Source-aware HDR initialized; GPU='..hardware.name..'; backend='..hdr_backend..'; mode='..options.mode..'; grade='..tostring(options.grade))

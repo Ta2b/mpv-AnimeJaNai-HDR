@@ -24,11 +24,12 @@ La carte est détectée au démarrage ; la carte dédiée est préférée à l�
 | **Ctrl+2** | Profil 2 « 4K » : 1080p natif → 2160p, sans RIFE. Le plus net. |
 | **Ctrl+3** | Profil 3 « 2K », par défaut : réduction 720p, RIFE ×2 sur NVIDIA, ×2 → 1440p, VSR → écran. |
 | **Ctrl+4** | Profil 4 de la banque, s'il existe (sur AMD : variante libre du 2K). Un profil vide est refusé avec un message. |
-| **Ctrl+G** | Grading HDR avec / sans, pour comparer. Le HDR et la chaîne vidéo restent actifs. |
+| **Ctrl+G** | Grading HDR : réglages du Manager → look *Natural* → sans grading, puis retour. Le HDR et la chaîne vidéo restent actifs. |
+| **Ctrl+Alt+P** | Mire d'étalonnage HDR (voir plus bas). Même touche pour la retirer ; elle disparaît aussi à la fin de la vidéo. |
 | **b** | Debanding activé / désactivé. |
-| **Ctrl+Alt+H** | Diagnostic : sortie, écran, VSR, HDR Windows, TrueHDR, cible MPV, grading et ses paramètres, profil AnimeJaNai, images perdues. |
+| **Ctrl+Alt+H** | Diagnostic : sortie, écran, VSR, HDR Windows, TrueHDR, cible MPV, grading et ses paramètres, profil AnimeJaNai, RIFE calé sur l'écran, images perdues. Aussi écrit dans `animejanai/diagnostic-hdr.txt`, à joindre à un signalement. |
 
-Ctrl+E ouvre le Manager, Ctrl+U installe une mise à jour. Fermer complètement MPV et le relancer après un changement de réglage.
+Ctrl+E ouvre le Manager, Ctrl+U installe une mise à jour. Les réglages HDR enregistrés dans le Manager s'appliquent tout de suite à la vidéo en cours (message « Reglages HDR appliques ») ; le calage RIFE s'applique à partir de la vidéo suivante.
 
 ## Réglages dans le Manager (Ctrl+E)
 
@@ -47,8 +48,14 @@ Ctrl+E ouvre le Manager, Ctrl+U installe une mise à jour. Fermer complètement 
 | With RTX Video HDR > Highlight Boost / Color Vibrance (%) | `highlights_rtx` / `vibrance_rtx` |
 | With mpv Conversion > SDR White Level / Highlight Boost / Color Vibrance | `paper_white` / `highlights` / `vibrance` |
 | Display on NVIDIA PC / on AMD / Intel PC : Windows HDR, Peak Brightness, Color Gamut, OLED | `mode` / `amd_mode`, `peak_*`, `gamut_*`, `oled_*` |
+| Look Preset : Natural / Vivid / Maximum (remplit les curseurs, toujours modifiables) | `shadows`, `highlights*`, `vibrance*` |
+| Subtitle Brightness (nits) | `subtitle_white` |
+| Match RIFE to Display Refresh / Max RIFE Factor | `rife_display_sync` / `rife_max_factor` |
+| TensorRT Engines (panneau TensorRT) : taille, *Delete Outdated*, *Delete All* | fichiers `.engine` du dossier `animejanai/onnx` |
 
-Le Manager écrit directement `script-opts/animejanai_hdr_auto.conf` en conservant les commentaires. Les pourcentages correspondent aux fractions du fichier (85 % = 0.85). Le bloc *(this PC)* indique l'écran utilisé sur le PC courant. Relancer le lecteur après une modification.
+Le Manager écrit directement `script-opts/animejanai_hdr_auto.conf` en conservant les commentaires, puis prévient le lecteur ouvert par son canal IPC (`input-ipc-server=mpvpipe` dans `mpv.conf`). Les pourcentages correspondent aux fractions du fichier (85 % = 0.85). Le bloc *(this PC)* indique l'écran utilisé sur le PC courant.
+
+*Delete Outdated* supprime les moteurs TensorRT compilés pour une autre version de TensorRT ou un autre GPU (ils seraient recompilés de toute façon) ; *Delete All* demande un second clic. Les moteurs manquants sont recompilés à la lecture suivante, ce qui prend quelques minutes par modèle.
 
 Téléchargement : release `latest-hdr-settings` (base 0.6.0, pour AnimeJaNai 3.6.3) ou `latest-hdr-settings-0.8` (base 0.8.0, pour 3.8.0) du dépôt GitHub `Ta2b/AnimeJaNaiManager-HDR`, à placer à côté de `AnimeJaNaiManager.exe`. Chaque push sur une de ces branches recompile l'exe et met à jour sa release. L'Updater ne remplace pas ce fichier : après une mise à jour majeure d'AnimeJaNai, il faudra reporter ces changements sur le Manager correspondant.
 
@@ -75,6 +82,7 @@ Faire aussi l’**étalonnage HDR Windows** sur ce PC.
 | `highlights_rtx` | 0.50 | Renfort des éclats par-dessus RTX TrueHDR (0 à 1), à partir de la moitié du pic. Les aplats et la peau ne bougent pas. |
 | `vibrance` / `vibrance_rtx` | 0.30 / 0.20 | Couleurs plus vives (0 à 0,8), sans sortir du gamut. La peau est exclue et les couleurs déjà saturées sont ménagées. |
 | `grade_native_hdr` | `no` | `yes` applique aussi le grading aux sources déjà HDR. |
+| `subtitle_white` | 200 | Blanc des sous-titres en nits sur une sortie HDR (80 à 1000). |
 
 ### Moteur HDR et mise à l’échelle
 
@@ -85,6 +93,16 @@ Faire aussi l’**étalonnage HDR Windows** sur ce PC.
 | `vsr` | `auto`, `nvidia`, `amd`, `classic` (D3D11), `no`. Une valeur incompatible avec la carte se replie sur `classic`. |
 | `target_resolution` | `auto` ou une taille fixe, par exemple `2560x1440`. |
 | `mode` / `amd_mode` | `enable` : MPV active le HDR Windows puis le restaure. `follow` : suivre l’état de Windows. |
+| `rife_display_sync` | `yes` : le facteur RIFE de la vidéo est choisi pour que chaque image reste affichée le même nombre de rafraîchissements (23,976 i/s : ×2 à 144 Hz, ×5/2 à 60 Hz si `rife_max_factor=3`). Sans facteur adapté, celui du profil est gardé. Ignoré quand AnimeJaNai règle lui-même la fréquence de l'écran (`display_rate_match=yes`, AnimeJaNai 3.8). |
+| `rife_max_factor` | Facteur maximal autorisé pour ce calage (2 par défaut). |
+
+## Mire d'étalonnage (Ctrl+Alt+P)
+
+Pendant une vidéo en sortie HDR, Ctrl+Alt+P remplace l'image par des patchs de luminance absolue (le grading est suspendu dessous) :
+
+- **Noirs** 0,005 à 1 nit : le dernier patch distinct du fond indique jusqu'où les ombres restent visibles. S'il en manque beaucoup, baisser *Black Depth*.
+- **Rampe et gris** 5 à 300 nits : le blanc papier (203) et les tons moyens ; l'EOTF Boost de l'écran les éclaircit.
+- **Éclats** 400 à 4000 nits : le premier patch qui ne s'éclaircit plus par rapport au précédent est le pic réel. Le reporter dans *Peak Brightness* et dans l'étalonnage HDR Windows.
 
 ## Génération d'images en plus de RIFE
 
