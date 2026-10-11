@@ -1,7 +1,7 @@
 name: HDR tools sources
 
-# Decompiles the .NET helpers shipped in hdr-tools/ (hdr-coordinator.exe,
-# hdr-composition-guard.exe) with ILSpy and commits the C# projects to hdr-tools-src/, so what
+# Decompiles the .NET helper shipped in hdr-tools/ (hdr-coordinator.exe)
+# with ILSpy and commits the C# projects to hdr-tools-src/, so what
 # the package runs can be read and rebuilt. display-info.dll is native: its source is the
 # mpv-display-plugin project (see hdr-tools-src/README.md).
 on:
@@ -34,7 +34,7 @@ jobs:
         dotnet tool install -g ilspycmd
         export PATH="$PATH:$HOME/.dotnet/tools"
         tools=BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools
-        for exe in hdr-coordinator hdr-composition-guard; do
+        for exe in hdr-coordinator; do
           rm -rf "hdr-tools-src/$exe"
           mkdir -p "hdr-tools-src/$exe"
           ilspycmd -p -o "hdr-tools-src/$exe" "$tools/$exe.exe"

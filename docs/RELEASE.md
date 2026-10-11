@@ -294,6 +294,6 @@ Other workflows:
   `the-database/mpv-upscale-2x_animejanai` and `the-database/AnimeJaNaiManager`. Issues must be
   enabled on the repository. To carry a release over: rebase the HDR branch on the new tag,
   port the Manager HDR patch to the new Manager base, run the tests, then release as above.
-- *HDR tools sources* decompiles `hdr-coordinator.exe` and `hdr-composition-guard.exe` into
+- *HDR tools sources* decompiles `hdr-coordinator.exe` into
   `hdr-tools-src/` whenever they change. `display-info.dll` comes from
   [dyphire/mpv-display-plugin](https://github.com/dyphire/mpv-display-plugin).
