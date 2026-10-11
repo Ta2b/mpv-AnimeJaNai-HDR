@@ -70,6 +70,7 @@ Réglages NVIDIA (RTX Video HDR) : les quatre curseurs sont en butée. *Middle g
 - **AMD AMF x2** n'est plus lié au profil 4 : c'est une option globale (*Extra Frame Generation*) appliquée à tous les profils sur AMD. Le profil AMD 4 devient une variante libre du 2K. Ctrl+1…4 refusent un profil vide au lieu de sélectionner un slot sans chaîne.
 - NVIDIA Smooth Motion et AMD Fluid Motion Frames sont des fonctions du pilote : le Manager indique où les activer.
 - **Coordinateur HDR** : le processus `hdr-coordinator.exe` (.NET, verrou + état JSON sur disque) n'est plus lancé à chaque vérification (au moins une fois par seconde) mais seulement quand le contexte change, tant qu'une demande est en attente, et toutes les 5 s par sécurité. Un changement du HDR Windows fait hors du lecteur est donc détecté en 5 s au plus.
+- **Démarrage d'un fichier** : la ligne `vf` officielle démarre le filtre sur le slot intégré Balanced (1002), puis le profil par défaut n'est appliqué qu'une fois le fichier chargé, ce qui charge un moteur TensorRT pour rien à chaque vidéo. Le filtre démarre maintenant directement sur le profil voulu : celui choisi pendant la session, sinon le profil par défaut de la banque. En cours de lecture, Ctrl+1…4 bascule toujours sans reconstruire la chaîne.
 - **Shader** : la conversion ICtCp de la vibrance réutilise celle de l'entrée pour les pixels que la courbe ne modifie pas (la majorité des tons moyens). Rendu identique au code de quantification près.
 
 ## Ce qui a été retiré

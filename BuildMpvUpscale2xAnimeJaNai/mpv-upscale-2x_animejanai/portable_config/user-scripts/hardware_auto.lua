@@ -13,9 +13,10 @@ local function prepare()
         if hw.vendor == 'amd' then mp.set_property('d3d11va-zero-copy','yes') end
         if hw.vendor ~= 'unknown' then mp.set_property('d3d11-adapter',hw.name) end
     end
+    -- The slot chosen during this session (Ctrl+0..4) wins over the bank's default slot.
     local bank=policy.read_bank(hw.conf)
-    local vf, changed = policy.configure_filters(mp.get_property_native('vf') or {},hw.vendor,hw.conf,
-        bank and bank.default_slot or 3)
+    local slot=mp.get_property_native('user-data/animejanai-active-slot') or (bank and bank.default_slot) or 3
+    local vf, changed = policy.configure_filters(mp.get_property_native('vf') or {},hw.vendor,hw.conf,slot,true)
     if changed then mp.set_property_native('vf',vf) end
 end
 

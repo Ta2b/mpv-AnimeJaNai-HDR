@@ -172,14 +172,18 @@ local function copy(value)
     return out
 end
 
-function M.configure_filters(list, vendor, conf, slot)
+-- Point the aji filter at the GPU's bank. With preload (before a file starts), also set the
+-- wanted slot so the filter does not first load the built-in slot baked into the vf line
+-- (1002). During playback, slots switch with vf-command instead: no filter rebuild.
+function M.configure_filters(list, vendor, conf, slot, preload)
     local output = copy(list)
+    local wanted = tostring(M.map_slot(vendor,slot))
     for _, f in ipairs(output) do
         if f.label == 'aji' and f.name == 'animejanai' then
             f.params = f.params or {}
-            if f.params.conf == conf then return list, false end
+            if f.params.conf == conf and (not preload or tostring(f.params.slot) == wanted) then return list, false end
             f.params.conf = conf
-            f.params.slot = tostring(M.map_slot(vendor,slot))
+            f.params.slot = wanted
             return output, true
         end
     end
