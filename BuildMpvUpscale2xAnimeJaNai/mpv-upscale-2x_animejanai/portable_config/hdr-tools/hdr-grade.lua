@@ -7,7 +7,7 @@ M.prefix = 'anime-hdr-grade/'
 M.keys = {'peak','paper','in_max','shadows','shadow_knee','area_gain','spec_gain','vibrance','abl','gamut_p3'}
 -- Render options owned by the controller; restored to their startup values otherwise.
 M.render_keys = {'target-trc','target-peak','target-contrast','target-gamut','hdr-reference-white',
-    'sub-hdr-peak','image-subs-hdr-peak'}
+    'sub-hdr-peak','image-subs-hdr-peak','hdr-compute-peak'}
 
 -- Ctrl+G "natural" step: a softer look on top of the same display description.
 M.presets = {
@@ -71,6 +71,11 @@ function M.plan(o, ctx, preset)
         -- SDR white placed at paper white; the shader creates the highlights.
         render['target-trc'] = 'pq'
         render['hdr-reference-white'] = tostring(paper)
+    end
+    if ctx.backend == 'rtx' and ctx.source == 'sdr' and ctx.truehdr then
+        -- TrueHDR is tagged at the display peak and must pass through as it is. With peak
+        -- detection MPV still measures every frame and applies a dynamic bt.2390 curve.
+        render['hdr-compute-peak'] = 'no'
     end
 
     if ctx.backend == 'none' or not o.grade or not ctx.enabled or ctx.target_gamma ~= 'pq' then

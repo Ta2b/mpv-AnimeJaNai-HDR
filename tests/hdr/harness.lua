@@ -5,7 +5,7 @@ function H.new(opts)
   local P = S.props
   P['vf'] = {{label='aji', name='animejanai', enabled=true, params={conf=opts.root..'/../animejanai/animejanai.conf', slot='1002'}}}
   P['glsl-shaders'] = {}; P['glsl-shader-opts'] = {}
-  for k,v in pairs({['target-trc']='auto',['target-peak']='auto',['target-contrast']='auto',['target-gamut']='auto',
+  for k,v in pairs({['target-trc']='auto',['target-peak']='auto',['target-contrast']='auto',['target-gamut']='auto',['hdr-compute-peak']='auto',
       ['hdr-reference-white']='203',['tone-mapping']='bt.2390',['inverse-tone-mapping']='no',pid=1234}) do P[k]=v end
   for k,v in pairs(opts.props or {}) do P[k]=v end
   local function split(name)

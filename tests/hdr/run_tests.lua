@@ -40,6 +40,7 @@ check('rtx keeps target-trc auto', S.props['target-trc']=='auto', S.props['targe
 check('rtx no shader before TrueHDR PQ confirmed', not has_shader(S))
 S.set('video-out-params',{w=3840,h=2160,gamma='pq',par=1,rotate=0}); S.tick(3)
 check('rtx shader active', has_shader(S))
+check('rtx: no peak detection on TrueHDR', S.props['hdr-compute-peak']=='no', S.props['hdr-compute-peak'])
 local o=S.props['glsl-shader-opts']
 check('rtx in_max = peak', o['anime-hdr-grade/in_max']=='1000.0000', o['anime-hdr-grade/in_max'])
 check('rtx area gain 1', o['anime-hdr-grade/area_gain']=='1.0000')
