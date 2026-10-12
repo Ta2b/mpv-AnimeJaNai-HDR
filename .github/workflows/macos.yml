@@ -1,0 +1,73 @@
+name: macOS
+# Apple Silicon: the ONNX Runtime engine with the Core ML provider, and a benchmark bundle to run
+# on a real Mac. Experimental; never blocks a release.
+on:
+  workflow_dispatch:
+  push:
+    branches: [hdr-3.8]
+    paths:
+      - 'native/linux-ort/**'
+      - 'native/macos-bench/**'
+      - '.github/workflows/macos.yml'
+
+jobs:
+  engine:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      ORT_VERSION: 1.31.0
+      ONNX: BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch ONNX Runtime (Core ML provider included) and the configuration parser
+        run: |
+          uname -m; sw_vers
+          curl -fsSL --retry 3 -o ort.tgz "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VERSION/onnxruntime-osx-arm64-$ORT_VERSION.tgz"
+          mkdir ort && tar -xzf ort.tgz -C ort --strip-components=1
+          ls -la ort/lib
+          git clone --depth 1 --branch v0.11.1 https://github.com/the-database/animejanai-inference.git aji-source
+      - name: Build the engine
+        run: |
+          cmake -S native/linux-ort -B ort-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3 -DORT_ROOT="$GITHUB_WORKSPACE/ort" -DAJI_SOURCE="$GITHUB_WORKSPACE/aji-source"
+          cmake --build ort-build -j 4
+          otool -L ort-build/libaji_ort.dylib
+      - name: Run a profile on the CPU provider
+        run: |
+          AJI_ORT_PROVIDER=cpu ort-build/animejanai-ort-test native/macos-bench/bench.conf "$ONNX" 1 320 180 3 | tee cpu.log
+          grep -q 'plan: 640x360 active=1' cpu.log
+      - name: Run the same profile through Core ML
+        # The hosted runner is a virtual machine: this proves that Core ML takes the model and
+        # gives the same picture, not how fast a real Mac is.
+        run: |
+          mkdir models && cp "$ONNX"/*SPANF3*.onnx models/
+          for device in CPU ALL GPU ANE; do
+            echo "== $device"
+            AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 320 180 5 $device 2>&1 | tee "coreml-$device.log" | tail -5 || true
+          done
+          grep -q 'plan: 640x360 active=1' coreml-CPU.log
+          grep 'centre pixel' cpu.log coreml-*.log
+          ls models/coreml-cache | head
+      - name: Benchmark bundle
+        run: |
+          b=AnimeJaNai-mac-bench
+          mkdir -p "$b/models"
+          cp ort-build/libaji_ort.dylib ort-build/animejanai-ort-test "$b/"
+          cp -a ort/lib/libonnxruntime*.dylib "$b/"
+          cp native/macos-bench/bench.command native/macos-bench/bench.conf native/macos-bench/LISEZ-MOI.txt "$b/"
+          cp "$ONNX"/2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16.onnx \
+             "$ONNX"/2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16.onnx "$b/models/"
+          chmod +x "$b/bench.command" "$b/animejanai-ort-test"
+          # The test program finds the engine and ONNX Runtime next to itself.
+          install_name_tool -add_rpath @loader_path "$b/animejanai-ort-test" 2>/dev/null || true
+          install_name_tool -add_rpath @loader_path "$b/libaji_ort.dylib" 2>/dev/null || true
+          codesign --force -s - "$b"/*.dylib "$b/animejanai-ort-test"
+          ( cd "$b" && AJI_ORT_PROVIDER=cpu ./animejanai-ort-test bench.conf models 1 320 180 2 | tail -2 )
+          rm -rf "$b/models/coreml-cache" "$b/ort-stats.txt"
+          ditto -c -k --keepParent "$b" "$b.zip"
+          ls -la "$b.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-bench
+          path: AnimeJaNai-mac-bench.zip
+          if-no-files-found: error

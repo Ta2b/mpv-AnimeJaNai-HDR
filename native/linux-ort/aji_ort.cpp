@@ -1,6 +1,7 @@
 // AnimeJaNai upscaling through ONNX Runtime, for the GPUs whose vendor provides an execution
-// provider: AMD (MIGraphX, on ROCm) and Intel (OpenVINO). Same host RGB24 bridge ABI as the
-// NCNN/Vulkan engine (aji_vulkan.h), so the Linux player filter loads either library unchanged.
+// provider: AMD (MIGraphX, on ROCm), Intel (OpenVINO) and Apple (Core ML, macOS). Same host RGB24
+// bridge ABI as the NCNN/Vulkan engine (aji_vulkan.h), so the player filter loads either library
+// unchanged.
 //
 // The original ONNX models are used as they are: no conversion step. RIFE is not handled by this
 // engine yet: a profile that asks for it is upscaled without interpolation, and the statistics
@@ -8,7 +9,10 @@
 #include "aji_vulkan.h"
 #include "aji_conf.h"
 #include <onnxruntime_cxx_api.h>
+#if defined(__x86_64__) || defined(_M_X64)
 #include <immintrin.h>
+#define AJI_F16C 1
+#endif
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
@@ -116,6 +120,20 @@ void resized_dims(int w, int h, const AjiModelConf &conf, int *ow, int *oh)
     }
 }
 
+#if !defined(AJI_F16C)
+// Half-float conversion through the compiler's 16-bit float type (ARM: vectorised by clang).
+void floats_to_halves(const float *src, uint16_t *dst, size_t count)
+{
+    _Float16 *out = (_Float16 *)dst;
+    for (size_t i = 0; i < count; i++) out[i] = (_Float16)src[i];
+}
+
+void halves_to_floats(const uint16_t *src, float *dst, size_t count)
+{
+    const _Float16 *in = (const _Float16 *)src;
+    for (size_t i = 0; i < count; i++) dst[i] = (float)in[i];
+}
+#else
 // Half-float conversion, 8 values at a time (F16C).
 void floats_to_halves(const float *src, uint16_t *dst, size_t count)
 {
@@ -140,6 +158,24 @@ void halves_to_floats(const uint16_t *src, float *dst, size_t count)
         float out[8];
         _mm256_storeu_ps(out, _mm256_cvtph_ps(_mm_loadu_si128((const __m128i *)padded)));
         dst[i] = out[0];
+    }
+}
+#endif
+
+// NAME="key=value;key=value": extra or replaced provider options, for trials.
+void merge_env(std::unordered_map<std::string, std::string> &options, const char *name)
+{
+    const char *extra = std::getenv(name);
+    if (!extra || !*extra) return;
+    const std::string all = extra;
+    size_t at = 0;
+    while (at < all.size()) {
+        size_t end = all.find(';', at);
+        if (end == std::string::npos) end = all.size();
+        const std::string pair = all.substr(at, end - at);
+        const size_t eq = pair.find('=');
+        if (eq != std::string::npos && eq > 0) options[pair.substr(0, eq)] = pair.substr(eq + 1);
+        at = end + 1;
     }
 }
 
@@ -168,8 +204,8 @@ std::string wanted_provider(const AjiConf &conf)
 {
     const char *forced = std::getenv("AJI_ORT_PROVIDER");
     std::string name = lower(forced && *forced ? forced : conf.backend);
-    if (name == "migraphx" || name == "openvino" || name == "cpu") return name;
-    throw std::runtime_error("The ONNX Runtime engine handles backend=MIGraphX, OpenVINO or CPU, not " + conf.backend);
+    if (name == "migraphx" || name == "openvino" || name == "coreml" || name == "cpu") return name;
+    throw std::runtime_error("The ONNX Runtime engine handles backend=MIGraphX, OpenVINO, CoreML or CPU, not " + conf.backend);
 }
 
 Ort::SessionOptions session_options(Context &c)
@@ -196,21 +232,24 @@ Ort::SessionOptions session_options(Context &c)
         std::unordered_map<std::string, std::string> openvino{
             {"device_type", c.device.empty() ? "GPU" : c.device}, {"precision", "FP16"}};
         if (lower(openvino["device_type"]) == "cpu") openvino["precision"] = "FP32";
-        // AJI_ORT_OPENVINO="key=value;key=value": extra or replaced provider options, for trials.
-        if (const char *extra = std::getenv("AJI_ORT_OPENVINO"); extra && *extra) {
-            std::string all = extra;
-            size_t at = 0;
-            while (at < all.size()) {
-                size_t end = all.find(';', at);
-                if (end == std::string::npos) end = all.size();
-                const std::string pair = all.substr(at, end - at);
-                const size_t eq = pair.find('=');
-                if (eq != std::string::npos && eq > 0) openvino[pair.substr(0, eq)] = pair.substr(eq + 1);
-                at = end + 1;
-            }
-        }
+        merge_env(openvino, "AJI_ORT_OPENVINO");
         options.AppendExecutionProvider_OpenVINO_V2(openvino);
         c.provider_label = "OpenVINO " + openvino["device_type"];
+    } else if (c.provider == "coreml") {
+        // Apple Silicon. device: ALL (default), GPU, ANE (Neural Engine) or CPU. ML Program keeps
+        // the models in half floats; the compiled model is cached next to the ONNX files.
+        const std::string device = lower(c.device);
+        const std::string units = device == "gpu" ? "CPUAndGPU" : device == "ane" || device == "npu" ? "CPUAndNeuralEngine"
+            : device == "cpu" ? "CPUOnly" : "ALL";
+        std::unordered_map<std::string, std::string> coreml{
+            {"ModelFormat", "MLProgram"}, {"MLComputeUnits", units}, {"RequireStaticInputShapes", "1"}};
+        std::error_code ignored;
+        const std::filesystem::path cache = std::filesystem::path(c.models) / "coreml-cache";
+        std::filesystem::create_directories(cache, ignored);
+        if (std::filesystem::is_directory(cache, ignored)) coreml["ModelCacheDirectory"] = cache.string();
+        merge_env(coreml, "AJI_ORT_COREML");
+        options.AppendExecutionProvider("CoreML", coreml);
+        c.provider_label = "CoreML " + coreml["MLComputeUnits"];
     } else {
         c.provider_label = "CPU";
     }

@@ -1,0 +1,24 @@
+AnimeJaNai - mesure de vitesse Core ML (Mac à puce Apple)
+
+Ce dossier ne contient pas le lecteur : il mesure seulement le temps de calcul des modèles
+AnimeJaNai sur ce Mac, pour savoir si une version Mac du lecteur vaut la peine.
+
+Lancer la mesure
+----------------
+macOS bloque les programmes téléchargés qui ne sont pas signés. Ouvrir le Terminal et taper,
+en adaptant le chemin du dossier :
+
+    xattr -dr com.apple.quarantine ~/Downloads/AnimeJaNai-mac-bench
+    ~/Downloads/AnimeJaNai-mac-bench/bench.command
+
+La mesure dure quelques minutes. La première image de chaque essai est lente : Core ML compile
+le modèle (le résultat est gardé dans models/coreml-cache).
+
+Lire le résultat
+----------------
+Le fichier resultats.txt contient, pour chaque essai, la ligne
+    average after the first frame: X ms
+C'est le temps par image, copies en mémoire comprises. Pour une vidéo à 24 images par seconde il
+faut moins de 41 ms ; pour 60 images par seconde, moins de 16 ms.
+
+Envoyer le fichier resultats.txt en entier.
