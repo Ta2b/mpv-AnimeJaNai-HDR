@@ -119,23 +119,28 @@ Pendant une vidéo en sortie HDR, Ctrl+Alt+P remplace l'image par des patchs de 
 - AMF ×2 : voir la section précédente. Le cumul avec RIFE est possible en activant RIFE dans un profil AMD.
 - Commencer par Ctrl+3 et vérifier les images perdues avec Ctrl+Alt+H.
 
-## Aspect RTX TrueHDR pour la conversion mpv
+## Un seul aspect HDR pour tous les GPU
 
-*TrueHDR Look for mpv Conversion* dans le Manager (`mpv_truehdr_look`, avec `mpv_contrast` et `mpv_saturation`) donne à la conversion mpv le rendu de RTX Video HDR. Elle sert sur AMD et Intel, avec `hdr_backend=mpv`, et sur NVIDIA quand aucune chaîne AnimeJaNai n'est active.
+Trois réglages décrivent l'aspect HDR, dans la section HDR du Manager : **contraste**, **saturation** (0 à 200, 100 neutre) et **gris moyen** (10 à 100). Ce sont les réglages de RTX Video HDR (`rtx_contrast`, `rtx_saturation`, `rtx_middle_gray`), et ils pilotent les deux conversions :
 
-La courbe a été mesurée sur RTX TrueHDR avec des mires (gris moyen 50) : sur ces mires, TrueHDR se comporte comme une courbe globale, identique pour un aplat plein écran et pour un petit patch.
+| Conversion | Où | Comment elle suit ces réglages |
+|---|---|---|
+| RTX Video HDR, sortie Vulkan | NVIDIA | directement : le moteur les transmet à TrueHDR |
+| mpv, avec *Match the mpv conversion to RTX Video HDR* (`mpv_truehdr_look=yes`, défaut) | AMD, Intel, `hdr_backend=mpv`, ou aucune chaîne active | le shader applique la courbe mesurée sur TrueHDR pour ces mêmes valeurs, puis le même grading (`highlights_rtx`, `vibrance_rtx`, `shadows`) |
+| RTX Video HDR, sortie Direct3D 11 | NVIDIA | **pas automatiquement** : TrueHDR lit les curseurs de l'application NVIDIA. Y mettre les mêmes valeurs, ou passer en Vulkan |
 
-| Niveau SDR (0-255) | 16 | 64 | 128 | 192 | 224 | 255 |
-|---|---|---|---|---|---|---|
-| TrueHDR neutre (nits) | 0,9 | 12 | 51 | 160 | 319 | 997 |
-| TrueHDR contraste 200 (nits) | 0,2 | 7,3 | 52 | 197 | 393 | 997 |
+Les lois ont été mesurées sur RTX TrueHDR avec des mires, sur toute la plage des curseurs (`D:\AnimeJaNai-dev\rtxprobe`) :
 
-- **Base** : le blanc SDR va au pic de l'écran, les tons moyens restent vers 50 nits.
-- **Contraste** : une puissance autour du gris moyen (1,38 dessous et 1,29 dessus à 200), qui creuse les noirs et pousse les clairs sans dépasser le pic.
-- **Saturation** : l'écart à la luminance est multiplié (1,2 à 200).
-- Le shader applique ensuite le même grading que sur TrueHDR (`highlights_rtx`, `vibrance_rtx`, `shadows`).
+| Réglage | Effet mesuré sur TrueHDR | Dans le shader |
+|---|---|---|
+| Gris moyen *m* | le gris 50 % sort à environ *m* nits ; le blanc reste au pic | base 4 × *m*, montée vers le pic d'exposant 6 × (50 / *m*)^0,35 |
+| Contraste | puissance autour du gris moyen : 0,65 / 0,74 à 0 ; 1,38 / 1,28 à 200 (sous / au-dessus du pivot) | mêmes exposants |
+| Saturation | écart à la luminance × 0,81 à 0 ; × 1,19 à 200 | même facteur |
+| Pic de l'écran | le blanc SDR va au pic (vérifié à 400, 600 et 1000 nits) | idem |
 
-Écart du shader avec TrueHDR sur les mires : ± 6 % sur les gris, ± 7 % sur les couleurs courantes, jusqu'à + 20 % sur les primaires pures. Sur deux images d'un épisode, l'erreur par rapport à TrueHDR réglé au maximum est divisée par 2 à 3 par rapport à l'ancienne conversion mpv. Les échelles sont celles de l'application NVIDIA : 100 neutre, 200 maximum. Désactivé par défaut : la conversion mpv d'origine (blanc SDR à `paper_white`, éclats par zone) reste disponible.
+Écart du shader avec TrueHDR sur les mires grises : ± 10 % sur presque toute la plage (jusqu'à − 23 % au gris moyen 10, réglage extrême), ± 10 % sur les couleurs courantes, jusqu'à + 20 % sur les primaires pures. Sur deux images d'un épisode et quatre réglages différents, le PSNR entre les deux conversions va de 29 à 44 dB. TrueHDR est un réseau de neurones : sur des images réelles il peut s'écarter de la courbe mesurée sur mires.
+
+Décocher la case rend à mpv sa conversion d'origine (blanc SDR à `paper_white`, éclats par zone, `highlights` et `vibrance`). `mpv_contrast`, `mpv_saturation` et `mpv_middle_gray` sont retirés : encore acceptés dans un ancien fichier, ils n'ont plus d'effet.
 
 ## Sortie Vulkan ou Direct3D 11 (NVIDIA)
 

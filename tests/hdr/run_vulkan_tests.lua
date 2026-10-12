@@ -110,17 +110,25 @@ local ctx={vendor='nvidia',backend='mpv',source='sdr',windows='on',truehdr=false
 local plan=G.plan(base,ctx)
 check('look off: original MPV conversion', plan.params.emulate==0 and plan.render['hdr-reference-white']=='203' and plan.params.in_max==203, plan.params.emulate)
 local with={}; for k,v in pairs(base) do with[k]=v end
-with.mpv_truehdr_look=true; with.mpv_contrast=200; with.mpv_saturation=200; with.mpv_middle_gray=50
+with.mpv_truehdr_look=true; with.rtx_contrast=200; with.rtx_saturation=200; with.rtx_middle_gray=50
 plan=G.plan(with,ctx)
 local q=plan.params
-check('look on: curve parameters', q.emulate==1 and q.em_base==200 and math.abs(q.em_lo-1.38)<1e-9 and math.abs(q.em_hi-1.29)<1e-9 and math.abs(q.em_sat-1.2)<1e-9, q.em_lo)
+check('look on: curve parameters', q.emulate==1 and q.em_base==200 and math.abs(q.em_pow-6)<1e-9 and math.abs(q.em_lo-1.38)<1e-9 and math.abs(q.em_hi-1.28)<1e-9 and math.abs(q.em_sat-1.19)<1e-9, q.em_lo)
 check('look on: graded like TrueHDR', plan.mode=='mpv' and q.area_gain==1 and q.in_max==1000 and q.paper==500 and q.vibrance==0.2, q.area_gain)
 check('look on: SDR placed at 203 nits', plan.render['hdr-reference-white']=='203' and plan.render['target-trc']=='pq')
-with.mpv_contrast=100; with.mpv_saturation=100
+with.rtx_contrast=100; with.rtx_saturation=100
 q=G.plan(with,ctx).params
 check('look on, neutral sliders', q.em_lo==1 and q.em_hi==1 and q.em_sat==1)
 local keys={}; for _,k in ipairs(G.keys) do keys[k]=true end
-check('look: every parameter reaches the shader', keys.emulate and keys.sdr_white and keys.em_base and keys.em_lo and keys.em_hi and keys.em_sat)
+check('look: every parameter reaches the shader', keys.emulate and keys.sdr_white and keys.em_base and keys.em_pow and keys.em_lo and keys.em_hi and keys.em_sat)
+-- The RTX Video HDR sliders drive the MPV conversion over their whole range
+with.rtx_contrast=0; with.rtx_saturation=0; with.rtx_middle_gray=100
+q=G.plan(with,ctx).params
+check('look follows low sliders', math.abs(q.em_lo-0.65)<1e-9 and math.abs(q.em_hi-0.74)<1e-9 and math.abs(q.em_sat-0.81)<1e-9 and q.em_base==400 and q.em_pow<6, q.em_lo)
+with.rtx_contrast=150; with.rtx_saturation=150; with.rtx_middle_gray=25
+q=G.plan(with,ctx).params
+check('look follows intermediate sliders', math.abs(q.em_lo-1.19)<1e-9 and math.abs(q.em_hi-1.14)<1e-9 and math.abs(q.em_sat-1.095)<1e-9 and q.em_base==100 and q.em_pow>6, q.em_hi)
+check('retired mpv_contrast has no effect', (function() with.mpv_contrast=200; local a=G.plan(with,ctx).params.em_lo; with.mpv_contrast=100; return a==G.plan(with,ctx).params.em_lo end)())
 
 write(conf,saved)
 os.remove(stats); os.remove(rtxconf); os.remove(ROOT..'/cache/animejanai-rtx-state.json')

@@ -31,8 +31,10 @@ function M.options()
         render_api='d3d11',rtx_vsr_quality=2,rtx_contrast=100,rtx_saturation=100,rtx_middle_gray=50,
         -- Vulkan engine: a frame identical to the last processed one reuses its result.
         skip_held_frames=true,held_threshold=0.40,
-        -- MPV conversion with the look of RTX TrueHDR (curve measured on the RTX Video SDK).
-        mpv_truehdr_look=false,mpv_contrast=100,mpv_saturation=100,mpv_middle_gray=50,
+        -- One HDR look: when MPV converts, it follows RTX TrueHDR's curve with the same
+        -- rtx_contrast / rtx_saturation / rtx_middle_gray. mpv_contrast, mpv_saturation and
+        -- mpv_middle_gray are retired: still accepted in old files, no longer used.
+        mpv_truehdr_look=true,mpv_contrast=100,mpv_saturation=100,mpv_middle_gray=50,
         linux_hdr_output='auto'}
     require('mp.options').read_options(o,'animejanai_hdr_auto')
     local warn = require('mp.msg').warn
@@ -110,9 +112,6 @@ function M.options()
     o.skip_held_frames = bool(o.skip_held_frames)
     o.held_threshold = number(o.held_threshold, 0.40, 0, 2)
     o.mpv_truehdr_look = bool(o.mpv_truehdr_look)
-    o.mpv_contrast = number(o.mpv_contrast, 100, 100, 200)
-    o.mpv_saturation = number(o.mpv_saturation, 100, 100, 200)
-    o.mpv_middle_gray = number(o.mpv_middle_gray, 50, 25, 100)
     o.linux_hdr_output = o.linux_hdr_output == 'pq' and 'pq' or o.linux_hdr_output == 'sdr' and 'sdr' or 'auto'
     return o
 end
