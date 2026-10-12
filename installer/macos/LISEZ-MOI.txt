@@ -1,0 +1,45 @@
+mpv AnimeJaNai - macOS (puce Apple) - APERÇU
+
+Première version pour Mac. Elle a été compilée et vérifiée automatiquement sans écran ; elle n'a
+encore été ouverte sur aucun vrai Mac. Attendez-vous à des défauts.
+
+Installer
+---------
+1. Décompresser, glisser « mpv AnimeJaNai » dans Applications.
+2. L'application n'est pas signée par un développeur Apple : macOS la bloque au premier lancement.
+   Dans le Terminal :
+       xattr -dr com.apple.quarantine "/Applications/mpv AnimeJaNai.app"
+3. Ouvrir une vidéo avec l'application (glisser le fichier sur l'icône, ou clic droit > Ouvrir avec).
+
+Raccourcis
+----------
+Ctrl+1  Performance, 1080p ramené à 720p puis doublé (le plus léger)
+Ctrl+2  Performance, résolution d'origine doublée
+Ctrl+3  Balanced, 1080p ramené à 720p puis doublé
+Ctrl+4  Balanced, résolution d'origine doublée
+Ctrl+0  désactiver
+Ctrl+j  état et temps de calcul par image
+
+La première image d'un profil est lente : Core ML compile le modèle, puis le garde dans
+~/Library/Caches/AnimeJaNai.
+
+Ce que cette version fait et ne fait pas
+----------------------------------------
+- Agrandissement AnimeJaNai par Core ML (GPU et Neural Engine de la puce Apple).
+- Vidéo HDR : transmise à l'écran par mpv.
+- Pas encore : conversion SDR vers HDR avec le rendu TrueHDR, interpolation RIFE, Manager,
+  mise à jour automatique.
+
+Réglages
+--------
+Fichier de l'application : Contents/Resources/script-opts/animejanai_mac.conf
+  default_slot  profil au démarrage (0 = désactivé)
+  device        ALL, GPU, ANE ou CPU
+Pour vos propres profils, copier Contents/Resources/animejanai/animejanai.conf vers
+~/Library/Application Support/AnimeJaNai/animejanai.conf et le modifier.
+
+En cas de problème
+------------------
+Lancer depuis le Terminal pour voir les messages :
+    "/Applications/mpv AnimeJaNai.app/Contents/MacOS/mpv" chemin/de/la/video.mkv
+et envoyer ce qui s'affiche, avec le fichier ~/Library/Caches/AnimeJaNai/currentanimejanai.log.

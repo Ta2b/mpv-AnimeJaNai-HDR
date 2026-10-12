@@ -11,7 +11,7 @@ edits={
     'filters/user_filters.h':('extern const struct mp_user_filter_entry vf_animejanai;',
         'extern const struct mp_user_filter_entry vf_animejanai;\nextern const struct mp_user_filter_entry vf_animejanai_vulkan;'),
     'filters/user_filters.c':('    &vf_format,\n','    &vf_format,\n#ifndef _WIN32\n    &vf_animejanai_vulkan,\n#endif\n'),
-    'meson.build':("cuda_hwaccel = get_option('cuda-hwaccel')", "if host_machine.system() == 'linux'\n    sources += files('video/filter/vf_animejanai_vulkan.c')\nendif\n\ncuda_hwaccel = get_option('cuda-hwaccel')")
+    'meson.build':("cuda_hwaccel = get_option('cuda-hwaccel')", "if host_machine.system() != 'windows'\n    sources += files('video/filter/vf_animejanai_vulkan.c')\nendif\n\ncuda_hwaccel = get_option('cuda-hwaccel')")
 }
 for name,(old,new) in edits.items():
     p=root/name;text=p.read_text()

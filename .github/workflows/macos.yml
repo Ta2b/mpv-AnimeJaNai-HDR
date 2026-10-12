@@ -8,6 +8,8 @@ on:
     paths:
       - 'native/linux-ort/**'
       - 'native/macos-bench/**'
+      - 'native/linux-vulkan/**'
+      - 'installer/macos/**'
       - '.github/workflows/macos.yml'
 
 jobs:
@@ -73,4 +75,63 @@ jobs:
         with:
           name: mac-bench
           path: AnimeJaNai-mac-bench.zip
+          if-no-files-found: error
+      - name: Engine files for the player
+        run: |
+          mkdir mac-engine
+          cp ort-build/libaji_ort.dylib mac-engine/
+          cp -L ort/lib/libonnxruntime.1.dylib mac-engine/libonnxruntime.1.dylib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-engine
+          path: mac-engine/
+          if-no-files-found: error
+
+  player:
+    # mpv with the host-frame filter, bundled as an application with the engine and the models.
+    needs: engine
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          brew update >/dev/null
+          brew install meson ninja pkgconf ffmpeg libplacebo libass luajit molten-vk vulkan-loader vulkan-headers little-cms2 uchardet zimg jpeg-turbo
+          brew list --versions ffmpeg libplacebo libass molten-vk
+      - name: Build mpv with the AnimeJaNai filter
+        run: bash installer/macos/build-mpv.sh "$RUNNER_TEMP/mpv-work" "$GITHUB_WORKSPACE/mac-mpv"
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-engine
+          path: mac-engine
+      - name: Assemble the application
+        run: |
+          VER="$(tr -d '[:space:]' < release-version.txt)"
+          echo "VER=$VER" >> "$GITHUB_ENV"
+          bash installer/macos/package.sh mac-mpv/mpv.app mac-engine BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx "$VER" mac-out
+          du -sh "mac-out/mpv AnimeJaNai.app"
+      - name: Play a synthetic clip through the filter
+        # No display on the runner: null output. Proves that the bundled settings and script are
+        # read, that the filter loads the engine and that Core ML processes frames.
+        run: |
+          rm -rf "$HOME/Library/Caches/AnimeJaNai"
+          "mac-out/mpv AnimeJaNai.app/Contents/MacOS/mpv" av://lavfi:testsrc2=size=640x360:rate=24 \
+            --vo=null --ao=null --frames=12 --msg-level=all=v > run.log 2>&1 || true
+          grep -E 'AnimeJaNai|animejanai|aji|Reading config|osxbundle|error|Error' run.log | cut -c1-220 | head -40
+          cat "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
+          grep -q 'Backend: ONNX Runtime/CoreML' "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
+          grep -q 'Output: 1280x720' "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
+      - name: Archive
+        run: |
+          cp installer/macos/LISEZ-MOI.txt mac-out/
+          ( cd mac-out && ditto -c -k --keepParent "mpv AnimeJaNai.app" "../mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip" )
+          ls -la *.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-player
+          path: |
+            mpv-AnimeJaNai-HDR-v*-macos-arm64.zip
+            installer/macos/LISEZ-MOI.txt
+            run.log
           if-no-files-found: error

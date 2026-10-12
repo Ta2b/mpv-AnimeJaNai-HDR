@@ -244,7 +244,13 @@ Ort::SessionOptions session_options(Context &c)
         std::unordered_map<std::string, std::string> coreml{
             {"ModelFormat", "MLProgram"}, {"MLComputeUnits", units}, {"RequireStaticInputShapes", "1"}};
         std::error_code ignored;
-        const std::filesystem::path cache = std::filesystem::path(c.models) / "coreml-cache";
+        // AJI_ORT_CACHE names another folder: an application bundle is read-only once installed.
+        const char *chosen = std::getenv("AJI_ORT_CACHE");
+        const char *home = std::getenv("HOME");
+        std::filesystem::path cache = std::filesystem::path(c.models) / "coreml-cache";
+        if (chosen && *chosen) cache = chosen;
+        else if (c.models.find(".app/Contents/") != std::string::npos && home && *home)
+            cache = std::filesystem::path(home) / "Library/Caches/AnimeJaNai/coreml";
         std::filesystem::create_directories(cache, ignored);
         if (std::filesystem::is_directory(cache, ignored)) coreml["ModelCacheDirectory"] = cache.string();
         merge_env(coreml, "AJI_ORT_COREML");
