@@ -50,3 +50,28 @@ continue, jamais ouverte sur un vrai Mac**. Mode d'emploi pour l'utilisateur :
 Workflow `.github/workflows/macos.yml` : jobs `engine` (moteur, essais, paquet de mesure) et
 `player` (mpv, application, essai de lecture). Sur la branche `release`, il attend que la release
 existe puis y ajoute les fichiers macOS ; il ne bloque jamais la release Windows et Linux.
+
+## 3.8.0.15 (13 octobre 2026) : premier retour d'un vrai Mac
+
+Premier essai de l'utilisateur sur un MacBook Pro M4 Pro : le lecteur s'ouvre et le profil le plus
+léger prend **54 ms par image**, trop pour 24 images par seconde (41 ms). Corrections :
+
+- **Conversions sur plusieurs cœurs.** Le travail côté processeur (octets vers flottants,
+  redimensionnement, demi-flottants, retour en octets) tournait sur un seul cœur. Il est réparti sur
+  huit au plus, et deux chemins directs évitent l'image flottante intermédiaire : octets vers
+  demi-flottants par table à l'entrée, demi-flottants vers octets à la sortie.
+- **Détail des temps.** Les statistiques (`Ctrl+j`) donnent le temps du modèle et celui des
+  conversions : c'est ce qui dira où chercher ensuite. Gain réel non mesuré sur un vrai Mac.
+- **Bogue du cache Core ML.** Le modèle compilé était rangé sans tenir compte de la taille d'image ;
+  un changement de profil ou une vidéo d'une autre taille reprenait un modèle incompatible et le
+  filtre échouait. Un dossier par taille et par périphérique. Essai ajouté à la compilation.
+- **Conversion SDR vers HDR.** Les scripts HDR communs (`gpu-policy.lua`, `hdr-grade.lua`,
+  `linux-hdr.lua`) et le shader `anime-hdr-grade` sont livrés ; `gpu-policy.detect` connaît macOS.
+  Active avec `linux_hdr_output=pq`. Vérifié seulement : chargement sans erreur Lua.
+- **Arborescence.** `~/Library/Application Support/AnimeJaNai` a la forme de l'installation Linux
+  (`portable_config`, `animejanai`), avec `ANIMEJANAI_ROOT` et `ANIMEJANAI_DATA_DIR`, pour qu'un
+  Manager puisse s'y brancher. L'ancien dossier `mpv/` de la 3.8.0.14 n'est plus lu.
+
+Écran Liquid Retina XDR : la sortie PQ / BT.2020 de mpv passe par l'EDR de macOS. Réglages conseillés,
+non vérifiés : `display_peak=1600`, `display_oled=no` (mini-LED). `Ctrl+i` affiche ce que l'écran a
+négocié.
