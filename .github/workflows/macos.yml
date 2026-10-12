@@ -3,14 +3,19 @@ name: macOS
 # on a real Mac. Experimental; never blocks a release.
 on:
   workflow_dispatch:
+  # On the release branch, the application and the benchmark bundle are added to the release.
   push:
-    branches: [hdr-3.8]
+    branches: [hdr-3.8, release]
     paths:
+      - 'release-version.txt'
       - 'native/linux-ort/**'
       - 'native/macos-bench/**'
       - 'native/linux-vulkan/**'
       - 'installer/macos/**'
       - '.github/workflows/macos.yml'
+
+permissions:
+  contents: write
 
 jobs:
   engine:
@@ -117,7 +122,7 @@ jobs:
         run: |
           rm -rf "$HOME/Library/Caches/AnimeJaNai"
           # Two minutes at most: a hang must still leave its log.
-          perl -e 'alarm 120; exec @ARGV' "mac-out/mpv AnimeJaNai.app/Contents/MacOS/mpv-animejanai" av://lavfi:testsrc2=size=640x360:rate=24             --vo=null --ao=null --frames=12 --log-file=run.log > console.log 2>&1 || echo "mpv exit code $?"
+          perl -e 'alarm 120; exec @ARGV' "mac-out/mpv AnimeJaNai.app/Contents/MacOS/mpv-animejanai" av://lavfi:testsrc2=size=640x360:rate=24             --vo=null --ao=null --frames=12 --keep-open=no --log-file=run.log > console.log 2>&1 || echo "mpv exit code $?"
           tail -15 console.log
           tail -40 run.log | cut -c1-230
           echo ==== filtered
@@ -138,3 +143,17 @@ jobs:
             installer/macos/LISEZ-MOI.txt
             run.log
           if-no-files-found: error
+      - name: Add the macOS files to the release
+        if: github.ref == 'refs/heads/release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The release is created by the Deploy workflow, which takes longer than this job.
+          for attempt in $(seq 1 80); do
+            if gh release view "$VER" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then break; fi
+            sleep 30
+          done
+          gh release view "$VER" --repo "$GITHUB_REPOSITORY" >/dev/null
+          cp installer/macos/LISEZ-MOI.txt "LISEZ-MOI-macOS.txt"
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" -n mac-bench -D bench
+          gh release upload "$VER" --repo "$GITHUB_REPOSITORY" --clobber             "mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip" "LISEZ-MOI-macOS.txt" bench/AnimeJaNai-mac-bench.zip
