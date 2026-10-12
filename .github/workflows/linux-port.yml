@@ -107,10 +107,32 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch ONNX Runtime and the configuration parser
+      - name: Fetch ONNX Runtime with the OpenVINO provider and the configuration parser
+        # Headers from the ONNX Runtime release, libraries from Intel's wheel of the same version:
+        # it carries the OpenVINO provider and the OpenVINO runtime (CPU, GPU and NPU plugins).
+        # The engine is built against this version on purpose: vendor builds lag behind upstream,
+        # and a library older than the headers refuses to load.
+        env:
+          ORT_VERSION: 1.24.1
         run: |
-          curl -fsSL --retry 3 -o ort.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-linux-x64-1.31.0.tgz
+          curl -fsSL --retry 3 -o ort.tgz "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VERSION/onnxruntime-linux-x64-$ORT_VERSION.tgz"
           mkdir ort && tar -xzf ort.tgz -C ort --strip-components=1
+          rm -rf ort/lib && mkdir ort/lib wheel
+          python3 -m pip download "onnxruntime-openvino==$ORT_VERSION" --no-deps --only-binary=:all: \
+            --python-version 3.12 --platform manylinux_2_28_x86_64 -d wheel
+          unzip -q wheel/*.whl 'onnxruntime/capi/*.so*' 'onnxruntime/ThirdPartyNotices.txt' 'onnxruntime/LICENSE' -d wheel/x || true
+          # One file per library, named by its soname; the wheel repeats the versioned names.
+          for f in wheel/x/onnxruntime/capi/*.so*; do
+            case "$f" in *pybind11*) continue;; esac
+            name="$(objdump -p "$f" | awk '/SONAME/ {print $2}')"
+            [ -n "$name" ] || name="$(basename "$f")"
+            [ -e "ort/lib/$name" ] || cp "$f" "ort/lib/$name"
+          done
+          ln -s libonnxruntime.so.1 ort/lib/libonnxruntime.so
+          cp wheel/x/onnxruntime/ThirdPartyNotices.txt ort/lib/ONNXRuntime-OpenVINO-ThirdPartyNotices.txt 2>/dev/null || true
+          ls -la ort/lib
+          test -s ort/lib/libonnxruntime.so.1
+          test -s ort/lib/libonnxruntime_providers_openvino.so
           git clone --depth 1 --branch v0.11.1 https://github.com/the-database/animejanai-inference.git aji-source
       - name: Build the ONNX Runtime engine
         run: |
@@ -130,13 +152,21 @@ jobs:
           AJI_ORT_PROVIDER=cpu ort-build/animejanai-ort-test ort-ci.conf BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx 1 320 180 3 | tee ort-ci.log
           grep -q 'plan: 640x360 active=1' ort-ci.log
           grep -q 'Backend: ONNX Runtime/CPU' ort-stats.txt
-      - name: Bundle the engine with the stock ONNX Runtime
-        # A stock ONNX Runtime only has the CPU provider. For MIGraphX or OpenVINO, replace
-        # libonnxruntime.so* in animejanai/inference with the vendor build and its provider libraries.
+      - name: Run the same profile through the OpenVINO provider (CPU device)
+        # No Intel GPU on the runner: this proves that the provider and the OpenVINO runtime load
+        # and run the model. The GPU device needs the host's Intel OpenCL driver.
+        run: |
+          AJI_ORT_PROVIDER=openvino ort-build/animejanai-ort-test ort-ci.conf BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx 1 320 180 3 CPU | tee ort-openvino.log
+          grep -q 'plan: 640x360 active=1' ort-openvino.log
+          grep -q 'Backend: ONNX Runtime/OpenVINO' ort-stats.txt
+      - name: Bundle the engine with the OpenVINO build of ONNX Runtime
+        # MIGraphX: replace libonnxruntime.so.1 with AMD's build (1.24 or newer) and its provider libraries.
         run: |
           mkdir ort-bundle
           cp ort-build/libaji_ort.so ort-build/animejanai-ort-test ort-bundle/
-          cp -a ort/lib/libonnxruntime.so* ort/lib/libonnxruntime_providers_shared.so ort-bundle/
+          cp -L ort/lib/*.so* ort/lib/*.txt ort-bundle/
+          rm -f ort-bundle/libonnxruntime.so
+          du -sh ort-bundle
       - uses: actions/upload-artifact@v4
         with:
           name: ort-backend-linux-x64
