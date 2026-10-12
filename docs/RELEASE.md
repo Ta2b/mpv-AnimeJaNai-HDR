@@ -144,3 +144,12 @@ Le patch Linux utilise les deux files sans nom, avec la même distribution des
 événements et les mêmes protocoles HDR. Cette adaptation est idempotente et le
 marqueur de dépendance mpv est actualisé. Le cache NCNN est désormais limité aux
 sources et modèles de la bibliothèque, indépendamment des adaptations de mpv.
+
+Le 12 octobre 2026, le lecteur corrigé a été recompilé et vérifié localement
+dans Ubuntu 24.04 avec `libwayland-client0` **1.22.0-2.1build1**, sans le
+préfixe de compilation dans `LD_LIBRARY_PATH` : `mpv --version` et
+`mpv --vf=help` passent, le filtre `animejanai-vulkan` est présent et ni mpv
+ni libmpv n’importent plus `wl_display_create_queue_with_name`.
+Les rapports sont `artifacts/workflow-wayland-queue-build.log` et
+`artifacts/workflow-wayland-host-validation.log`. Ce contrôle de démarrage
+est distinct des essais de lecture sur GPU et de la publication GitHub.
