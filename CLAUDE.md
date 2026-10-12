@@ -4,6 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Documentation map
 
+- **[`docs/REPRISE.md`](docs/REPRISE.md)** — current handoff: pushed commits,
+  unfinished release, active GitHub runs, verified results and next actions.
+  Read this first when resuming the interrupted Linux/release work.
+
 This file is the orientation doc: what the repo is, how the runtime fits together, and the
 conventions. The step-by-step procedures live next to it:
 

@@ -1,5 +1,9 @@
 # Publication du fork HDR
 
+Pour l’état temporaire des builds du 12 octobre 2026 et les actions restantes,
+consulter [le document de reprise](REPRISE.md). Les procédures ci-dessous
+décrivent le workflow ; elles ne prouvent pas à elles seules une publication.
+
 Les dépôts actifs sont `Ta2b/mpv-AnimeJaNai-HDR` (branche `hdr-3.8`) et
 `Ta2b/AnimeJaNaiManager-HDR` (branche `hdr-settings-0.8`). Windows conserve
 ses noms d’assets. Linux et Windows sont joints à la même release et utilisent la même version.

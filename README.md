@@ -4,8 +4,12 @@
 lecteur SDR Vulkan/Wayland et le Manager HDR. AnimeJaNai SPAN et RIFE 4.6
 utilisent NCNN/Vulkan sur AMD et NVIDIA, avec Performance sans RIFE au premier démarrage. TensorRT reste
 une option NVIDIA distincte. Les essais physiques HDR et RTX
-4050 restent nécessaires avant publication Linux par défaut. Voir
+4050 restent nécessaires ; Linux demeure expérimental dans les releases communes. Voir
 [la documentation Linux](docs/LINUX.md) pour la construction, les tests et les limites.
+
+**Reprise du travail :** [état des builds et actions restantes](docs/REPRISE.md).
+Windows et Linux sont prévus dans la même release **3.8.0.9** ; consulter cet
+état pour distinguer les sources poussées des paquets effectivement publiés.
 
 
 Fork de [the-database/mpv-upscale-2x_animejanai](https://github.com/the-database/mpv-upscale-2x_animejanai), basé sur la version **3.8.0** (branche `hdr-3.8`, version publiée par défaut ; la branche `hdr` reste sur la 3.6.3). Il ajoute une conversion SDR → HDR soignée pour l'anime et s'adapte tout seul aux cartes NVIDIA et AMD :
