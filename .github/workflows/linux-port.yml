@@ -98,6 +98,39 @@ jobs:
           test -s check-manager/libSkiaSharp.so
           test -s check-manager/libHarfBuzzSharp.so
 
+  ort-backend:
+    # Experimental engine (ONNX Runtime with the MIGraphX / OpenVINO providers). This job only
+    # proves that it builds on Linux and runs a profile on the CPU provider; it does not block
+    # the release while the engine is not packaged.
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch ONNX Runtime and the configuration parser
+        run: |
+          curl -fsSL --retry 3 -o ort.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-linux-x64-1.31.0.tgz
+          mkdir ort && tar -xzf ort.tgz -C ort --strip-components=1
+          git clone --depth 1 --branch v0.11.1 https://github.com/the-database/animejanai-inference.git aji-source
+      - name: Build the ONNX Runtime engine
+        run: |
+          cmake -S native/linux-ort -B ort-build -DCMAKE_BUILD_TYPE=Release -DORT_ROOT="$GITHUB_WORKSPACE/ort" -DAJI_SOURCE="$GITHUB_WORKSPACE/aji-source"
+          cmake --build ort-build -j 4
+      - name: Run a profile on the CPU provider
+        run: |
+          {
+            echo '[global]'; echo 'config_version=3'; echo 'backend=TensorRT'; echo 'default_slot=1'
+            echo '[slot_1]'; echo 'profile_name=ci'
+            echo 'chain_1_min_resolution=0x0'; echo 'chain_1_max_resolution=1920x1080'
+            echo 'chain_1_min_fps=0'; echo 'chain_1_max_fps=0'
+            echo 'chain_1_model_1_resize_height_before_upscale=0'
+            echo 'chain_1_model_1_resize_factor_before_upscale=100'
+            echo 'chain_1_model_1_name=2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16'
+          } > ort-ci.conf
+          AJI_ORT_PROVIDER=cpu ort-build/animejanai-ort-test ort-ci.conf BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx 1 320 180 3 | tee ort-ci.log
+          grep -q 'plan: 640x360 active=1' ort-ci.log
+          grep -q 'Backend: ONNX Runtime/CPU' ort-stats.txt
+
   vulkan-backend:
     runs-on: ubuntu-24.04
     timeout-minutes: 45

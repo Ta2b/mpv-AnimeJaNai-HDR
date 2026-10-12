@@ -1,0 +1,341 @@
+// AnimeJaNai upscaling through ONNX Runtime, for the GPUs whose vendor provides an execution
+// provider: AMD (MIGraphX, on ROCm) and Intel (OpenVINO). Same host RGB24 bridge ABI as the
+// NCNN/Vulkan engine (aji_vulkan.h), so the Linux player filter loads either library unchanged.
+//
+// The original ONNX models are used as they are: no conversion step. RIFE is not handled by this
+// engine yet: a profile that asks for it is upscaled without interpolation, and the statistics
+// file says so.
+#include "aji_vulkan.h"
+#include "aji_conf.h"
+#include <onnxruntime_cxx_api.h>
+#include <immintrin.h>
+#include <algorithm>
+#include <cctype>
+#include <cstdint>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#if defined(AJI_ORT_STATIC)
+// Linked into a test program: the header's plain declarations apply.
+#define AJI_ORT_EXPORT extern "C"
+#elif defined(_WIN32)
+#define AJI_ORT_EXPORT extern "C" __declspec(dllexport)
+#else
+#define AJI_ORT_EXPORT extern "C" __attribute__((visibility("default")))
+#endif
+
+namespace {
+thread_local std::string create_error;
+
+void require(bool value, const std::string &message) { if (!value) throw std::runtime_error(message); }
+
+std::string lower(std::string s) { for (auto &ch : s) ch = (char)std::tolower((unsigned char)ch); return s; }
+
+// Planar float RGB image, values 0..1.
+struct Image {
+    int w = 0, h = 0;
+    std::vector<float> data; // 3 planes of w*h
+    Image() = default;
+    Image(int width, int height) : w(width), h(height), data((size_t)3 * width * height) {}
+    float *plane(int c) { return data.data() + (size_t)c * w * h; }
+    const float *plane(int c) const { return data.data() + (size_t)c * w * h; }
+};
+
+Image from_rgb24(const unsigned char *pixels, ptrdiff_t stride, int w, int h)
+{
+    Image m(w, h);
+    float *r = m.plane(0), *g = m.plane(1), *b = m.plane(2);
+    for (int y = 0; y < h; y++) {
+        const unsigned char *row = pixels + (ptrdiff_t)y * stride;
+        const size_t o = (size_t)y * w;
+        for (int x = 0; x < w; x++) {
+            r[o + x] = row[3 * x] * (1.0f / 255.0f);
+            g[o + x] = row[3 * x + 1] * (1.0f / 255.0f);
+            b[o + x] = row[3 * x + 2] * (1.0f / 255.0f);
+        }
+    }
+    return m;
+}
+
+void to_rgb24(const Image &m, unsigned char *pixels, ptrdiff_t stride)
+{
+    const float *r = m.plane(0), *g = m.plane(1), *b = m.plane(2);
+    for (int y = 0; y < m.h; y++) {
+        unsigned char *row = pixels + (ptrdiff_t)y * stride;
+        const size_t o = (size_t)y * m.w;
+        for (int x = 0; x < m.w; x++) {
+            row[3 * x] = (unsigned char)(std::min(std::max(r[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
+            row[3 * x + 1] = (unsigned char)(std::min(std::max(g[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
+            row[3 * x + 2] = (unsigned char)(std::min(std::max(b[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
+        }
+    }
+}
+
+// Bilinear resize (half-pixel centres), as in the NCNN/Vulkan engine.
+Image resize(const Image &src, int w, int h)
+{
+    if (src.w == w && src.h == h) return src;
+    Image dst(w, h);
+    const double sx = (double)src.w / w, sy = (double)src.h / h;
+    for (int c = 0; c < 3; c++) {
+        const float *s = src.plane(c);
+        float *d = dst.plane(c);
+        for (int y = 0; y < h; y++) {
+            double fy = std::min(std::max((y + 0.5) * sy - 0.5, 0.0), (double)src.h - 1);
+            int y0 = (int)fy, y1 = std::min(y0 + 1, src.h - 1);
+            float wy = (float)(fy - y0);
+            for (int x = 0; x < w; x++) {
+                double fx = std::min(std::max((x + 0.5) * sx - 0.5, 0.0), (double)src.w - 1);
+                int x0 = (int)fx, x1 = std::min(x0 + 1, src.w - 1);
+                float wx = (float)(fx - x0);
+                float top = s[(size_t)y0 * src.w + x0] * (1 - wx) + s[(size_t)y0 * src.w + x1] * wx;
+                float bottom = s[(size_t)y1 * src.w + x0] * (1 - wx) + s[(size_t)y1 * src.w + x1] * wx;
+                d[(size_t)y * w + x] = top * (1 - wy) + bottom * wy;
+            }
+        }
+    }
+    return dst;
+}
+
+void resized_dims(int w, int h, const AjiModelConf &conf, int *ow, int *oh)
+{
+    double factor = conf.resize_height_before_upscale > 0 ? conf.resize_height_before_upscale / h
+        : conf.resize_factor_before_upscale / 100.0;
+    *ow = w; *oh = h;
+    if (factor != 1.0) {
+        *ow = std::max(2, (int)std::lround(w * factor) / 2 * 2);
+        *oh = std::max(2, (int)std::lround(h * factor) / 2 * 2);
+    }
+}
+
+// Half-float conversion, 8 values at a time (F16C).
+void floats_to_halves(const float *src, uint16_t *dst, size_t count)
+{
+    size_t i = 0;
+    for (; i + 8 <= count; i += 8)
+        _mm_storeu_si128((__m128i *)(dst + i), _mm256_cvtps_ph(_mm256_loadu_ps(src + i), _MM_FROUND_TO_NEAREST_INT));
+    for (; i < count; i++) {
+        float padded[8] = {src[i]};
+        uint16_t out[8];
+        _mm_storeu_si128((__m128i *)out, _mm256_cvtps_ph(_mm256_loadu_ps(padded), _MM_FROUND_TO_NEAREST_INT));
+        dst[i] = out[0];
+    }
+}
+
+void halves_to_floats(const uint16_t *src, float *dst, size_t count)
+{
+    size_t i = 0;
+    for (; i + 8 <= count; i += 8)
+        _mm256_storeu_ps(dst + i, _mm256_cvtph_ps(_mm_loadu_si128((const __m128i *)(src + i))));
+    for (; i < count; i++) {
+        uint16_t padded[8] = {src[i]};
+        float out[8];
+        _mm256_storeu_ps(out, _mm256_cvtph_ps(_mm_loadu_si128((const __m128i *)padded)));
+        dst[i] = out[0];
+    }
+}
+
+struct Step {
+    AjiModelConf conf;
+    std::unique_ptr<Ort::Session> session;
+    std::string input, output;
+    bool half_in = false, half_out = false;
+};
+
+struct Context {
+    std::string conf, models, device, stats, error, provider, provider_label;
+    int slot = 0, width = 0, height = 0;
+    AjiChainConf chain;
+    aji_vk_plan plan{};
+    bool rife_skipped = false;
+    Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "aji_ort"};
+    std::vector<Step> steps;
+    std::vector<uint16_t> halves;
+    uint64_t count = 0;
+    double total_ms = 0;
+};
+
+// The bank's [global] backend names the provider; AJI_ORT_PROVIDER overrides it (tests).
+std::string wanted_provider(const AjiConf &conf)
+{
+    const char *forced = std::getenv("AJI_ORT_PROVIDER");
+    std::string name = lower(forced && *forced ? forced : conf.backend);
+    if (name == "migraphx" || name == "openvino" || name == "cpu") return name;
+    throw std::runtime_error("The ONNX Runtime engine handles backend=MIGraphX, OpenVINO or CPU, not " + conf.backend);
+}
+
+Ort::SessionOptions session_options(Context &c)
+{
+    Ort::SessionOptions options;
+    options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+    if (c.provider == "migraphx") {
+        // AMD GPUs through ROCm. FP16 as shipped; the compiled program is cached by MIGraphX.
+        OrtMIGraphXProviderOptions migraphx{};
+        migraphx.device_id = c.device.empty() ? 0 : std::atoi(c.device.c_str());
+        migraphx.migraphx_fp16_enable = 1;
+        options.AppendExecutionProvider_MIGraphX(migraphx);
+        c.provider_label = "MIGraphX";
+    } else if (c.provider == "openvino") {
+        // Intel GPUs. device: GPU, GPU.0, GPU.1 or CPU; empty = GPU.
+        std::unordered_map<std::string, std::string> openvino{
+            {"device_type", c.device.empty() ? "GPU" : c.device}, {"precision", "FP16"}};
+        if (lower(openvino["device_type"]) == "cpu") openvino["precision"] = "FP32";
+        options.AppendExecutionProvider_OpenVINO_V2(openvino);
+        c.provider_label = "OpenVINO " + openvino["device_type"];
+    } else {
+        c.provider_label = "CPU";
+    }
+    return options;
+}
+
+void load_steps(Context &c)
+{
+    c.steps.clear();
+    for (const auto &model : c.chain.models) {
+        if (model.name.empty()) continue;
+        require(model.frames <= 1, "Temporal AnimeJaNai models are not supported by the ONNX Runtime engine");
+        std::filesystem::path path = std::filesystem::path(c.models) / (model.name + ".onnx");
+        require(std::filesystem::is_regular_file(path), "Model not found: " + model.name + ".onnx");
+        Step step;
+        step.conf = model;
+        Ort::SessionOptions options = session_options(c);
+        step.session = std::make_unique<Ort::Session>(c.env, path.c_str(), options);
+        Ort::AllocatorWithDefaultOptions allocator;
+        require(step.session->GetInputCount() == 1 && step.session->GetOutputCount() >= 1,
+                "Unexpected model signature: " + model.name);
+        step.input = step.session->GetInputNameAllocated(0, allocator).get();
+        step.output = step.session->GetOutputNameAllocated(0, allocator).get();
+        auto kind = [](const Ort::TypeInfo &info) { return info.GetTensorTypeAndShapeInfo().GetElementType(); };
+        auto in = kind(step.session->GetInputTypeInfo(0)), out = kind(step.session->GetOutputTypeInfo(0));
+        auto supported = [](ONNXTensorElementDataType t) {
+            return t == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT || t == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16; };
+        require(supported(in) && supported(out), "Model tensors must be float or half float: " + model.name);
+        step.half_in = in == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
+        step.half_out = out == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
+        c.steps.push_back(std::move(step));
+    }
+}
+
+Image run_model(Context &c, Step &step, const Image &in)
+{
+    require(in.w % 2 == 0 && in.h % 2 == 0, "AnimeJaNai unshuffle requires even dimensions");
+    const int64_t shape[4] = {1, 3, in.h, in.w};
+    const size_t count = (size_t)3 * in.w * in.h;
+    Ort::MemoryInfo memory = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    Ort::Value input{nullptr};
+    if (step.half_in) {
+        c.halves.resize(count);
+        floats_to_halves(in.data.data(), c.halves.data(), count);
+        input = Ort::Value::CreateTensor(memory, c.halves.data(), count * sizeof(uint16_t), shape, 4,
+                                         ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16);
+    } else {
+        input = Ort::Value::CreateTensor<float>(memory, const_cast<float *>(in.data.data()), count, shape, 4);
+    }
+    const char *input_names[1] = {step.input.c_str()}, *output_names[1] = {step.output.c_str()};
+    auto outputs = step.session->Run(Ort::RunOptions{nullptr}, input_names, &input, 1, output_names, 1);
+    auto dims = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
+    require(dims.size() == 4 && dims[1] == 3 && dims[2] > 0 && dims[3] > 0, "Model inference returned an unexpected shape");
+    Image out((int)dims[3], (int)dims[2]);
+    if (step.half_out) halves_to_floats(outputs[0].GetTensorData<uint16_t>(), out.data.data(), out.data.size());
+    else std::copy_n(outputs[0].GetTensorData<float>(), out.data.size(), out.data.data());
+    return out;
+}
+
+Image upscale(Context &c, Image m)
+{
+    for (auto &step : c.steps) {
+        int w, h;
+        resized_dims(m.w, m.h, step.conf, &w, &h);
+        m = run_model(c, step, resize(m, w, h));
+    }
+    return m;
+}
+} // namespace
+
+AJI_ORT_EXPORT uint32_t aji_vk_version(void) { return AJI_VK_ABI; }
+
+AJI_ORT_EXPORT aji_vk_context *aji_vk_create(const char *conf, const char *models, const char *rife,
+                                             const char *device, const char *stats, int slot)
+{
+    (void)rife;
+    try {
+        auto c = std::make_unique<Context>();
+        c->conf = conf ? conf : ""; c->models = models ? models : "";
+        c->device = device ? device : ""; c->stats = stats ? stats : ""; c->slot = slot;
+        return c.release();
+    } catch (const std::exception &e) { create_error = e.what(); return nullptr; }
+}
+
+AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int height, double fps, aji_vk_plan *plan)
+{
+    auto &c = *(Context *)context;
+    try {
+        require(width > 0 && height > 0 && width <= 16384 && height <= 16384, "Invalid source dimensions");
+        require(width % 2 == 0 && height % 2 == 0, "Spatial profiles require even source dimensions");
+        c.steps.clear(); c.width = width; c.height = height; c.rife_skipped = false;
+        c.plan = {width, height, 1, 1, 0};
+        if (c.slot == 0) { *plan = c.plan; return 0; }
+        AjiConf conf; std::string error;
+        require(aji_conf_load(c.conf.c_str(), &conf, &error), error);
+        c.provider = wanted_provider(conf);
+        auto found = conf.slots.find(c.slot);
+        require(found != conf.slots.end(), "Requested profile missing");
+        bool matched = false;
+        for (auto &chain : found->second.chains) {
+            double px = (double)width * height;
+            if (px >= chain.min_px && px <= chain.max_px && fps >= chain.min_fps && fps <= chain.max_fps) {
+                c.chain = chain; matched = true; break;
+            }
+        }
+        if (!matched) { *plan = c.plan; return 0; }
+        load_steps(c);
+        require(!c.steps.empty(), "The ONNX Runtime engine needs at least one upscale model in the profile");
+        int w = width, h = height;
+        for (auto &step : c.steps) {
+            resized_dims(w, h, step.conf, &w, &h);
+            w *= 2; h *= 2; // the supported AnimeJaNai spatial models are 2x
+        }
+        c.rife_skipped = c.chain.rife && c.chain.rife_factor_num > c.chain.rife_factor_den;
+        c.plan = {w, h, 1, 1, 1};
+        *plan = c.plan;
+        return 0;
+    } catch (const std::exception &e) { c.error = e.what(); return -1; }
+}
+
+AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *previous, ptrdiff_t previous_stride,
+                                  const unsigned char *current, ptrdiff_t current_stride, double timestep,
+                                  unsigned char *output, ptrdiff_t output_stride)
+{
+    (void)previous; (void)previous_stride;
+    auto &c = *(Context *)context;
+    try {
+        auto start = std::chrono::steady_clock::now();
+        require(current && output && timestep >= 0 && timestep <= 1, "Invalid frame arguments");
+        Image result = from_rgb24(current, current_stride, c.width, c.height);
+        if (c.plan.active) result = upscale(c, std::move(result));
+        require(result.w == c.plan.width && result.h == c.plan.height,
+                "Model output dimensions differ from the configured 2x profile");
+        to_rgb24(result, output, output_stride);
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+        c.total_ms += ms; ++c.count;
+        if (!c.stats.empty()) {
+            std::ofstream f(c.stats);
+            f << "Backend: ONNX Runtime/" << c.provider_label << "\nAnimeJaNai models: " << c.steps.size()
+              << "\nRIFE: " << (c.rife_skipped ? "requested, not available with this engine" : "off")
+              << "\nOutput: " << result.w << "x" << result.h << "\nFrames: " << c.count
+              << "\nInference ms: " << ms << "\nAverage inference ms: " << c.total_ms / c.count << "\n";
+        }
+        return 0;
+    } catch (const std::exception &e) { c.error = e.what(); return -1; }
+}
+
+AJI_ORT_EXPORT const char *aji_vk_error(aji_vk_context *c) { return c ? ((Context *)c)->error.c_str() : create_error.c_str(); }
+AJI_ORT_EXPORT void aji_vk_destroy(aji_vk_context *c) { delete (Context *)c; }

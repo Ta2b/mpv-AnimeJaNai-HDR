@@ -313,3 +313,46 @@ AnimeJaNai sous Linux là où ni TensorRT ni DirectML n'existent.
 Limite de cette mesure : elle est faite sur le pilote Vulkan de NVIDIA. Pour la refaire sur une carte AMD,
 compiler `native/vulkan-bench` (NCNN en sous-dossier `ncnn`, voir son `CMakeLists.txt`) et lancer
 `bench <modèle sans extension> 1280 720`.
+
+## Moteur ONNX Runtime pour MIGraphX (AMD) et OpenVINO (Intel) : première étape, 12 octobre 2026
+
+But : remplacer NCNN/Vulkan, six fois trop lent, par les moteurs des fabricants là où ils existent.
+`native/linux-ort/aji_ort.cpp` implémente la même interface que le moteur Vulkan (pont RGB24 de
+`aji_vulkan.h`) avec ONNX Runtime : le filtre du lecteur peut charger l'une ou l'autre bibliothèque
+sans modification, par son option `lib=`. Les modèles ONNX d'origine sont utilisés tels quels,
+sans conversion. Le fournisseur vient de `backend=` dans la banque : `MIGraphX`, `OpenVINO` ou `CPU`.
+
+**Ce qui est fait et vérifié**
+
+- Lecture des profils (mêmes règles de choix de chaîne que le moteur Vulkan), redimensionnement
+  avant le modèle, modèles FP16 ou FP32, enchaînement de plusieurs modèles, fichier de statistiques.
+- Compilé sous Windows (MSVC) et exécuté sur le fournisseur **CPU** avec une banque réelle :
+  profil « 2K Performance », 1280x720 → 2560x1440, image de sortie valide. Sur CPU : 625 ms par
+  image, ce qui n'a aucune valeur de performance.
+- Sans le fournisseur demandé, la configuration échoue avec le message d'ONNX Runtime
+  (bibliothèque du fournisseur introuvable) : aucun repli silencieux.
+- Job CI `ort-backend` : compilation sous Linux et passage d'un profil sur CPU. Il n'est pas
+  bloquant tant que le moteur n'est pas empaqueté.
+
+**Ce qui n'est pas fait**
+
+- **Aucun essai sur MIGraphX ni sur OpenVINO.** Aucune carte AMD sous Linux ni carte Intel n'était
+  disponible. Les appels aux deux fournisseurs sont écrits d'après les en-têtes d'ONNX Runtime 1.31
+  et n'ont jamais tourné. Premier essai à faire sur matériel réel : `animejanai-ort-test` avec
+  `AJI_ORT_PROVIDER=migraphx` ou `openvino`, modèle Performance en 1280x720 ; objectif sous 20 ms.
+- **RIFE** : non géré par ce moteur. Un profil qui le demande est mis à l'échelle sans
+  interpolation, et le fichier de statistiques le signale.
+- **Intégration au lecteur** : pas de choix de la bibliothèque dans `linux-playback.lua`, pas de
+  banque dédiée, pas de réglage dans le Manager, pas d'empaquetage. Les fournisseurs demandent une
+  compilation d'ONNX Runtime qui les contient (paquets d'AMD pour ROCm, paquets d'Intel), à
+  installer sur la machine : ils ne tiennent pas dans l'AppImage.
+- **Windows** : sans objet pour l'instant. Sous Windows, DirectML couvre déjà AMD et Intel avec
+  les noyaux des fabricants (245 à 284 i/s sur RX 9070 XT en Performance 720p). MIGraphX repose
+  sur ROCm, dont la cible est Linux ; OpenVINO sous Windows ne se justifierait que s'il battait
+  DirectML sur Intel, ce qui reste à mesurer.
+- Le pont RGB24 copie chaque image par la mémoire vive. Avec un moteur à quelques millisecondes,
+  ce coût deviendra visible ; il se mesurera en même temps que le moteur.
+
+**Le moteur Vulkan reste nécessaire.** ROCm ne couvre que les RX 9070, 9060 XT et 7900 : une
+RX 7800 XT, une RX 7600 ou toute la série RX 6000 n'ont que NCNN/Vulkan sous Linux. Ce ne sont pas
+des cartes anciennes.
