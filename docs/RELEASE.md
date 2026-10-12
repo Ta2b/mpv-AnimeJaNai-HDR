@@ -132,3 +132,8 @@ standalone qui changerait la détection de son répertoire de données. Le lecte
 reste propriétaire des configurations et modèles. Le cache du lecteur Wayland
 est enregistré dès sa validation, même si une étape ultérieure échoue. Les
 erreurs de l’assembleur Linux sont remontées dans les annotations publiques de CI.
+
+Le job Linux libère les SDK Android, Haskell et CodeQL préinstallés sur le
+runner, pour laisser l’espace nécessaire aux dépendances, composants et
+copies temporaires de l’AppImage. Les sources compilées du lecteur sont
+supprimées après validation et sauvegarde de son bundle.
