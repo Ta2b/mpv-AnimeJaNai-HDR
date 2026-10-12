@@ -129,7 +129,7 @@ Trois réglages décrivent l'aspect HDR, dans la section HDR du Manager : **cont
 | mpv, avec *Match the mpv conversion to RTX Video HDR* (`mpv_truehdr_look=yes`, défaut) | AMD, Intel, `hdr_backend=mpv`, ou aucune chaîne active | le shader applique la courbe mesurée sur TrueHDR pour ces mêmes valeurs, puis le même grading (`highlights_rtx`, `vibrance_rtx`, `shadows`) |
 | RTX Video HDR, sortie Direct3D 11 | NVIDIA | **pas automatiquement** : TrueHDR lit les curseurs de l'application NVIDIA. Y mettre les mêmes valeurs, ou passer en Vulkan |
 
-Les lois ont été mesurées sur RTX TrueHDR avec des mires, sur toute la plage des curseurs (`D:\AnimeJaNai-devtxprobe`) :
+Les lois ont été mesurées sur RTX TrueHDR avec des mires, sur toute la plage des curseurs (`D:\AnimeJaNai-dev\rtxprobe`) :
 
 | Réglage | Effet mesuré sur TrueHDR | Dans le shader |
 |---|---|---|
