@@ -39,6 +39,12 @@ antérieur ; elles sont conservées pour l'historique.
   dans `RELEASE.md`. **La prochaine release est son premier essai réel** : vérifier le journal
   de l'assembleur, les `url` de l'index, et l'installation d'un composant sur une installation
   neuve. En cas de doute, relancer Deploy avec `rebuild_packs`.
+- **Un seul aspect HDR (sur `hdr-3.8`, pour la version suivante).** `rtx_contrast`,
+  `rtx_saturation` et `rtx_middle_gray` pilotent RTX Video HDR et la conversion mpv ;
+  `mpv_truehdr_look=yes` par défaut ; Manager `4aad542` épinglé. Lois mesurées sur TrueHDR,
+  détail dans `PARTAGE.md`. Vérifié sous Windows dans le lecteur (PSNR 29 à 44 dB entre les deux
+  conversions sur quatre réglages). **Non vérifié sous Linux** : la conversion mpv y passe par
+  `linux-hdr.lua`, à contrôler avec une sortie PQ réelle.
 - **Mode Vulkan Windows : il existe déjà.** Depuis la 3.8.0.5, `render_api=vulkan` fait
   tourner RTX VSR et TrueHDR dans le moteur TensorRT (`aji_trt_rtx.dll`, compilé localement,
   voir `PARTAGE.md`). La phrase « le moteur Vulkan Windows est reporté » plus bas vise
