@@ -47,16 +47,7 @@ check('runtime slot switch uses vf-command', table.concat(S.log,'\n'):match('vf%
 S.hook('on_load')
 check('preload: next file keeps the selected slot', S.props.vf[1].params.slot=='2', S.props.vf[1].params.slot)
 -- Profile 9 is the start-up profile of new installs: it must stay reachable from the keyboard
-f0=io.open(bank,'w'); f0:write('[global]
-backend=TensorRT
-default_slot=9
-[slot_4]
-profile_name=2K Performance
-[slot_5]
-profile_name=New Profile
-[slot_9]
-profile_name=Performance
-'); f0:close()
+f0=io.open(bank,'w'); f0:write('[global]\nbackend=TensorRT\ndefault_slot=9\n[slot_4]\nprofile_name=2K Performance\n[slot_5]\nprofile_name=New Profile\n[slot_9]\nprofile_name=Performance\n'); f0:close()
 S.msg('animejanai-select','4'); S.tick(2)
 S.msg('animejanai-select','9'); S.tick(2)
 check('profile 9 selectable', mp.get_property_native('user-data/animejanai-active-slot')==9, mp.get_property_native('user-data/animejanai-active-slot'))
