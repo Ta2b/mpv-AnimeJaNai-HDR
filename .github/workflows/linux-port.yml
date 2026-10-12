@@ -65,6 +65,8 @@ jobs:
         run: |
           python tests/updater-regressions/generate.py artifacts/updater-checks
           dotnet run --project artifacts/updater-checks
+      - name: Download cache integrity and offline reuse
+        run: dotnet run --project tests/download-cache/DownloadCacheTests.csproj
       - name: Offline Linux package regressions
         if: runner.os == 'Linux'
         run: python3 tests/platform/package_check.py

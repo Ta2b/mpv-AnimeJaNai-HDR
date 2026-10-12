@@ -140,11 +140,19 @@ physique NVIDIA/HDR. `platform=windows|linux` permet un build ciblé sans retire
 les assets déjà publiés de l’autre plateforme. Voir [RELEASE.md](RELEASE.md).
 Le Manager publie également les deux plateformes dans **un seul job**.
 
+Les builds réutilisent le lecteur natif et le backend Vulkan compilés. Les
+modèles SPAN d’origine sont déjà dans le dépôt. Le cache d’archives de
+l’assembleur (`ANIMEJANAI_DOWNLOAD_CACHE`) évite également de retélécharger les
+composants versionnés, dont RIFE et TensorRT, lorsqu’ils n’ont pas changé.
+Les fichiers sont contrôlés à la réutilisation ; les liens `latest` restent
+actualisés. Voir [les détails du cache](RELEASE.md#cache-des-téléchargements-du-build-linux).
+
 ## Validation à conserver
 
 ```sh
 tests/hdr/run.sh luajit
 dotnet run --project tests/platform/PlatformTests.csproj
+dotnet run --project tests/download-cache/DownloadCacheTests.csproj
 dotnet run --project ../AnimeJaNaiManager-HDR/tests/ProfileRoundTrip
 python3 tests/updater-regressions/generate.py artifacts/updater-checks
 dotnet run --project artifacts/updater-checks

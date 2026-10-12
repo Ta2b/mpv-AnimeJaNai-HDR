@@ -140,6 +140,7 @@ jobs:
         shell: bash
     env:
       VER: ${{ needs.prepare.outputs.version }}
+      ANIMEJANAI_DOWNLOAD_CACHE: ${{ github.workspace }}/download-cache
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -225,7 +226,17 @@ jobs:
     - name: Build shared platform helper (Linux)
       run: dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o publish/platform-linux-x64
 
+    - name: Restore versioned component downloads
+      id: download-cache
+      uses: actions/cache/restore@v4
+      with:
+        path: download-cache
+        key: linux-downloads-v1-${{ hashFiles('BuildMpvUpscale2xAnimeJaNai/Program.cs', 'BuildMpvUpscale2xAnimeJaNai/Downloader.cs') }}
+        restore-keys: |
+          linux-downloads-v1-
+
     - name: Run assembler (linux-x64, with packs)
+      id: assemble
       # Uses the local Wayland bundle and downloads aji from its sibling release
       # and TensorRT .debs from NVIDIA's CUDA repo (TrtVersion in Program.cs).
       # --packs emits component-*.7z + packs.json and slims the core tree.
@@ -236,6 +247,13 @@ jobs:
           exit 1
         fi
         cat linux-assembly.log
+
+    - name: Save versioned component downloads before packaging
+      if: steps.download-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: download-cache
+        key: ${{ steps.download-cache.outputs.cache-primary-key }}
 
     - name: Build updater (linux-x64, single file)
       run: |

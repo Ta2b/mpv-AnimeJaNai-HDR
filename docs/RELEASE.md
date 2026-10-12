@@ -161,3 +161,27 @@ que l’assembleur le place dans le sous-dossier versionné du lecteur. L’AppI
 et l’overlay utilisent désormais explicitement cet exécutable fourni, sans
 dépendre d’un 7-Zip installé sur le runner. Les erreurs du script AppImage sont
 également remontées dans les annotations publiques lors de la relance.
+
+## Cache des téléchargements du build Linux
+
+Les ONNX SPAN d’origine sont versionnés dans le dépôt ; leur conversion et le
+backend Vulkan bénéficient déjà d’un cache compilé. L’assembleur possède aussi
+un cache d’archives activé par `ANIMEJANAI_DOWNLOAD_CACHE`. Une clé SHA-256 de
+l’URL sépare les versions de RIFE, TensorRT, CUDA et des autres composants.
+Chaque archive réutilisée est contrôlée contre son empreinte enregistrée ; les
+empreintes NVIDIA fixées dans les sources restent vérifiées par l’assembleur.
+Les URL contenant un segment `latest`, notamment yt-dlp, sont exclues.
+
+Le workflow restaure les archives des builds antérieurs et sauvegarde les
+téléchargements complets après l’assemblage, avant le packaging : un échec
+AppImage ultérieur ne les fait pas perdre. Un changement de version télécharge
+uniquement les nouvelles URL et conserve les composants inchangés. Aucun arbre
+d’installation ni réglage utilisateur n’est mis dans ce cache. Pour les builds
+locaux, définir cette variable vers un dossier persistant ; sans elle, le
+comportement de téléchargement habituel est conservé sur Windows et Linux.
+
+Dix contrôles locaux passent dans `tests/download-cache` : réutilisation sans
+HTTP et hors ligne, nouvelles versions, corruptions et empreintes invalides,
+téléchargement interrompu, exclusion de `latest`, désactivation et nettoyage.
+Le contrôle est ajouté à la matrice CI Windows/Linux. Cet ajout vise les
+prochains builds ; la relance de release déjà en cours n’est pas interrompue.
