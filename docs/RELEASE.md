@@ -153,3 +153,11 @@ ni libmpv n’importent plus `wl_display_create_queue_with_name`.
 Les rapports sont `artifacts/workflow-wayland-queue-build.log` et
 `artifacts/workflow-wayland-host-validation.log`. Ce contrôle de démarrage
 est distinct des essais de lecture sur GPU et de la publication GitHub.
+
+Le build GitHub du même jour confirme cette validation native et produit le
+portable Linux ; Windows termine également son build. L’étape AppImage s’arrête
+ensuite avec le code 127 : le workflow cherchait `7zz` dans `publish/`, alors
+que l’assembleur le place dans le sous-dossier versionné du lecteur. L’AppImage
+et l’overlay utilisent désormais explicitement cet exécutable fourni, sans
+dépendre d’un 7-Zip installé sur le runner. Les erreurs du script AppImage sont
+également remontées dans les annotations publiques lors de la relance.

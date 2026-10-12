@@ -236,7 +236,6 @@ jobs:
           exit 1
         fi
         cat linux-assembly.log
-        echo "$GITHUB_WORKSPACE/publish" >> "$GITHUB_PATH"
 
     - name: Build updater (linux-x64, single file)
       run: |
@@ -265,8 +264,14 @@ jobs:
         cp -a "publish/mpv-upscale-2x_animejanai-v$VER/." "$full/"
         cp -f updater-publish/AnimeJaNaiUpdater "$full/AnimeJaNaiUpdater"
         chmod +x "$full/AnimeJaNaiUpdater"
-        7zz x -snl -y -o"$full" "publish/packs-v$VER/component-trt-runtime-linux-x64.7z"
-        installer/linux/build-appimage.sh "$full" "$VER" .
+        "$GITHUB_WORKSPACE/publish/mpv-upscale-2x_animejanai-v$VER/7zz" \
+          x -snl -y -o"$full" "publish/packs-v$VER/component-trt-runtime-linux-x64.7z"
+        if ! installer/linux/build-appimage.sh "$full" "$VER" . > appimage-build.log 2>&1; then
+          tail -n 80 appimage-build.log
+          while IFS= read -r line; do printf '::error::%s\n' "$line"; done < <(tail -n 20 appimage-build.log)
+          exit 1
+        fi
+        cat appimage-build.log
 
     - name: Overlay archive + RID-suffixed manifest
       # Lightweight program-file overlay (the assembler already emits RID-suffixed
@@ -275,7 +280,7 @@ jobs:
         pkg="publish/mpv-upscale-2x_animejanai-v$VER"
         cp "$pkg/manifest.json" "manifest-linux-x64.json"
         mapfile -t paths < <(jq -r '.overlay_paths[]' "$pkg/manifest.json")
-        ( cd "$pkg" && 7zz a -t7z -mx=9 \
+        ( cd "$pkg" && "$GITHUB_WORKSPACE/$pkg/7zz" a -t7z -mx=9 \
             "$GITHUB_WORKSPACE/mpv-upscale-2x_animejanai-overlay-$VER-linux-x64.7z" "${paths[@]}" )
 
     - name: Upload Linux test packages
