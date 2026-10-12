@@ -439,3 +439,24 @@ principe.
 - **À lever au premier essai** : chargement des bibliothèques de la fonction par `libVideoFX`,
   cohabitation du TensorRT du SDK avec celui du moteur dans le même processus, et le réglage
   `linux_hdr_output=auto` qui ne déclenche pas l'étage (il faut `pq`).
+
+**OpenVINO fourni dans le paquet Linux (3.8.0.13, 12 octobre 2026, nuit).**
+Premier essai réel (Fedora, CPU et GPU Intel Arc, release 3.8.0.11) : `backend=OpenVINO` échouait,
+faute de `libonnxruntime_providers_openvino.so`. Deux causes, corrigées :
+
+- **Bibliothèques.** L'ONNX Runtime standard n'a pas ce fournisseur, et la compilation d'Intel
+  (paquet PyPI `onnxruntime-openvino`, dernière version 1.24.1) est plus ancienne que les en-têtes 1.31
+  utilisés jusque-là : elle aurait été refusée au chargement. Le moteur est maintenant compilé contre
+  la 1.24.1 et livré avec les bibliothèques d'Intel (ONNX Runtime, fournisseur OpenVINO, OpenVINO
+  2025.4.1 avec ses greffons CPU, GPU et NPU ; 153 Mo non compressés dans `animejanai/inference`).
+- **Modèles.** Le fournisseur OpenVINO refusait le graphe à dimensions dynamiques (« the graph is not
+  acyclic »). Le moteur fixe désormais la taille d'entrée de chaque modèle à la création de la session
+  (`AddFreeDimensionOverrideByName`), l'optimisation d'ONNX Runtime restant active. Diagnostic :
+  branche `diag` du dépôt privé `Ta2b/animejanai-inference-rtx`.
+
+Vérifié en intégration continue : un profil passe par le fournisseur OpenVINO sur le périphérique CPU
+et donne le même pixel de contrôle que le fournisseur CPU. **Non vérifié : le périphérique GPU**, qui
+demande le pilote OpenCL d'Intel sur la machine (`intel-compute-runtime` sous Fedora, `intel-opencl-icd`
+sous Ubuntu). Essais : `ANIMEJANAI_ORT_DEVICE=CPU` force le processeur ; `AJI_ORT_OPENVINO="clé=valeur;…"`
+ajoute des options du fournisseur ; `AJI_ORT_OPT=0..3` change le niveau d'optimisation.
+MIGraphX : remplacer `libonnxruntime.so.1` par la compilation d'AMD, version 1.24 ou plus récente.
