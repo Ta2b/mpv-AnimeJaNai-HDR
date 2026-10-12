@@ -411,3 +411,31 @@ dans un autre SDK, Maxine Video Effects (exemple `apps/TrueHDREffectApp` du dép
   l'utilisateur avec sa clé NGC. Le même SDK contient aussi la super-résolution (`nvvfxvideosuperres`).
   En attendant, la conversion SDR vers HDR sous Linux passe par mpv avec la courbe mesurée sur TrueHDR
   (`mpv_truehdr_look`), qui suit les mêmes réglages.
+
+**TrueHDR sous Linux : étage écrit et branché, jamais exécuté (12 octobre 2026, nuit).**
+Le cœur du SDK Maxine 1.3.0.0 a été examiné (en-têtes `nvVideoEffects.h`, `nvCVImage.h`,
+`libVideoFX.so`, runtime NGX). La fonction TrueHDR (`nvvfxtruehdr`, avec `nvVFXTrueHDR.h` et les
+modèles) n'y est pas : elle se télécharge par `install_feature.sh` avec une clé NGC, qui choisit les
+modèles d'après la capacité CUDA de la carte (`nvidia-smi`) ; une carte grand public convient donc en
+principe.
+
+- **Bibliothèque de liaison** `libaji_rtx.so` : mêmes fonctions que `aji_rtx.dll`
+  (`aji_rtx_create`, `aji_rtx_eval`, `aji_rtx_shutdown`), plus `aji_rtx_input_bits` qui renvoie 8, car
+  le filtre Maxine prend du RGBA 8 bits. Elle appelle `NvVFX` sur les tampons CUDA du moteur. À
+  compiler sur la machine Linux (g++, quelques secondes) une fois la fonction installée. Pas de
+  Super Resolution.
+- **Moteur** `libaji_trt_rtx.so` : le moteur TensorRT avec l'étage final, compilé pour Linux
+  (TensorRT 11.3.0.99, CUDA 13.4, Ubuntu 22.04). Il charge `libaji_rtx.so` placé à côté de lui.
+- **Sources et binaire** : dépôt privé `Ta2b/animejanai-inference-rtx`, branche `rtx-video-cuda`
+  (dossier `aji-rtx-linux`, mode d'emploi dans son `README.md`), release `linux-truehdr-1`.
+- **Lecteur** : quand les deux bibliothèques sont dans `animejanai/inference`, avec un GPU NVIDIA, le
+  moteur TensorRT, `linux_hdr_output=pq` et `hdr_backend` différent de `mpv`,
+  `linux-playback.lua` charge `libaji_trt_rtx.so`, écrit `animejanai-rtx.conf` (`rtx_contrast`,
+  `rtx_saturation`, `rtx_middle_gray`, pic de l'écran) et marque les images PQ / BT.2020 ;
+  `linux-hdr.lua` cesse alors de convertir. Si le moteur n'annonce pas `Applied RTX Video: TrueHDR`
+  dans son journal après 3 s, le marquage est retiré et mpv convertit. Le lanceur ajoute les
+  dossiers du SDK à `LD_LIBRARY_PATH` seulement quand `libaji_rtx.so` est installé. Sans ces deux
+  fichiers, rien ne change.
+- **À lever au premier essai** : chargement des bibliothèques de la fonction par `libVideoFX`,
+  cohabitation du TensorRT du SDK avec celui du moteur dans le même processus, et le réglage
+  `linux_hdr_output=auto` qui ne déclenche pas l'étage (il faut `pq`).
