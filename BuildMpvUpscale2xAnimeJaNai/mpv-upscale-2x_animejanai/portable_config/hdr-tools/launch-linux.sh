@@ -9,6 +9,15 @@ ANIMEJANAI_INFERENCE_DIR="${ANIMEJANAI_INFERENCE_DIR:-$HERE/animejanai/inference
 export ANIMEJANAI_ROOT ANIMEJANAI_MPV ANIMEJANAI_INFERENCE_DIR
 export ANIMEJANAI_DATA_DIR="$ANIMEJANAI_ROOT/animejanai"
 export LD_LIBRARY_PATH="$HERE/mpv:$ANIMEJANAI_INFERENCE_DIR:${ANIMEJANAI_EXTRA_LIBS:-}:${LD_LIBRARY_PATH:-}"
+# TrueHDR stage (libaji_rtx.so): NVIDIA Maxine Video Effects loads its own CUDA, TensorRT and
+# feature libraries by name. They go last, after the player's own libraries.
+vfx="${ANIMEJANAI_VFX_SDK:-/usr/local/VideoFX}"
+if [ -f "$ANIMEJANAI_INFERENCE_DIR/libaji_rtx.so" ] && [ -d "$vfx/lib" ]; then
+    for dir in "$vfx/lib" "$vfx"/features/*/lib "$vfx/external/cuda/lib" "$vfx/external/tensorrt/lib"; do
+        if [ -d "$dir" ]; then LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$dir"; fi
+    done
+    export LD_LIBRARY_PATH
+fi
 runtime="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}"
 session="$(mktemp -d "$runtime/animejanai-hdr.XXXXXXXX")"
 export ANIMEJANAI_IPC_PATH="$session/mpv.sock"

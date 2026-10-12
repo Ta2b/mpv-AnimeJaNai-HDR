@@ -91,4 +91,20 @@ do
   check('ort: availability follows the engine library', playback:find("/libaji_ort.so')~=nil",1,true)~=nil)
   check('ort: software decoding with the host-frame bridge', playback:find("elseif ort then",1,true)~=nil)
 end
+-- TrueHDR inside the TensorRT engine (NVIDIA Maxine): engine library, settings file, PQ tag
+do
+  local playback=io.open(ROOT..'/hdr-tools/linux-playback.lua'):read('*a')
+  local hdr=io.open(ROOT..'/hdr-tools/linux-hdr.lua'):read('*a')
+  local launcher=io.open(ROOT..'/hdr-tools/launch-linux.sh'):read('*a')
+  check('truehdr: needs both libraries and a PQ output', playback:find("/libaji_trt_rtx.so')~=nil",1,true)~=nil
+    and playback:find("/libaji_rtx.so')~=nil",1,true)~=nil and playback:find("options.linux_hdr_output=='pq'",1,true)~=nil)
+  check('truehdr: engine with the stage loaded directly', playback:find("f.params.lib=hw.inference_dir..'/libaji_trt_rtx.so'",1,true)~=nil)
+  check('truehdr: tag removed when the engine did not apply it', playback:find("rtx.applied(read(stats_file) or '').hdr",1,true)~=nil)
+  check('truehdr: grading follows the engine conversion',
+    hdr:find("local backend=truehdr and 'rtx' or options.hdr_conversion and 'mpv' or 'none'",1,true)~=nil)
+  check('truehdr: SDK libraries only added with the stage installed', launcher:find('libaji_rtx.so" ] && [ -d "$vfx/lib" ]',1,true)~=nil)
+  local rtx=dofile(ROOT..'/hdr-tools/rtx-stage.lua')
+  local text=rtx.text({hdr=true,vsr=false,contrast=200,saturation=200,middle_gray=50,peak=1000})
+  check('truehdr: settings file asks for TrueHDR without Super Resolution', text:find('hdr=yes\nvsr=no\n',1,true)~=nil and text:find('contrast=200',1,true)~=nil)
+end
 print(string.format('%d passed, %d failed',pass,fail));os.exit(fail==0 and 0 or 1)

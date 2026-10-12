@@ -36,8 +36,10 @@ end
 local function apply(kind,enabled)
     output()
     local confirmed=enabled and native('option-info/target-colorspace-hint-strict')~=nil and options.linux_hdr_output~='sdr' and native('video-target-params/gamma')=='pq'
-    local backend=options.hdr_conversion and 'mpv' or 'none'
-    state=grade.plan(options,{vendor=hw.vendor,backend=backend,source=kind,output_hdr=confirmed,
+    -- TrueHDR applied inside the engine (linux-playback.lua): frames arrive as PQ / BT.2020.
+    local truehdr=native('user-data/animejanai-truehdr')==true
+    local backend=truehdr and 'rtx' or options.hdr_conversion and 'mpv' or 'none'
+    state=grade.plan(options,{vendor=hw.vendor,backend=backend,source=kind,output_hdr=confirmed,truehdr=truehdr,
         target_gamma=native('video-target-params/gamma'),target_peak=native('video-target-params/max-luma'),
         enabled=choice~='off',original=original},choice=='natural' and grade.presets.natural or nil)
     for _,key in ipairs(grade.render_keys) do
@@ -80,7 +82,10 @@ local function report()
     if f then f:write(text,'\n');f:close() end
 end
 local function warn_options()
-    if options.hdr_backend=='rtx' or options.vsr=='nvidia' or options.vsr=='amd' or options.frame_generation=='amf' then
+    -- TrueHDR exists on Linux when libaji_rtx.so is installed (NVIDIA Maxine): no warning then.
+    local truehdr=utils.file_info(mp.command_native({'expand-path','~~/../animejanai/inference/libaji_rtx.so'}))~=nil
+        or (hw.inference_dir and utils.file_info(hw.inference_dir..'/libaji_rtx.so')~=nil)
+    if (options.hdr_backend=='rtx' and not truehdr) or options.vsr=='nvidia' or options.vsr=='amd' or options.frame_generation=='amf' then
         mp.msg.warn('Linux : RTX Video / AMD VideoSR / AMF indisponibles ; rendu mpv utilise.')
         mp.osd_message('Linux : fonctions RTX/AMF indisponibles, repli sur mpv.',5)
     end
@@ -91,7 +96,7 @@ mp.register_event('file-loaded',function() loaded=true;schedule() end)
 mp.register_event('start-file',function() loaded=false;calibration=false;reconcile() end)
 mp.register_event('end-file',function() loaded=false;calibration=false;reconcile() end)
 mp.register_event('shutdown',function() loaded=false;calibration=false;if pending then pending:kill() end end)
-for _,name in ipairs({'video-dec-params','video-params','video-target-params','glsl-shaders','display-names'}) do
+for _,name in ipairs({'video-dec-params','video-params','video-target-params','glsl-shaders','display-names','user-data/animejanai-truehdr'}) do
     mp.observe_property(name,'native',schedule)
 end
 mp.register_script_message('animejanai-reload-options',function()

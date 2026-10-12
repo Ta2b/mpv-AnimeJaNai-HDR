@@ -20,6 +20,54 @@ mp.set_property('gpu-context','waylandvk')
 if hw.vulkan_device then mp.set_property('vulkan-device',hw.vulkan_device) end
 decoder(hw.vendor=='nvidia' and 'nvdec' or 'auto-safe')
 
+-- TrueHDR inside the TensorRT engine: libaji_trt_rtx.so (engine with the final stage) and
+-- libaji_rtx.so (NVIDIA Maxine Video Effects, built on the machine that has the SDK). Used when
+-- both are installed, the conversion is not forced to mpv and the output is set to PQ.
+local rtx = dofile(path('~~/hdr-tools/rtx-stage.lua'))
+local grade = dofile(path('~~/hdr-tools/hdr-grade.lua'))
+local rtx_conf = path(rtx.file)
+local stats_file = path('~~/../animejanai/currentanimejanai.log')
+local stage_check
+local function stage_wanted()
+    return hw.backend=='tensorrt' and hw.vendor=='nvidia' and options.hdr_conversion
+        and options.hdr_backend~='mpv' and options.linux_hdr_output=='pq'
+        and utils.file_info(hw.inference_dir..'/libaji_trt_rtx.so')~=nil
+        and utils.file_info(hw.inference_dir..'/libaji_rtx.so')~=nil
+end
+-- Writes the settings read by the engine at configure; without the file the stage is off.
+local function write_stage(on)
+    if not on then os.remove(rtx_conf);return end
+    local f=io.open(rtx_conf,'w')
+    if not f then return end
+    f:write(rtx.text({hdr=true,vsr=false,contrast=options.rtx_contrast,saturation=options.rtx_saturation,
+        middle_gray=options.rtx_middle_gray,peak=tonumber(grade.display(options,hw.vendor).peak) or 1000,
+        held=options.skip_held_frames,held_threshold=options.held_threshold}))
+    f:close()
+end
+-- The converted frames are PQ / BT.2020; linux-hdr.lua follows user-data/animejanai-truehdr.
+local function tag(list,on)
+    for i=#list,1,-1 do if list[i].label=='hdrtag' then table.remove(list,i) end end
+    if on then
+        for i,f in ipairs(list) do
+            if f.label=='aji' then
+                table.insert(list,i+1,{name='format',label='hdrtag',enabled=true,params={gamma='pq',primaries='bt.2020'}})
+                break
+            end
+        end
+    end
+    mp.set_property_native('user-data/animejanai-truehdr',on)
+    return list
+end
+-- The tag follows the request first, then what the engine reports in its stats log.
+local function confirm_stage()
+    stage_check=nil
+    if mp.get_property_native('user-data/animejanai-truehdr')~=true then return end
+    if rtx.applied(read(stats_file) or '').hdr then return end
+    mp.set_property_native('vf',tag(mp.get_property_native('vf') or {},false))
+    mp.msg.warn('TrueHDR requested but not applied by the engine; mpv converts instead.')
+    mp.osd_message('TrueHDR indisponible (voir le terminal) : conversion par mpv.',6)
+end
+
 -- backend=migraphx / openvino: same host-frame bridge as Vulkan, another engine library.
 local function onnxruntime() return hw.backend=='migraphx' or hw.backend=='openvino' end
 local function bridged() return hw.backend=='vulkan' or onnxruntime() end
@@ -58,7 +106,7 @@ local function select(value, preload)
     local index
     for i,f in ipairs(list) do if f.label=='aji' then index=i end end
     if wanted==0 then
-        if index then table.remove(list,index);mp.set_property_native('vf',list) end
+        if index then table.remove(list,index);mp.set_property_native('vf',tag(list,false)) end
     elseif index and not preload and hw.backend=='tensorrt' and list[index].name=='animejanai' then
         local ok,result=pcall(mp.commandv,'vf-command','aji','slot',tostring(wanted))
         if not ok or not result then mp.osd_message('Selection AnimeJaNai impossible',5);return end
@@ -80,8 +128,14 @@ local function select(value, preload)
             f.params.device=os.getenv('ANIMEJANAI_ORT_DEVICE') or ''
             decoder('no')
         else f.params.trtexec=hw.inference_dir..'/trtexec' end
+        local stage=not vulkan and not ort and stage_wanted()
+        -- Same C interface as the dispatcher, loaded directly like aji_trt_rtx.dll on Windows.
+        if stage then f.params.lib=hw.inference_dir..'/libaji_trt_rtx.so' end
+        write_stage(stage)
         if index then list[index]=f else table.insert(list,1,f) end
-        mp.set_property_native('vf',list)
+        mp.set_property_native('vf',tag(list,stage))
+        if stage_check then stage_check:kill();stage_check=nil end
+        if stage and loaded then stage_check=mp.add_timeout(3,confirm_stage) end
     end
     slot=wanted
     if wanted==0 then decoder(hw.vendor=='nvidia' and 'nvdec' or 'auto-safe') end
@@ -127,7 +181,11 @@ mp.register_script_message('animejanai-reload-options',function()
         last_conf,last_default=text,default
     end
 end)
-mp.register_event('file-loaded',function() loaded=true end)
+mp.register_event('file-loaded',function()
+    loaded=true
+    if stage_check then stage_check:kill() end
+    stage_check=mp.add_timeout(3,confirm_stage)
+end)
 mp.register_event('end-file',function(event)
     loaded=false
     if event.reason=='error' and slot>0 then
