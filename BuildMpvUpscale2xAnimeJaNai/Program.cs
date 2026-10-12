@@ -844,7 +844,12 @@ async Task InstallAnimeJaNaiManager()
     var local = Environment.GetEnvironmentVariable("MANAGER_HDR_LOCAL");
     if (!string.IsNullOrEmpty(local))
     {
-        CopyDirectory(local, installDirectory);
+        // Runtime-only override: publish output also contains a standalone config
+        // and models, which would make the Manager select the wrong data layout.
+        var runtimeFiles = Directory.GetFiles(local, plat.IsWindows ? "*.dll" : "*.so")
+            .Append(Path.Combine(local, plat.Exe("AnimeJaNaiManager-HDR")));
+        foreach (var source in runtimeFiles)
+            File.Copy(source, Path.Combine(installDirectory, Path.GetFileName(source)), true);
     }
     else
     {

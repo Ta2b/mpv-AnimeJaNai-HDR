@@ -125,3 +125,10 @@ indépendants progresser. Les contrôles devenus obsolètes sont annulés lors d
 nouveau push ; un envoi d’assets déjà commencé se termine. Les fichiers de CI
 sont aplatis avant l’envoi à GitHub et une liste SHA256SUMS accompagne la release.
 Cette étape évite de traiter les sous-dossiers d’artefacts comme des fichiers.
+
+L’override local du Manager ne copie que l’exécutable et les bibliothèques
+natives : le répertoire `dotnet publish` contient aussi une configuration
+standalone qui changerait la détection de son répertoire de données. Le lecteur
+reste propriétaire des configurations et modèles. Le cache du lecteur Wayland
+est enregistré dès sa validation, même si une étape ultérieure échoue. Les
+erreurs de l’assembleur Linux sont remontées dans les annotations publiques de CI.

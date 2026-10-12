@@ -156,7 +156,7 @@ jobs:
 
     - name: Restore pinned native Wayland player
       id: native-cache
-      uses: actions/cache@v4
+      uses: actions/cache/restore@v4
       with:
         path: native-bundle
         key: wayland-ubuntu24-${{ runner.arch }}-${{ hashFiles('installer/linux/build-native.sh', 'native/linux-vulkan/install-filter.py', 'native/linux-vulkan/vf_animejanai_vulkan.c', 'native/linux-vulkan/aji_vulkan.h') }}
@@ -165,8 +165,23 @@ jobs:
       if: steps.native-cache.outputs.cache-hit != 'true'
       run: installer/linux/build-native.sh "$RUNNER_TEMP/native-work" "$GITHUB_WORKSPACE/native-bundle"
 
-    - name: Configure native Wayland bundle
-      run: echo "MPV_LINUX_LOCAL=$GITHUB_WORKSPACE/native-bundle" >> "$GITHUB_ENV"
+    - name: Validate and cache the native player immediately
+      run: |
+        LD_LIBRARY_PATH="$GITHUB_WORKSPACE/native-bundle" native-bundle/mpv --version
+        LD_LIBRARY_PATH="$GITHUB_WORKSPACE/native-bundle" native-bundle/mpv --vf=help | grep animejanai-vulkan
+
+    - name: Save validated native Wayland player
+      if: steps.native-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: native-bundle
+        key: ${{ steps.native-cache.outputs.cache-primary-key }}
+
+    - name: Configure native Wayland bundle and reclaim build workspace
+      run: |
+        echo "MPV_LINUX_LOCAL=$GITHUB_WORKSPACE/native-bundle" >> "$GITHUB_ENV"
+        rm -rf "$RUNNER_TEMP/native-work"
+        df -h "$GITHUB_WORKSPACE"
 
     - name: Reuse the Vulkan backend validated by platform checks
       uses: actions/download-artifact@v4
@@ -206,7 +221,12 @@ jobs:
       # and TensorRT .debs from NVIDIA's CUDA repo (TrtVersion in Program.cs).
       # --packs emits component-*.7z + packs.json and slims the core tree.
       run: |
-        ./publish/BuildMpvUpscale2xAnimeJaNai "$VER" --target linux-x64 --packs
+        if ! ./publish/BuildMpvUpscale2xAnimeJaNai "$VER" --target linux-x64 --packs > linux-assembly.log 2>&1; then
+          tail -n 80 linux-assembly.log
+          while IFS= read -r line; do printf '::error::%s\n' "$line"; done < <(tail -n 20 linux-assembly.log)
+          exit 1
+        fi
+        cat linux-assembly.log
         echo "$GITHUB_WORKSPACE/publish" >> "$GITHUB_PATH"
 
     - name: Build updater (linux-x64, single file)
