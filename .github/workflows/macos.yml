@@ -58,7 +58,11 @@ jobs:
           grep -q 'plan: 640x360 active=1' coreml-CPU.log
           grep 'centre pixel' cpu.log coreml-*.log
           echo "== 1920x1080 through profile 1 (no resize in the benchmark bank), Core ML ALL"
-          AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1920 1080 6 ALL 2>&1 | tail -4 || true
+          AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1920 1080 6 ALL 2>&1 | tee coreml-1080.log | tail -4
+          # A second size after the first: the compiled-model cache must not be shared between sizes.
+          grep -q 'plan: 3840x2160 active=1' coreml-1080.log
+          grep -q 'average after the first frame' coreml-1080.log
+          ls models/coreml-cache
           ls models/coreml-cache | head
       - name: Benchmark bundle
         run: |

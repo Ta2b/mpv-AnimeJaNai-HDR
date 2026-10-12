@@ -255,7 +255,8 @@ std::string wanted_provider(const AjiConf &conf)
     throw std::runtime_error("The ONNX Runtime engine handles backend=MIGraphX, OpenVINO, CoreML or CPU, not " + conf.backend);
 }
 
-Ort::SessionOptions session_options(Context &c)
+// width x height: the input size of the model the session is for.
+Ort::SessionOptions session_options(Context &c, int width, int height)
 {
     Ort::SessionOptions options;
     // ONNX Runtime's optimisation must stay on: it folds the shape arithmetic of the models once
@@ -298,6 +299,9 @@ Ort::SessionOptions session_options(Context &c)
         if (chosen && *chosen) cache = chosen;
         else if (c.models.find(".app/Contents/") != std::string::npos && home && *home)
             cache = std::filesystem::path(home) / "Library/Caches/AnimeJaNai/coreml";
+        // One folder per input size and compute units: Core ML keys its cache on the model
+        // alone, and a model compiled for another size fails at the first frame.
+        cache /= std::to_string(width) + "x" + std::to_string(height) + "-" + units;
         std::filesystem::create_directories(cache, ignored);
         if (std::filesystem::is_directory(cache, ignored)) coreml["ModelCacheDirectory"] = cache.string();
         merge_env(coreml, "AJI_ORT_COREML");
@@ -323,8 +327,8 @@ void load_steps(Context &c, int width, int height)
         require(std::filesystem::is_regular_file(path), "Model not found: " + model.name + ".onnx");
         Step step;
         step.conf = model;
-        Ort::SessionOptions options = session_options(c);
         resized_dims(w, h, model, &w, &h);
+        Ort::SessionOptions options = session_options(c, w, h);
         options.AddFreeDimensionOverrideByName("height", h);
         options.AddFreeDimensionOverrideByName("width", w);
         w *= 2; h *= 2; // the supported AnimeJaNai spatial models are 2x
@@ -345,20 +349,47 @@ void load_steps(Context &c, int width, int height)
     }
 }
 
-Image run_model(Context &c, Step &step, const Image &in)
+// Runs one model. The input is either a float image or, for the first model of a chain that
+// takes half floats at the source size, the frame's bytes directly.
+std::vector<Ort::Value> infer(Context &c, Step &step, const Image *in, const unsigned char *pixels,
+                              ptrdiff_t stride, int w, int h)
 {
-    require(in.w % 2 == 0 && in.h % 2 == 0, "AnimeJaNai unshuffle requires even dimensions");
-    const int64_t shape[4] = {1, 3, in.h, in.w};
-    const size_t count = (size_t)3 * in.w * in.h;
+    require(w % 2 == 0 && h % 2 == 0, "AnimeJaNai unshuffle requires even dimensions");
+    const int64_t shape[4] = {1, 3, h, w};
+    const size_t plane = (size_t)w * h, count = 3 * plane;
     Ort::MemoryInfo memory = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     Ort::Value input{nullptr};
     if (step.half_in) {
         c.halves.resize(count);
-        floats_to_halves(in.data.data(), c.halves.data(), count);
+        if (pixels) {
+            // 256 possible values: converted once, then looked up.
+            static uint16_t table[256];
+            static bool ready = false;
+            if (!ready) {
+                float values[256];
+                for (int i = 0; i < 256; i++) values[i] = i * (1.0f / 255.0f);
+                floats_to_halves_part(values, table, 256);
+                ready = true;
+            }
+            uint16_t *r = c.halves.data(), *g = r + plane, *b = g + plane;
+            parallel((size_t)h, 64, [=](size_t first, size_t last) {
+                for (size_t y = first; y < last; y++) {
+                    const unsigned char *row = pixels + (ptrdiff_t)y * stride;
+                    const size_t o = y * w;
+                    for (int x = 0; x < w; x++) {
+                        r[o + x] = table[row[3 * x]];
+                        g[o + x] = table[row[3 * x + 1]];
+                        b[o + x] = table[row[3 * x + 2]];
+                    }
+                }
+            });
+        } else {
+            floats_to_halves(in->data.data(), c.halves.data(), count);
+        }
         input = Ort::Value::CreateTensor(memory, c.halves.data(), count * sizeof(uint16_t), shape, 4,
                                          ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16);
     } else {
-        input = Ort::Value::CreateTensor<float>(memory, const_cast<float *>(in.data.data()), count, shape, 4);
+        input = Ort::Value::CreateTensor<float>(memory, const_cast<float *>(in->data.data()), count, shape, 4);
     }
     const char *input_names[1] = {step.input.c_str()}, *output_names[1] = {step.output.c_str()};
     const auto run_start = std::chrono::steady_clock::now();
@@ -366,20 +397,73 @@ Image run_model(Context &c, Step &step, const Image &in)
     c.last_model_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - run_start).count();
     auto dims = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
     require(dims.size() == 4 && dims[1] == 3 && dims[2] > 0 && dims[3] > 0, "Model inference returned an unexpected shape");
+    return outputs;
+}
+
+Image to_image(const Ort::Value &value, const Step &step)
+{
+    auto dims = value.GetTensorTypeAndShapeInfo().GetShape();
     Image out((int)dims[3], (int)dims[2]);
-    if (step.half_out) halves_to_floats(outputs[0].GetTensorData<uint16_t>(), out.data.data(), out.data.size());
-    else std::copy_n(outputs[0].GetTensorData<float>(), out.data.size(), out.data.data());
+    if (step.half_out) halves_to_floats(value.GetTensorData<uint16_t>(), out.data.data(), out.data.size());
+    else std::copy_n(value.GetTensorData<float>(), out.data.size(), out.data.data());
     return out;
 }
 
-Image upscale(Context &c, Image m)
+// Model output (planar, half or single floats) straight to RGB24.
+void to_rgb24(const Ort::Value &value, const Step &step, int w, int h, unsigned char *pixels, ptrdiff_t stride)
 {
-    for (auto &step : c.steps) {
-        int w, h;
-        resized_dims(m.w, m.h, step.conf, &w, &h);
-        m = run_model(c, step, resize(m, w, h));
+    const size_t plane = (size_t)w * h;
+    const bool half = step.half_out;
+    const uint16_t *hs = half ? value.GetTensorData<uint16_t>() : nullptr;
+    const float *fs = half ? nullptr : value.GetTensorData<float>();
+    parallel((size_t)h, 32, [=](size_t first, size_t last) {
+        std::vector<float> line((size_t)3 * w);
+        for (size_t y = first; y < last; y++) {
+            const float *r, *g, *b;
+            if (half) {
+                for (int k = 0; k < 3; k++)
+                    halves_to_floats_part(hs + k * plane + y * w, line.data() + (size_t)k * w, (size_t)w);
+                r = line.data(); g = r + w; b = g + w;
+            } else {
+                r = fs + y * w; g = r + plane; b = g + plane;
+            }
+            unsigned char *row = pixels + (ptrdiff_t)y * stride;
+            for (int x = 0; x < w; x++) {
+                row[3 * x] = (unsigned char)(std::min(std::max(r[x], 0.0f), 1.0f) * 255.0f + 0.5f);
+                row[3 * x + 1] = (unsigned char)(std::min(std::max(g[x], 0.0f), 1.0f) * 255.0f + 0.5f);
+                row[3 * x + 2] = (unsigned char)(std::min(std::max(b[x], 0.0f), 1.0f) * 255.0f + 0.5f);
+            }
+        }
+    });
+}
+
+// The whole chain, from the source frame's bytes to the output frame's bytes.
+void upscale(Context &c, const unsigned char *pixels, ptrdiff_t stride, unsigned char *output, ptrdiff_t output_stride)
+{
+    Image m;
+    int w = c.width, h = c.height;
+    for (size_t i = 0; i < c.steps.size(); i++) {
+        Step &step = c.steps[i];
+        int mw, mh;
+        resized_dims(w, h, step.conf, &mw, &mh);
+        std::vector<Ort::Value> outputs;
+        if (i == 0 && step.half_in && mw == w && mh == h) {
+            outputs = infer(c, step, nullptr, pixels, stride, w, h);
+        } else {
+            if (i == 0) m = from_rgb24(pixels, stride, w, h);
+            Image sized = resize(m, mw, mh);
+            outputs = infer(c, step, &sized, nullptr, 0, mw, mh);
+        }
+        auto dims = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
+        w = (int)dims[3]; h = (int)dims[2];
+        if (i + 1 == c.steps.size()) {
+            require(w == c.plan.width && h == c.plan.height,
+                    "Model output dimensions differ from the configured 2x profile");
+            to_rgb24(outputs[0], step, w, h, output, output_stride);
+        } else {
+            m = to_image(outputs[0], step);
+        }
     }
-    return m;
 }
 } // namespace
 
@@ -444,18 +528,19 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
         auto start = std::chrono::steady_clock::now();
         require(current && output && timestep >= 0 && timestep <= 1, "Invalid frame arguments");
         c.last_model_ms = 0;
-        Image result = from_rgb24(current, current_stride, c.width, c.height);
-        if (c.plan.active) result = upscale(c, std::move(result));
-        require(result.w == c.plan.width && result.h == c.plan.height,
-                "Model output dimensions differ from the configured 2x profile");
-        to_rgb24(result, output, output_stride);
+        if (c.plan.active) {
+            upscale(c, current, current_stride, output, output_stride);
+        } else {
+            for (int y = 0; y < c.height; y++)
+                std::copy_n(current + (ptrdiff_t)y * current_stride, (size_t)c.width * 3, output + (ptrdiff_t)y * output_stride);
+        }
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
         c.total_ms += ms; ++c.count; c.model_ms += c.last_model_ms;
         if (!c.stats.empty()) {
             std::ofstream f(c.stats);
             f << "Backend: ONNX Runtime/" << c.provider_label << "\nAnimeJaNai models: " << c.steps.size()
               << "\nRIFE: " << (c.rife_skipped ? "requested, not available with this engine" : "off")
-              << "\nOutput: " << result.w << "x" << result.h << "\nFrames: " << c.count
+              << "\nOutput: " << c.plan.width << "x" << c.plan.height << "\nFrames: " << c.count
               << "\nInference ms: " << ms << "\nAverage inference ms: " << c.total_ms / c.count
               << "\nModel ms: " << c.last_model_ms << "\nAverage model ms: " << c.model_ms / c.count
               << "\nAverage conversion ms: " << (c.total_ms - c.model_ms) / c.count << "\n";
