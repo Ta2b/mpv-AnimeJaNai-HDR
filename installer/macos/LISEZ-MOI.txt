@@ -32,14 +32,16 @@ Ce que cette version fait et ne fait pas
 
 Réglages
 --------
-Fichier de l'application : Contents/Resources/script-opts/animejanai_mac.conf
-  default_slot  profil au démarrage (0 = désactivé)
-  device        ALL, GPU, ANE ou CPU
-Pour vos propres profils, copier Contents/Resources/animejanai/animejanai.conf vers
-~/Library/Application Support/AnimeJaNai/animejanai.conf et le modifier.
+Dossier des réglages : ~/Library/Application Support/AnimeJaNai (créé au premier lancement).
+  mpv/script-opts/animejanai_mac.conf
+      default_slot  profil au démarrage (0 = désactivé)
+      device        ALL, GPU, ANE ou CPU
+  mpv/mpv.conf      réglages de mpv (sortie vidéo, décodage)
+Pour vos propres profils, copier le fichier animejanai.conf de l'application
+(Contents/Resources/animejanai/animejanai.conf) dans ce dossier et le modifier.
 
 En cas de problème
 ------------------
 Lancer depuis le Terminal pour voir les messages :
-    "/Applications/mpv AnimeJaNai.app/Contents/MacOS/mpv" chemin/de/la/video.mkv
+    "/Applications/mpv AnimeJaNai.app/Contents/MacOS/mpv-animejanai" chemin/de/la/video.mkv
 et envoyer ce qui s'affiche, avec le fichier ~/Library/Caches/AnimeJaNai/currentanimejanai.log.

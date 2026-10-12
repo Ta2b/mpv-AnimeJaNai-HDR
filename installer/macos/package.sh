@@ -13,11 +13,13 @@ rm -rf "$APP"
 cp -R "$MPV_APP" "$APP"
 RES="$APP/Contents/Resources"
 
-# mpv reads its settings and scripts from the bundle's Resources (~~osxbundle/).
-cp "$HERE/config/mpv.conf" "$RES/mpv.conf"
-mkdir -p "$RES/scripts" "$RES/script-opts" "$RES/animejanai/inference" "$RES/animejanai/onnx"
-cp "$HERE/config/scripts/animejanai_mac.lua" "$RES/scripts/"
-cp "$HERE/config/script-opts/animejanai_mac.conf" "$RES/script-opts/"
+# The launcher copies these settings to the user's folder and starts mpv with MPV_HOME.
+CONF="$RES/animejanai-config"
+mkdir -p "$CONF/scripts" "$CONF/script-opts" "$RES/animejanai/inference" "$RES/animejanai/onnx"
+cp "$HERE/config/mpv.conf" "$CONF/mpv.conf"
+cp "$HERE/config/scripts/animejanai_mac.lua" "$CONF/scripts/"
+cp "$HERE/config/script-opts/animejanai_mac.conf" "$CONF/script-opts/"
+install -m755 "$HERE/launcher.sh" "$APP/Contents/MacOS/mpv-animejanai"
 cp "$HERE/config/animejanai.conf" "$RES/animejanai/animejanai.conf"
 cp "$ONNX"/*SPANF3*.onnx "$RES/animejanai/onnx/"
 cp "$ENGINE/libaji_ort.dylib" "$RES/animejanai/inference/"
@@ -27,6 +29,7 @@ install_name_tool -add_rpath @loader_path "$RES/animejanai/inference/libaji_ort.
 printf '%s\n' "$VERSION" > "$RES/animejanai/version.txt"
 
 plist="$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleExecutable mpv-animejanai" "$plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleName 'mpv AnimeJaNai'" "$plist" || true
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier io.github.ta2b.mpv-animejanai" "$plist" || true
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$plist" || true
