@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.16)
+project(animejanai_vulkan_windows LANGUAGES C CXX)
+set(CMAKE_CXX_STANDARD 17)
+# NCNN with its in-house Vulkan loader (NCNN_SIMPLEVK): no Vulkan SDK is needed to build.
+set(NCNN_VULKAN ON CACHE BOOL "" FORCE)
+set(NCNN_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(NCNN_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(NCNN_BUILD_BENCHMARK OFF CACHE BOOL "" FORCE)
+set(NCNN_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+add_subdirectory(ncnn ncnn-build)
+add_executable(bench bench.cpp)
+target_link_libraries(bench PRIVATE ncnn)

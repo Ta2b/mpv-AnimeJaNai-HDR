@@ -45,6 +45,10 @@ antérieur ; elles sont conservées pour l'historique.
   détail dans `PARTAGE.md`. Vérifié sous Windows dans le lecteur (PSNR 29 à 44 dB entre les deux
   conversions sur quatre réglages). **Non vérifié sous Linux** : la conversion mpv y passe par
   `linux-hdr.lua`, à contrôler avec une sortie PQ réelle.
+- **Portage du backend NCNN/Vulkan sous Windows : étudié et abandonné.** Mesure du calcul pur,
+  sans aucune copie, sur RTX 4070 Ti : 28 ms par image en Performance 720p, soit environ 6 fois
+  plus lent que TensorRT sur la même carte et que DirectML sur une carte comparable. Une réécriture
+  sans copie ne comblerait pas cet écart. Détail et outil de mesure dans `LINUX-INFERENCE.md`.
 - **Mode Vulkan Windows : il existe déjà.** Depuis la 3.8.0.5, `render_api=vulkan` fait
   tourner RTX VSR et TrueHDR dans le moteur TensorRT (`aji_trt_rtx.dll`, compilé localement,
   voir `PARTAGE.md`). La phrase « le moteur Vulkan Windows est reporté » plus bas vise

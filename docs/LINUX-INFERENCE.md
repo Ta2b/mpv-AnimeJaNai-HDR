@@ -279,3 +279,37 @@ avant l'intégration des profils et du Manager.
 - [ABI et moteurs aji](https://github.com/the-database/animejanai-inference/tree/v0.11.1)
 - [RIFE NCNN/Vulkan](https://github.com/nihui/rife-ncnn-vulkan)
 - [NCNN et conversion des modèles](https://github.com/Tencent/ncnn)
+
+## Plafond du moteur NCNN/Vulkan, mesuré le 12 octobre 2026
+
+Question posée : une réécriture sans copie du backend Vulkan (images gardées dans le GPU) pourrait-elle
+rivaliser avec DirectML, et vaut-elle un portage sous Windows ? Mesure faite pour y répondre :
+`native/vulkan-bench/bench.cpp` charge un modèle SPAN converti, envoie l'entrée **une seule fois** dans
+le GPU, puis exécute l'inférence sans jamais rapatrier la sortie. C'est le plafond de n'importe quel
+backend NCNN/Vulkan : un pont d'images ne peut qu'ajouter du temps.
+
+Sur RTX 4070 Ti, pilote 617.42, NCNN `d8227bb`, FP16, compilé avec MSVC :
+
+| Modèle | 720p → 1440p | 1080p → 2160p |
+|---|---|---|
+| Performance | 28,3 ms (35 i/s) | 57,5 ms (17 i/s) |
+| Balanced | 38,8 ms (26 i/s) | 101,5 ms (10 i/s) |
+
+Références publiées dans `data/benchmarks` (chaîne complète, décodage compris) :
+
+| Carte et backend | Performance 720p | Performance 1080p | Balanced 720p | Balanced 1080p |
+|---|---|---|---|---|
+| RTX 4070 Ti, TensorRT | 224 à 226 i/s | 86 à 92 i/s | 123 à 126 i/s | 55 à 61 i/s |
+| RX 9070 XT, DirectML | 245 à 284 i/s | 81 à 99 i/s | 116 à 137 i/s | 43 à 53 i/s |
+
+**Conclusion.** Sur la même carte, le calcul NCNN/Vulkan seul est environ 6 fois plus lent que la chaîne
+TensorRT complète, et du même ordre face à DirectML sur une carte de classe comparable. Le frein est le
+calcul lui-même (shaders de convolution génériques), pas les copies : une réécriture sans copie ne
+comblerait pas l'écart. TensorRT et DirectML s'appuient sur des noyaux de convolution écrits par les
+fabricants de GPU, auxquels un backend Vulkan générique n'a pas accès. **Le portage sous Windows et la
+réécriture sans copie ne sont donc pas entrepris.** Le backend Vulkan garde son rôle : faire tourner
+AnimeJaNai sous Linux là où ni TensorRT ni DirectML n'existent.
+
+Limite de cette mesure : elle est faite sur le pilote Vulkan de NVIDIA. Pour la refaire sur une carte AMD,
+compiler `native/vulkan-bench` (NCNN en sous-dossier `ncnn`, voir son `CMakeLists.txt`) et lancer
+`bench <modèle sans extension> 1280 720`.
