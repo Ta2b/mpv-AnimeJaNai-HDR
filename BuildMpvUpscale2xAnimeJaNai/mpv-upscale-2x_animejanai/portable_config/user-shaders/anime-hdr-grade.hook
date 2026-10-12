@@ -110,24 +110,31 @@
 //!MAXIMUM 400.0
 200.0
 
+//!PARAM em_pow
+//!DESC Aspect TrueHDR : exposant de la montee vers le pic (6 au gris moyen 50)
+//!TYPE float
+//!MINIMUM 2.0
+//!MAXIMUM 16.0
+6.0
+
 //!PARAM em_lo
 //!DESC Aspect TrueHDR : exposant du contraste sous le pivot
 //!TYPE float
-//!MINIMUM 1.0
+//!MINIMUM 0.5
 //!MAXIMUM 2.0
 1.0
 
 //!PARAM em_hi
 //!DESC Aspect TrueHDR : exposant du contraste au-dessus du pivot
 //!TYPE float
-//!MINIMUM 1.0
+//!MINIMUM 0.5
 //!MAXIMUM 2.0
 1.0
 
 //!PARAM em_sat
 //!DESC Aspect TrueHDR : facteur de saturation
 //!TYPE float
-//!MINIMUM 1.0
+//!MINIMUM 0.5
 //!MAXIMUM 1.5
 1.0
 
@@ -392,12 +399,14 @@ float highlight_ratio(float y, float isolation, float skin, float abl_scale) {
 }
 
 // Aspect RTX TrueHDR pour le SDR converti par MPV. Courbes mesurees sur le SDK RTX Video
-// (mires grises et colorees, gris moyen 50) : TrueHDR s'y comporte comme une courbe globale.
-//   base      : em_base * s^2 * exp(ln(peak / em_base) * s^6), s = signal SDR (0..1) ;
-//               le blanc SDR arrive au pic, les tons moyens restent vers 50 nits ;
+// (mires grises et colorees) sur toute la plage des curseurs : contraste et saturation 0 a 200,
+// gris moyen 10 a 100, pic 400 a 1000 nits. TrueHDR s'y comporte comme une courbe globale.
+//   base      : em_base * s^2 * exp(ln(peak / em_base) * s^em_pow), s = signal SDR (0..1),
+//               em_base = 4 x gris moyen ; le blanc SDR arrive au pic ;
 //   contraste : puissance autour du pivot (em_lo dessous, em_hi dessus, sans depasser le pic) ;
 //   saturation: ecart a la luminance multiplie par em_sat.
-// Ecart mesure avec TrueHDR : +/- 6 % sur les gris, +/- 7 % sur les couleurs courantes.
+// Ecart mesure avec TrueHDR au gris moyen 50 : +/- 6 % sur les gris, +/- 7 % sur les couleurs
+// courantes, jusqu'a +20 % sur les primaires pures.
 vec3 truehdr_look(vec3 nits) {
     const vec3 luma = vec3(0.2627, 0.6780, 0.0593);
     vec3 x = max(nits, 0.0) / sdr_white;
@@ -405,7 +414,7 @@ vec3 truehdr_look(vec3 nits) {
     float idx = clamp(Y + 0.15 * (max(x.r, max(x.g, x.b)) - Y), 0.0, 1.0);
     if (idx < 1e-6) return vec3(0.0);
     float s2 = pow(idx, 2.0 / 2.4);
-    vec3 c = x * (em_base * s2 / idx * exp(log(peak / em_base) * s2 * s2 * s2));
+    vec3 c = x * (em_base * s2 / idx * exp(log(max(peak / em_base, 1.0)) * pow(s2, 0.5 * em_pow)));
     float Yn = max(dot(c, luma), 1e-6);
     float P = 0.2575 * em_base;
     float Y2;

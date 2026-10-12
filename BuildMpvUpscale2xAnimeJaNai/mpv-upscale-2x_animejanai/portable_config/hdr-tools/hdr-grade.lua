@@ -5,7 +5,7 @@ local M = {}
 M.shader = '~~/user-shaders/anime-hdr-grade.hook'
 M.prefix = 'anime-hdr-grade/'
 M.keys = {'peak','paper','in_max','shadows','shadow_knee','area_gain','spec_gain','vibrance','abl','gamut_p3',
-    'emulate','sdr_white','em_base','em_lo','em_hi','em_sat'}
+    'emulate','sdr_white','em_base','em_pow','em_lo','em_hi','em_sat'}
 -- Render options owned by the controller; restored to their startup values otherwise.
 M.render_keys = {'target-trc','target-peak','target-contrast','target-gamut','hdr-reference-white',
     'sub-hdr-peak','image-subs-hdr-peak','hdr-compute-peak'}
@@ -107,13 +107,21 @@ function M.plan(o, ctx, preset)
     -- TrueHDR look (measured on the RTX Video SDK): the shader first applies TrueHDR's tone
     -- curve, contrast and saturation to MPV's SDR, then the same grade as on real TrueHDR.
     local look = graded == 'mpv' and o.mpv_truehdr_look and true or false
-    p.emulate, p.sdr_white, p.em_base, p.em_lo, p.em_hi, p.em_sat = 0, 203, 200, 1, 1, 1
+    p.emulate, p.sdr_white, p.em_base, p.em_pow, p.em_lo, p.em_hi, p.em_sat = 0, 203, 200, 6, 1, 1, 1
     if look then
-        local contrast = clamp(((o.mpv_contrast or 100) - 100) / 100, 0, 1)
-        local saturation = clamp(((o.mpv_saturation or 100) - 100) / 100, 0, 1)
+        -- The same three settings as RTX Video HDR (rtx_contrast, rtx_saturation,
+        -- rtx_middle_gray), so both conversions follow one look. Laws fitted on TrueHDR:
+        -- contrast is a power around the pivot (0 -> 0.65 / 0.74, 200 -> 1.38 / 1.28),
+        -- saturation scales chroma by 0.81 .. 1.19, middle grey m puts mid grey at about m nits.
+        local contrast = clamp(((o.rtx_contrast or 100) - 100) / 100, -1, 1)
+        local saturation = clamp(((o.rtx_saturation or 100) - 100) / 100, -1, 1)
+        local middle = clamp(o.rtx_middle_gray or 50, 10, 100)
         p.emulate = 1
-        p.em_base = clamp(4 * (o.mpv_middle_gray or 50), 40, math.min(400, 0.5 * peak))
-        p.em_lo, p.em_hi, p.em_sat = 1 + 0.38 * contrast, 1 + 0.29 * contrast, 1 + 0.2 * saturation
+        p.em_base = clamp(4 * middle, 40, math.min(400, 0.5 * peak))
+        p.em_pow = clamp(6 * (50 / middle) ^ 0.35, 2, 16)
+        p.em_lo = 1 + (contrast >= 0 and 0.38 or 0.35) * contrast
+        p.em_hi = 1 + (contrast >= 0 and 0.28 or 0.26) * contrast
+        p.em_sat = 1 + 0.19 * saturation
     end
     if graded == 'mpv' and not look then
         -- SDR stops at paper white: isolated whites may reach the peak,
