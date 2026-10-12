@@ -5,6 +5,9 @@ local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.
 local rife_sync = dofile(mp.command_native({'expand-path','~~/hdr-tools/rife-sync.lua'}))
 local options = policy.options()
 local hw = policy.detect(mp,utils,options)
+if policy.is_linux(mp) then
+    return dofile(mp.command_native({'expand-path','~~/hdr-tools/linux-playback.lua'}))
+end
 
 local function read_file(path)
     local f = io.open(path, 'rb')

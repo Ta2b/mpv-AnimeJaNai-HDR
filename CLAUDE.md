@@ -12,6 +12,8 @@ conventions. The step-by-step procedures live next to it:
   instead of downloading it, and the repo's gotchas.
 - **[`docs/RELEASE.md`](docs/RELEASE.md)** — the cross-repo release runbook: which sibling
   workflow to dispatch in which order, which constant consumes each tag, and the full asset map.
+- **[`docs/SETTINGS.md`](docs/SETTINGS.md)** — common display settings, neutral hardware
+  defaults, agreed HDR/grading/startup behavior and preservation of legacy configurations.
 
 Sibling components are documented in their own repos: `the-database/mpv` (`CLAUDE.md` +
 `DOCS/animejanai-build-local.md` + `DOCS/animejanai-build-ci.md`), `the-database/libass`, `the-database/mpv-winbuild`,
@@ -58,15 +60,22 @@ libmpv fork and the aji release and bump **both** `MpvForkVersion` and `AjiVersi
 
 ## Platform support (read before adding tooling)
 
-**Both Windows and Linux ship.** The assembler takes `--target win-x64|linux-x64`
-(`SelectTarget`, `Program.cs`), `deploy.yml` has a `deploy-linux` job, and releases since
-3.5.0 carry `-linux-x64` assets plus an AppImage and a `tar.zst` alongside the Windows Setup
-exe and 7z package. The per-platform names/paths are centralised in the `Platform` descriptor
-at the bottom of `Program.cs`.
+**HDR fork: Windows remains the published platform; Linux is experimental.**
+The assembler takes `--target win-x64|linux-x64`. The upstream Linux bundle omits
+Wayland; this fork's `installer/linux/build-native.sh` builds the same mpv commit
+with Wayland required. Linux test packages include the HDR Manager and keep
+inference opt-in. See [`docs/LINUX.md`](docs/LINUX.md) and `.github/workflows/linux-port.yml`.
+`deploy.yml` preserves Windows asset names and publishes Windows and Linux assets together in one release; Linux remains
+identified as experimental until physical NVIDIA/HDR validation.
 
 Windows-only pieces (no Linux equivalent installed): mpv.net, and the DirectML backend
 (`aji_dml.dll`, ONNX Runtime DirectML, `DirectML.dll` — `HasDirectML = false` on Linux).
-Linux gets its mpv bundle from a `the-database/mpv` release; both platforms fetch the
+Linux builds its Wayland mpv with `build-native.sh`, adding only the SDR Vulkan
+filter (bridge ABI 1). `build-inference.sh` pins NCNN/RIFE and converts SPAN;
+`VULKAN_LOCAL` stages the result. Vulkan works on AMD/NVIDIA without CUDA;
+TensorRT keeps aji ABI 9. `--vulkan-only` makes an offline Vulkan test package.
+See `docs/LINUX-INFERENCE.md` for measured limits and hardware validation.
+For optional NVIDIA components, both platforms fetch the
 TensorRT runtime straight from NVIDIA (the Windows zip, the Linux `.deb`s).
 
 When adding or changing build/runtime tooling, keep it portable:
@@ -204,16 +213,16 @@ chain, models, and engine-build status.
 
 ### `AnimeJaNaiManager.exe` (the editor)
 
-Downloaded at build time by `InstallAnimeJaNaiManager()` from a release of
-`github.com/the-database/AnimeJaNaiManager`, pinned via `ManagerVersion`. The flat asset
-`AnimeJaNaiManager-portable-x64.zip` (the `.exe` + native Avalonia DLLs `libSkiaSharp.dll` /
-`av_libglesv2.dll` / `libHarfBuzzSharp.dll`) lands at the **install root**, next to `mpvnet.exe`. It
-edits `animejanai.conf` and is launched by mpv via `Ctrl+E`. It ships **inside the overlay**, so it
-updates without a full re-download. It also carries default-profile definitions, so a model rename
-must be reflected there too.
+Downloaded by `InstallAnimeJaNaiManager()` from `Ta2b/AnimeJaNaiManager-HDR`,
+pinned to `hdr-<SHA>` via `manager-source-ref.txt`. Windows and Linux packages
+contain the HDR executable and its matching native Avalonia libraries. The
+legacy `AnimeJaNaiManager.exe` name is retained as an alias. Local development
+can supply `MANAGER_HDR_LOCAL`. The Manager edits profiles and shared display
+settings, opens with Ctrl+E and updates through the overlay.
 
-To ship a new editor build: run the editor repo's manual `Release` workflow, then bump
-`ManagerVersion` here. Its binaries are **not** committed (they're `.gitignore`d as a guard).
+The Manager workflow tests and publishes both platforms together. Its
+`player-source-ref.txt` pins the shared platform source. See `docs/RELEASE.md`
+for publication order and the common Windows/Linux release.
 
 ## Conventions
 

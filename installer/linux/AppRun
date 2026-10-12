@@ -4,7 +4,7 @@
 # The AppImage mounts read-only (squashfs), but the runtime writes a lot:
 # TensorRT engines build next to the ONNX, the filter writes the stats log, and
 # the Manager edits animejanai.conf. So we mirror the *writable* parts of the
-# tree into $XDG_DATA_HOME/AnimeJaNai on first run (and re-seed managed files on
+# tree into $XDG_DATA_HOME/AnimeJaNai-HDR-linux on first run (and re-seed managed files on
 # version change), rewrite the config's paths to point at that writable dir, and
 # run the bundled mpv against it. The read-only bits (mpv, libs, the inference
 # runtime) stay in the mounted image.
@@ -22,28 +22,28 @@ case "${1:-}" in
   --install|--uninstall)
     APPS="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
     ICONS="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/256x256/apps"
-    desktop="$APPS/mpv-animejanai.desktop"
+    desktop="$APPS/mpv-animejanai-hdr.desktop"
     MIMES="video/x-matroska;video/mp4;video/webm;video/x-msvideo;video/quicktime;video/mpeg;video/x-flv;video/3gpp;"
     if [ "$1" = "--uninstall" ]; then
-        rm -f "$desktop" "$ICONS/mpv-animejanai.png"
+        rm -f "$desktop" "$ICONS/mpv-animejanai-hdr.png"
         update-desktop-database "$APPS" 2>/dev/null || true
         echo "Removed the AnimeJaNai menu entry + file associations."
-        echo "(cached engines/config in ${XDG_DATA_HOME:-$HOME/.local/share}/AnimeJaNai are kept; delete that folder to clear them)"
+        echo "(cached engines/config in ${XDG_DATA_HOME:-$HOME/.local/share}/AnimeJaNai-HDR-linux are kept; delete that folder to clear them)"
         exit 0
     fi
     target="${APPIMAGE:-$HERE}"
     [ -z "${APPIMAGE:-}" ] && echo "warning: \$APPIMAGE unset (run the .AppImage directly, not extracted); using $HERE" >&2
     mkdir -p "$APPS" "$ICONS"
-    [ -f "$HERE/mpv-animejanai.png" ] && cp -f "$HERE/mpv-animejanai.png" "$ICONS/mpv-animejanai.png"
+    [ -f "$HERE/mpv-animejanai.png" ] && cp -f "$HERE/mpv-animejanai.png" "$ICONS/mpv-animejanai-hdr.png"
     cat > "$desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=mpv AnimeJaNai
+Name=mpv AnimeJaNai HDR
 GenericName=Media Player
 Comment=Real-time anime upscaling video player (mpv + TensorRT)
 Exec="$target" %U
 TryExec=$target
-Icon=mpv-animejanai
+Icon=mpv-animejanai-hdr
 Terminal=false
 Categories=AudioVideo;Player;Video;
 MimeType=$MIMES
@@ -52,7 +52,7 @@ EOF
     update-desktop-database "$APPS" 2>/dev/null || true
     if [ "${2:-}" = "--default" ]; then
         for m in $(echo "$MIMES" | tr ';' ' '); do
-            [ -n "$m" ] && xdg-mime default mpv-animejanai.desktop "$m" 2>/dev/null || true
+            [ -n "$m" ] && xdg-mime default mpv-animejanai-hdr.desktop "$m" 2>/dev/null || true
         done
         echo "Installed and set as the default video player."
     else
@@ -66,7 +66,7 @@ EOF
 esac
 
 export ANIMEJANAI_APPIMAGE=1   # animejanai_update.lua => "download the new AppImage"
-DATA="${XDG_DATA_HOME:-$HOME/.local/share}/AnimeJaNai"
+DATA="${XDG_DATA_HOME:-$HOME/.local/share}/AnimeJaNai-HDR-linux"
 mkdir -p "$DATA/portable_config" "$DATA/animejanai/onnx" "$DATA/animejanai/rife"
 
 # Seed / refresh writable data. Managed files are overwritten on version change;
@@ -84,6 +84,20 @@ if [ ! -f "$VER_DST" ] || ! cmp -s "$VER_SRC" "$VER_DST" 2>/dev/null; then
     cp -f "$VER_SRC" "$VER_DST" 2>/dev/null || true
 fi
 
+for managed in scripts shaders user-scripts user-shaders hdr-tools; do
+    [ -d "$HERE/portable_config/$managed" ] || continue
+    cp -rf "$HERE/portable_config/$managed" "$DATA/portable_config/"
+done
+# Converted Vulkan models are managed assets and refresh even at the same version.
+# TensorRT engine files and user banks remain writable and are preserved.
+for model in "$HERE/animejanai/onnx/"*.ncnn.*; do
+    [ -f "$model" ] && cp -f "$model" "$DATA/animejanai/onnx/"
+done
+if [ -d "$HERE/animejanai/rife-vulkan" ]; then
+    cp -rf "$HERE/animejanai/rife-vulkan" "$DATA/animejanai/"
+fi
+# Banks and HDR settings are user-owned: seed missing files without overwriting edits.
+cp -rn "$HERE/portable_config/profiles/." "$DATA/portable_config/profiles/" 2>/dev/null || true
 # Refresh mpv-animejanai.conf from the image EVERY launch and repoint its paths.
 # The AppImage mount path ($HERE) changes each run, so a once-rewritten conf would
 # point at a dead mount. Inference libs come from the read-only image ($HERE);
@@ -110,12 +124,15 @@ fi
 # The Manager + updater binaries live in the read-only image, but the config's
 # ~~/.. references resolve to $DATA. Symlink them into $DATA (re-linked every
 # launch, since $HERE changes per run) so Ctrl+E and the update check find them.
-for b in AnimeJaNaiManager AnimeJaNaiUpdater libSkiaSharp.so libHarfBuzzSharp.so; do
+for b in 7zz AnimeJaNaiManager-HDR AnimeJaNaiPlatform AnimeJaNaiManager AnimeJaNaiUpdater libSkiaSharp.so libHarfBuzzSharp.so; do
     [ -e "$HERE/$b" ] && ln -sf "$HERE/$b" "$DATA/$b"
 done
 # The Manager resolves its data dir relative to its exe by default; on the
 # AppImage the exe is read-only, so point it at the writable tree. It inherits
 # this env when mpv launches it via Ctrl+E.
+# The updater resolves the same writable root for component installation.
+cp -f "$HERE/version.txt" "$DATA/version.txt"
+[ ! -f "$HERE/manifest.json" ] || cp -f "$HERE/manifest.json" "$DATA/manifest.json"
 export ANIMEJANAI_DATA_DIR="$DATA/animejanai"
 export ANIMEJANAI_ROOT="$DATA"
 
@@ -127,13 +144,14 @@ INFDATA="$DATA/animejanai/inference"
 RIFEDATA="$DATA/animejanai/rife"
 mkdir -p "$INFDATA" "$RIFEDATA"
 ver="$(cat "$HERE/version.txt" 2>/dev/null || echo "")"
-relbase="https://github.com/the-database/mpv-upscale-2x_animejanai/releases/download/${ver}"
+relbase="https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/${ver}"
 
 fetch_pack() { # $1 = pack base (e.g. trt-sm120, rife); $2 = human note
     pack="component-$1-linux-x64.7z"
+    [ "${ANIMEJANAI_OFFLINE:-0}" = "1" ] && return 0
     { [ -n "$ver" ] && command -v curl >/dev/null 2>&1; } || return 0
     echo "AnimeJaNai: fetching $2 (one-time)..." >&2
-    if curl -fSL "$relbase/$pack" -o "$DATA/$pack"; then
+    if curl --connect-timeout 5 --max-time 180 -fSL "$relbase/$pack" -o "$DATA/$pack"; then
         "$HERE/7zz" x -snl -y -o"$DATA" "$DATA/$pack" >/dev/null 2>&1 || true
         rm -f "$DATA/$pack"
     else
@@ -143,6 +161,8 @@ fetch_pack() { # $1 = pack base (e.g. trt-sm120, rife); $2 = human note
 
 # Per-SM TensorRT builder (needed to BUILD new engines; cached engines run
 # without it) - just the one matching this GPU, on first run.
+if grep -qiE '^[[:space:]]*backend[[:space:]]*=[[:space:]]*TensorRT' "$DATA/animejanai/animejanai.conf" \
+   && grep -qE '^[[:space:]]*default_slot[[:space:]]*=[[:space:]]*[1-9]' "$DATA/animejanai/animejanai.conf"; then
 sm="$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | tr -d ' .')"
 if [ -n "$sm" ] && ! ls "$INFDATA"/libnvinfer_builder_resource_sm${sm}.so* >/dev/null 2>&1; then
     fetch_pack "trt-sm${sm}" "TensorRT kernels for sm${sm} (~250 MB)"
@@ -151,10 +171,20 @@ fi
 # RIFE models (interpolation only) - fetched only when the user's config enables
 # a RIFE chain, so pure-upscaling users never download them.
 if ! ls "$RIFEDATA"/*.onnx >/dev/null 2>&1 \
-   && grep -qiE '^[[:space:]]*rife[[:space:]]*=[[:space:]]*(yes|true|1)' \
+   && grep -qiE '^[[:space:]]*chain_[0-9]+_rife[[:space:]]*=[[:space:]]*(yes|true|1)' \
         "$DATA/animejanai/animejanai.conf" 2>/dev/null; then
     fetch_pack "rife" "RIFE interpolation models (~450 MB)"
 fi
 
+fi
+
 export LD_LIBRARY_PATH="$HERE/mpv:$HERE/animejanai/inference:$INFDATA:$HERE/usr/lib:${LD_LIBRARY_PATH:-}"
-exec "$HERE/mpv/mpv" --config-dir="$DATA/portable_config" "$@"
+export ANIMEJANAI_MPV="$HERE/mpv/mpv"
+# Downloaded components override image components (the matching runtime/builder share an ABI).
+export ANIMEJANAI_INFERENCE_DIR="$INFDATA"
+for lib in "$HERE/animejanai/inference/"*; do
+    [ -e "$lib" ] || continue
+    dest="$INFDATA/$(basename "$lib")"
+    if [ -L "$dest" ] || [ ! -e "$dest" ]; then ln -sf "$lib" "$dest"; fi
+done
+exec "$HERE/mpv-animejanai" "$@"

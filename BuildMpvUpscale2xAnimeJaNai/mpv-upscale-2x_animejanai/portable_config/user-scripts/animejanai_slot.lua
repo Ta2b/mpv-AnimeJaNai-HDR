@@ -10,6 +10,7 @@
 
 local mp = require 'mp'
 local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.lua'}))
+if policy.is_linux(mp) then return end -- linux-playback owns slot selection and capability checks
 -- Extra frame generation after AnimeJaNai/RIFE: AMD AMF x2, for every profile (Manager setting).
 local amf_enabled = policy.options().frame_generation == 'amf'
 policy.select_engine(mp, require 'mp.utils',

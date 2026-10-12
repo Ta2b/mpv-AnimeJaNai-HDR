@@ -15,7 +15,7 @@ local available_version = nil
 -- updater can't apply. AppRun sets ANIMEJANAI_APPIMAGE (APPIMAGE is set by the
 -- runtime too); in that case we point the user at the new AppImage instead.
 local is_appimage = os.getenv("ANIMEJANAI_APPIMAGE") ~= nil or os.getenv("APPIMAGE") ~= nil
-local releases_url = "github.com/the-database/mpv-upscale-2x_animejanai/releases"
+local releases_url = "github.com/Ta2b/mpv-AnimeJaNai-HDR/releases"
 
 local function start_update()
     if not available_version then

@@ -4,6 +4,7 @@ local mp = require 'mp'
 local utils = require 'mp.utils'
 local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.lua'}))
 local hardware = policy.detect(mp,utils,policy.options())
+if policy.is_linux(mp) then return end -- Linux must never fall back to DirectML or NVDEC on AMD.
 local official = mp.command_native({'expand-path','~~/scripts/animejanai_backend.lua'})
 
 local adapted = setmetatable({command_native=function(command,...)

@@ -4,14 +4,14 @@ Copier le dossier complet **mpv-AnimeJaNai**, pas seulement `portable_config` : 
 
 ## Ce qui s’adapte tout seul
 
-| | PC NVIDIA (RTX 4070 Ti) | PC AMD (RX 9070 XT) / Intel |
+| | PC NVIDIA | PC AMD / Intel |
 |---|---|---|
 | Inférence | TensorRT + NVDEC | DirectML + D3D11VA |
 | Banque de profils | `profiles/nvidia` (RIFE selon profil) | `profiles/amd` (sans RIFE, AMF ×2 sur Ctrl+4) |
 | Mise à l’échelle finale | RTX VSR | AMD VideoSR 1.0, repli D3D11 |
 | SDR → HDR | RTX TrueHDR + grading `rtx` | MPV + grading `mpv` |
-| HDR Windows | `mode` (défaut `follow`) | `amd_mode` (défaut `enable`) |
-| Écran | `peak_nvidia`, `gamut_nvidia`, `oled_nvidia` | `peak_amd`, `gamut_amd`, `oled_amd` |
+| HDR Windows | `windows_hdr=follow` | `windows_hdr=follow` |
+| Écran | `display_peak`, `display_gamut`, `display_oled` | mêmes paramètres d’écran |
 
 La carte est détectée au démarrage ; la carte dédiée est préférée à l’iGPU. La cible de résolution est **l’écran où se trouve MPV** (`target_resolution=auto`) ; les proportions sont conservées.
 
@@ -23,7 +23,7 @@ La carte est détectée au démarrage ; la carte dédiée est préférée à l�
 | **Ctrl+1** | Profil 1 « 1080p » : réduction 540p, RIFE ×2 sur NVIDIA, puis ×2 et VSR. |
 | **Ctrl+2** | Profil 2 « 4K » : 1080p natif → 2160p, sans RIFE. Le plus net. |
 | **Ctrl+3** | Profil 3 « 2K » : réduction 720p, RIFE ×2 sur NVIDIA, ×2 → 1440p, VSR → écran. Sur NVIDIA, modèle Balanced : trop lourd pour une RTX 4070 Ti avec TrueHDR et VSR en 2160p (voir `ANALYSE.md`). |
-| **Ctrl+4** | Profil 4. Sur NVIDIA : « 2K Performance », par défaut, le profil 3 avec le modèle Performance. Sur AMD : variante libre du 2K. Un profil vide est refusé avec un message. |
+| **Ctrl+4** | Profil 4. Sur NVIDIA : « 2K Performance », le profil 3 avec le modèle Performance. Sur AMD : variante libre du 2K. Un profil vide est refusé avec un message. |
 | **Ctrl+G** | Grading HDR : réglages du Manager → look *Natural* → sans grading, puis retour. Le HDR et la chaîne vidéo restent actifs. |
 | **Ctrl+Alt+P** | Mire d'étalonnage HDR (voir plus bas). Même touche pour la retirer ; elle disparaît aussi à la fin de la vidéo. |
 | **b** | Debanding activé / désactivé. |
@@ -40,20 +40,20 @@ Ctrl+E ouvre le Manager, Ctrl+U installe une mise à jour. Les réglages HDR enr
 | Upscale to Display : Auto / RTX Video Super Resolution / AMD VideoSR / Standard / Off | `vsr` |
 | Extra Frame Generation : Off / AMD AMF x2 | `frame_generation` |
 | Target Resolution | `target_resolution` |
-| SDR to HDR Conversion (grise tout ce qui suit quand décoché) | `hdr_conversion` |
+| Convert SDR to HDR when HDR output is active | `hdr_conversion` |
 | SDR to HDR Backend : Auto / RTX Video HDR / mpv | `hdr_backend` |
-| HDR Enhancement > Enhance HDR Picture | `grade` |
+| Enable HDR grading | `grade` |
 | Black Depth (%) | `shadows` |
 | Also Enhance Native HDR Videos | `grade_native_hdr` |
 | With RTX Video HDR > Highlight Boost / Color Vibrance (%) | `highlights_rtx` / `vibrance_rtx` |
 | With mpv Conversion > SDR White Level / Highlight Boost / Color Vibrance | `paper_white` / `highlights` / `vibrance` |
-| Display on NVIDIA PC / on AMD / Intel PC : Windows HDR, Peak Brightness, Color Gamut, OLED | `mode` / `amd_mode`, `peak_*`, `gamut_*`, `oled_*` |
+| Display : Windows HDR, Peak Brightness, Color Gamut, OLED | `windows_hdr`, `display_peak`, `display_gamut`, `display_oled` |
 | Look Preset : Natural / Vivid / Maximum (remplit les curseurs, toujours modifiables) | `shadows`, `highlights*`, `vibrance*` |
 | Subtitle Brightness (nits) | `subtitle_white` |
 | Match RIFE to Display Refresh / Max RIFE Factor | `rife_display_sync` / `rife_max_factor` |
 | TensorRT Engines (panneau TensorRT) : taille, *Delete Outdated*, *Delete All* | fichiers `.engine` du dossier `animejanai/onnx` |
 
-Le Manager écrit directement `script-opts/animejanai_hdr_auto.conf` en conservant les commentaires, puis prévient le lecteur ouvert par son canal IPC (`input-ipc-server=mpvpipe` dans `mpv.conf`). Les pourcentages correspondent aux fractions du fichier (85 % = 0.85). Le bloc *(this PC)* indique l'écran utilisé sur le PC courant.
+Le Manager écrit directement `script-opts/animejanai_hdr_auto.conf` en conservant les commentaires, puis prévient le lecteur ouvert par son canal IPC (`input-ipc-server=mpvpipe` dans `mpv.conf`). Les pourcentages correspondent aux fractions du fichier (85 % = 0.85). Une seule section décrit l’écran, indépendamment du GPU ; les détails sont repliés.
 
 *Delete Outdated* supprime les moteurs TensorRT compilés pour une autre version de TensorRT ou un autre GPU (ils seraient recompilés de toute façon) ; *Delete All* demande un second clic. Les moteurs manquants sont recompilés à la lecture suivante, ce qui prend quelques minutes par modèle.
 
@@ -61,15 +61,17 @@ Téléchargement : release `latest-hdr-settings` (base 0.6.0, pour AnimeJaNai 3.
 
 ## Réglages : `portable_config/script-opts/animejanai_hdr_auto.conf`
 
-### Écran du PC AMD
+### Écran (commun à tous les GPU)
 
-À adapter une fois sur le PC de l’ami :
+`display_peak=auto` et `display_gamut=auto` laissent le système et mpv fournir
+les informations disponibles. `display_oled=no` ne présume pas la technologie
+de dalle ; activer OLED uniquement après confirmation. `windows_hdr=follow`
+respecte l’état HDR Windows. Les anciennes clés par GPU sont acceptées si les
+clés communes correspondantes sont absentes, pour préserver les réglages existants.
 
-- `peak_amd` : pic de l’écran en nits (par exemple 600), ou `auto` pour la valeur annoncée par Windows.
-- `oled_amd=yes` si c’est un OLED ; `auto` sinon.
-- `gamut_amd=display-p3` convient à la plupart des écrans HDR.
-
-Faire aussi l’**étalonnage HDR Windows** sur ce PC.
+Une installation neuve démarre en Performance Standard sans RIFE (Ctrl+9 sous
+Windows, Ctrl+1 sous Linux). Les profils précédents restent sélectionnables.
+Voir [SETTINGS.md](SETTINGS.md) pour les défauts et la migration.
 
 ### Rendu HDR (commun aux deux PC)
 
@@ -77,10 +79,10 @@ Faire aussi l’**étalonnage HDR Windows** sur ce PC.
 |---|---|---|
 | `grade` | `yes` | `no` = sortie HDR neutre. |
 | `paper_white` | 203 | Blanc SDR en nits quand MPV convertit. Plus haut = image globalement plus lumineuse. |
-| `shadows` | 0.30 | Noirs plus profonds (0 à 0,8). Seuls les tons sous ~50 nits bougent. Baisser si les détails sombres disparaissent. |
-| `highlights` | 0.85 | Éclats quand MPV convertit (0 à 1). À 1, un éclat blanc isolé atteint le pic ; les grands aplats montent au plus de 50 %. |
-| `highlights_rtx` | 0.50 | Renfort des éclats par-dessus RTX TrueHDR (0 à 1), à partir de la moitié du pic. Les aplats et la peau ne bougent pas. |
-| `vibrance` / `vibrance_rtx` | 0.30 / 0.20 | Couleurs plus vives (0 à 0,8), sans sortir du gamut. La peau est exclue et les couleurs déjà saturées sont ménagées. |
+| `shadows` | 0.15 | Noirs plus profonds (0 à 0,8). Seuls les tons sous ~50 nits bougent. Baisser si les détails sombres disparaissent. |
+| `highlights` | 0.50 | Éclats quand MPV convertit (0 à 1). À 1, un éclat blanc isolé atteint le pic ; les grands aplats montent au plus de 50 %. |
+| `highlights_rtx` | 0.25 | Renfort des éclats par-dessus RTX TrueHDR (0 à 1), à partir de la moitié du pic. Les aplats et la peau ne bougent pas. |
+| `vibrance` / `vibrance_rtx` | 0.15 / 0.10 | Couleurs plus vives (0 à 0,8), sans sortir du gamut. La peau est exclue et les couleurs déjà saturées sont ménagées. |
 | `grade_native_hdr` | `no` | `yes` applique aussi le grading aux sources déjà HDR. |
 | `subtitle_white` | 200 | Blanc des sous-titres en nits sur une sortie HDR (80 à 1000). |
 
@@ -92,7 +94,7 @@ Faire aussi l’**étalonnage HDR Windows** sur ce PC.
 | `hdr_backend` | `auto` (RTX sur NVIDIA, MPV ailleurs), `rtx`, `mpv`. `mpv` sur NVIDIA permet de comparer avec TrueHDR. |
 | `vsr` | `auto`, `nvidia`, `amd`, `classic` (D3D11), `no`. Une valeur incompatible avec la carte se replie sur `classic`. |
 | `target_resolution` | `auto` ou une taille fixe, par exemple `2560x1440`. |
-| `mode` / `amd_mode` | `enable` : MPV active le HDR Windows puis le restaure. `follow` : suivre l’état de Windows. |
+| `windows_hdr` | `enable` : MPV active le HDR Windows puis le restaure. `follow` : suivre l’état de Windows. |
 | `rife_display_sync` | `yes` : le facteur RIFE de la vidéo est choisi pour que chaque image reste affichée le même nombre de rafraîchissements (23,976 i/s : ×2 à 144 Hz, ×5/3 à 120 Hz, ×5/2 à 60 Hz ou 120 Hz si `rife_max_factor=3`). Sans facteur adapté, celui du profil est gardé. Ignoré quand AnimeJaNai règle lui-même la fréquence de l'écran (`display_rate_match=yes`, AnimeJaNai 3.8). |
 | `rife_max_factor` | Facteur maximal autorisé pour ce calage (2 par défaut). À 3, un écran à 120 Hz reçoit ×5/2 (59,94 i/s), trop lourd pour une RTX 4070 Ti : environ 49 images perdues par seconde. |
 

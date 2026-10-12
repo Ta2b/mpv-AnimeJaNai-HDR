@@ -11,10 +11,14 @@ fi
 [ ${#interps[@]} -gt 0 ] || { echo "no Lua interpreter found" >&2; exit 2; }
 status=0
 for lua in "${interps[@]}"; do
-  for t in run_tests run_slot_tests run_startup_tests run_rife_tests run_vulkan_tests; do
+  for t in run_tests run_slot_tests run_startup_tests run_rife_tests run_vulkan_tests run_linux_tests run_settings_tests; do
     scratch="$(mktemp -d)"
     mkdir -p "$scratch/portable_config/cache" "$scratch/animejanai"
     cp -r "$overlay"/{hdr-tools,user-scripts,user-shaders,script-opts,profiles} "$scratch/portable_config/"
+    # Original display regressions cover explicit legacy settings, not new-install defaults.
+    if [[ "$t" == run_tests || "$t" == run_vulkan_tests ]]; then
+      cp "$here/fixtures/hdr-legacy.conf" "$scratch/portable_config/script-opts/animejanai_hdr_auto.conf"
+    fi
     printf '%-8s %-18s ' "$lua" "$t"
     if AJ_ROOT="$scratch/portable_config" AJ_TEST_DIR="$here" "$lua" "$here/$t.lua"; then :; else status=1; fi
     rm -rf "$scratch"

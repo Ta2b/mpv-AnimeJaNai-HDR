@@ -6,6 +6,9 @@ local mp = require 'mp'
 local msg = require 'mp.msg'
 local utils = require 'mp.utils'
 local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.lua'}))
+if policy.is_linux(mp) then
+    return dofile(mp.command_native({'expand-path','~~/hdr-tools/linux-hdr.lua'}))
+end
 local grade = dofile(mp.command_native({'expand-path','~~/hdr-tools/hdr-grade.lua'}))
 local options = policy.options()
 local hardware = policy.detect(mp,utils,options)

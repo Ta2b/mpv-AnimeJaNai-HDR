@@ -1,46 +1,66 @@
 name: Deploy
 
-# HDR fork: a push to the `release` branch builds and publishes the Windows release for the
-# version in release-version.txt (e.g. 3.6.3.1), exactly like a manual dispatch. The release
-# action creates the tag. The updater of this fork reads these releases.
 on:
   push:
     branches: [release]
   workflow_dispatch:
     inputs:
       release_version:
-        description: 'Release version'
-        required: true
-      linux_only:
-        description: 'Build only the Linux artifacts (skip the Windows leg)'
-        default: 'false'
-      windows_only:
-        description: 'Build only the Windows artifacts (skip the Linux leg)'
-        default: 'true'  # HDR fork: the Linux build image belongs to the upstream project
+        description: 'Version (blank uses release-version.txt)'
+        type: string
+        default: ''
+      platform:
+        description: 'Platforms to build'
+        type: choice
+        options: [both, windows, linux]
+        default: both
 
+permissions:
+  contents: read
+
+# Serialize publications; a release already uploading assets must finish.
+concurrency:
+  group: release-publication
+  cancel-in-progress: false
 
 jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      platform: ${{ steps.resolve.outputs.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: resolve
+        name: Validate release options
+        env:
+          REQUESTED_VERSION: ${{ inputs.release_version }}
+          REQUESTED_PLATFORM: ${{ inputs.platform }}
+        run: |
+          version="${REQUESTED_VERSION:-$(cat release-version.txt)}"
+          platform="${REQUESTED_PLATFORM:-both}"
+          [[ "$version" =~ ^[0-9]+(\.[0-9]+){2,3}$ ]] || { echo 'Invalid release version' >&2; exit 1; }
+          case "$platform" in both|windows|linux) ;; *) exit 1 ;; esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "platform=$platform" >> "$GITHUB_OUTPUT"
+
   hdr-tests:
     uses: ./.github/workflows/hdr-tests.yml
 
-  deploy:
-    needs: hdr-tests
-    if: ${{ github.event.inputs.linux_only != 'true' }}
+  platform-checks:
+    uses: ./.github/workflows/linux-port.yml
+
+  build-windows:
+    needs: [prepare, hdr-tests, platform-checks]
+    if: needs.prepare.outputs.platform != 'linux'
+    timeout-minutes: 120
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
     runs-on: windows-latest
-    permissions:
-      contents: write
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-
-    - name: Resolve release version
-      shell: pwsh
-      run: |
-        $ver = "${{ github.event.inputs.release_version }}"
-        if (-not $ver) { $ver = (Get-Content release-version.txt -Raw).Trim() }
-        if ($ver -notmatch '^\d+(\.\d+){2,3}$') { throw "Invalid release version '$ver'" }
-        "VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v4
@@ -49,6 +69,9 @@ jobs:
 
     - name: Publish .NET Core app
       run: dotnet publish BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj -c Release -o publish
+
+    - name: Build shared platform helper (Windows)
+      run: dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/platform-win-x64
 
     - name: Run the console app
       # --packs also emits component-*.7z + packs.json (publish/packs-v<ver>/) for the
@@ -98,61 +121,89 @@ jobs:
         & 7z a -t7z -mx=9 $out @paths
         Pop-Location
 
-    - name: Create GitHub Release
-      uses: ncipollo/release-action@v1
+    - name: Upload Windows release assets
+      uses: actions/upload-artifact@v4
       with:
-        tag: ${{ env.VERSION }}
-        name: ${{ env.VERSION }}
-        # HDR fork: published directly (the updater cannot see drafts).
-        draft: false
-        prerelease: false
-        makeLatest: true
-        allowUpdates: true
-        body: |
-          mpv-AnimeJaNai HDR ${{ env.VERSION }} - fork of the-database/mpv-upscale-2x_animejanai.
-          SDR to HDR for NVIDIA (RTX Video HDR + RTX VSR) and AMD (mpv HDR + AMD VideoSR), one HDR grade
-          (deeper blacks, local highlights, vibrance, skin protection), settings in AnimeJaNai Manager (HDR).
-          Install: the Setup exe, or extract the full package and run mpvnet.exe.
-        artifacts: "mpv-AnimeJaNai-HDR-Setup-${{ env.VERSION }}.exe,mpv-upscale-2x_animejanai-full-package-${{ env.VERSION }}.7z.*,mpv-upscale-2x_animejanai-overlay-${{ env.VERSION }}.7z,manifest.json,publish/packs-v${{ env.VERSION }}/component-*.7z,publish/packs-v${{ env.VERSION }}/packs.json"
-        token: ${{ secrets.GITHUB_TOKEN }}
+        name: release-windows
+        if-no-files-found: error
+        retention-days: 7
+        path: |
+          mpv-AnimeJaNai-HDR-Setup-*.exe
+          mpv-upscale-2x_animejanai-full-package-*.7z.*
+          mpv-upscale-2x_animejanai-overlay-*.7z
+          manifest.json
+          publish/packs-v*/component-*.7z
+          publish/packs-v*/packs.json
 
-  # Linux leg. Runs in the old-baseline build image (Ubuntu 22.04 + CUDA toolkit
-  # + TensorRT 11 + .NET 10 SDK + 7zz + luajit + mpv build deps) so the artifacts
-  # carry a low glibc floor. The image is built/pushed by the build-image
-  # workflow; the Linux mpv fork bundle + aji.so are consumed from their sibling
-  # repos' releases (the assembler downloads them). Assets are shared on the same
-  # release tag, suffixed with the RID so they don't collide with the Windows
-  # assets; the updater resolves its platform's assets by that suffix.
-  deploy-linux:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.windows_only == 'false' }}
-    runs-on: ubuntu-latest
+  build-linux:
+    needs: [prepare, hdr-tests, platform-checks]
+    if: needs.prepare.outputs.platform != 'windows'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
     defaults:
       run:
-        shell: bash   # the container's default is dash; steps use bash-isms
-    permissions:
-      contents: write
-      packages: read
-    container:
-      image: ghcr.io/the-database/animejanai-linux-build:ubuntu2204
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
     env:
-      VER: ${{ github.event.inputs.release_version }}
+      VER: ${{ needs.prepare.outputs.version }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.x'
+
+    - name: Install portable packaging tools
+      run: sudo apt-get update && sudo apt-get install -y zstd jq patchelf libfuse2t64
+
+    - name: Install native Wayland build dependencies
+      run: sudo apt-get install -y build-essential git cmake python3-venv meson ninja-build pkg-config nasm libass-dev libvulkan-dev libxkbcommon-dev libwayland-dev libxml2-dev libffi-dev libexpat1-dev liblua5.2-dev liblcms2-dev libx11-dev libxrandr-dev libxss-dev libxcursor-dev libxi-dev libxpresent-dev libxinerama-dev libpulse-dev libasound2-dev libshaderc-dev spirv-cross libspirv-cross-c-shared-dev glslang-dev libfreetype-dev libfontconfig-dev libfribidi-dev libharfbuzz-dev libunibreak-dev autoconf automake libtool
+
+    - name: Build pinned native player with Wayland required
+      run: |
+        installer/linux/build-native.sh "$RUNNER_TEMP/native-work" "$GITHUB_WORKSPACE/native-bundle"
+        echo "MPV_LINUX_LOCAL=$GITHUB_WORKSPACE/native-bundle" >> "$GITHUB_ENV"
+
+    - name: Reuse the Vulkan backend validated by platform checks
+      uses: actions/download-artifact@v4
+      with:
+        name: vulkan-backend-linux-x64
+        path: vulkan-bundle
+
+    - name: Configure validated inference bundle
+      run: |
+        chmod +x vulkan-bundle/inference/animejanai-vulkan-test
+        echo "VULKAN_LOCAL=$GITHUB_WORKSPACE/vulkan-bundle" >> "$GITHUB_ENV"
+
+    - name: Resolve pinned HDR Manager source
+      run: echo "MANAGER_REF=$(cat manager-source-ref.txt)" >> "$GITHUB_ENV"
+
+    - name: Checkout HDR Manager source
+      uses: actions/checkout@v4
+      with:
+        repository: Ta2b/AnimeJaNaiManager-HDR
+        ref: ${{ env.MANAGER_REF }}
+        path: manager
+
+    - name: Build Linux HDR Manager from source
+      run: |
+        dotnet publish manager/AnimeJaNaiConfEditor/AnimeJaNaiConfEditor.csproj -c Release -r linux-x64 --self-contained true -p:PlatformSource="$GITHUB_WORKSPACE/AnimeJaNaiPlatform/PlatformServices.cs" -o manager-publish
+        mv manager-publish/AnimeJaNaiManager manager-publish/AnimeJaNaiManager-HDR
+        echo "MANAGER_HDR_LOCAL=$GITHUB_WORKSPACE/manager-publish" >> "$GITHUB_ENV"
+
     - name: Publish assembler (host RID = linux-x64)
       run: dotnet publish BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj -c Release -o publish
 
+    - name: Build shared platform helper (Linux)
+      run: dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o publish/platform-linux-x64
+
     - name: Run assembler (linux-x64, with packs)
-      # Downloads aji-linux-x64.tar.zst + the Linux mpv fork bundle from the
-      # sibling repos' releases, and the TensorRT .debs from NVIDIA's CUDA repo
-      # (TrtVersion in Program.cs) - the image's own TensorRT is only there for
-      # the sibling repos' compiles, so assembly is independent of it.
+      # Uses the local Wayland bundle and downloads aji from its sibling release
+      # and TensorRT .debs from NVIDIA's CUDA repo (TrtVersion in Program.cs).
       # --packs emits component-*.7z + packs.json and slims the core tree.
-      run: ./publish/BuildMpvUpscale2xAnimeJaNai "$VER" --target linux-x64 --packs
+      run: |
+        ./publish/BuildMpvUpscale2xAnimeJaNai "$VER" --target linux-x64 --packs
+        echo "$GITHUB_WORKSPACE/publish" >> "$GITHUB_PATH"
 
     - name: Build updater (linux-x64, single file)
       run: |
@@ -167,23 +218,14 @@ jobs:
         chmod +x "publish/mpv-upscale-2x_animejanai-v$VER/animejanai/benchmarks/AnimeJaNaiBenchmark" \
                  "publish/mpv-upscale-2x_animejanai-v$VER/animejanai/benchmarks/animejanai_benchmark_all.sh" 2>/dev/null || true
 
-    # The AnimeJaNai Manager is downloaded + laid into the tree by the assembler
-    # (InstallAnimeJaNaiManager) from the AnimeJaNaiManager repo's own linux-x64
-    # release, exactly like the Windows flow - so no Manager build step here.
-
     - name: Package portable tarball (+ updater + install scripts)
       run: |
         chmod +x installer/linux/*.sh
         installer/linux/package-tarball.sh \
           "publish/mpv-upscale-2x_animejanai-v$VER" updater-publish/AnimeJaNaiUpdater "$VER" .
 
-    - name: Build AppImage (only the TRT runtime baked in; RIFE + per-SM kernels fetched on demand)
-      continue-on-error: true  # don't block the tarball release if AppImage tooling trips
-      # Bake ONLY the base TensorRT runtime (the sole Linux backend, so cached
-      # engines run the moment it launches). RIFE (interpolation-only) and the
-      # GPU-matched per-SM builder are downloaded by AppRun on demand - keeping
-      # the AppImage small, SM-agnostic, and mirroring the Windows slim-install
-      # model. -snl restores the deduplicated symlinks.
+    - name: Build AppImage with Vulkan, RIFE and the TensorRT runtime
+      # Vulkan/SPAN/RIFE stay in the core; optional TensorRT kernels remain packs.
       run: |
         full="appimage-tree/mpv-upscale-2x_animejanai-v$VER"
         mkdir -p "$full"
@@ -194,7 +236,6 @@ jobs:
         installer/linux/build-appimage.sh "$full" "$VER" .
 
     - name: Overlay archive + RID-suffixed manifest
-      continue-on-error: true  # in-place-update convenience; never block the release
       # Lightweight program-file overlay (the assembler already emits RID-suffixed
       # component packs + packs-linux-x64.json).
       run: |
@@ -204,21 +245,66 @@ jobs:
         ( cd "$pkg" && 7zz a -t7z -mx=9 \
             "$GITHUB_WORKSPACE/mpv-upscale-2x_animejanai-overlay-$VER-linux-x64.7z" "${paths[@]}" )
 
-    - name: Create / update GitHub Release (Linux assets)
-      uses: ncipollo/release-action@v1
+    - name: Upload Linux test packages
+      uses: actions/upload-artifact@v4
       with:
-        tag: ${{ github.event.inputs.release_version }}
-        name: ${{ github.event.inputs.release_version }}
-        draft: true
-        allowUpdates: true
-        # The Linux leg only *adds* its RID-suffixed assets to the release the
-        # Windows leg owns (same tag). When that release already exists - e.g.
-        # adding Linux to an already-published 3.5.0 - never change its
-        # published/draft state, name, or notes; just attach the Linux files.
-        # (draft: true above still applies when the Linux leg creates the
-        # release from scratch, e.g. a linux_only first run.)
-        omitDraftDuringUpdate: true
-        omitNameDuringUpdate: true
-        omitBodyDuringUpdate: true
-        artifacts: "mpv-upscale-2x_animejanai-v${{ github.event.inputs.release_version }}-linux-x64.tar.zst,*.AppImage,mpv-upscale-2x_animejanai-overlay-${{ github.event.inputs.release_version }}-linux-x64.7z,manifest-linux-x64.json,publish/packs-v${{ github.event.inputs.release_version }}/component-*-linux-x64.7z,publish/packs-v${{ github.event.inputs.release_version }}/packs-linux-x64.json"
-        token: ${{ secrets.GITHUB_TOKEN }}
+        name: release-linux
+        if-no-files-found: error
+        retention-days: 14
+        path: |
+          *-linux-x64.tar.zst
+          *.AppImage
+          *-linux-x64.7z
+          manifest-linux-x64.json
+          publish/packs-v*/component-*-linux-x64.7z
+          publish/packs-v*/packs-linux-x64.json
+
+
+  publish:
+    needs: [prepare, build-windows, build-linux]
+    if: >-
+      always() && !cancelled() && needs.prepare.result == 'success' &&
+      (needs.build-windows.result == 'success' || needs.build-windows.result == 'skipped') &&
+      (needs.build-linux.result == 'success' || needs.build-linux.result == 'skipped') &&
+      (needs.build-windows.result == 'success' || needs.build-linux.result == 'success')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Download Windows assets
+        if: needs.build-windows.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: release-windows
+          path: assets
+      - name: Download Linux assets
+        if: needs.build-linux.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: release-linux
+          path: assets
+      - name: Publish Windows and Linux in the same release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ env.VERSION }}
+          name: ${{ env.VERSION }}
+          commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+          makeLatest: ${{ needs.build-windows.result == 'success' }}
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitDraftDuringUpdate: true
+          artifacts: assets/**/*
+          artifactErrorsFailBuild: true
+          body: |
+            mpv-AnimeJaNai HDR ${{ env.VERSION }} - Windows and Linux in one release.
+            Windows: run Setup or extract the full package and launch mpvnet.exe. Existing asset names are preserved.
+            Linux x64 (experimental): extract the tar.zst and run mpv-animejanai, or use the AppImage.
+            Linux includes the HDR Manager, NCNN/Vulkan AnimeJaNai SPAN upscaling and RIFE 4.6 on AMD/NVIDIA.
+            One shared display section, automatic brightness/gamut, OLED off; system HDR followed and Natural grading enabled on HDR output.
+            New installs start with Performance without RIFE. Existing settings are preserved.
+            Physical NVIDIA RTX 4050 and HDR-screen validation remain outstanding. Local GPU checks are functional, not performance benchmarks.

@@ -18,8 +18,10 @@ def method(signature):
 methods=[method(s) for s in ('void SyncInputConf()', 'string ReadLocalVersion()',
     'static string ReadManifestString(', 'string? PackVersionMismatch(',
     'Task<Release> GetInstalledReleaseAsync()', 'async Task<Release> GetReleaseAsync(string url)',
-    'async Task<PackIndex> GetPackIndexAsync()')]
+    'async Task<PackIndex> GetPackIndexAsync()', 'void CopyTree(', 'static bool IsPreserved(', 'static void TryDelete(')]
 start=source.index('string ReadComponentVersion() =>')
+methods.append(source[start:source.index(';',start)+1])
+start=source.index('static string NormalizeRel(')
 methods.append(source[start:source.index(';',start)+1])
 latest=next(s for s in source.splitlines() if s.startswith('Task<Release> GetLatestReleaseAsync()'))
 repo=next(s for s in source.splitlines() if s.startswith('const string Repo ='))
@@ -37,6 +39,7 @@ class Production
     { installDir=root; this.handler=handler; isWinRid=windows; platformRid=windows ? "win-x64" : "linux-x64"; }
     HttpClient NewClient() => new HttpClient(handler, disposeHandler:false);
     public void Sync() => SyncInputConf();
+    public void Copy(string source, HashSet<string> preserved) => CopyTree(source, installDir, source, preserved);
     public Task<PackIndex> Packs() => GetPackIndexAsync();
     public Task<Release> Latest() => GetLatestReleaseAsync();
     public string? Mismatch(PackIndex index) => PackVersionMismatch(index);

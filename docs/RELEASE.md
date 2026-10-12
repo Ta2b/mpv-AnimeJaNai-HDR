@@ -1,299 +1,105 @@
-# Release runbook
+# Publication du fork HDR
 
-A release of this repo is an assembly of five other repos' outputs. Nothing here builds mpv,
-libass, or the inference engine — the assembler downloads them all by **pinned version
-constant**, so a release is: get each upstream artifact published, bump its constant, then
-dispatch `Deploy`.
+Les dépôts actifs sont `Ta2b/mpv-AnimeJaNai-HDR` (branche `hdr-3.8`) et
+`Ta2b/AnimeJaNaiManager-HDR` (branche `hdr-settings-0.8`). Windows conserve
+ses noms d’assets. Linux et Windows sont joints à la même release et utilisent la même version.
+Les notes identifient Linux comme expérimental tant que les essais physiques
+NVIDIA et HDR ne sont pas terminés.
 
-Local dev loop: [`DEVELOPMENT.md`](DEVELOPMENT.md). Orientation: [`../CLAUDE.md`](../CLAUDE.md).
+## Workflows conservés
 
-## The dependency graph
-
-```
-the-database/libass  ──┐
-the-database/mpv  ─────┼──► mpv-winbuild "MPV"          → mpv-x86_64-<date>-git-<sha>.7z
-                       │                                  mpv-dev-x86_64-<date>-git-<sha>.7z
-                       └──► mpv "Build Linux"            → mpv-linux-x64-<tag>.tar.zst
-
-animejanai-inference ──────► "Build Linux (aji)"         → aji-linux-x64.tar.zst
-                     └─────► LOCAL Windows build          → aji-windows-x64.zip
-
-AnimeJaNaiManager  ────────► "Release"                   → AnimeJaNaiManager-portable-x64.zip
-                                                           AnimeJaNaiManager-portable-linux-x64.tar.zst
-                                    │
-                                    ▼
-              mpv-AnimeJaNai "Deploy"  → draft release with the full asset set
-```
-
-## Version pins
-
-Every pin is a `const string` near the top of `BuildMpvUpscale2xAnimeJaNai/Program.cs`.
-Values below are the current ones; read the file for truth.
-
-| Constant | Current | Source of the value |
-|---|---|---|
-| `AjiVersion` | `v0.11.1` | `the-database/animejanai-inference` release tag |
-| `RifeModelsVersion` | `models-rife-fp16-1` | an animejanai-inference release tag (fp16 conversions) |
-| `MpvForkVersion` | `2026-10-09-19c0fcf895` | `the-database/mpv-winbuild` release tag |
-| `MpvForkBuildDate` | `20261009` | the date **inside the archive filename** |
-| `MpvForkGitHash` | `19c0fcf895` | the short hash **inside the archive filename** |
-| `MpvForkLinuxVersion` | `2026-10-09-19c0fcf` | `the-database/mpv` release tag (Linux bundle) |
-| `ManagerVersion` | `0.8.0` | `the-database/AnimeJaNaiManager` release tag |
-| `TrtVersion` | `11.3.0.99` | NVIDIA TensorRT release (runtime + `trtexec`, both platforms) |
-| `TrtCudaVersion` | `13.4` | the CUDA flavour of that TensorRT build |
-| `CudartVersion` | `13.4.49` | `cudart` from NVIDIA's CUDA redistributable manifest |
-| `OrtDmlVersion` | `1.24.4` | `Microsoft.ML.OnnxRuntime.DirectML` on NuGet |
-| `DirectMLVersion` | `1.15.4` | `Microsoft.AI.DirectML` on NuGet |
-| `MpvNetVersion` | `v7.1.2.0` | `mpvnet-player/mpv.net` release tag |
-| `SevenZipVersion` | `2602` | 7-zip.org "extra" / linux-x64 console |
-
-**Three constants describe one mpv-winbuild build.** `MpvForkVersion` is the release tag, while
-`MpvForkBuildDate` and `MpvForkGitHash` are the date and short hash embedded in the asset
-*filenames*. All three must be bumped together or the download 404s.
-
-**The filter↔engine ABI couples mpv and aji.** `aji.h`'s `AJI_API_VERSION` is shared by
-`vf_animejanai` (in the mpv fork) and the engine. When it changes, rebuild **both** and bump
-**both** `MpvForkVersion`/`MpvForkLinuxVersion` and `AjiVersion`. `Program.cs` notes the filter
-lives on the mpv fork's `master` (aji ABI v9) and that the old standalone `vf-animejanai`
-branch is stale (ABI v4) and must not be used.
-
-`TrtVersion` and `AjiVersion` must agree on the TensorRT major.minor — `aji_trt` links
-`nvinfer_11` and must be built against the version it runs on.
-
-**`TrtCudaVersion` is a separate pin and is not derivable from `TrtVersion`.** NVIDIA's
-TRT↔CUDA pairing varies per release (11.0→13.2, 11.1→13.3, 11.2→13.3, 11.3→13.4); guessing it
-produces a 404. Confirm the pairing on NVIDIA's download page before bumping.
-
-The bits come straight from NVIDIA, so no third-party release gates a TensorRT bump:
-
-- Windows — `TensorRT-Enterprise-<TrtVersion>-Windows-amd64-cuda-<TrtCudaVersion>-Release-external.zip`
-  under `developer.nvidia.com/downloads/compute/machine-learning/tensorrt/<maj.min.patch>/zip/`.
-  Public, no login; the `-external` suffix marks the redistributable build. NVIDIA publishes no
-  checksum beside it, so `TrtSha256Win` is recorded from a verified download and enforced after.
-- Linux — the `.deb`s from `developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/`
-  (`libnvinfer11`, `-plugin11`, `libnvonnxparsers11`, `libnvinfer-bin` for `trtexec`). That repo's
-  `Packages` index publishes a SHA-256 per file — copy them into `trtDebSha256` when bumping.
-
-NVIDIA retains old versions (10.13.3.9 through 11.3.0.99 are all still live), so past releases
-stay buildable. If a URL ever does 404, two archival fallbacks carry the same bits:
-`pypi.nvidia.com/tensorrt-cu13-libs/` (every version, sha256 in the index, but no `trtexec`) and
-the CUDA apt repo (including `trtexec` via `libnvinfer-bin`).
-
-## Order of operations
-
-### 1. libass (only if the subtitle work changed)
-
-Nothing to dispatch — `the-database/libass` publishes no artifact and its CI is unmodified
-upstream. Just land the work on its `master`; the two mpv builds clone it by ref.
-
-### 2. mpv, Windows — `the-database/mpv-winbuild`
-
-```bash
-gh workflow run MPV -R the-database/mpv-winbuild \
-  -f mpv_ref=master -f libass_ref=master \
-  -f build_target=64bit -f compiler=clang -f release=true
-```
-
-`workflow_dispatch` only. It resolves both fork refs to SHAs and redirects the toolchain's
-`packages/{mpv,libass}.cmake` at them (adding `-Dthreads=enabled` for libass). Tag format is
-`$(date +%Y-%m-%d)-$(head -c 10 <<< $sha)`. See that repo's `CLAUDE.md`.
-
-→ bump `MpvForkVersion`, `MpvForkBuildDate`, `MpvForkGitHash`.
-
-### 3. mpv, Linux — `the-database/mpv`
-
-```bash
-gh workflow run "Build Linux (portable mpv + vf_animejanai)" -R the-database/mpv --ref master
-```
-
-`release_tag` is optional: left blank it defaults to `<yyyy-mm-dd>-<7-char commit hash>` (UTC
-date, e.g. `2026-10-09-19c0fcf`). It becomes both the release tag and part of the asset name
-(`mpv-linux-x64-<tag>.tar.zst`).
-
-> **Dispatch from `master`, not `linux-support`.** The workflow's `push` trigger targets
-> `linux-support`, but that branch is hundreds of commits behind `master`, so a push-triggered
-> run would build stale code. See the mpv fork's `DOCS/animejanai-build-ci.md`.
-
-→ bump `MpvForkLinuxVersion`.
-
-### 4. aji engine — `the-database/animejanai-inference`
-
-**Linux** is CI. The workflow fetches its own TensorRT (`TRT_VERSION` / `TRT_CUDA` in its
-env) rather than taking it from the build image, so keep those in step with `TrtVersion` /
-`TrtCudaVersion` above. It publishes the release itself (`draft: false`), so a successful run
-creates the tag with `aji-linux-x64.tar.zst` on it:
-
-```bash
-gh workflow run "Build Linux (aji)" -R the-database/animejanai-inference \
-  --ref main -f release_tag=v0.9.0
-```
-
-**Windows has no CI.** `aji-windows-x64.zip` is built and uploaded by hand from a local
-working area (written `<aji-win>` here — see that repo's `docs/BUILD-WINDOWS.md` for the full
-dependency setup, including the `trt113` TensorRT root extracted from NVIDIA's zip):
-
-```
-<aji-win>\build-aji-release.bat
-pwsh <aji-win>\package-aji-release.ps1 -Tag v0.9.0
-gh release upload v0.9.0 <aji-win>\dist\v0.9.0\aji-windows-x64.zip -R the-database/animejanai-inference
-```
-
-Full recipe and dependency setup: that repo's `docs/BUILD-WINDOWS.md`. Both assets must land on
-the **same tag**, because the assembler derives both URLs from `AjiVersion` — the Linux run
-publishes the tag, so the Windows upload is what completes it.
-
-→ bump `AjiVersion`.
-
-### 5. Manager — `the-database/AnimeJaNaiManager`
-
-```bash
-gh workflow run Release -R the-database/AnimeJaNaiManager -f release_version=0.5.0
-```
-
-The Windows leg is gated on `github.event_name == 'workflow_dispatch'`; a push to
-`linux-support` runs only the Linux leg.
-
-> **The Manager's release must be published, not draft.** Its `release.yml` sets `draft: false`
-> with the comment: "Published (not draft) so the mpv build can fetch the asset over the public
-> `releases/download/<tag>/` URL — draft assets 404 for unauthenticated requests." The
-> assembler downloads it unauthenticated, so a draft breaks `InstallAnimeJaNaiManager`.
-
-→ bump `ManagerVersion`.
-
-### 6. Assemble — this repo
-
-```bash
-gh workflow run Deploy -R the-database/mpv-AnimeJaNai -f release_version=3.6.0
-# Linux artifacts only (e.g. adding Linux to an already-published release):
-gh workflow run Deploy -R the-database/mpv-AnimeJaNai -f release_version=3.6.0 -f linux_only=true
-# Windows artifacts only (the other half of a sequential release):
-gh workflow run Deploy -R the-database/mpv-AnimeJaNai -f release_version=3.6.0 -f windows_only=true
-```
-
-Commit the constant bumps first — `Deploy` builds from the checked-out ref.
-
-**When asset uploads crawl, release the legs sequentially.** Both legs push ~5.5 GB to
-the same tag with the same `GITHUB_TOKEN`, and GitHub's secondary rate limit on release
-asset uploads can stall them for tens of minutes at a time (3.6.3's first attempt sat at
-14 of 29 assets after two hours, against 13 minutes for the whole of 3.6.2). Dispatch
-`windows_only=true`, wait for it, then `linux_only=true`. Re-running a leg is safe: both
-use `allowUpdates: true` and replace same-named assets, so a partial draft is overwritten.
-
-## What `Deploy` does
-
-Two jobs, one release tag.
-
-### `deploy` (Windows, `windows-latest`)
-
-Skipped when `linux_only == 'true'`.
-
-1. `dotnet publish BuildMpvUpscale2xAnimeJaNai/... -c Release -o publish` (dotnet `10.x`)
-2. `./publish/BuildMpvUpscale2xAnimeJaNai.exe <ver> --packs`
-3. publish `AnimeJaNaiUpdater` and copy `AnimeJaNaiUpdater.exe` into the tree
-4. `choco install 7zip -y`
-5. `choco install innosetup -y`, then
-   `ISCC.exe /DAppVersion=<ver> /DSourceDir=<resolved tree> /O<cwd> installer/animejanai.iss`
-6. `7z a -t7z -mx=9 -v1900m mpv-upscale-2x_animejanai-full-package-<ver>.7z ./publish/...`
-   — note **`-v1900m` volumes**, hence the `.7z.001` asset
-7. overlay archive: read `overlay_paths` out of the tree's `manifest.json`, then
-   `7z a -t7z -mx=9 <out> @paths` from inside the tree so paths are install-root-relative
-8. `ncipollo/release-action@v1` with `draft: true`
-
-### `deploy-linux` (`ubuntu-latest`, in the build container)
-
-Skipped when `windows_only == 'true'`.
-
-Runs in `ghcr.io/the-database/animejanai-linux-build:ubuntu2204` (GHCR login via
-`github.actor` + `GITHUB_TOKEN`) with `shell: bash` forced, because the container's default
-shell is dash. The assembler fetches its own TensorRT `.deb`s, so the job sets no TensorRT env.
-
-1. publish + run the assembler with `--target linux-x64 --packs`
-2. publish the updater self-contained single-file `linux-x64`
-3. publish `AnimeJaNaiBenchmark` **into** `animejanai/benchmarks/` in the tree, then `chmod +x`
-4. `installer/linux/package-tarball.sh <tree> <updater> <ver> .` → `...-linux-x64.tar.zst`
-5. AppImage (`continue-on-error: true`): copy the tree, extract **only**
-   `component-trt-runtime-linux-x64.7z` into it with `7zz x -snl` (the `-snl` restores the
-   deduplicated symlinks), then `installer/linux/build-appimage.sh`. RIFE and the per-SM kernel
-   packs are fetched on demand by `AppRun`, keeping the AppImage small and SM-agnostic.
-6. overlay + RID-suffixed manifest (`continue-on-error: true`), using `jq` on `overlay_paths`
-7. `ncipollo/release-action@v1` with `omitDraftDuringUpdate`, `omitNameDuringUpdate`,
-   `omitBodyDuringUpdate` — the Linux leg only **adds** its assets to the release the Windows
-   leg owns, and must never flip an already-published release back to draft or rewrite its
-   notes.
-
-The Manager is **not** built in either leg: the assembler downloads it
-(`InstallAnimeJaNaiManager`) from its own repo's release on both platforms.
-
-## Asset map
-
-The release comes out as a **draft** — review, then publish.
-
-| Asset | Produced by |
+| Workflow | Rôle |
 |---|---|
-| `mpv-AnimeJaNai-Setup-<ver>.exe` | Inno Setup, `installer/animejanai.iss` |
-| `mpv-upscale-2x_animejanai-full-package-<ver>.7z.001` | `7z ... -v1900m` (slim core tree) |
-| `mpv-upscale-2x_animejanai-overlay-<ver>.7z` | `overlay_paths` subset, install-root-relative |
-| `manifest.json` | copied out of the tree so the updater can compare deps before downloading |
-| `component-{rife,trt-ptx,trt-runtime,trt-sm75,trt-sm80,trt-sm86,trt-sm89,trt-sm90,trt-sm100,trt-sm120}.7z` | `EmitComponentPacks()` |
-| `packs.json` | the component index the updater/Manager reads |
-| `mpv-upscale-2x_animejanai-v<ver>-linux-x64.tar.zst` | `package-tarball.sh` |
-| `mpv-AnimeJaNai-x86_64-v<ver>.AppImage` | `build-appimage.sh` |
-| `...-overlay-<ver>-linux-x64.7z`, `manifest-linux-x64.json`, `component-*-linux-x64.7z`, `packs-linux-x64.json` | the Linux leg |
+| HDR tests | Tests Lua et shaders dans mpv/libplacebo ; réutilisé avant publication |
+| Platform checks | Banques, conflits, IPC, Manager, interface et compilations Windows/Linux ; fidélité SPAN avec Vulkan logiciel |
+| Deploy | Contrôles, builds indépendants, puis publication centralisée |
+| Build AnimeJaNai Manager (HDR) | Tests et builds Windows/Linux, publication commune des deux plateformes |
+| HDR tools sources | Sources des outils Windows présents dans le paquet |
+| Upstream watch | Suivi des nouvelles releases amont |
+| Build benchmark catalog | Publication du catalogue de résultats soumis |
 
-Component packs are emitted to `publish/packs-v<ver>/` as
-`component-<name><PackSuffix>.7z`, where `PackSuffix` is `""` on Windows and `"-linux-x64"` on
-Linux (`Platform.PackSuffix`). The per-SM packs are discovered, not hardcoded: every
-`*builder_resource_*` file in the inference dir is matched against
-`builder_resource_([a-z0-9]+)[._]` and becomes `trt-sm<NNN>`. Packs are built with
-`7z a -spf2 -snl -mx=3`.
+Le workflow de l’ancienne image Ubuntu 22.04 est supprimé : le fork construit
+son lecteur Wayland sur Ubuntu 24.04 sans image privée. L’ancien `release.yml`
+du Manager est supprimé au profit du workflow HDR commun. Les sources du
+Manager sont publiées dans leur dépôt : aucun patch inter-dépôts n’est rejoué.
 
-The installer is per-user by design: `PrivilegesRequired=lowest`,
-`DefaultDirName={localappdata}\Programs\mpv-AnimeJaNai`,
-`OutputBaseFilename=mpv-AnimeJaNai-Setup-{#AppVersion}`. It hard-errors without
-`/DSourceDir=` (`#error Define SourceDir (the built slim tree) with /DSourceDir=...`).
+## Sources et versions
 
-## The Linux build image
+- `release-version.txt` : version Windows, actuellement **3.8.0.9**.
+- `manager-source-ref.txt` : SHA exact du Manager utilisé par les contrôles
+  et le build Linux. L’assembleur télécharge ses paquets via le tag immuable
+  `hdr-<SHA>` ; le binaire et ses bibliothèques natives proviennent du même build.
+- `player-source-ref.txt`, dans le Manager : SHA exact du lecteur qui fournit
+  `AnimeJaNaiPlatform/PlatformServices.cs`.
+- `installer/linux/build-native.sh` : références du lecteur, FFmpeg,
+  Wayland, libass et libplacebo. mpv et `aji` conservent l’ABI TensorRT 9.
+- `installer/linux/build-inference.sh` : références NCNN, RIFE et parseur
+  AnimeJaNai ; les modèles SPAN sont convertis depuis les ONNX livrés.
+- Les constantes restantes de `BuildMpvUpscale2xAnimeJaNai/Program.cs`
+  fixent les dépendances Windows, TensorRT, CUDA et 7-Zip.
 
-`build/Dockerfile.ubuntu2204` → `ghcr.io/the-database/animejanai-linux-build:ubuntu2204`, built
-by `.github/workflows/build-image.yml` (`workflow_dispatch`, or a push touching the Dockerfile
-or the workflow).
+Quand l’ABI de `aji.h` change, reconstruire ensemble le filtre mpv et `aji`.
+Les trois constantes Windows `MpvForkVersion`, `MpvForkBuildDate` et
+`MpvForkGitHash` décrivent le même build et doivent être modifiées ensemble.
+Ne pas déduire la version CUDA de la version TensorRT.
 
-**Three repos depend on this image**: this repo's `deploy-linux`, `the-database/mpv`'s
-`build-linux.yml`, and `the-database/animejanai-inference`'s `build-linux.yml`. Rebuilding it
-changes all three, so re-run it only when the Dockerfile changes.
+## Ordre de publication
 
-It exists to hold a low glibc floor (Ubuntu 22.04 / glibc 2.35) while pinning CUDA 13.3 +
-TensorRT 11.3.0.99 exactly (`libnvinfer11=11.3.0.99-1+cuda13.4` and its siblings), plus
-meson/cmake via pip, the .NET 10 SDK, `7zz`, and luajit.
+1. Valider localement les changements nécessaires et mettre les documents à jour.
+2. Publier les sources du lecteur puis du Manager sur leurs branches actives.
+   Le workflow du Manager construit les deux plateformes et publie `hdr-<SHA>`
+   ainsi que `latest-hdr-settings-0.8`. Ce tag roulant conserve les fichiers
+   existants ; les builds indépendants ne publient jamais chacun de leur côté.
+3. Vérifier les assets du Manager, puis pousser le commit du lecteur sur `release`.
+   Un push sur cette branche lance `Deploy` avec les deux builds.
+4. Vérifier les contrôles et les assets publiés. Aucun push forcé n’est nécessaire.
 
-## After publishing
+Les anciennes releases ne sont pas réécrites pour changer de version. Lorsqu’un
+build est relancé, les assets du même nom peuvent être remplacés ; les fichiers
+de l’autre plateforme restent présents. Les publications sont sérialisées et
+les tests ne disposent que des droits de lecture.
 
-The updater polls
-`https://api.github.com/repos/the-database/mpv-upscale-2x_animejanai/releases/latest`, so
-nothing reaches users until the draft is published. While it is still a draft, test the
-component flow with `ANIMEJANAI_PACKS_DIR` pointed at a local `packs-v<ver>/` directory —
-draft assets 404 for the unauthenticated API.
+## Dispatch manuel
 
-## HDR fork (Ta2b/mpv-AnimeJaNai-HDR)
+```bash
+# Les deux plateformes, dans une seule release.
+gh workflow run deploy.yml -R Ta2b/mpv-AnimeJaNai-HDR --ref hdr-3.8 \
+  -f release_version=3.8.0.9 -f platform=both
 
-The HDR overlay lives in `BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/` on the
-`hdr-3.8` branch (AnimeJaNai 3.8.0 base). Releases of the fork:
+# Une seule plateforme.
+gh workflow run deploy.yml -R Ta2b/mpv-AnimeJaNai-HDR --ref hdr-3.8 \
+  -f release_version=3.8.0.9 -f platform=windows
 
-1. Run the tests locally if you can: `tests/hdr/run.sh` (LuaJIT / Lua 5.2) and
-   `python3 tests/hdr/shader_check.py` (mpv with a Vulkan driver, `xvfb-run`, numpy, Pillow).
-   The *HDR tests* workflow runs both on every push touching the overlay or the tests.
-2. Set the version in `release-version.txt` (four parts: upstream version + fork revision,
-   e.g. `3.8.0.2`), commit, and push the commit to the `release` branch
-   (`git push fork HEAD:release`). *Deploy* runs the HDR tests, then builds and publishes the
-   release; the release action creates the tag.
-3. The fork's updater reads these releases (`AnimeJaNaiUpdater` → `Ta2b/mpv-AnimeJaNai-HDR`).
+```
 
-Other workflows:
+`platform` remplace les anciens booléens contradictoires `windows_only` et
+`linux_only`. La publication attend la réussite de toutes les plateformes
+demandées ; un échec ne livre pas une release annoncée complète. Une version vide utilise `release-version.txt`. Les contrôles sont
+obligatoires avant les builds. Le bundle NCNN/Vulkan vérifié par `Platform checks`
+est réutilisé par le build Linux ; aucune deuxième conversion des mêmes modèles.
+L’AppImage et l’overlay sont obligatoires pour déclarer le build Linux réussi.
 
-- *Upstream watch* (weekly) opens an issue labelled `upstream` for each new release of
-  `the-database/mpv-upscale-2x_animejanai` and `the-database/AnimeJaNaiManager`. Issues must be
-  enabled on the repository. To carry a release over: rebase the HDR branch on the new tag,
-  port the Manager HDR patch to the new Manager base, run the tests, then release as above.
-- *HDR tools sources* decompiles `hdr-coordinator.exe` into
-  `hdr-tools-src/` whenever they change. `display-info.dll` comes from
-  [dyphire/mpv-display-plugin](https://github.com/dyphire/mpv-display-plugin).
+## Assets et canaux
+
+Windows publie la release stable `<version>` : Setup HDR, archive complète
+`.7z.001`, overlay `.7z`, `manifest.json`, `packs.json` et composants Windows.
+L’assembleur inclut le Manager HDR et ses bibliothèques, avec un alias
+`AnimeJaNaiManager.exe` pour les anciennes intégrations.
+
+Linux utilise **le même numéro et le même tag** que Windows. Ses noms incluent
+`linux-x64` : portable `tar.zst`, AppImage, overlay,
+`manifest-linux-x64.json`, `packs-linux-x64.json` et composants Linux.
+Le numéro incorporé correspond au tag public, pour les téléchargements des
+composants et les mises à jour. Les fichiers Linux n’écrasent aucun asset Windows.
+Le statut expérimental de Linux est indiqué dans les notes de la release
+commune ; il n’impose pas une deuxième release.
+
+Le Manager publie `AnimeJaNaiManager-HDR.exe`, `AnimeJaNaiManager-HDR-x64.zip`
+et `AnimeJaNaiManager-HDR-linux-x64.tar.zst` ensemble. Ses paquets excluent les
+configurations et modèles pour préserver les réglages du lecteur.
+
+Les artefacts de CI conservent aussi les paquets et les rapports de fidélité.
+Les essais logiciels ne valident pas un écran HDR physique ni la RTX 4050.
+Les conditions locales avec Twitch en arrière-plan ne constituent pas une
+référence de performances. Voir [LINUX.md](LINUX.md),
+[LINUX-INFERENCE.md](LINUX-INFERENCE.md) et [SETTINGS.md](SETTINGS.md).

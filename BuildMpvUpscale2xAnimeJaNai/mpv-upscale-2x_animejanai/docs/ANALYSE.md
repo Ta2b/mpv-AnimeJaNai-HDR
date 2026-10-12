@@ -1,3 +1,6 @@
+> Les objectifs et mesures liés au MSI QD-OLED décrivent la configuration historique.
+> Les défauts publics sont désormais communs et automatiques ; voir [SETTINGS.md](SETTINGS.md).
+
 # Rendu HDR — fonctionnement et réglages (11 octobre 2026)
 
 ## Objectif

@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\docs\LINUX*.md" Link="linux-docs\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\docs\SETTINGS.md" Link="mpv-upscale-2x_animejanai\docs\SETTINGS.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="mpv-upscale-2x_animejanai\**\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -18,4 +24,7 @@
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="../manager-source-ref.txt" Link="manager-source-ref.txt" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+  </ItemGroup>
 </Project>

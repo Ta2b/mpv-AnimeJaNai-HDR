@@ -1,11 +1,9 @@
 #!/bin/bash
-# Builds the AnimeJaNai AppImage from a *full* assembled linux-x64 tree (the
-# AppImage can't download component packs into its read-only squashfs, so the
-# TensorRT runtime + per-GPU builder resources + RIFE models must already be in
-# the tree). Writable runtime data is redirected to $XDG_DATA_HOME/AnimeJaNai by
-# AppRun.
+# Builds the AnimeJaNai AppImage from an assembled linux-x64 tree, including an
+# SDR-only test tree. Optional components install into the writable data root
+# $XDG_DATA_HOME/AnimeJaNai-HDR-linux through AppRun and the Manager.
 #
-# Usage: build-appimage.sh <full-tree-dir> <version> [out-dir]
+# Usage: build-appimage.sh <tree-dir> <version> [out-dir]
 #
 # linuxdeploy gathers mpv's shared-lib deps; the AppImage excludelist keeps the
 # host-provided graphics stack out (libvulkan, libGL, libwayland, glibc, …).
@@ -69,11 +67,14 @@ EOF
 # non-excluded libs into usr/lib. The bundled libmpv/libplacebo/ffmpeg already
 # sit in mpv/ (on AppRun's LD_LIBRARY_PATH), so this mainly captures the smaller
 # system deps (libass, freetype, fribidi, harfbuzz, lcms2, …).
-"$LD" --appdir "$APPDIR" \
+LD_LIBRARY_PATH="$APPDIR/mpv:${LD_LIBRARY_PATH:-}" "$LD" --appdir "$APPDIR" \
     --executable "$APPDIR/mpv/mpv" \
     --library "$APPDIR/mpv/libmpv.so.2" \
+    --exclude-library='libwayland*' --exclude-library='libxkbcommon*' \
+    --exclude-library='libexpat*' --exclude-library='libffi*' \
+    --exclude-library='libX11*' --exclude-library='libxcb*' \
     --desktop-file "$APPDIR/mpv-animejanai.desktop" \
-    --icon-file "$icon" || true
+    --icon-file "$icon"
 
 # linuxdeploy may install its own AppRun; restore ours (we need the
 # write-redirection logic, not a plain exec wrapper).
@@ -81,7 +82,7 @@ install -m755 "$HERE/AppRun" "$APPDIR/AppRun"
 
 # --- package ---------------------------------------------------------------
 mkdir -p "$OUT"
-outfile="$OUT/mpv-AnimeJaNai-x86_64-v${VER}.AppImage"
+outfile="$OUT/mpv-AnimeJaNai-HDR-v${VER}-linux-x64.AppImage"
 "$AT" "$APPDIR" "$outfile"
 echo "$outfile"
 rm -rf "$WORK"

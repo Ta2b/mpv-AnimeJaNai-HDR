@@ -1,6 +1,8 @@
 -- Shared hardware policy. Selection/planning functions do not change MPV.
 local M = {}
 
+function M.is_linux(mp) return mp.get_property('platform') == 'linux' end
+
 local function bool(v)
     if type(v) == 'boolean' then return v end
     v = tostring(v):lower()
@@ -14,14 +16,15 @@ local function number(v, default, lo, hi)
 end
 
 function M.options()
-    local o = {mode='follow',amd_mode='enable',diagnostic=true,max_attempts=3,idle_restore_seconds=2,
+    local o = {mode='follow',amd_mode='follow',windows_hdr='',diagnostic=false,max_attempts=3,idle_restore_seconds=2,
         vsr='auto',target_resolution='auto',frame_generation='off',gpu_vendor='auto',hdr_conversion=true,hdr_backend='auto',
-        -- Display description, per GPU: *_nvidia = this PC, *_amd = AMD/Intel PC.
-        peak_nvidia='1000',peak_amd='auto',gamut_nvidia='display-p3',gamut_amd='display-p3',
-        oled_nvidia='yes',oled_amd='auto',
+        -- One display description. Empty shared keys allow older per-GPU files to work.
+        display_peak='',display_gamut='',display_oled='',
+        peak_nvidia='auto',peak_amd='auto',gamut_nvidia='auto',gamut_amd='auto',
+        oled_nvidia='no',oled_amd='no',
         -- HDR grade shared by every GPU; *_rtx values apply on top of TrueHDR.
-        grade=true,paper_white=203,shadows=0.30,highlights=0.85,highlights_rtx=0.50,
-        vibrance=0.30,vibrance_rtx=0.20,grade_native_hdr=false,subtitle_white=200,
+        grade=true,paper_white=203,shadows=0.15,highlights=0.50,highlights_rtx=0.25,
+        vibrance=0.15,vibrance_rtx=0.10,grade_native_hdr=false,subtitle_white=200,
         -- RIFE output rate matched to the display refresh (factor p/q, at most rife_max_factor).
         rife_display_sync=false,rife_max_factor=2,
         -- Vulkan output (NVIDIA): RTX Video runs inside the engine instead of D3D11 filters.
@@ -29,7 +32,8 @@ function M.options()
         -- Vulkan engine: a frame identical to the last processed one reuses its result.
         skip_held_frames=true,held_threshold=0.40,
         -- MPV conversion with the look of RTX TrueHDR (curve measured on the RTX Video SDK).
-        mpv_truehdr_look=false,mpv_contrast=100,mpv_saturation=100,mpv_middle_gray=50}
+        mpv_truehdr_look=false,mpv_contrast=100,mpv_saturation=100,mpv_middle_gray=50,
+        linux_hdr_output='auto'}
     require('mp.options').read_options(o,'animejanai_hdr_auto')
     local warn = require('mp.msg').warn
     local vsr=tostring(o.vsr):lower()
@@ -38,6 +42,21 @@ function M.options()
     if vsr~='no' and vsr~='auto' and vsr~='nvidia' and vsr~='amd' and vsr~='classic' then
         warn('Invalid vsr='..vsr..'; using auto')
         vsr='auto'
+    end
+    -- Validate shared settings without filling absent keys: legacy files retain their meaning.
+    for _, key in ipairs({'display_peak','display_gamut','display_oled','windows_hdr'}) do
+        local value = tostring(o[key]):lower()
+        if value ~= '' then
+            local valid = key == 'display_peak' and (value == 'auto' or (tonumber(value) and tonumber(value) >= 100 and tonumber(value) <= 10000))
+                or key == 'display_gamut' and (value == 'auto' or value == 'display-p3' or value == 'bt.2020')
+                or key == 'display_oled' and (value == 'yes' or value == 'no' or value == 'auto')
+                or key == 'windows_hdr' and (value == 'follow' or value == 'enable')
+            if not valid then
+                warn('Invalid '..key..'='..value..'; using default')
+                value = key == 'display_oled' and 'no' or key == 'windows_hdr' and 'follow' or 'auto'
+            end
+        end
+        o[key] = value
     end
     o.vsr=vsr
     o.hdr_backend = tostring(o.hdr_backend):lower()
@@ -75,11 +94,11 @@ function M.options()
     o.grade = bool(o.grade)
     o.grade_native_hdr = bool(o.grade_native_hdr)
     o.paper_white = number(o.paper_white, 203, 80, 400)
-    o.shadows = number(o.shadows, .30, 0, .8)
-    o.highlights = number(o.highlights, .85, 0, 1)
-    o.highlights_rtx = number(o.highlights_rtx, .50, 0, 1)
-    o.vibrance = number(o.vibrance, .30, 0, .8)
-    o.vibrance_rtx = number(o.vibrance_rtx, .20, 0, .8)
+    o.shadows = number(o.shadows, .15, 0, .8)
+    o.highlights = number(o.highlights, .50, 0, 1)
+    o.highlights_rtx = number(o.highlights_rtx, .25, 0, 1)
+    o.vibrance = number(o.vibrance, .15, 0, .8)
+    o.vibrance_rtx = number(o.vibrance_rtx, .10, 0, .8)
     o.subtitle_white = number(o.subtitle_white, 200, 80, 1000)
     o.rife_display_sync = bool(o.rife_display_sync)
     o.rife_max_factor = number(o.rife_max_factor, 2, 1, 8)
@@ -94,6 +113,7 @@ function M.options()
     o.mpv_contrast = number(o.mpv_contrast, 100, 100, 200)
     o.mpv_saturation = number(o.mpv_saturation, 100, 100, 200)
     o.mpv_middle_gray = number(o.mpv_middle_gray, 50, 25, 100)
+    o.linux_hdr_output = o.linux_hdr_output == 'pq' and 'pq' or o.linux_hdr_output == 'sdr' and 'sdr' or 'auto'
     return o
 end
 
@@ -110,6 +130,7 @@ M.rtx_engine = '~~/../animejanai/inference/aji_trt_rtx.dll'
 -- the Vulkan output is selected and the engine is installed.
 function M.select_engine(mp, utils, vendor, o)
     M.engine_lib = nil
+    if M.is_linux(mp) then return false end
     if not M.vulkan(vendor, o) then return false end
     local needed = {M.rtx_engine, '~~/../animejanai/inference/aji_rtx.dll'}
     for _, path in ipairs(needed) do
@@ -143,7 +164,7 @@ function M.select_gpu(adapters, override)
 end
 
 function M.settings(vendor, o)
-    return {mode=vendor=='nvidia' and o.mode or o.amd_mode}
+    return {mode=o.windows_hdr and o.windows_hdr ~= '' and o.windows_hdr or (vendor=='nvidia' and o.mode or o.amd_mode)}
 end
 
 function M.upscaler(vendor, requested)
@@ -191,6 +212,7 @@ function M.read_bank(conf)
         else
             local key,value=line:match('^%s*([^=%s]+)%s*=%s*(.-)%s*$')
             if key and section=='global' and key=='default_slot' then bank.default_slot=tonumber(value) end
+            if key and section=='global' and key=='backend' then bank.backend=value:lower() end
             if key and profile then
                 if key=='profile_name' then profile.name=value end
                 if key:match('^chain_%d+_rife$') then
@@ -273,6 +295,39 @@ end
 function M.detect(mp, utils, options)
     local cached = mp.get_property_native('user-data/animejanai-hardware')
     if type(cached) == 'table' and cached.vendor then return cached end
+    if M.is_linux(mp) then
+        local helper = mp.command_native({'expand-path','~~/../AnimeJaNaiPlatform'})
+        local root = mp.command_native({'expand-path','~~/..'})
+        local function call(args)
+            local ok,r = pcall(mp.command_native,{name='subprocess',args=args,
+                playback_only=false,capture_stdout=true,capture_stderr=true})
+            if not ok or type(r)~='table' or r.status~=0 then return nil, type(r)=='table' and r.stderr or tostring(r) end
+            return utils.parse_json(r.stdout or '')
+        end
+        local hw,err = call({helper,'--probe','--root',root,'--vendor',options.gpu_vendor})
+        hw = hw or {vendor='unknown',name='GPU non detecte',platform='linux'}
+        local bank = hw.vendor=='nvidia' and 'linux-nvidia' or 'linux-amd'
+        hw.bank = mp.command_native({'expand-path','~~/profiles/'..bank..'/animejanai.conf'})
+        local selected,bankerr = call({helper,'--activate-bank',bank,'--root',root})
+        local active=mp.command_native({'expand-path','~~/../animejanai/animejanai.conf'})
+        hw.bank_conflict = bankerr~=nil
+        hw.conf = selected and selected.conf or (read_file(active) and active or hw.bank)
+        hw.conf_active = hw.conf
+        hw.target = options.target_resolution=='auto' and 'ecran (auto)' or options.target_resolution
+        local inference = os.getenv('ANIMEJANAI_INFERENCE_DIR') or
+            mp.command_native({'expand-path','~~/../animejanai/inference'})
+        hw.inference_dir = inference
+        hw.backend = (M.read_bank(hw.conf) or {}).backend or 'tensorrt'
+        hw.inference_available = not hw.bank_conflict and hw.backend=='tensorrt' and hw.vendor=='nvidia' and utils.file_info(inference..'/libaji.so')~=nil
+            and utils.file_info(inference..'/libnvinfer.so.11')~=nil
+            and utils.file_info(inference..'/libaji_trt.so')~=nil and utils.file_info(inference..'/trtexec')~=nil
+        if hw.backend=='vulkan' then
+            hw.inference_available = not hw.bank_conflict and hw.vulkan_device~=nil and utils.file_info(inference..'/libaji_vulkan.so')~=nil
+        end
+        if err or bankerr then mp.msg.warn('Linux platform: '..tostring(err or bankerr));mp.osd_message('Banque Linux indisponible ou en conflit : inference desactivee. '..tostring(err or bankerr),8) end
+        mp.set_property_native('user-data/animejanai-hardware',hw)
+        return hw
+    end
     local computer = os.getenv('COMPUTERNAME') or ''
     local cache_path = mp.command_native({'expand-path','~~/cache/animejanai-hardware.json'})
     local disk = utils.parse_json(read_file(cache_path) or '')
@@ -312,11 +367,15 @@ function M.detect(mp, utils, options)
     local sha256 = dofile(mp.command_native({'expand-path','~~/hdr-tools/sha256.lua'}))
     local state = utils.parse_json(read_file(mp.command_native({'expand-path','~~/profiles/active-bank.json'})) or '')
     local active_data, bank_data = read_file(active), read_file(hw.bank)
-    local recorded = type(state) == 'table' and state.vendor == bank and tostring(state.hash or ''):upper()
-    if recorded and active_data and bank_data and sha256(active_data) == recorded and sha256(bank_data) == recorded then
+    local helper=mp.command_native({'expand-path','~~/../AnimeJaNaiPlatform.exe'})
+    local recorded = type(state) == 'table' and (state.bank or state.vendor) == bank and tostring(state.hash or ''):upper()
+    if recorded and (state.bank or not utils.file_info(helper)) and active_data and bank_data and sha256(active_data) == recorded and sha256(bank_data) == recorded then
         hw.conf = active
     else
-        local activated, activation = pcall(mp.command_native, powershell(mp, 'select-profile-bank.ps1', {'-Vendor', bank}))
+        local command=utils.file_info(helper) and {name='subprocess',args={helper,'--activate-bank',bank},
+            playback_only=false,capture_stdout=true,capture_stderr=true}
+            or powershell(mp, 'select-profile-bank.ps1', {'-Vendor', bank})
+        local activated, activation = pcall(mp.command_native, command)
         local selected = activated and type(activation) == 'table' and activation.status == 0
             and utils.parse_json(activation.stdout or '')
         hw.conf = type(selected) == 'table' and selected.conf or hw.bank

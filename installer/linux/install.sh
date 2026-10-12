@@ -23,26 +23,26 @@ fi
 
 mkdir -p "$BIN" "$APPS" "$ICONS"
 
-ln -sf "$APP" "$BIN/mpv-animejanai"
+ln -sf "$APP" "$BIN/mpv-animejanai-hdr"
 
-icon_line="Icon=mpv-animejanai"
+icon_line="Icon=mpv-animejanai-hdr"
 if [ -f "$HERE/animejanai.png" ]; then
-    cp -f "$HERE/animejanai.png" "$ICONS/mpv-animejanai.png"
+    cp -f "$HERE/animejanai.png" "$ICONS/mpv-animejanai-hdr.png"
 elif [ -f "$HERE/portable_config/animejanai.png" ]; then
-    cp -f "$HERE/portable_config/animejanai.png" "$ICONS/mpv-animejanai.png"
+    cp -f "$HERE/portable_config/animejanai.png" "$ICONS/mpv-animejanai-hdr.png"
 else
     icon_line="Icon=mpv"
 fi
 
 MIMES="video/x-matroska;video/mp4;video/webm;video/x-msvideo;video/quicktime;video/mpeg;video/x-flv;video/3gpp;"
 
-cat > "$APPS/mpv-animejanai.desktop" <<EOF
+cat > "$APPS/mpv-animejanai-hdr.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=mpv AnimeJaNai
+Name=mpv AnimeJaNai HDR
 GenericName=Media Player
 Comment=Real-time anime upscaling video player (mpv + TensorRT)
-Exec=$APP %U
+Exec="$APP" %U
 TryExec=$APP
 $icon_line
 Terminal=false
@@ -54,15 +54,15 @@ EOF
 update-desktop-database "$APPS" 2>/dev/null || true
 
 for m in $(echo "$MIMES" | tr ';' ' '); do
-    [ -n "$m" ] && xdg-mime default mpv-animejanai.desktop "$m" 2>/dev/null || true
+    [ -n "$m" ] && xdg-mime default mpv-animejanai-hdr.desktop "$m" 2>/dev/null || true
 done
 
 echo "Installed:"
-echo "  launcher : $BIN/mpv-animejanai  ->  $APP"
-echo "  menu     : $APPS/mpv-animejanai.desktop"
+echo "  launcher : $BIN/mpv-animejanai-hdr  ->  $APP"
+echo "  menu     : $APPS/mpv-animejanai-hdr.desktop"
 echo
 case ":$PATH:" in
     *":$BIN:"*) ;;
-    *) echo "NOTE: $BIN is not on your PATH; add it to use 'mpv-animejanai' from a shell." ;;
+    *) echo "NOTE: $BIN is not on your PATH; add it to use 'mpv-animejanai-hdr' from a shell." ;;
 esac
 echo "Launch 'mpv AnimeJaNai' from your application menu, or: $APP <file>"

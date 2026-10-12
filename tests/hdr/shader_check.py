@@ -100,13 +100,18 @@ def render(tmp, images, shaders=(), opts=None, peak=1000):
     with open(snap, 'w') as f:
         f.write(SNAP)
     out = os.path.join(tmp, 'shot%d' % len(os.listdir(tmp)))
-    cmd = ['xvfb-run', '-a', '-s', '-screen 0 1280x720x24', 'mpv', '--no-config',
-           '--msg-level=all=warn', '--vo=gpu-next', '--gpu-api=vulkan', '--gpu-context=x11vk',
+    cmd = ['mpv', '--no-config',
+           '--msg-level=all=warn', '--vo=gpu-next', '--gpu-api=vulkan', '--gpu-context=' + os.environ.get('AJ_GPU_CONTEXT', 'x11vk'),
            '--geometry=%dx%d' % (W, H), '--no-border', '--keepaspect=no', '--video-unscaled=yes',
            '--target-trc=pq', '--target-prim=bt.2020', '--target-peak=%d' % peak,
            '--target-contrast=inf', '--dither-depth=no', '--deband=no',
            '--screenshot-format=png', '--screenshot-high-bit-depth=yes', '--screenshot-png-compression=1',
            '--image-display-duration=inf', '--pause', '--script=' + snap, '--script-opts=snap-out=' + out]
+    if not os.environ.get('AJ_NO_XVFB'):
+        cmd = ['xvfb-run', '-a', '-s', '-screen 0 1280x720x24'] + cmd
+    # Shader math tests deliberately request a PQ buffer, independent of display negotiation.
+    if 'target-colorspace-hint-strict' in subprocess.run(['mpv', '--no-config', '--list-options'], capture_output=True, text=True).stdout:
+        cmd += ['--target-colorspace-hint=no', '--target-colorspace-hint-strict=no']
     if DEVICE:
         cmd.append('--vulkan-device=' + DEVICE)
     for s in shaders:

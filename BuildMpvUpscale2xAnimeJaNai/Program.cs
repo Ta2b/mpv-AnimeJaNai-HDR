@@ -70,9 +70,8 @@ const string AjiVersion           = "v0.11.1";      // github.com/the-database/a
 
 const string SevenZipVersion      = "2602";         // 7-zip "extra" (Windows) / linux-x64 standalone console version
 const string MpvNetVersion        = "v7.1.2.0";
-const string ManagerVersion       = "0.8.0";        // github.com/the-database/AnimeJaNaiManager release tag (AnimeJaNai Manager; temporal model settings)
 // HDR fork: Manager with the display upscaling / HDR settings (github.com/Ta2b/AnimeJaNaiManager-HDR).
-const string ManagerHdrRelease    = "latest-hdr-settings-0.8"; // rolling release of the 0.8-based branch
+string ManagerHdrRelease = "hdr-" + File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "manager-source-ref.txt")).Trim(); // Immutable paired-platform release.
 
 // DirectML backend runtime (backend=DirectML in animejanai.conf). These are
 // the last DirectML-flavored releases: Microsoft moved DML to sustained
@@ -653,6 +652,9 @@ async Task InstallLinuxMpv()
         if (!File.Exists(mpvBin))
             throw new FileNotFoundException($"mpv binary not found at {mpvBin}");
         File.Copy(mpvBin, Path.Combine(mpvRoot, "mpv"), true);
+        // A flat portable local bundle carries all its non-driver dependencies.
+        foreach (var so in Directory.GetFiles(localBuild, "*.so*"))
+            CopyOrLink(so, Path.Combine(mpvRoot, Path.GetFileName(so)));
         await RunProcess("chmod", $"+x \"{Path.Combine(mpvRoot, "mpv")}\"");
         foreach (var so in Directory.GetFiles(localBuild, "libmpv.so*"))
             CopyOrLink(so, Path.Combine(mpvRoot, Path.GetFileName(so)));
@@ -679,6 +681,23 @@ async Task InstallLinuxMpv()
         await RunProcess("tar", $"--zstd -xf \"{targetPath}\" -C \"{mpvRoot}\"");
         File.Delete(targetPath);
     }
+    var start = new ProcessStartInfo(Path.Combine(mpvRoot, "mpv")) { RedirectStandardOutput = true, RedirectStandardError = true };
+    start.ArgumentList.Add("--no-config"); start.ArgumentList.Add("--gpu-context=help");
+    start.Environment["LD_LIBRARY_PATH"] = mpvRoot + ":" + Environment.GetEnvironmentVariable("LD_LIBRARY_PATH");
+    using var player = Process.Start(start)!;
+    string contexts = await player.StandardOutput.ReadToEndAsync();
+    await player.WaitForExitAsync();
+    if (player.ExitCode != 0 || !contexts.Contains("waylandvk"))
+        throw new InvalidDataException("Linux mpv bundle lacks Wayland/Vulkan. Build installer/linux/build-native.sh and set MPV_LINUX_LOCAL to its output.");
+    if (!args.Contains("--sdr-only"))
+    {
+        start.ArgumentList.Clear(); start.ArgumentList.Add("--no-config"); start.ArgumentList.Add("--vf=help");
+        using var filters = Process.Start(start)!;
+        var names = await filters.StandardOutput.ReadToEndAsync();
+        await filters.WaitForExitAsync();
+        if (filters.ExitCode != 0 || !names.Contains("animejanai-vulkan"))
+            throw new InvalidDataException("Linux mpv lacks animejanai-vulkan: rebuild installer/linux/build-native.sh.");
+    }
 }
 
 async Task InstallYtDlp()
@@ -691,6 +710,20 @@ async Task InstallYtDlp()
     });
     if (!plat.IsWindows)
         await RunProcess("chmod", $"+x \"{targetPath}\"");
+}
+
+void InstallVulkanInference()
+{
+    if (plat.IsWindows || args.Contains("--sdr-only")) return;
+    string source = Environment.GetEnvironmentVariable("VULKAN_LOCAL") ?? "";
+    if (!File.Exists(Path.Combine(source, "inference", "libaji_vulkan.so")))
+        throw new FileNotFoundException("Linux Vulkan backend required: run installer/linux/build-inference.sh and set VULKAN_LOCAL.");
+    foreach (string directory in new[] { "inference", "onnx", "rife-vulkan", "licenses" })
+        CopyDirectory(Path.Combine(source, directory), Path.Combine(installDirectory, "animejanai", directory));
+    foreach (string file in Directory.GetFiles(Path.Combine(source, "inference")))
+        if (Path.GetExtension(file) != ".txt") File.SetUnixFileMode(Path.Combine(inferencePath, Path.GetFileName(file)),
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+            UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
 }
 
 void InstallAnimeJaNaiCore()
@@ -744,19 +777,50 @@ void GenerateInputConf()
 void PortConfigsForTarget()
 {
     if (plat.IsWindows) return;
+    string docs = Path.Combine(installDirectory, "docs");
+    Directory.CreateDirectory(docs);
+    foreach (string source in Directory.GetFiles(Path.Combine(assemblyDirectory, "linux-docs"), "*.md"))
+        File.Copy(source, Path.Combine(docs, Path.GetFileName(source)), true);
+    File.WriteAllText(Path.Combine(installDirectory, "README-LINUX.md"),
+        "# mpv AnimeJaNai HDR Linux\n\nLancer `./mpv-animejanai fichier.mkv`.\n\n" +
+        "Ctrl+E : Manager. Ctrl+1 : AnimeJaNai. Ctrl+2 : AnimeJaNai + RIFE. Ctrl+3 : RIFE seul. " +
+        "Ctrl+5/6 : profils legers. Ctrl+0 : lecture normale.\n\n" +
+        "Performance sans RIFE actif au premier demarrage. HDR et grading suivent la sortie negociee.\n\n" +
+        "Guide : [docs/LINUX.md](docs/LINUX.md). Reglages : [docs/SETTINGS.md](docs/SETTINGS.md). " +
+        "Resultats : [docs/LINUX-INFERENCE.md](docs/LINUX-INFERENCE.md).\n");
     var pc = Path.Combine(installDirectory, "portable_config");
+    foreach (var file in new[] { "mpv-animejanai.conf", "mpv.conf", "input-animejanai.conf", "input-user.conf" })
+    {
+        var path = Path.Combine(pc, file);
+        if (!File.Exists(path)) continue;
+        var lines = File.ReadAllLines(path)
+            .Where(line => !line.TrimStart().StartsWith("d3d11"))
+            .Select(line => line.Replace("inference/aji.dll", "inference/libaji.so")
+                .Replace("inference/trtexec.exe", "inference/trtexec")
+                .Replace("'Segoe UI'", "'sans-serif'")
+                .Replace("gpu-api=d3d11", "gpu-api=vulkan")
+                .Replace("gpu-context=d3d11", "gpu-context=waylandvk")
+                .Replace("hwdec=nvdec", "hwdec=auto-safe")
+                .Replace("apply-profile upscale-on; ", "")
+                .Replace("Ctrl+5      ignore", "Ctrl+5      script-message-to hardware_auto animejanai-select 5")
+                .Replace("Ctrl+6      ignore", "Ctrl+6      script-message-to hardware_auto animejanai-select 6")
+                .Replace("script-message-to mpvnet play-pause", "cycle pause")
+                .Replace("script-message-to mpvnet playlist-add -1", "playlist-prev")
+                .Replace("script-message-to mpvnet playlist-add  1", "playlist-next")
+                .Replace("profile=upscale-on", "# Linux: inference enabled by linux-playback.lua")
+                .Replace("input-ipc-server=mpvpipe", "# IPC provided by the Linux launcher")
+                .Replace("~~\\\\..\\\\AnimeJaNaiManager.exe", "~~/../AnimeJaNaiManager"));
+        File.WriteAllLines(path, lines);
+    }
+    // Windows-only binaries and tooling are never part of the Linux runtime.
+    foreach (var directory in new[] {Path.Combine(pc, "hdr-tools"), Path.Combine(pc, "user-scripts")})
+        foreach (var file in Directory.GetFiles(directory).Where(f => new[] {".dll", ".exe", ".ps1"}.Contains(Path.GetExtension(f)))) File.Delete(file);
+    // Windows-only profile is not selectable on Linux.
+    var userConf = Path.Combine(pc, "mpv.conf");
+    var user = File.ReadAllText(userConf);
+    int amdProfile = user.IndexOf("[upscale-on-amd]", StringComparison.Ordinal);
+    if (amdProfile >= 0) File.WriteAllText(userConf, user[..amdProfile]);
 
-    var mpvConf = Path.Combine(pc, "mpv-animejanai.conf");
-    var c = File.ReadAllText(mpvConf)
-        .Replace("inference/aji.dll", "inference/libaji.so")
-        .Replace("inference/trtexec.exe", "inference/trtexec")
-        .Replace("'Segoe UI'", "'sans-serif'");
-    File.WriteAllText(mpvConf, c);
-
-    var inputConf = Path.Combine(pc, "input-animejanai.conf");
-    var ic = File.ReadAllText(inputConf)
-        .Replace("~~\\\\..\\\\AnimeJaNaiManager.exe", "~~/../AnimeJaNaiManager");
-    File.WriteAllText(inputConf, ic);
 }
 
 // Linux launcher: runs the bundled mpv against portable_config via
@@ -768,81 +832,47 @@ void WriteLinuxLauncher()
 {
     if (plat.IsWindows) return;
     var path = Path.Combine(installDirectory, "mpv-animejanai");
-    var sh =
-        "#!/bin/sh\n" +
-        "# AnimeJaNai launcher - runs the bundled mpv fork against the\n" +
-        "# portable_config tree with the bundled libraries on the loader path.\n" +
-        "HERE=\"$(dirname \"$(readlink -f \"$0\")\")\"\n" +
-        "export LD_LIBRARY_PATH=\"$HERE/mpv:$HERE/animejanai/inference:${LD_LIBRARY_PATH}\"\n" +
-        "exec \"$HERE/mpv/mpv\" --config-dir=\"$HERE/portable_config\" \"$@\"\n";
-    File.WriteAllText(path, sh);
-    File.SetUnixFileMode(path,
-        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-        UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-        UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+    var source = Path.Combine(animejanaiDirectory, "portable_config", "hdr-tools", "launch-linux.sh");
+    File.Copy(source, path, true);
+    File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+        UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+
 }
 
 async Task InstallAnimeJaNaiManager()
 {
-    var localBuild = Environment.GetEnvironmentVariable("MANAGER_LOCAL");
-    if (!string.IsNullOrEmpty(localBuild))
+    var local = Environment.GetEnvironmentVariable("MANAGER_HDR_LOCAL");
+    if (!string.IsNullOrEmpty(local))
     {
-        Console.WriteLine($"Using local AnimeJaNai Manager: {localBuild}");
-        if (Directory.Exists(localBuild))
-            CopyDirectory(localBuild, installDirectory);
-        else if (plat.IsWindows)
-            ExtractZip(localBuild, installDirectory, _ => { });
-        else
-            await RunProcess("tar", $"--zstd -xf \"{localBuild}\" -C \"{installDirectory}\"");
-        return;
+        CopyDirectory(local, installDirectory);
     }
-
-    Console.WriteLine("Downloading AnimeJaNai Manager...");
-    var downloadUrl = $"https://github.com/the-database/AnimeJaNaiManager/releases/download/{ManagerVersion}/{plat.ManagerAsset}";
-    var targetPath = Path.GetFullPath(plat.ManagerAsset);
-    try
-    {
-        await DownloadFileAsync(downloadUrl, targetPath, (progress) =>
-        {
-            Console.WriteLine($"Downloading AnimeJaNai Manager ({progress}%)...");
-        });
-    }
-    catch (Exception e) when (!plat.IsWindows)
-    {
-        // The linux-x64 Manager release (A4) may not be published yet; the tree
-        // is still runnable without it (Ctrl+E editor is the only thing missing).
-        Console.WriteLine($"  WARNING: Linux Manager not available ({e.Message}); skipping.");
-        return;
-    }
-
-    Console.WriteLine("Extracting AnimeJaNai Manager...");
-    if (plat.IsWindows)
-        ExtractZip(targetPath, installDirectory, (double progress) =>
-        {
-            Console.WriteLine($"Extracting AnimeJaNai Manager ({progress}%)...");
-        });
     else
-        await RunProcess("tar", $"--zstd -xf \"{targetPath}\" -C \"{installDirectory}\"");
-
-    File.Delete(targetPath);
-
-    // HDR fork: the Manager variant opened by Ctrl+E (the official one stays as fallback).
-    if (plat.IsWindows)
     {
-        var hdrUrl = $"https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/{ManagerHdrRelease}/AnimeJaNaiManager-HDR.exe";
-        var hdrPath = Path.Combine(installDirectory, "AnimeJaNaiManager-HDR.exe");
-        try
-        {
-            await DownloadFileAsync(hdrUrl, hdrPath, (progress) =>
-            {
-                Console.WriteLine($"Downloading AnimeJaNai Manager (HDR) ({progress}%)...");
-            });
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"  WARNING: AnimeJaNai Manager (HDR) not available ({e.Message}); Ctrl+E opens the official Manager.");
-        }
+        var asset = plat.IsWindows ? "AnimeJaNaiManager-HDR-x64.zip" : "AnimeJaNaiManager-HDR-linux-x64.tar.zst";
+        var archive = Path.GetFullPath(asset);
+        await DownloadFileAsync($"https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/{ManagerHdrRelease}/{asset}", archive, _ => { });
+        if (plat.IsWindows) ExtractZip(archive, installDirectory, _ => { });
+        else await RunProcess("tar", $"--zstd -xf \"{archive}\" -C \"{installDirectory}\"");
+        File.Delete(archive);
     }
+    var executable = Path.Combine(installDirectory, plat.Exe("AnimeJaNaiManager-HDR"));
+    foreach (var name in new[] { plat.Exe("AnimeJaNaiManager-HDR"), plat.IsWindows ? "libSkiaSharp.dll" : "libSkiaSharp.so",
+        plat.IsWindows ? "libHarfBuzzSharp.dll" : "libHarfBuzzSharp.so" })
+    {
+        if (!File.Exists(Path.Combine(installDirectory, name)))
+            throw new FileNotFoundException($"HDR Manager package is missing {name}.");
+    }
+    // Preserve the previous executable name for existing shortcuts and integrations.
+    File.Copy(executable, Path.Combine(installDirectory, plat.Exe("AnimeJaNaiManager")), true);
+}
+
+void InstallPlatformHelper()
+{
+    string helper = Environment.GetEnvironmentVariable("PLATFORM_LOCAL") ??
+        Path.Combine(assemblyDirectory, "platform-" + (plat.IsWindows ? "win-x64" : "linux-x64"));
+    if (!File.Exists(Path.Combine(helper, plat.Exe("AnimeJaNaiPlatform"))))
+        throw new FileNotFoundException("Publish AnimeJaNaiPlatform and set PLATFORM_LOCAL to its output directory.");
+    CopyDirectory(helper, installDirectory);
 }
 
 // The TensorRT SLA requires this attribution when redistributing the
@@ -920,7 +950,25 @@ void WriteVersionAndManifest()
     overlayPaths.Add("portable_config/user-scripts");
     overlayPaths.Add("portable_config/user-shaders");
     overlayPaths.Add("portable_config/hdr-tools");
-    if (plat.IsWindows) overlayPaths.Add("AnimeJaNaiManager-HDR.exe");
+    overlayPaths.Add(plat.Exe("AnimeJaNaiManager-HDR"));
+    overlayPaths.Add(plat.Exe("AnimeJaNaiPlatform"));
+    if (!plat.IsWindows)
+    {
+        overlayPaths.Add("mpv-animejanai");
+        overlayPaths.Add("portable_config/profiles/linux-nvidia/animejanai.conf");
+        overlayPaths.Add("portable_config/profiles/linux-amd/animejanai.conf");
+        overlayPaths.Add("animejanai/rife-vulkan");
+        overlayPaths.Add("animejanai/licenses");
+        overlayPaths.Add("animejanai/inference/libaji_vulkan.so");
+        overlayPaths.Add("animejanai/inference/libgomp.so.1");
+        overlayPaths.Add("animejanai/inference/animejanai-vulkan-test");
+        overlayPaths.Add("animejanai/inference/vulkan-build-info.txt");
+        overlayPaths.Add("README-LINUX.md");
+        overlayPaths.Add("docs/LINUX.md");
+        overlayPaths.Add("docs/LINUX-INFERENCE.md");
+    }
+    overlayPaths.Add("docs/SETTINGS.md");
+    overlayPaths.AddRange(Directory.GetFiles(installDirectory, "*.so").Select(Path.GetFileName)!);
     // Managed defaults files, overwritten on update. The user-facing
     // mpv.conf/input.conf (which carry these) are preserved (user_preserve).
     overlayPaths.Add("portable_config/mpv-animejanai.conf");
@@ -943,14 +991,16 @@ void WriteVersionAndManifest()
         deps = new
         {
             mpvnet = plat.IsWindows ? MpvNetVersion : (string?)null,
+            platform_helper = "1",
+            manager_hdr = ManagerHdrRelease,
             mpvfork = plat.IsWindows ? $"{MpvForkVersion}-{MpvForkGitHash}"
-                                     : $"{MpvForkLinuxVersion}",
+                                     : $"{MpvForkLinuxVersion}-wayland-vulkan-bridge1",
             inference_runtime = $"trt-{TrtVersion}",
             ort_dml = plat.IsWindows ? $"{OrtDmlVersion}+{DirectMLVersion}" : (string?)null,
             sevenzip = SevenZipVersion,
             rife = RifeModelsVersion,
         },
-        overlay_paths = overlayPaths.ToArray(),
+        overlay_paths = overlayPaths.Distinct().ToArray(),
         // User data never overwritten by an update (full updates preserve these explicitly).
         user_preserve = new[]
         {
@@ -967,7 +1017,17 @@ void WriteVersionAndManifest()
         },
     };
 
-    var json = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
+    var node = JsonSerializer.SerializeToNode(manifest)!;
+    if (!plat.IsWindows)
+    {
+        node["deps"]!["vulkan_inference"] = args.Contains("--sdr-only") ? "none" : "ncnn-d8227bbe-rife-4.6-bridge1-span1";
+        if (args.Contains("--vulkan-only") || args.Contains("--sdr-only"))
+        {
+            node["deps"]!["inference_runtime"] = "none";
+            node["deps"]!["rife"] = "none";
+        }
+    }
+    var json = node.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
     File.WriteAllText(Path.Combine(installDirectory, "manifest.json"), json);
 }
 
@@ -1116,11 +1176,17 @@ async Task Main()
     }
     Directory.CreateDirectory(installDirectory);
     await InstallSevenZip();
-    await InstallInferenceRuntime();
-    await InstallAji();
-    if (plat.HasDirectML)
-        await InstallOrtDml();
-    await InstallRife();
+    if (args.Contains("--sdr-only") && (plat.IsWindows || args.Contains("--packs")))
+        throw new ArgumentException("--sdr-only is a Linux test package, incompatible with --packs.");
+    if (args.Contains("--vulkan-only") && (plat.IsWindows || args.Contains("--sdr-only")))
+        throw new ArgumentException("--vulkan-only is Linux-only and incompatible with --sdr-only.");
+    if (!args.Contains("--sdr-only") && !args.Contains("--vulkan-only"))
+    {
+        await InstallInferenceRuntime();
+        await InstallAji();
+        if (plat.HasDirectML) await InstallOrtDml();
+        await InstallRife();
+    }
     if (plat.IsWindows)
     {
         await InstallMpvnet();
@@ -1133,10 +1199,12 @@ async Task Main()
     }
     await InstallYtDlp();
     InstallAnimeJaNaiCore();
+    InstallVulkanInference();
     PortConfigsForTarget();
     GenerateInputConf();
     await InstallAnimeJaNaiManager();
-    WriteThirdPartyNotices();
+    InstallPlatformHelper();
+    if (!args.Contains("--sdr-only")) WriteThirdPartyNotices();
     WriteLinuxLauncher();
     WriteVersionAndManifest();
     if (args.Contains("--packs"))

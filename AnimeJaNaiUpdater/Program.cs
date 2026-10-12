@@ -30,7 +30,7 @@ const string Repo = "Ta2b/mpv-AnimeJaNai-HDR";
 string apiLatest = $"https://api.github.com/repos/{Repo}/releases/latest";
 
 // Single-file exe: BaseDirectory is the folder the exe runs from = the install root.
-string installDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, '/');
+string installDir = Path.GetFullPath(Environment.GetEnvironmentVariable("ANIMEJANAI_ROOT") ?? AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar, '/');
 
 // Platform-specific names come from the install's manifest.json so this same code works on Windows
 // and (later) Linux. Fallbacks keep older installs (no manifest fields) working on Windows.
@@ -72,6 +72,11 @@ try
             await CheckAsync();
             return 0;
         case "--apply":
+            if (Environment.GetEnvironmentVariable("ANIMEJANAI_APPIMAGE") == "1")
+            {
+                Console.WriteLine($"Download the new AppImage from https://github.com/{Repo}/releases ; writable user data is preserved.");
+                return 0;
+            }
             return await ApplyAsync();
         case "--components":
             await ComponentsAsync(null, args.Contains("--json"));
@@ -679,7 +684,7 @@ string FindVersionedRoot(string staging)
 // never overwritten (relevant only to a full update — the overlay archive doesn't contain them).
 void ApplyOver(string sourceRoot, string targetRoot, bool overlay)
 {
-    var preserve = overlay ? new HashSet<string>() : ReadUserPreserve(Path.Combine(targetRoot, "manifest.json"));
+    var preserve = ReadUserPreserve(Path.Combine(targetRoot, "manifest.json"));
 
     // Self-update: a running exe can't be overwritten, but it can be renamed out of the way first.
     // Derive the name from the running process so this works whether it's AnimeJaNaiUpdater.exe
@@ -705,7 +710,7 @@ void CopyTree(string srcDir, string dstDir, string sourceRoot, HashSet<string> p
     foreach (var file in Directory.GetFiles(srcDir))
     {
         string rel = NormalizeRel(Path.GetRelativePath(sourceRoot, file));
-        if (IsPreserved(rel, preserve))
+        if (IsPreserved(rel, preserve) && File.Exists(Path.Combine(dstDir, Path.GetFileName(file))))
         {
             continue;
         }
@@ -717,7 +722,8 @@ void CopyTree(string srcDir, string dstDir, string sourceRoot, HashSet<string> p
     foreach (var sub in Directory.GetDirectories(srcDir))
     {
         string rel = NormalizeRel(Path.GetRelativePath(sourceRoot, sub));
-        if (IsPreserved(rel, preserve))
+        // Profile banks are seeded only when missing, including in preserved older trees.
+        if (IsPreserved(rel, preserve) && !rel.StartsWith("portable_config/profiles", StringComparison.OrdinalIgnoreCase))
         {
             continue;
         }

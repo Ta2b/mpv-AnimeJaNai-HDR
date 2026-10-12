@@ -11,6 +11,8 @@ try
     void Pass(string name) { passed++; Console.WriteLine("PASS " + name); }
     foreach (string mode in new[] { "normal", "replace-fails", "retire-fails", "crlf", "empty-legacy", "no-legacy" })
     {
+        // Linux permits unlinking open files; Windows sharing-violation fixtures are platform-specific.
+        if (!OperatingSystem.IsWindows() && (mode is "replace-fails" or "retire-fails")) continue;
         string dir = Path.Combine(root, mode), pc = Path.Combine(dir, "portable_config");
         Directory.CreateDirectory(Path.Combine(pc, "scripts"));
         string target = Path.Combine(pc, "input.conf"), legacy = Path.Combine(pc, "input-user.conf");
@@ -51,6 +53,20 @@ try
         app.Sync(); Check(File.ReadAllText(target) == saved, "Migration is not idempotent");
         Pass("migration-" + mode);
     }
+
+    string copyRoot = Path.Combine(root, "preserve-copy");
+    string copySource = Path.Combine(root, "copy-source");
+    foreach (string dir in new[] {copyRoot, copySource}) Directory.CreateDirectory(Path.Combine(dir, "portable_config", "profiles", "linux-amd"));
+    string bankRel = Path.Combine("portable_config", "profiles", "linux-amd", "animejanai.conf");
+    File.WriteAllText(Path.Combine(copyRoot, bankRel), "user bank");
+    File.WriteAllText(Path.Combine(copySource, bankRel), "default bank");
+    Directory.CreateDirectory(Path.Combine(copySource, "portable_config", "profiles", "linux-nvidia"));
+    File.WriteAllText(Path.Combine(copySource, "portable_config", "profiles", "linux-nvidia", "animejanai.conf"), "new NVIDIA bank");
+    var copier = new Production(copyRoot, new FixtureHttp(), windows: false);
+    copier.Copy(copySource, new HashSet<string> {"portable_config/profiles"});
+    Check(File.ReadAllText(Path.Combine(copyRoot, bankRel)) == "user bank", "Update replaced user bank");
+    Check(File.ReadAllText(Path.Combine(copyRoot, "portable_config", "profiles", "linux-nvidia", "animejanai.conf")) == "new NVIDIA bank", "Update did not seed missing bank");
+    Pass("Linux update preserves existing banks and seeds missing banks");
 
     foreach (string version in new[] { "3.5.0", "3.6.0" })
     {

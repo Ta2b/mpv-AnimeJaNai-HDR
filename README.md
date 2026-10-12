@@ -1,12 +1,20 @@
 # mpv-AnimeJaNai HDR (fork)
 
+**Portage Linux en cours, Windows conservé.** Le paquet de test inclut le
+lecteur SDR Vulkan/Wayland et le Manager HDR. AnimeJaNai SPAN et RIFE 4.6
+utilisent NCNN/Vulkan sur AMD et NVIDIA, avec Performance sans RIFE au premier démarrage. TensorRT reste
+une option NVIDIA distincte. Les essais physiques HDR et RTX
+4050 restent nécessaires avant publication Linux par défaut. Voir
+[la documentation Linux](docs/LINUX.md) pour la construction, les tests et les limites.
+
+
 Fork de [the-database/mpv-upscale-2x_animejanai](https://github.com/the-database/mpv-upscale-2x_animejanai), basé sur la version **3.8.0** (branche `hdr-3.8`, version publiée par défaut ; la branche `hdr` reste sur la 3.6.3). Il ajoute une conversion SDR → HDR soignée pour l'anime et s'adapte tout seul aux cartes NVIDIA et AMD :
 
 - **NVIDIA** : RTX Video HDR (TrueHDR) et RTX Video Super Resolution après AnimeJaNai/RIFE (TensorRT).
 - **AMD / Intel** : HDR calculé par mpv, AMD VideoSR, inférence DirectML, AMF ×2 en option sur tous les profils.
 - **Fréquence d'écran automatique** (3.8.0) : une fréquence multiple de la cadence vidéo, RIFE compris.
 - **Grading HDR commun** (`user-shaders/anime-hdr-grade.hook`) : noirs plus profonds, éclats locaux jusqu'au pic de l'écran, vibrance ICtCp limitée au gamut P3, peau protégée. **Ctrl+G** compare avec et sans.
-- **Réglages dans le Manager** (Ctrl+E → [AnimeJaNai Manager HDR](https://github.com/Ta2b/AnimeJaNaiManager-HDR)) : mise à l'échelle finale, conversion SDR → HDR, moteur, intensités, et écran par GPU (HDR Windows automatique ou suivi, pic, gamut, OLED).
+- **Réglages dans le Manager** (Ctrl+E → [AnimeJaNai Manager HDR](https://github.com/Ta2b/AnimeJaNaiManager-HDR)) : mise à l'échelle finale, conversion SDR → HDR, moteur, intensités, et une seule section écran (suivi HDR du système, pic et gamut automatiques, OLED optionnel).
 - Les fichiers du fork sont dans `user-scripts/`, `user-shaders/` et `hdr-tools/` (mis à jour par l'Updater du fork), plus `profiles/` et `script-opts/` (tes réglages, jamais écrasés).
 
 **Releases** : mêmes fichiers que le projet original (installateur `mpv-AnimeJaNai-HDR-Setup-<version>.exe`, paquet complet `.7z`, overlay de mise à jour, `manifest.json`, packs de composants TensorRT / RIFE). Les versions suivent celle de base plus un numéro de révision du fork (`3.8.0.1`, `3.8.0.2`…). Pour publier une version : mettre son numéro dans `release-version.txt` puis pousser sur la branche `release` ; le workflow *Deploy* compile et publie la release (il crée le tag lui-même). L'Updater (Ctrl+U) et les composants du Manager se servent de ces releases. L'installateur a son propre identifiant et s'installe à côté du lecteur officiel, sans le remplacer.
@@ -144,3 +152,11 @@ The 2x_AnimeJaNai_V2 ONNX models can be used on a PC with any graphics card to r
 - [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN)
 - [OpenModelDB](https://openmodeldb.info/)
 - [getnative](https://github.com/Infiziert90/getnative) and [anibin](https://anibin.blogspot.com/)
+
+### Publication Windows et Linux
+
+Les releases du fork réunissent les fichiers Windows et Linux sous la même
+version. Windows conserve ses noms d’assets ; les paquets Linux portent
+`linux-x64`. Linux reste expérimental pour les essais physiques NVIDIA/HDR.
+Les contrôles précèdent les builds indépendants et la publication commune.
+Voir [le guide de release](docs/RELEASE.md).

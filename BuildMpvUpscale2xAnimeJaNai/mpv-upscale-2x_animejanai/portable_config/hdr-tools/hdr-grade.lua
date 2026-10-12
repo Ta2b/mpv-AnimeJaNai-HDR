@@ -17,10 +17,15 @@ M.presets = {
 
 local function clamp(v, lo, hi) return math.max(lo, math.min(hi, v)) end
 
--- Display settings follow the GPU: NVIDIA = this PC, AMD/Intel = the shared PC.
+-- Shared keys take precedence; the suffix is only a compatibility fallback.
 function M.display(o, vendor)
     local suffix = vendor == 'nvidia' and 'nvidia' or 'amd'
-    return {peak = o['peak_' .. suffix], gamut = o['gamut_' .. suffix], oled = o['oled_' .. suffix]}
+    local function value(shared, legacy, fallback)
+        return o[shared] and o[shared] ~= '' and o[shared] or o[legacy] or fallback
+    end
+    return {peak = value('display_peak','peak_' .. suffix,'auto'),
+        gamut = value('display_gamut','gamut_' .. suffix,'auto'),
+        oled = value('display_oled','oled_' .. suffix,'no')}
 end
 
 local function number_or_nil(v)
@@ -51,9 +56,11 @@ function M.plan(o, ctx, preset)
     local render = {}
     for _, k in ipairs(M.render_keys) do render[k] = original[k] end
     local result = {render = render, active = false, params = nil, mode = 'off'}
-    if ctx.windows ~= 'on' or (ctx.source ~= 'sdr' and ctx.source ~= 'hdr') then return result end
+    local output_hdr = ctx.output_hdr
+    if output_hdr == nil then output_hdr = ctx.windows == 'on' end
+    if not output_hdr or (ctx.source ~= 'sdr' and ctx.source ~= 'hdr') then return result end
 
-    -- HDR output confirmed: apply the display description of this GPU's PC.
+    -- HDR output confirmed: apply the common display description.
     local display = M.display(o, ctx.vendor)
     local fixed_peak = number_or_nil(display.peak)
     if fixed_peak then render['target-peak'] = tostring(clamp(fixed_peak, 100, 10000)) end

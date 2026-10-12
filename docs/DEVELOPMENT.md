@@ -3,25 +3,23 @@
 Orientation and runtime architecture live in [`../CLAUDE.md`](../CLAUDE.md); the release
 runbook lives in [`RELEASE.md`](RELEASE.md). This file is the local loop.
 
-Repo: `the-database/mpv-AnimeJaNai`. Note the **directory name and the repo name differ** —
-the working copy is usually `mpv-upscale-2x_animejanai` while `origin` is `mpv-AnimeJaNai`.
-Code inside the repo consistently uses the old name (e.g. `AnimeJaNaiUpdater/Program.cs`:
-`const string Repo = "the-database/mpv-upscale-2x_animejanai"`), and the GitHub redirect makes
-both work.
+Repo de ce fork : `Ta2b/mpv-AnimeJaNai-HDR`. Le Manager HDR est dans le dépôt
+voisin `Ta2b/AnimeJaNaiManager-HDR`, branche `hdr-settings-0.8`. Le portage et les
+paquets de test Linux sont décrits dans [`LINUX.md`](LINUX.md).
 
 ## Prerequisites
 
 | Need | Why (evidence) |
 |---|---|
-| **.NET 10 SDK** | all three csproj target `net10.0`; `deploy.yml` pins `dotnet-version: '10.x'` in both legs. No `global.json`. |
+| **.NET 10 SDK** | the assembler, platform helper, updater and benchmark target `net10.0`; `deploy.yml` pins `dotnet-version: '10.x'` in both legs. No `global.json`. |
 | **Node 20** | `.github/workflows/benchmarks.yml` pins `node-version: "20"` for the catalog build |
 | **7-Zip** + **Inno Setup 6** | Windows release only; CI installs them with `choco install 7zip -y` / `choco install innosetup -y` |
 | **`wrangler`** | only to deploy `benchmark-proxy/` (devDependency `wrangler ^3.80.0`) |
 | **An NVIDIA GPU + driver** | only to *run* the assembled package on the TensorRT backend, not to build |
 
-Nothing else: **there is no test suite, no linter, and no formatter config** in this repo — no
-`.editorconfig`, `Directory.Build.props`, `dotnet-tools.json`, eslint, or pre-commit. Do not go
-looking for a `dotnet test` target.
+Les tests Lua et shaders sont dans `tests/hdr/`, les transactions de banques .NET
+et les essais du lecteur Linux dans `tests/platform/`, les régressions updater dans
+`tests/updater-regressions/`. Le Manager possède ses propres tests de profils et IPC.
 
 ## The assembler
 
@@ -30,17 +28,18 @@ downloads every component by pinned version and lays out the redistributable tre
 
 ```powershell
 dotnet publish BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj -c Release -o publish
+dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/platform-win-x64
 ./publish/BuildMpvUpscale2xAnimeJaNai.exe 3.6.0
 # -> ./publish/mpv-upscale-2x_animejanai-v3.6.0/
 ```
 
-On Linux the same binary is invoked without the extension:
-`./publish/BuildMpvUpscale2xAnimeJaNai 3.6.0 --target linux-x64`.
+On Linux the same binary is invoked without the extension. Use the local build
+recipe in [`LINUX.md`](LINUX.md) to supply the Wayland player, helper and HDR Manager.
 
 ### CLI
 
 ```
-BuildMpvUpscale2xAnimeJaNai <version> [--target win-x64|linux-x64] [--packs] [--packs-only [dir]]
+BuildMpvUpscale2xAnimeJaNai <version> [--target win-x64|linux-x64] [--packs] [--packs-only [dir]] [--sdr-only|--vulkan-only]
 ```
 
 - **`<version>`** — required, must be the **first** positional arg. `Program.cs` throws
@@ -60,13 +59,19 @@ BuildMpvUpscale2xAnimeJaNai <version> [--target win-x64|linux-x64] [--packs] [--
 > `if (Directory.Exists(installDirectory)) Directory.Delete(installDirectory, true);`
 > A full run downloads several GB and takes minutes.
 
+`--sdr-only` construit le jalon SDR Linux avec son Manager, sans TensorRT/RIFE. `--vulkan-only` ajoute AnimeJaNai et RIFE NCNN/Vulkan
+sans télécharger TensorRT ; définir également `VULKAN_LOCAL`.
+Définir `MANAGER_HDR_LOCAL`, `PLATFORM_LOCAL` et `MPV_LINUX_LOCAL` pour utiliser les
+composants locaux. Le helper doit être publié avant l'assembleur ; les scripts dans
+`tools/` automatisent ce parcours. L'assembleur exige Wayland/Vulkan sous Linux.
+
 ### What `Main()` does, in order
 
 `InstallSevenZip` → `InstallInferenceRuntime` → `InstallAji` → `InstallOrtDml` *(Windows only)*
 → `InstallRife` → *(Windows:* `InstallMpvnet`, `InstallCustomLibmpv`, `InstallCustomMpvExe`*;
-Linux:* `InstallLinuxMpv`*)* → `InstallYtDlp` → `InstallAnimeJaNaiCore` →
+Linux:* `InstallLinuxMpv`*)* → `InstallYtDlp` → `InstallAnimeJaNaiCore` → `InstallVulkanInference` *(Linux inference only)* →
 `PortConfigsForTarget` → `GenerateInputConf` → `InstallAnimeJaNaiManager` →
-`WriteThirdPartyNotices` → `WriteLinuxLauncher` → `WriteVersionAndManifest` →
+`InstallPlatformHelper` → `WriteThirdPartyNotices` → `WriteLinuxLauncher` → `WriteVersionAndManifest` →
 *(if `--packs`)* `EmitComponentPacks` + `SlimInstallTree`.
 
 That order is where to intervene: to test a change to one component, find its `Install*`
@@ -82,18 +87,27 @@ These env vars are the actual dev hooks. All are read in
 | `AJI_LOCAL_BUILD` | **Linux only** (guarded on non-Windows). Copies `libaji.so` / `libaji_trt.so` + tools from a local CMake build dir instead of downloading the release. |
 | `AJI_LOCAL_ZIP` | Use a local built aji archive instead of downloading. On Windows this is how you test a fresh `aji-windows-x64.zip` — point it at the zip that `package-aji-release.ps1` emitted (`<aji-win>\dist\<tag>\aji-windows-x64.zip`; see that repo's `docs/BUILD-WINDOWS.md`). |
 | `MPV_LINUX_LOCAL` | Use a local meson build dir for `mpv` + `libmpv.so*` (e.g. `~/src/mpv/build`) instead of the `the-database/mpv` release asset. |
+| `VULKAN_LOCAL` | Linux: output of `installer/linux/build-inference.sh`, containing `inference`, converted `onnx`, `rife-vulkan`, and `licenses`. Required for inference packages. `--vulkan-only` skips optional NVIDIA TensorRT downloads. |
 | `MPV_LINUX_EXTRA_LIBS` | `:`-separated dirs; globs `libplacebo.so*` into `mpv/`. Pair with `MPV_LINUX_LOCAL` when your local mpv links a libplacebo the bundle does not carry. |
-| `MANAGER_LOCAL` | A local directory (copied) **or** a zip / `tar.zst` (extracted) for the AnimeJaNai Manager, instead of its release asset. |
+| `MANAGER_HDR_LOCAL` | Published HDR Manager directory, including its Linux native libraries. Optional local override; otherwise the immutable paired-platform HDR release is downloaded. |
+| `PLATFORM_LOCAL` | Published self-contained platform helper directory; defaults to the assembler's sibling `platform-<RID>`. |
 | `TRT_LOCAL_ZIP` | Windows: an already-downloaded NVIDIA TensorRT zip, instead of re-fetching ~2 GB each run. |
 | `TRT_LINUX_ROOT` | Linux TensorRT source root (e.g. `/usr`). Reads `$root/lib/x86_64-linux-gnu` and `$root/bin/trtexec`. Unset = download the `.deb`s from NVIDIA. |
 | `CUDA_LINUX_LIB` | Source dir for `libcudart.so*`. Unset = download the CUDA redistributable archive. |
 | `ANIMEJANAI_PACKS_DIR` | **Updater**, not the assembler (`AnimeJaNaiUpdater/Program.cs:857`). Point at a local dir holding `packs.json` + the pack archives so `--components` / `--install` / `--recommend` work against **unpublished** packs. Essential while a release is still a draft: the public releases API cannot see draft assets. |
-| `ANIMEJANAI_ROOT` | **Benchmark tool** fallback for the install root when `--install-root` is not given. |
+| `ANIMEJANAI_ROOT` | Runtime install root for the launcher, helper, Manager and updater; benchmark fallback when `--install-root` is not given. |
 | `AJI_ORT_VERBOSE=1` | Runtime, not build: makes ONNX Runtime log node placement to stderr. Use it to confirm no `Conv`/`PReLU` landed on `CPUExecutionProvider` on the DirectML backend. |
 
-## The other three projects
+## Related projects
 
-All are published into the assembled tree by CI, not by the assembler.
+The helper is published before assembly and copied by the assembler. CI adds the
+updater and benchmark to the assembled tree.
+
+### `AnimeJaNaiPlatform/`
+
+Shares PCI detection and bank transactions with the HDR Manager through
+`PlatformServices.cs`. The launcher loads it as `AnimeJaNaiPlatform` on Linux;
+Windows uses `AnimeJaNaiPlatform.exe`, with the existing PowerShell fallback.
 
 ### `AnimeJaNaiUpdater/`
 
@@ -185,6 +199,29 @@ build drops it.
 > the checked-in copy as the live catalog.
 
 ## Known rough edges
+
+### Windows Vulkan backend assessment (2026-10-12)
+
+The Linux NCNN/Vulkan backend does **not** replace Windows DirectML. NCNN
+supports Vulkan on Windows with AMD, Intel and NVIDIA
+([upstream platform notes](https://github.com/Tencent/ncnn/wiki/vulkan-notes));
+[RIFE NCNN/Vulkan](https://github.com/nihui/rife-ncnn-vulkan) also supplies
+Windows builds. Reusing the inference code and converted SPAN weights is
+feasible, but our bridge still needs Windows DLL exports/loading, build and
+mpv registration changes, Manager selection and packaging. No such Windows
+build or comparison has been validated.
+
+Higher performance than DirectML is possible for particular models, GPUs and
+drivers, but is unmeasured. Our current bridge decodes in software and exchanges
+host RGB24 frames, including CPU/GPU transfers between stages. The inspected
+`aji` v0.11.1 DirectML path instead accepts shared D3D11 textures and processes
+them through D3D12/ONNX Runtime; it also supports FP16 model tensors. FP16 alone
+is therefore no evidence of a Vulkan advantage. A useful Windows experiment
+would retain DirectML and offer Vulkan as a separate option, then compare the
+same SPAN weights, resolution and output quality on the same idle machine,
+measuring full playback as well as inference. Different RIFE versions must be
+reported separately. Local tests with Twitch 1080p in the background are
+functional evidence only, never a performance comparison.
 
 - **`build/Dockerfile.ubuntu2204` references a `build-stack.sh`** that exists in no repo on this
   machine (a `find` across every checkout finds nothing). How the from-source

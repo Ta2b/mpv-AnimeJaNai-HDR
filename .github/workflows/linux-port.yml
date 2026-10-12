@@ -1,0 +1,123 @@
+name: Platform checks
+on:
+  push:
+    branches: [hdr-3.8]
+    paths:
+      - 'AnimeJaNaiPlatform/**'
+      - 'AnimeJaNaiUpdater/**'
+      - 'BuildMpvUpscale2xAnimeJaNai/**'
+      - 'installer/linux/**'
+      - 'native/**'
+      - 'tests/**'
+      - 'tools/*linux*'
+      - '.github/workflows/linux-port.yml'
+      - 'manager-source-ref.txt'
+  pull_request:
+    paths:
+      - 'AnimeJaNaiPlatform/**'
+      - 'AnimeJaNaiUpdater/**'
+      - 'BuildMpvUpscale2xAnimeJaNai/**'
+      - 'installer/linux/**'
+      - 'native/**'
+      - 'tests/**'
+      - 'tools/*linux*'
+      - 'manager-source-ref.txt'
+      - '.github/workflows/linux-port.yml'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  platform-and-manager:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+      - name: Platform profile transactions
+        run: dotnet run --project tests/platform/PlatformTests.csproj
+      - name: Updater preservation regressions
+        shell: bash
+        run: |
+          python tests/updater-regressions/generate.py artifacts/updater-checks
+          dotnet run --project artifacts/updater-checks
+      - name: Offline Linux package regressions
+        if: runner.os == 'Linux'
+        run: python3 tests/platform/package_check.py
+      - name: Resolve pinned HDR Manager source
+        shell: bash
+        run: echo "MANAGER_REF=$(cat manager-source-ref.txt)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          repository: Ta2b/AnimeJaNaiManager-HDR
+          ref: ${{ env.MANAGER_REF }}
+          path: manager
+      - name: Profile persistence and IPC
+        shell: bash
+        run: dotnet run --project manager/tests/ProfileRoundTrip/ProfileRoundTrip.csproj -p:PlatformSource="$GITHUB_WORKSPACE/AnimeJaNaiPlatform/PlatformServices.cs"
+      - name: Settings UI and rendering regressions
+        shell: bash
+        run: dotnet run --project manager/tests/SettingsUi -p:RuntimeIdentifier=${{ matrix.rid }} -p:PlatformSource="$GITHUB_WORKSPACE/AnimeJaNaiPlatform/PlatformServices.cs" -- artifacts/settings.png
+      - name: Compile platform helper, updater and Manager
+        shell: bash
+        run: |
+          dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o check-platform
+          dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o check-updater
+          dotnet publish manager/AnimeJaNaiConfEditor/AnimeJaNaiConfEditor.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PlatformSource="$GITHUB_WORKSPACE/AnimeJaNaiPlatform/PlatformServices.cs" -o check-manager
+      - name: Repeat Linux publish and verify native graphics libraries
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          dotnet publish manager/AnimeJaNaiConfEditor/AnimeJaNaiConfEditor.csproj -c Release -r linux-x64 --self-contained true -p:PlatformSource="$GITHUB_WORKSPACE/AnimeJaNaiPlatform/PlatformServices.cs" -o check-manager
+          test -s check-manager/libSkiaSharp.so
+          test -s check-manager/libHarfBuzzSharp.so
+
+  vulkan-backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native build and software Vulkan driver
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ git libvulkan-dev mesa-vulkan-drivers vulkan-tools python3-venv
+      - name: Build pinned Vulkan backend and convert the shipped models
+        run: |
+          python3 -m venv "$RUNNER_TEMP/model-python"
+          "$RUNNER_TEMP/model-python/bin/pip" install onnx==1.23.2 numpy==2.5.4 onnxruntime==1.31.0
+          AJ_PYTHON="$RUNNER_TEMP/model-python/bin/python" bash installer/linux/build-inference.sh "$RUNNER_TEMP/vulkan-work" "$GITHUB_WORKSPACE/vulkan-bundle" BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx
+      - name: Model parity through software Vulkan (physical GPU validation remains separate)
+        run: |
+          export VK_ICD_FILENAMES="$(find /usr/share/vulkan/icd.d -name '*lvp*json' -print -quit)"
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/vulkan-runtime"
+          mkdir -m700 "$XDG_RUNTIME_DIR"
+          device="$(vulkaninfo --summary 2>/dev/null | sed -n 's/^[[:space:]]*deviceName[[:space:]]*=[[:space:]]*//p' | head -1)"
+          test -n "$device"
+          "$RUNNER_TEMP/model-python/bin/python" tests/inference/model_parity.py vulkan-bundle BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx --device "$device" --report artifacts/vulkan-model-parity-ci.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vulkan-backend-linux-x64
+          path: vulkan-bundle/
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vulkan-parity-report
+          path: |
+            vulkan-bundle/inference/vulkan-build-info.txt
+            artifacts/vulkan-model-parity-ci.json
