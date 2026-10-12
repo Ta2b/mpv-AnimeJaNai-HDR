@@ -33,11 +33,13 @@ try
     Check("both conflicting files preserved", File.ReadAllText(active) == "active edit" && File.ReadAllText(Bank("linux-amd")) == "bank edit");
     try { PlatformServices.ActivateBank(root, "../../escape"); throw new Exception("bank traversal accepted"); } catch (ArgumentException) { Check("bank name allowlist", true); }
     string sysfs = Path.Combine(root, "pci");
-    void Gpu(string pci, string vendor) { var d = Path.Combine(sysfs, pci); Write(Path.Combine(d, "vendor"), vendor); Write(Path.Combine(d, "class"), "0x030000"); Write(Path.Combine(d, "device"), "0x1234"); }
+    // Windows cannot create a sysfs fixture with colons in directory names.
+    string PciDirectory(string pci) => OperatingSystem.IsWindows() ? pci.Replace(':', '_') : pci;
+    void Gpu(string pci, string vendor) { var d = Path.Combine(sysfs, PciDirectory(pci)); Write(Path.Combine(d, "vendor"), vendor); Write(Path.Combine(d, "class"), "0x030000"); Write(Path.Combine(d, "device"), "0x1234"); }
     Gpu("0000:00:02.0", "0x8086"); Gpu("0000:01:00.0", "0x10de");
     var adapters = PlatformServices.LinuxAdapters(sysfs);
     Check("Intel/NVIDIA hybrid selects NVIDIA for inference", PlatformServices.SelectAdapter(adapters).vendor == "nvidia");
-    Check("explicit Intel selection respected", PlatformServices.SelectAdapter(adapters, "intel").pci == "0000:00:02.0");
+    Check("explicit Intel selection respected", PlatformServices.SelectAdapter(adapters, "intel").pci == PciDirectory("0000:00:02.0"));
     Check("no NVIDIA device remains non-NVIDIA", PlatformServices.SelectAdapter(adapters.Where(a => a.vendor == "intel")).vendor == "intel");
     string concurrent = Path.Combine(root, "concurrent");
     foreach (var bank in new[] { "linux-amd", "linux-nvidia" })

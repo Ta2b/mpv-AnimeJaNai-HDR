@@ -103,3 +103,13 @@ Les essais logiciels ne valident pas un écran HDR physique ni la RTX 4050.
 Les conditions locales avec Twitch en arrière-plan ne constituent pas une
 référence de performances. Voir [LINUX.md](LINUX.md),
 [LINUX-INFERENCE.md](LINUX-INFERENCE.md) et [SETTINGS.md](SETTINGS.md).
+
+## Vérification du nettoyage
+
+Actionlint valide les workflows des deux dépôts. Les contrôles locaux passent :
+239 assertions Lua, 14 transactions de banques, 14 régressions updater,
+23 cas hors ligne, 13 cas de persistance du Manager et 13 contrôles d’interface.
+Les shaders passent dans libplacebo sur la session Wayland disponible.
+Le premier passage CI Windows a détecté un nom de dossier PCI invalide dans
+la fixture de test sysfs : les deux-points sont remplacés seulement dans cette
+fixture Windows, sans modifier la détection Linux du produit.

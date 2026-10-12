@@ -51,7 +51,15 @@ jobs:
         with:
           dotnet-version: '10.x'
       - name: Platform profile transactions
-        run: dotnet run --project tests/platform/PlatformTests.csproj
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          if ! dotnet run --project tests/platform/PlatformTests.csproj > artifacts/platform-tests.log 2>&1; then
+            cat artifacts/platform-tests.log
+            while IFS= read -r line; do printf '::error::%s\n' "$line"; done < <(tail -n 12 artifacts/platform-tests.log)
+            exit 1
+          fi
+          cat artifacts/platform-tests.log
       - name: Updater preservation regressions
         shell: bash
         run: |
