@@ -18,11 +18,6 @@ on:
 permissions:
   contents: read
 
-# Serialize publications; a release already uploading assets must finish.
-concurrency:
-  group: release-publication
-  cancel-in-progress: false
-
 jobs:
   prepare:
     runs-on: ubuntu-24.04
@@ -270,6 +265,10 @@ jobs:
 
 
   publish:
+    # Builds can run independently; asset uploads are serialized and never cancelled.
+    concurrency:
+      group: release-publication
+      cancel-in-progress: false
     needs: [prepare, build-windows, build-linux]
     if: >-
       always() && !cancelled() && needs.prepare.result == 'success' &&
@@ -294,6 +293,17 @@ jobs:
         with:
           name: release-linux
           path: assets
+      - name: Flatten release assets and record SHA-256 checksums
+        run: |
+          mkdir release-assets
+          while IFS= read -r -d '' source; do
+            name="${source##*/}"
+            if [[ -e "release-assets/$name" ]]; then
+              echo "Duplicate release asset: $name" >&2; exit 1
+            fi
+            cp "$source" "release-assets/$name"
+          done < <(find assets -type f -print0)
+          (cd release-assets && sha256sum * > SHA256SUMS)
       - name: Publish Windows and Linux in the same release
         uses: ncipollo/release-action@v1
         with:
@@ -307,7 +317,7 @@ jobs:
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           omitDraftDuringUpdate: true
-          artifacts: assets/**/*
+          artifacts: release-assets/*
           artifactErrorsFailBuild: true
           body: |
             mpv-AnimeJaNai HDR ${{ env.VERSION }} - Windows and Linux in one release.

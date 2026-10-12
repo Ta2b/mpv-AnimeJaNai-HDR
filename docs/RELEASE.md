@@ -119,3 +119,9 @@ sources, scripts et modèles. Les contrôles de fidélité tournent aussi sur un
 bundle restauré. Le build Linux réutilise le bundle Vulkan validé dans le même
 workflow, puis construit les paquets. Cela évite de recompiler les dépendances
 identiques à chaque ajustement documentaire ou relance de publication.
+
+La sérialisation s’applique au job de publication, pour laisser les builds
+indépendants progresser. Les contrôles devenus obsolètes sont annulés lors d’un
+nouveau push ; un envoi d’assets déjà commencé se termine. Les fichiers de CI
+sont aplatis avant l’envoi à GitHub et une liste SHA256SUMS accompagne la release.
+Cette étape évite de traiter les sous-dossiers d’artefacts comme des fichiers.
