@@ -45,12 +45,14 @@ jobs:
   platform-checks:
     uses: ./.github/workflows/linux-port.yml
 
+  # The builds start at once, in parallel with the tests; only `publish` waits for the tests.
   build-windows:
-    needs: [prepare, hdr-tests, platform-checks]
+    needs: [prepare]
     if: needs.prepare.outputs.platform != 'linux'
     timeout-minutes: 120
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
+      ANIMEJANAI_DOWNLOAD_CACHE: ${{ github.workspace }}/download-cache
     runs-on: windows-latest
 
     steps:
@@ -68,10 +70,26 @@ jobs:
     - name: Build shared platform helper (Windows)
       run: dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/platform-win-x64
 
+    - name: Restore versioned component downloads
+      id: download-cache
+      uses: actions/cache/restore@v4
+      with:
+        path: download-cache
+        key: windows-downloads-v1-${{ hashFiles('BuildMpvUpscale2xAnimeJaNai/Program.cs', 'BuildMpvUpscale2xAnimeJaNai/Downloader.cs', 'manager-source-ref.txt') }}
+        restore-keys: |
+          windows-downloads-v1-
+
     - name: Run the console app
       # --packs also emits component-*.7z + packs.json (publish/packs-v<ver>/) for the
       # AnimeJaNai Manager (updater --components/--install/--remove/--auto).
       run: ./publish/BuildMpvUpscale2xAnimeJaNai.exe ${{ env.VERSION }} --packs
+
+    - name: Save versioned component downloads before packaging
+      if: steps.download-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: download-cache
+        key: ${{ steps.download-cache.outputs.cache-primary-key }}
 
     - name: Build updater and add it to the package
       shell: pwsh
@@ -79,16 +97,14 @@ jobs:
         dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release -o updater-publish
         Copy-Item updater-publish/AnimeJaNaiUpdater.exe "publish/mpv-upscale-2x_animejanai-v${{ env.VERSION }}/AnimeJaNaiUpdater.exe" -Force
 
-    - name: Install 7zip
-      run: choco install 7zip -y
-
     # Setup installer (per-user, GPU-aware component picker), wrapping the same
     # slim core tree. The component packs install on demand post-install via the
     # updater, so the installer stays small.
     - name: Build setup installer
       shell: pwsh
       run: |
-        choco install innosetup -y
+        # Already on the hosted image most of the time; install only when missing.
+        if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y }
         $ver = "${{ env.VERSION }}"
         & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" `
           "/DAppVersion=$ver" `
@@ -99,7 +115,7 @@ jobs:
     # The "full package" is the slim core: hardware-specific components ship
     # as the component-*.7z assets and install on demand via the Manager.
     - name: Create 7zip archive of the artifact (full package)
-      run: 7z a -t7z -mx=9 -v1900m mpv-upscale-2x_animejanai-full-package-${{ env.VERSION }}.7z ./publish/mpv-upscale-2x_animejanai-v${{ env.VERSION }}
+      run: 7z a -t7z -mx=5 -mmt=on -v1900m mpv-upscale-2x_animejanai-full-package-${{ env.VERSION }}.7z ./publish/mpv-upscale-2x_animejanai-v${{ env.VERSION }}
 
     - name: Create overlay archive and stage manifest
       shell: pwsh
@@ -113,7 +129,7 @@ jobs:
         $paths = (Get-Content "$pkg/manifest.json" -Raw | ConvertFrom-Json).overlay_paths
         $out = Join-Path (Get-Location) "mpv-upscale-2x_animejanai-overlay-$ver.7z"
         Push-Location $pkg
-        & 7z a -t7z -mx=9 $out @paths
+        & 7z a -t7z -mx=5 -mmt=on $out @paths
         Pop-Location
 
     - name: Upload Windows release assets
@@ -122,6 +138,7 @@ jobs:
         name: release-windows
         if-no-files-found: error
         retention-days: 7
+        compression-level: 0  # the assets are already compressed archives
         path: |
           mpv-AnimeJaNai-HDR-Setup-*.exe
           mpv-upscale-2x_animejanai-full-package-*.7z.*
@@ -131,7 +148,8 @@ jobs:
           publish/packs-v*/packs.json
 
   build-linux:
-    needs: [prepare, hdr-tests, platform-checks]
+    # platform-checks provides the validated Vulkan backend artifact reused below.
+    needs: [prepare, platform-checks]
     if: needs.prepare.outputs.platform != 'windows'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -150,9 +168,9 @@ jobs:
         dotnet-version: '10.x'
 
     - name: Free space for native builds, component packs and AppImage
+      # In the background: the space is only needed by the assembler, minutes later.
       run: |
-        sudo rm -rf /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-        df -h "$GITHUB_WORKSPACE"
+        nohup sudo rm -rf /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL > /dev/null 2>&1 &
 
     - name: Install portable packaging tools
       run: sudo apt-get update && sudo apt-get install -y zstd jq patchelf libfuse2t64
@@ -298,7 +316,7 @@ jobs:
         pkg="publish/mpv-upscale-2x_animejanai-v$VER"
         cp "$pkg/manifest.json" "manifest-linux-x64.json"
         mapfile -t paths < <(jq -r '.overlay_paths[]' "$pkg/manifest.json")
-        ( cd "$pkg" && "$GITHUB_WORKSPACE/$pkg/7zz" a -t7z -mx=9 \
+        ( cd "$pkg" && "$GITHUB_WORKSPACE/$pkg/7zz" a -t7z -mx=5 -mmt=on \
             "$GITHUB_WORKSPACE/mpv-upscale-2x_animejanai-overlay-$VER-linux-x64.7z" "${paths[@]}" )
 
     - name: Upload Linux test packages
@@ -307,6 +325,7 @@ jobs:
         name: release-linux
         if-no-files-found: error
         retention-days: 14
+        compression-level: 0  # the assets are already compressed archives
         path: |
           *-linux-x64.tar.zst
           *.AppImage
@@ -321,9 +340,10 @@ jobs:
     concurrency:
       group: release-publication
       cancel-in-progress: false
-    needs: [prepare, build-windows, build-linux]
+    needs: [prepare, hdr-tests, platform-checks, build-windows, build-linux]
     if: >-
       always() && !cancelled() && needs.prepare.result == 'success' &&
+      needs.hdr-tests.result == 'success' && needs.platform-checks.result == 'success' &&
       (needs.build-windows.result == 'success' || needs.build-windows.result == 'skipped') &&
       (needs.build-linux.result == 'success' || needs.build-linux.result == 'skipped') &&
       (needs.build-windows.result == 'success' || needs.build-linux.result == 'success')

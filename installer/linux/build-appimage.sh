@@ -37,16 +37,13 @@ mkdir -p "$APPDIR/usr/lib" "$APPDIR/usr/bin"
 cp -a "$TREE/." "$APPDIR/"
 install -m755 "$HERE/AppRun" "$APPDIR/AppRun"
 
-# icon: reuse one from the tree if present, else generate a placeholder
+# icon: one from the tree if present, else the committed installer/linux/animejanai.png
+# (256x256). linuxdeploy rejects an invalid or oddly sized PNG, so nothing is generated here.
 icon="$APPDIR/mpv-animejanai.png"
 if   [ -f "$TREE/portable_config/animejanai.png" ]; then cp "$TREE/portable_config/animejanai.png" "$icon"
 elif [ -f "$HERE/animejanai.png" ]; then cp "$HERE/animejanai.png" "$icon"
-elif command -v convert >/dev/null 2>&1; then
-    # plain solid square — no text, so it needs no font (containers often lack one)
-    convert -size 256x256 xc:'#1b1033' "$icon"
 else
-    # 1x1 transparent PNG fallback (appimagetool just needs a valid icon file)
-    printf '\211PNG\r\n\032\n\0\0\0\rIHDR\0\0\0\1\0\0\0\1\10\6\0\0\0\37\25\304\211\0\0\0\rIDATx\234c\374\17\0\0\1\1\0\5\030\335\215\260\0\0\0\0IEND\256B`\202' > "$icon"
+    echo "icon not found: $HERE/animejanai.png" >&2; exit 1
 fi
 
 cat > "$APPDIR/mpv-animejanai.desktop" <<EOF
