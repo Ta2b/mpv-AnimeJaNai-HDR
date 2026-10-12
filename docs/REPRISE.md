@@ -32,6 +32,13 @@ antérieur ; elles sont conservées pour l'historique.
 - **Corrigé après la release (sur `hdr-3.8`, pour la version suivante)** : le profil 9, profil
   de démarrage des installations neuves, n'était pas sélectionnable au clavier sous Windows
   (`animejanai-select` refusait les numéros au-delà de 4 et `Ctrl+9` était sur `ignore`).
+- **Reprise des composants inchangés (écrite, compilée, pas encore exercée).** Deploy récupère
+  l'index des packs de la release précédente ; un pack dont la version de dépendance et la taille
+  extraite n'ont pas changé n'est ni recompressé ni renvoyé, et son entrée de `packs*.json` porte
+  une `url` vers la release qui le contient. L'Updater suit cette `url`. Détail et précautions
+  dans `RELEASE.md`. **La prochaine release est son premier essai réel** : vérifier le journal
+  de l'assembleur, les `url` de l'index, et l'installation d'un composant sur une installation
+  neuve. En cas de doute, relancer Deploy avec `rebuild_packs`.
 - **Mode Vulkan Windows : il existe déjà.** Depuis la 3.8.0.5, `render_api=vulkan` fait
   tourner RTX VSR et TrueHDR dans le moteur TensorRT (`aji_trt_rtx.dll`, compilé localement,
   voir `PARTAGE.md`). La phrase « le moteur Vulkan Windows est reporté » plus bas vise

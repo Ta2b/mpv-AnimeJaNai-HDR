@@ -14,6 +14,10 @@ on:
         type: choice
         options: [both, windows, linux]
         default: both
+      rebuild_packs:
+        description: 'Rebuild and upload every component pack, even unchanged ones'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -78,6 +82,26 @@ jobs:
         key: windows-downloads-v1-${{ hashFiles('BuildMpvUpscale2xAnimeJaNai/Program.cs', 'BuildMpvUpscale2xAnimeJaNai/Downloader.cs', 'manager-source-ref.txt') }}
         restore-keys: |
           windows-downloads-v1-
+
+    - name: Fetch the previous release's pack index
+      # Unchanged component packs (several GB) are then neither rebuilt nor uploaded again.
+      # Skipped when this version is already published, or with rebuild_packs.
+      if: inputs.rebuild_packs != true
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        THIS_VERSION: ${{ needs.prepare.outputs.version }}
+      run: |
+        previous=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)
+        if [ -z "$previous" ] || [ "$previous" = "$THIS_VERSION" ]; then
+          echo "No earlier release to reuse packs from (latest: ${previous:-none})."; exit 0
+        fi
+        mkdir -p reuse-packs
+        gh release download "$previous" --repo "$GITHUB_REPOSITORY" --dir reuse-packs --clobber \
+          --pattern 'packs*.json' --pattern 'manifest*.json' || { echo "Pack index of $previous not available."; exit 0; }
+        echo "ANIMEJANAI_REUSE_PACKS_DIR=$GITHUB_WORKSPACE/reuse-packs" >> "$GITHUB_ENV"
+        echo "ANIMEJANAI_REUSE_PACKS_URL=https://github.com/$GITHUB_REPOSITORY/releases/download/$previous" >> "$GITHUB_ENV"
+        echo "Reusing unchanged packs from $previous."
 
     - name: Run the console app
       # --packs also emits component-*.7z + packs.json (publish/packs-v<ver>/) for the
@@ -253,6 +277,26 @@ jobs:
         restore-keys: |
           linux-downloads-v1-
 
+    - name: Fetch the previous release's pack index
+      # Unchanged component packs (several GB) are then neither rebuilt nor uploaded again.
+      # Skipped when this version is already published, or with rebuild_packs.
+      if: inputs.rebuild_packs != true
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        THIS_VERSION: ${{ needs.prepare.outputs.version }}
+      run: |
+        previous=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)
+        if [ -z "$previous" ] || [ "$previous" = "$THIS_VERSION" ]; then
+          echo "No earlier release to reuse packs from (latest: ${previous:-none})."; exit 0
+        fi
+        mkdir -p reuse-packs
+        gh release download "$previous" --repo "$GITHUB_REPOSITORY" --dir reuse-packs --clobber \
+          --pattern 'packs*.json' --pattern 'manifest*.json' || { echo "Pack index of $previous not available."; exit 0; }
+        echo "ANIMEJANAI_REUSE_PACKS_DIR=$GITHUB_WORKSPACE/reuse-packs" >> "$GITHUB_ENV"
+        echo "ANIMEJANAI_REUSE_PACKS_URL=https://github.com/$GITHUB_REPOSITORY/releases/download/$previous" >> "$GITHUB_ENV"
+        echo "Reusing unchanged packs from $previous."
+
     - name: Run assembler (linux-x64, with packs)
       id: assemble
       # Uses the local Wayland bundle and downloads aji from its sibling release
@@ -300,8 +344,18 @@ jobs:
         cp -a "publish/mpv-upscale-2x_animejanai-v$VER/." "$full/"
         cp -f updater-publish/AnimeJaNaiUpdater "$full/AnimeJaNaiUpdater"
         chmod +x "$full/AnimeJaNaiUpdater"
+        # The AppImage embeds the TensorRT runtime pack. When that pack was reused from an
+        # earlier release it is not in the packs folder: fetch it from the address in the index,
+        # outside that folder so that it is not uploaded again.
+        runtime_pack="publish/packs-v$VER/component-trt-runtime-linux-x64.7z"
+        if [ ! -f "$runtime_pack" ]; then
+          url=$(jq -r '.packs[] | select(.name == "trt-runtime") | .url // empty' "publish/packs-v$VER/packs-linux-x64.json")
+          [ -n "$url" ] || { echo "::error::trt-runtime pack was neither built nor reusable"; exit 1; }
+          runtime_pack="$RUNNER_TEMP/component-trt-runtime-linux-x64.7z"
+          curl -fsSL --retry 3 "$url" -o "$runtime_pack"
+        fi
         "$GITHUB_WORKSPACE/publish/mpv-upscale-2x_animejanai-v$VER/7zz" \
-          x -snl -y -o"$full" "publish/packs-v$VER/component-trt-runtime-linux-x64.7z"
+          x -snl -y -o"$full" "$runtime_pack"
         if ! installer/linux/build-appimage.sh "$full" "$VER" . > appimage-build.log 2>&1; then
           tail -n 80 appimage-build.log
           while IFS= read -r line; do printf '::error::%s\n' "$line"; done < <(tail -n 20 appimage-build.log)

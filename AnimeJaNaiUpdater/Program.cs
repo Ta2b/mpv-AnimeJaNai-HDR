@@ -939,7 +939,11 @@ async Task<PackIndex> GetPackIndexAsync()
         packs.Add(new Pack(
             e.GetProperty("name").GetString() ?? "",
             asset,
-            assets.FirstOrDefault(a => a.Name == asset)?.Url,
+            // A pack unchanged since an earlier release is not published again: its index entry
+            // then carries the address of the asset in that earlier release.
+            e.TryGetProperty("url", out var reused) && !string.IsNullOrEmpty(reused.GetString())
+                ? reused.GetString()
+                : assets.FirstOrDefault(a => a.Name == asset)?.Url,
             e.GetProperty("bytes").GetInt64(),
             files,
             e.TryGetProperty("dep", out var d) ? d.GetString() : null,

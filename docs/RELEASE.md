@@ -190,3 +190,28 @@ téléchargement interrompu, exclusion de `latest`, désactivation et nettoyage.
 Le contrôle est ajouté à la matrice CI Windows/Linux. Cet ajout vise les
 prochains builds ; la relance de release déjà en cours n’est pas interrompue.
 Les sorties `bin/` et `obj/` des projets de test sont exclues du suivi Git.
+
+## Component packs reused across releases
+
+The component packs (TensorRT runtime, per-GPU builder resources, RIFE models) are about 5 GB
+per release and change only with the `TrtVersion` / `RifeModelsVersion` pins. Deploy therefore
+downloads the previous release's `packs*.json` and `manifest*.json` before assembling
+(`ANIMEJANAI_REUSE_PACKS_DIR`, `ANIMEJANAI_REUSE_PACKS_URL`). In `EmitComponentPacks`, a pack is
+**not archived and not uploaded** when all of these hold: same asset name, same dep version in
+the previous and the new manifest, same extracted size (`installed_bytes`). Its entry in the new
+index then carries a `url` to the asset in the earlier release; the Updater downloads from that
+`url` when present, otherwise from the asset of the installed release as before. A reused entry
+keeps its `url` in later releases, so the chain always points at the release that really holds
+the file.
+
+- Do not delete an old release whose packs are still referenced by a newer `packs*.json`.
+- To publish every pack again (after deleting old releases, or in doubt), run Deploy manually
+  with `rebuild_packs`.
+- The AppImage step needs the Linux `trt-runtime` pack; when it was reused, the workflow fetches
+  it from the `url` in the index.
+- Re-running Deploy for a version that is already the latest release does not reuse anything.
+
+**Status: written on 12 October 2026, compiled, not yet exercised by a release.** The first
+Deploy after 3.8.0.9 is its test: check in the assembler log which packs were reused, that the
+release has `packs.json` entries with `url`, and that the Manager can still install a
+component on a fresh install.

@@ -1304,6 +1304,14 @@ async Task<List<string>> EmitComponentPacks()
         }
     }
 
+    // Unchanged packs are not rebuilt. With ANIMEJANAI_REUSE_PACKS_DIR (the previous release's
+    // packs index and manifest) a pack whose dep version and extracted size are both unchanged is
+    // not archived again: its index entry carries a `url` to the asset already published, and
+    // the release does not upload it. These packs are several GB and change only with the
+    // TensorRT / RIFE pins.
+    var reusable = LoadReusablePacks();
+    var currentDeps = ReadManifestDeps(Path.Combine(installDirectory, "manifest.json"));
+
     var index = new List<object>();
     var packedFiles = new List<string>();
     foreach (var (name, dep, files) in packs)
@@ -1317,6 +1325,29 @@ async Task<List<string>> EmitComponentPacks()
         }
         var archive = Path.Combine(packsDir, $"component-{name}{plat.PackSuffix}.7z");
         File.Delete(archive);
+        if (reusable.TryGetValue(name, out var previous) &&
+            previous.Asset == Path.GetFileName(archive) &&
+            currentDeps.TryGetValue(dep, out var depVersion) && previous.DepVersion == depVersion)
+        {
+            var (reusedFiles, reusedBytes) = ExpandPackFiles(files);
+            if (reusedBytes > 0 && reusedBytes == previous.InstalledBytes)
+            {
+                index.Add(new
+                {
+                    name,
+                    dep,
+                    asset = previous.Asset,
+                    bytes = previous.Bytes,
+                    installed_bytes = reusedBytes,
+                    files = reusedFiles,
+                    url = previous.Url,
+                });
+                packedFiles.AddRange(reusedFiles);
+                Console.WriteLine($"  component-{name}: unchanged ({dep} {depVersion}), reusing {previous.Url}");
+                continue;
+            }
+            Console.WriteLine($"  component-{name}: same {dep} but {reusedBytes} bytes instead of {previous.InstalledBytes}; rebuilt");
+        }
         // -spf2: store the relative paths as given (rooted at install dir)
         var fileArgs = string.Join(' ', files.Select(f => $"\"{f}\""));
         var psi = new ProcessStartInfo
@@ -1336,25 +1367,12 @@ async Task<List<string>> EmitComponentPacks()
         {
             throw new InvalidOperationException($"{plat.ArchiveTool} failed for pack {name}");
         }
-        // expand directories to the concrete file list for clean uninstall
-        var allFiles = files.SelectMany(f =>
-        {
-            var abs = Path.Combine(installDirectory, f);
-            return Directory.Exists(abs)
-                ? Directory.GetFiles(abs, "*", SearchOption.AllDirectories)
-                    .Select(x => Path.GetRelativePath(installDirectory, x))
-                : new[] { f };
-        }).Select(f => f.Replace('\\', '/')).ToArray();
         // installed_bytes: what this pack occupies once extracted. The updater compares it against
         // the files actually on disk to decide whether an install is genuinely current, instead of
         // trusting components.json alone - a record can claim a component is up to date while the
         // previous release's files are still there (that is how a TensorRT 11.0 runtime survived an
         // upgrade to a package built for 11.1). Measured before SlimInstallTree removes them.
-        long installedBytes = allFiles.Sum(f =>
-        {
-            var fi = new FileInfo(Path.Combine(installDirectory, f));
-            return fi.Exists ? fi.Length : 0L;
-        });
+        var (allFiles, installedBytes) = ExpandPackFiles(files);
         index.Add(new
         {
             name,
@@ -1372,6 +1390,86 @@ async Task<List<string>> EmitComponentPacks()
             new JsonSerializerOptions { WriteIndented = true }));
     Console.WriteLine($"Packs written to {packsDir}");
     return packedFiles;
+}
+
+// A pack's concrete file list (directories expanded, for clean uninstall) and its extracted size.
+(string[] Files, long Bytes) ExpandPackFiles(string[] files)
+{
+    var all = files.SelectMany(f =>
+    {
+        var abs = Path.Combine(installDirectory, f);
+        return Directory.Exists(abs)
+            ? Directory.GetFiles(abs, "*", SearchOption.AllDirectories)
+                .Select(x => Path.GetRelativePath(installDirectory, x))
+            : new[] { f };
+    }).Select(f => f.Replace('\\', '/')).ToArray();
+    long bytes = all.Sum(f =>
+    {
+        var fi = new FileInfo(Path.Combine(installDirectory, f));
+        return fi.Exists ? fi.Length : 0L;
+    });
+    return (all, bytes);
+}
+
+Dictionary<string, string> ReadManifestDeps(string manifestPath)
+{
+    var deps = new Dictionary<string, string>();
+    if (!File.Exists(manifestPath)) return deps;
+    using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
+    if (doc.RootElement.TryGetProperty("deps", out var node) && node.ValueKind == JsonValueKind.Object)
+    {
+        foreach (var p in node.EnumerateObject())
+        {
+            if (p.Value.ValueKind == JsonValueKind.String) deps[p.Name] = p.Value.GetString() ?? "";
+        }
+    }
+    return deps;
+}
+
+// Packs of the previous release that this one may point to instead of rebuilding them.
+// ANIMEJANAI_REUSE_PACKS_DIR holds that release's packs index and manifest for this platform;
+// ANIMEJANAI_REUSE_PACKS_URL is its download base, used for entries that carry no `url` yet.
+// Any problem reading them simply disables the reuse: every pack is then built as before.
+Dictionary<string, (string Asset, string Url, long Bytes, long InstalledBytes, string DepVersion)> LoadReusablePacks()
+{
+    var result = new Dictionary<string, (string, string, long, long, string)>();
+    string? dir = Environment.GetEnvironmentVariable("ANIMEJANAI_REUSE_PACKS_DIR");
+    string baseUrl = (Environment.GetEnvironmentVariable("ANIMEJANAI_REUSE_PACKS_URL") ?? "").TrimEnd('/');
+    if (string.IsNullOrEmpty(dir)) return result;
+    try
+    {
+        string packsFile = Path.Combine(dir, $"packs{plat.PackSuffix}.json");
+        string manifestFile = Path.Combine(dir, $"manifest{plat.PackSuffix}.json");
+        if (!File.Exists(packsFile) || !File.Exists(manifestFile))
+        {
+            Console.WriteLine("  no previous pack index for this platform: every pack is built");
+            return result;
+        }
+        var previousDeps = ReadManifestDeps(manifestFile);
+        using var doc = JsonDocument.Parse(File.ReadAllText(packsFile));
+        foreach (var e in doc.RootElement.GetProperty("packs").EnumerateArray())
+        {
+            string name = e.GetProperty("name").GetString() ?? "";
+            string asset = e.GetProperty("asset").GetString() ?? "";
+            string dep = e.TryGetProperty("dep", out var d) ? d.GetString() ?? "" : "";
+            string url = e.TryGetProperty("url", out var u) ? u.GetString() ?? "" : "";
+            if (url == "" && baseUrl != "") url = $"{baseUrl}/{asset}";
+            long installed = e.TryGetProperty("installed_bytes", out var ib) ? ib.GetInt64() : 0;
+            if (name == "" || asset == "" || url == "" || installed <= 0 ||
+                !previousDeps.TryGetValue(dep, out var depVersion) || depVersion == "")
+            {
+                continue;
+            }
+            result[name] = (asset, url, e.GetProperty("bytes").GetInt64(), installed, depVersion);
+        }
+        Console.WriteLine($"  {result.Count} pack(s) of the previous release can be reused if unchanged");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"  previous pack index unreadable ({ex.Message}): every pack is built");
+        result.Clear();
+    }
+    return result;
 }
 
 if (packsOnlyIndex >= 0)
