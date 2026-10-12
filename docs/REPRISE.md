@@ -1,5 +1,42 @@
 # Reprise du travail — 12 octobre 2026
 
+## Mise à jour du 12 octobre, 20 h (heure de Paris) : 3.8.0.9 publiée
+
+**La release 3.8.0.9 est publiée avec Windows et Linux**
+([Deploy 38285035504](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38285035504), commit `8fbdc88`).
+Les 31 assets attendus sont présents : Setup et archive Windows, portable `tar.zst` et AppImage
+Linux, deux overlays, `manifest.json` / `manifest-linux-x64.json`, `packs.json` /
+`packs-linux-x64.json`, les composants des deux plateformes et `SHA256SUMS`. Les sections
+« Objectif restant », « Builds à suivre » et « Actions de reprise » ci-dessous décrivent l'état
+antérieur ; elles sont conservées pour l'historique.
+
+- **Cause de l'échec AppImage.** L'image Ubuntu 24.04 hébergée n'a pas ImageMagick :
+  `build-appimage.sh` retombait sur un PNG écrit à la main dont le flux zlib est invalide, et
+  linuxdeploy le rejetait (« IDAT: incorrect data check »). Une vraie icône 256x256 est
+  maintenant suivie (`installer/linux/animejanai.png`) et le script échoue clairement si elle
+  manque. La correction précédente du chemin de `7zz` était juste mais ne traitait pas ce point.
+- **Durée du Deploy.** Les builds démarrent en parallèle des tests (seule la publication les
+  attend), Windows réutilise le cache de téléchargements, les archives passent au niveau 5 sur
+  tous les cœurs, les artefacts sont envoyés sans recompression, Inno Setup n'est installé que
+  s'il manque. Build Windows : 14,9 min → 10,9 min, caches encore vides. Durée totale de ce
+  run : 19 min, dont assembleur Linux 8,6 min (cache vide) et publication 4,5 min.
+  Ce qui reste coûteux : l'assembleur retélécharge et recompresse environ 5 Go de composants
+  TensorRT et RIFE à chaque version, et la publication les renvoie, alors qu'ils ne changent
+  qu'avec les versions fixées dans `Program.cs`.
+- **Vérifié sous Windows** (RTX 4070 Ti, installation réelle avec des réglages antérieurs) :
+  l'overlay 3.8.0.9 conserve le pic 1000 nits, OLED, Display P3, le profil par défaut 4 et la
+  banque (empreinte inchangée) ; `AnimeJaNaiPlatform.exe --activate-bank` n'est appelé qu'au
+  premier démarrage ; lecture correcte en Direct3D 11 et en Vulkan ; le Manager HDR démarre et
+  ne modifie pas le fichier de réglages à l'ouverture. Non vérifié : l'interface du Manager
+  elle-même (aucun clic), et toute la partie Linux, qui ne peut pas tourner sur ce poste.
+- **Corrigé après la release (sur `hdr-3.8`, pour la version suivante)** : le profil 9, profil
+  de démarrage des installations neuves, n'était pas sélectionnable au clavier sous Windows
+  (`animejanai-select` refusait les numéros au-delà de 4 et `Ctrl+9` était sur `ignore`).
+- **Mode Vulkan Windows : il existe déjà.** Depuis la 3.8.0.5, `render_api=vulkan` fait
+  tourner RTX VSR et TrueHDR dans le moteur TensorRT (`aji_trt_rtx.dll`, compilé localement,
+  voir `PARTAGE.md`). La phrase « le moteur Vulkan Windows est reporté » plus bas vise
+  uniquement un portage du backend NCNN/Vulkan de Linux vers Windows.
+
 État vérifié à **17 h 38, heure de Paris (15 h 38 UTC)**. Les builds ci-dessous
 peuvent terminer après cet instant : consulter leurs résultats avant toute relance.
 Le travail s’arrête ici à la demande de l’utilisateur pour préserver son quota.
@@ -94,8 +131,9 @@ Linux demeure expérimental dans les notes de la release commune.
 Les choix utilisateur sont acquis : Performance sans RIFE au premier démarrage,
 conversion SDR→HDR quand la sortie HDR est disponible, grading Natural actif
 en HDR, luminosité/gamut automatiques, OLED désactivé, section écran commune.
-Préserver les réglages existants. Le moteur Vulkan Windows est **reporté à plus
-tard** ; ne pas l’ajouter ou modifier les choix DirectML maintenant.
+Préserver les réglages existants. Le portage du backend NCNN/Vulkan de Linux vers
+Windows est **reporté à plus tard** ; ne pas l’ajouter ou modifier les choix DirectML maintenant.
+(Le mode `render_api=vulkan` de Windows, avec TensorRT et RTX Video, est distinct et existe déjà.)
 
 ## Actions de reprise
 

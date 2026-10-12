@@ -46,6 +46,24 @@ check('runtime slot switch: no vf rebuild', not rebuilt)
 check('runtime slot switch uses vf-command', table.concat(S.log,'\n'):match('vf%-command aji slot')~=nil)
 S.hook('on_load')
 check('preload: next file keeps the selected slot', S.props.vf[1].params.slot=='2', S.props.vf[1].params.slot)
+-- Profile 9 is the start-up profile of new installs: it must stay reachable from the keyboard
+f0=io.open(bank,'w'); f0:write('[global]
+backend=TensorRT
+default_slot=9
+[slot_4]
+profile_name=2K Performance
+[slot_5]
+profile_name=New Profile
+[slot_9]
+profile_name=Performance
+'); f0:close()
+S.msg('animejanai-select','4'); S.tick(2)
+S.msg('animejanai-select','9'); S.tick(2)
+check('profile 9 selectable', mp.get_property_native('user-data/animejanai-active-slot')==9, mp.get_property_native('user-data/animejanai-active-slot'))
+S.msg('animejanai-select','5'); S.tick(2)
+check('empty profile 5 refused', (S.osd[#S.osd] or ''):match('vide')~=nil and mp.get_property_native('user-data/animejanai-active-slot')==9, S.osd[#S.osd])
+S.msg('animejanai-select','10'); S.tick(2)
+check('profile numbers above 9 ignored', mp.get_property_native('user-data/animejanai-active-slot')==9)
 -- RIFE matched to the display
 local c=io.open(conf,'w'); c:write((saved:gsub('rife_display_sync=%w+','')..'\nrife_display_sync=yes\nrife_max_factor=3\n')); c:close()
 local rb='[global]\nbackend=TensorRT\ndefault_slot=3\n[slot_3]\nprofile_name=2K\nchain_1_rife=yes\nchain_1_rife_factor_numerator=2\nchain_1_rife_factor_denominator=1\n'

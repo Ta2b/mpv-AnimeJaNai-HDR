@@ -125,7 +125,7 @@ mp.register_script_message('animejanai-reload-options',function() options=policy
 -- which already handles recovery and chooses the correct inference bank.
 mp.register_script_message('animejanai-select',function(value)
     local slot=tonumber(value)
-    if not slot or slot~=math.floor(slot) or slot<0 or slot>4 then return end
+    if not slot or slot~=math.floor(slot) or slot<0 or slot>9 then return end
     local bank=policy.read_bank(hw.conf)
     local profile=bank and bank.slots[slot]
     -- A readable bank without this slot (or an untouched "New Profile"): nothing to select.
