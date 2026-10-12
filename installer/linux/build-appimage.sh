@@ -64,18 +64,17 @@ EOF
 # non-excluded libs into usr/lib. The bundled libmpv/libplacebo/ffmpeg already
 # sit in mpv/ (on AppRun's LD_LIBRARY_PATH), so this mainly captures the smaller
 # system deps (libass, freetype, fribidi, harfbuzz, lcms2, …).
-# The Vulkan loader and the session libraries (glib, dbus, systemd, pulse) must come from the
-# host: Ubuntu's copies next to another distribution's Mesa and PipeWire can crash at startup.
+# The Vulkan loader must come from the host. A bundled copy ends up next to the host's own
+# loader when the NCNN engine opens libvulkan.so (present with the Vulkan development
+# package): two loaders in one process mix their symbols and the engine calls a null
+# function pointer (segfault seen on Fedora, release 3.8.0.10).
 LD_LIBRARY_PATH="$APPDIR/mpv:${LD_LIBRARY_PATH:-}" "$LD" --appdir "$APPDIR" \
     --executable "$APPDIR/mpv/mpv" \
     --library "$APPDIR/mpv/libmpv.so.2" \
     --exclude-library='libwayland*' --exclude-library='libxkbcommon*' \
     --exclude-library='libexpat*' --exclude-library='libffi*' \
     --exclude-library='libX11*' --exclude-library='libxcb*' \
-    --exclude-library='libvulkan*' --exclude-library='libglib-2.0*' \
-    --exclude-library='libdbus-1*' --exclude-library='libsystemd*' \
-    --exclude-library='libcap.so*' --exclude-library='libgcrypt*' \
-    --exclude-library='libapparmor*' --exclude-library='libpulse*' \
+    --exclude-library='libvulkan*' \
     --desktop-file "$APPDIR/mpv-animejanai.desktop" \
     --icon-file "$icon"
 
