@@ -175,10 +175,9 @@ std::string wanted_provider(const AjiConf &conf)
 Ort::SessionOptions session_options(Context &c)
 {
     Ort::SessionOptions options;
-    // OpenVINO optimises the graph itself: ONNX Runtime's own rewriting is off for it, as Intel
-    // recommends. AJI_ORT_OPT=0..3 (none, basic, extended, all) overrides the level for trials.
-    GraphOptimizationLevel level = c.provider == "openvino" ? GraphOptimizationLevel::ORT_DISABLE_ALL
-                                                            : GraphOptimizationLevel::ORT_ENABLE_ALL;
+    // ONNX Runtime's optimisation must stay on: it folds the shape arithmetic of the models once
+    // the input size is fixed. AJI_ORT_OPT=0..3 (none, basic, extended, all) is for trials.
+    GraphOptimizationLevel level = GraphOptimizationLevel::ORT_ENABLE_ALL;
     if (const char *forced = std::getenv("AJI_ORT_OPT"); forced && *forced) {
         const int n = std::atoi(forced);
         level = n <= 0 ? GraphOptimizationLevel::ORT_DISABLE_ALL : n == 1 ? GraphOptimizationLevel::ORT_ENABLE_BASIC
@@ -218,9 +217,13 @@ Ort::SessionOptions session_options(Context &c)
     return options;
 }
 
-void load_steps(Context &c)
+// width x height: the source frame. Every model gets its exact input size: the OpenVINO provider
+// rejects the dynamic-shape graph ("the graph is not acyclic"), and a static shape lets every
+// provider compile once.
+void load_steps(Context &c, int width, int height)
 {
     c.steps.clear();
+    int w = width, h = height;
     for (const auto &model : c.chain.models) {
         if (model.name.empty()) continue;
         require(model.frames <= 1, "Temporal AnimeJaNai models are not supported by the ONNX Runtime engine");
@@ -229,6 +232,10 @@ void load_steps(Context &c)
         Step step;
         step.conf = model;
         Ort::SessionOptions options = session_options(c);
+        resized_dims(w, h, model, &w, &h);
+        options.AddFreeDimensionOverrideByName("height", h);
+        options.AddFreeDimensionOverrideByName("width", w);
+        w *= 2; h *= 2; // the supported AnimeJaNai spatial models are 2x
         step.session = std::make_unique<Ort::Session>(c.env, path.c_str(), options);
         Ort::AllocatorWithDefaultOptions allocator;
         require(step.session->GetInputCount() == 1 && step.session->GetOutputCount() >= 1,
@@ -318,7 +325,7 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
             }
         }
         if (!matched) { *plan = c.plan; return 0; }
-        load_steps(c);
+        load_steps(c, width, height);
         require(!c.steps.empty(), "The ONNX Runtime engine needs at least one upscale model in the profile");
         int w = width, h = height;
         for (auto &step : c.steps) {

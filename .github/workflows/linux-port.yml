@@ -156,12 +156,6 @@ jobs:
         # No Intel GPU on the runner: this proves that the provider and the OpenVINO runtime load
         # and run the model. The GPU device needs the host's Intel OpenCL driver.
         run: |
-          # Informative: which graph optimisation levels and options the provider accepts.
-          for trial in "AJI_ORT_OPT=0" "AJI_ORT_OPT=1" "AJI_ORT_OPT=3" "AJI_ORT_OPT=0 AJI_ORT_OPENVINO=disable_dynamic_shapes=True" "AJI_ORT_OPT=0 AJI_ORT_OPENVINO=precision=ACCURACY"; do
-            echo "== trial: $trial"
-            env $trial AJI_ORT_PROVIDER=openvino ort-build/animejanai-ort-test ort-ci.conf BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx 1 320 180 3 CPU 2>&1 | grep -v 'device_discovery' | tail -4 || true
-          done
-          echo "== default"
           AJI_ORT_PROVIDER=openvino ort-build/animejanai-ort-test ort-ci.conf BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx 1 320 180 3 CPU | tee ort-openvino.log
           grep -q 'plan: 640x360 active=1' ort-openvino.log
           grep -q 'Backend: ONNX Runtime/OpenVINO' ort-stats.txt
