@@ -383,10 +383,31 @@ du chemin TensorRT (entrée à 11 canaux, grilles et remplissage au multiple de 
 `aji_infer_rife` dans `animejanai-inference/src/aji_trt.cpp`). À faire une fois le moteur validé sur
 matériel réel, sinon le travail porterait sur un moteur dont la vitesse n'est pas connue.
 
-**TrueHDR sous Linux avec TensorRT : pas possible avec le SDK disponible.** TensorRT est bien intégré
-sous Linux (banque `linux-nvidia`, `libaji_trt.so`). Mais l'étape RTX Video (`aji_rtx`) n'existe que
-sous Windows : le SDK RTX Video 1.1.0 ne contient que `lib/Windows` et `bin/Windows`
-(`nvsdk_ngx_s.lib`, `nvngx_truehdr.dll`, `nvngx_vsr.dll`), et son README ne décrit que Windows. L'API
-NGX existe pour Linux dans d'autres SDK de NVIDIA, mais elle ne sert à rien sans le fichier du modèle
-TrueHDR pour Linux, que NVIDIA ne fournit pas dans ce SDK. Sous Linux, la conversion SDR vers HDR passe
-donc par mpv, avec la courbe mesurée sur TrueHDR (`mpv_truehdr_look`), qui suit les mêmes réglages.
+**TrueHDR sous Linux : possible par le SDK NVIDIA Maxine Video Effects (constat du 12 octobre 2026, non intégré).**
+Le SDK RTX Video 1.1.0 reste limité à Windows, mais NVIDIA distribue le même filtre TrueHDR pour Linux
+dans un autre SDK, Maxine Video Effects (exemple `apps/TrueHDREffectApp` du dépôt
+`NVIDIA-Maxine/VFX-SDK-Samples`, documentation `docs.nvidia.com/maxine/vfx/latest/Filters/TrueHDR.html`).
+
+- **Interface.** `NvVFX_CreateEffect(NVVFX_FX_TRUE_HDR)`, entrée tampon GPU RGBA 8 bits entrelacé, sortie
+  tampon GPU `NVCV_RGB10A2` (PQ, BT.2020), flux CUDA fourni par l'appelant (`NvVFX_SetCudaStream`), même
+  taille en sortie. Réglages `NVVFXTRUEHDR_CONTRAST` 0-200, `_SATURATION` 0-200, `_MIDDLE_GRAY` 10-100,
+  `_LUMINANCE` 400-2000 nits, `_DEBANDING_OFF`. Ce sont les réglages de `animejanai-rtx.conf`
+  (`rtx_contrast`, `rtx_saturation`, `rtx_middle_gray`, pic de l'écran).
+- **Prérequis.** Pilote NVIDIA 570.26 ou plus récent ; Ubuntu 20.04 à 24.04, Debian 11-12, RHEL ou
+  Rocky 8-9 ; GPU Turing ou plus récent.
+- **Distribution.** Le coeur du SDK (en-têtes `nvVideoEffects.h`, `nvVFXTrueHDR.h`, `libVideoFX.so`) et
+  la fonction `nvVFXTrueHDR` se téléchargent sur NGC avec une clé d'API personnelle
+  (`install_feature.sh --feature nvvfxtruehdr --gpu <modèle>`). Les en-têtes ne sont pas dans le dépôt
+  d'exemples. Le script n'énumère que des GPU de serveur, classés par capacité de calcul CUDA : `t4` 7.5,
+  `a100` 8.0, `a10` 8.6, `l4` 8.9, `b40` 12.0. Une carte grand public prendrait le paquet de même
+  capacité (RTX 40 : `l4`), **ce qui n'a pas été essayé**.
+- **Réserves.** NVIDIA écrit que ce SDK est conçu pour le déploiement sur serveur et qu'il ne prend pas
+  en charge l'intégration dans une application cliente ni le déploiement local : cela peut marcher sans
+  être garanti. La licence du SDK sur NGC n'a pas été lue ; ne pas redistribuer ses fichiers dans une
+  release avant de l'avoir fait. Le dépôt d'exemples, lui, est sous licence MIT.
+- **Ce que demanderait l'intégration.** Une variante Linux de `aji_rtx` (aujourd'hui NGX, Windows) qui
+  appelle `NvVFX` sur le flux CUDA du moteur TensorRT, plus le moteur modifié compilé pour Linux
+  (`libaji_trt.so`, branche locale `rtx-video-cuda`, jamais publiée), le SDK étant installé par
+  l'utilisateur avec sa clé NGC. Le même SDK contient aussi la super-résolution (`nvvfxvideosuperres`).
+  En attendant, la conversion SDR vers HDR sous Linux passe par mpv avec la courbe mesurée sur TrueHDR
+  (`mpv_truehdr_look`), qui suit les mêmes réglages.

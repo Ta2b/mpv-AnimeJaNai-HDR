@@ -53,7 +53,8 @@ antérieur ; elles sont conservées pour l'historique.
   `native/linux-ort`, même interface que le moteur Vulkan ; reconnu par `linux-playback.lua` et
   proposé dans le Manager sous Linux. Validé sur le fournisseur CPU ; **jamais exécuté sur
   MIGraphX ni OpenVINO** (essais prévus par l'utilisateur). Pas de RIFE dans ce moteur.
-  TrueHDR sous Linux : impossible avec le SDK RTX Video disponible (Windows seulement).
+  TrueHDR sous Linux : absent du SDK RTX Video (Windows seulement), mais disponible dans le SDK
+  Maxine Video Effects (pilote 570+, téléchargement NGC) ; étudié, non intégré.
   Mode d'essai et limites dans `LINUX-INFERENCE.md`.
 - **Mode Vulkan Windows : il existe déjà.** Depuis la 3.8.0.5, `render_api=vulkan` fait
   tourner RTX VSR et TrueHDR dans le moteur TensorRT (`aji_trt_rtx.dll`, compilé localement,
