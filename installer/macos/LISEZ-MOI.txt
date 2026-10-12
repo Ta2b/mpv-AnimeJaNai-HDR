@@ -1,7 +1,7 @@
 mpv AnimeJaNai - macOS (puce Apple) - APERÇU
 
-Première version pour Mac. Elle a été compilée et vérifiée automatiquement sans écran ; elle n'a
-encore été ouverte sur aucun vrai Mac. Attendez-vous à des défauts.
+Version pour Mac en cours de mise au point. Elle est compilée et vérifiée automatiquement sans
+écran ; l'affichage, le HDR et l'ouverture depuis le Finder n'ont été essayés que par vous.
 
 Installer
 ---------
@@ -18,27 +18,34 @@ Ctrl+2  Performance, résolution d'origine doublée
 Ctrl+3  Balanced, 1080p ramené à 720p puis doublé
 Ctrl+4  Balanced, résolution d'origine doublée
 Ctrl+0  désactiver
-Ctrl+j  état et temps de calcul par image
+Ctrl+j  état et temps par image : total, modèle (Core ML) et conversions
+Ctrl+g  rendu HDR : personnalisé / naturel / désactivé
+Ctrl+i  état de la sortie HDR
 
 La première image d'un profil est lente : Core ML compile le modèle, puis le garde dans
-~/Library/Caches/AnimeJaNai.
-
-Ce que cette version fait et ne fait pas
-----------------------------------------
-- Agrandissement AnimeJaNai par Core ML (GPU et Neural Engine de la puce Apple).
-- Vidéo HDR : transmise à l'écran par mpv.
-- Pas encore : conversion SDR vers HDR avec le rendu TrueHDR, interpolation RIFE, Manager,
-  mise à jour automatique.
+~/Library/Caches/AnimeJaNai (un dossier par taille d'image).
 
 Réglages
 --------
-Dossier des réglages : ~/Library/Application Support/AnimeJaNai (créé au premier lancement).
-  mpv/script-opts/animejanai_mac.conf
+Dossier : ~/Library/Application Support/AnimeJaNai (créé au premier lancement).
+  portable_config/script-opts/animejanai_mac.conf
       default_slot  profil au démarrage (0 = désactivé)
-      device        ALL, GPU, ANE ou CPU
-  mpv/mpv.conf      réglages de mpv (sortie vidéo, décodage)
-Pour vos propres profils, copier le fichier animejanai.conf de l'application
-(Contents/Resources/animejanai/animejanai.conf) dans ce dossier et le modifier.
+      device        ALL, GPU, ANE (Neural Engine) ou CPU : essayez-les, le plus rapide dépend du Mac
+  portable_config/script-opts/animejanai_hdr_auto.conf
+      linux_hdr_output  auto (défaut : la vidéo SDR reste SDR), pq (conversion SDR vers HDR), sdr
+      rtx_contrast, rtx_saturation, rtx_middle_gray, display_peak, paper_white : rendu HDR,
+      mêmes réglages que sous Windows et Linux
+  portable_config/mpv.conf       réglages de mpv (sortie vidéo, décodage)
+  animejanai/animejanai.conf     profils Ctrl+1 à Ctrl+4
+
+Conversion SDR vers HDR
+-----------------------
+Sur un écran HDR (écran XDR du MacBook Pro, par exemple), mettre linux_hdr_output=pq dans
+animejanai_hdr_auto.conf. Laisser auto sur un écran qui n'est pas HDR.
+
+Ce que cette version ne fait pas encore
+---------------------------------------
+Interpolation RIFE, Manager, mise à jour automatique.
 
 En cas de problème
 ------------------

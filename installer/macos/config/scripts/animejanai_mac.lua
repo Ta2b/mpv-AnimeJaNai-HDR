@@ -1,7 +1,7 @@
 -- AnimeJaNai on macOS (Apple Silicon): upscaling through Core ML, in the ONNX Runtime engine.
 -- The engine and the models are read from the application bundle (ANIMEJANAI_BUNDLE, set by the
--- launcher); caches and the statistics go to ~/Library/Caches/AnimeJaNai. A profile bank placed
--- in ~/Library/Application Support/AnimeJaNai/animejanai.conf replaces the built-in one.
+-- launcher); caches and the statistics go to ~/Library/Caches/AnimeJaNai. The profiles are in
+-- ~/Library/Application Support/AnimeJaNai/animejanai/animejanai.conf (created by the launcher).
 local mp = require 'mp'
 local utils = require 'mp.utils'
 local options = require 'mp.options'
@@ -15,7 +15,7 @@ options.read_options(o, 'animejanai_mac')
 local bundle = os.getenv('ANIMEJANAI_BUNDLE') or ''
 local home = os.getenv('HOME') or ''
 local cache = home .. '/Library/Caches/AnimeJaNai'
-local user_bank = home .. '/Library/Application Support/AnimeJaNai/animejanai.conf'
+local user_bank = home .. '/Library/Application Support/AnimeJaNai/animejanai/animejanai.conf'
 local stats = cache .. '/currentanimejanai.log'
 local engine = bundle .. '/animejanai/inference/libaji_ort.dylib'
 local slot, failed = 0, false

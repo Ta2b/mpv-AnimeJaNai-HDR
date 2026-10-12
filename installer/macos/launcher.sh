@@ -1,16 +1,26 @@
 #!/bin/sh
 # Main executable of "mpv AnimeJaNai.app". mpv does not read settings from its bundle, so the
-# settings live in ~/Library/Application Support/AnimeJaNai/mpv (MPV_HOME), apart from a personal
-# mpv setup. The script is refreshed from the application at every launch; mpv.conf and the
-# options file are only created when missing, so that edits are kept.
+# application keeps a data folder laid out like the Linux one:
+#   ~/Library/Application Support/AnimeJaNai/portable_config   mpv settings (MPV_HOME)
+#   ~/Library/Application Support/AnimeJaNai/animejanai        profiles (animejanai.conf)
+# Scripts, HDR tools and shaders are refreshed from the application at every launch; settings
+# files are only created when missing, so that edits are kept.
 HERE="$(cd "$(dirname "$0")" && pwd)"
 RES="$(cd "$HERE/../Resources" && pwd)"
 DATA="$HOME/Library/Application Support/AnimeJaNai"
-mkdir -p "$DATA/mpv/scripts" "$DATA/mpv/script-opts" "$HOME/Library/Caches/AnimeJaNai"
-[ -f "$DATA/mpv/mpv.conf" ] || cp "$RES/animejanai-config/mpv.conf" "$DATA/mpv/mpv.conf"
-[ -f "$DATA/mpv/script-opts/animejanai_mac.conf" ] || \
-    cp "$RES/animejanai-config/script-opts/animejanai_mac.conf" "$DATA/mpv/script-opts/animejanai_mac.conf"
-cp -f "$RES/animejanai-config/scripts/animejanai_mac.lua" "$DATA/mpv/scripts/animejanai_mac.lua"
-export MPV_HOME="$DATA/mpv"
+CONF="$DATA/portable_config"
+SRC="$RES/animejanai-config"
+mkdir -p "$CONF/script-opts" "$DATA/animejanai" "$HOME/Library/Caches/AnimeJaNai"
+for managed in scripts hdr-tools user-shaders; do
+    rm -rf "$CONF/$managed"
+    cp -R "$SRC/$managed" "$CONF/$managed"
+done
+for file in mpv.conf script-opts/animejanai_mac.conf script-opts/animejanai_hdr_auto.conf; do
+    [ -f "$CONF/$file" ] || cp "$SRC/$file" "$CONF/$file"
+done
+[ -f "$DATA/animejanai/animejanai.conf" ] || cp "$RES/animejanai/animejanai.conf" "$DATA/animejanai/animejanai.conf"
+export MPV_HOME="$CONF"
 export ANIMEJANAI_BUNDLE="$RES"
+export ANIMEJANAI_ROOT="$DATA"
+export ANIMEJANAI_DATA_DIR="$DATA/animejanai"
 exec "$HERE/mpv" "$@"

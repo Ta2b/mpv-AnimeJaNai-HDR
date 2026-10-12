@@ -294,6 +294,12 @@ end
 function M.detect(mp, utils, options)
     local cached = mp.get_property_native('user-data/animejanai-hardware')
     if type(cached) == 'table' and cached.vendor then return cached end
+    if mp.get_property('platform') == 'darwin' then
+        -- macOS: one GPU family, no bank selection; inference is handled by animejanai_mac.lua.
+        local hw = {vendor='apple', name='Apple Silicon', platform='macos', backend='coreml'}
+        mp.set_property_native('user-data/animejanai-hardware', hw)
+        return hw
+    end
     if M.is_linux(mp) then
         local helper = mp.command_native({'expand-path','~~/../AnimeJaNaiPlatform'})
         local root = mp.command_native({'expand-path','~~/..'})
