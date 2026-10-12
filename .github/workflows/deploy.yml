@@ -172,7 +172,11 @@ jobs:
 
     - name: Validate and cache the native player immediately
       run: |
-        LD_LIBRARY_PATH="$GITHUB_WORKSPACE/native-bundle" native-bundle/mpv --version
+        if ! LD_LIBRARY_PATH="$GITHUB_WORKSPACE/native-bundle" native-bundle/mpv --version > native-validation.log 2>&1; then
+          while IFS= read -r line; do printf '::error::%s\n' "$line"; done < native-validation.log
+          exit 1
+        fi
+        cat native-validation.log
         LD_LIBRARY_PATH="$GITHUB_WORKSPACE/native-bundle" native-bundle/mpv --vf=help | grep animejanai-vulkan
 
     - name: Save validated native Wayland player

@@ -65,4 +65,4 @@ contexts="$(LD_LIBRARY_PATH="$OUTPUT:$LD_LIBRARY_PATH" "$OUTPUT/mpv" --no-config
 grep -q waylandvk <<< "$contexts"
 options="$(LD_LIBRARY_PATH="$OUTPUT:$LD_LIBRARY_PATH" "$OUTPUT/mpv" --no-config --list-options)"
 grep -q target-colorspace-hint-strict <<< "$options"
-printf 'mpv=19c0fcf895\naji_abi=9\nvulkan_bridge_abi=1\nlibass=896614fa263f9f64944f7b8650ff6806d5328c4d\nwayland=1.23.1\nprotocols=1.45\nffmpeg=n9.0.2\nlibplacebo=v7.360.1\n' > "$OUTPUT/build-info.txt"
+printf 'mpv=19c0fcf895\naji_abi=9\nvulkan_bridge_abi=1\nwayland_queue_api=unnamed-compatible\nlibass=896614fa263f9f64944f7b8650ff6806d5328c4d\nwayland=1.23.1\nprotocols=1.45\nffmpeg=n9.0.2\nlibplacebo=v7.360.1\n' > "$OUTPUT/build-info.txt"

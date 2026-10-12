@@ -999,7 +999,7 @@ void WriteVersionAndManifest()
             platform_helper = "1",
             manager_hdr = ManagerHdrRelease,
             mpvfork = plat.IsWindows ? $"{MpvForkVersion}-{MpvForkGitHash}"
-                                     : $"{MpvForkLinuxVersion}-wayland-vulkan-bridge1",
+                                     : $"{MpvForkLinuxVersion}-wayland-vulkan-bridge1-wlqueue-compat",
             inference_runtime = $"trt-{TrtVersion}",
             ort_dml = plat.IsWindows ? $"{OrtDmlVersion}+{DirectMLVersion}" : (string?)null,
             sevenzip = SevenZipVersion,

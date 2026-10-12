@@ -137,3 +137,10 @@ Le job Linux libère les SDK Android, Haskell et CodeQL préinstallés sur le
 runner, pour laisser l’espace nécessaire aux dépendances, composants et
 copies temporaires de l’AppImage. Les sources compilées du lecteur sont
 supprimées après validation et sauvegarde de son bundle.
+
+La vérification du lecteur hors du préfixe de compilation a révélé sa dépendance
+à `wl_display_create_queue_with_name`, absente du client Wayland 1.22 du runner.
+Le patch Linux utilise les deux files sans nom, avec la même distribution des
+événements et les mêmes protocoles HDR. Cette adaptation est idempotente et le
+marqueur de dépendance mpv est actualisé. Le cache NCNN est désormais limité aux
+sources et modèles de la bibliothèque, indépendamment des adaptations de mpv.

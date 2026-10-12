@@ -223,3 +223,14 @@ La page commune et les nouveaux défauts sont décrits dans [SETTINGS.md](SETTIN
 Les volets avancés sont repliés. Une seule description d’écran sert à tous les GPU.
 Les anciennes clés restent lisibles ; les défauts Performance/Natural ne réinitialisent
 pas une installation personnalisée. `linux_hdr_output=auto` ne certifie pas le HDR physique.
+
+## Compatibilité du client Wayland
+
+Le mpv épinglé utilise deux créations de files avec un nom de diagnostic,
+introduites dans Wayland 1.23. Le constructeur Linux utilise l’API de file sans
+nom, identique pour la distribution des événements, afin que le binaire fonctionne
+aussi avec le client Wayland 1.22 d’Ubuntu 24.04. Les protocoles colorimétriques
+et les règles de confirmation HDR restent les mêmes. Les bibliothèques Wayland
+proviennent du système. La vérification du bundle s’exécute hors du préfixe de
+compilation, avant sa mise en cache, et les dépendances du rendu gardent l’ABI 9
+TensorRT / ABI 1 Vulkan.

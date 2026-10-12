@@ -2,6 +2,7 @@
 """Add the Linux-only Vulkan bridge to the pinned mpv source idempotently."""
 from pathlib import Path
 import shutil
+import re
 import sys
 root=Path(sys.argv[1]);source=Path(__file__).parent
 for name in ['vf_animejanai_vulkan.c','aji_vulkan.h']:
@@ -17,4 +18,14 @@ for name,(old,new) in edits.items():
     if new in text:continue
     assert text.count(old)==1,f'Unexpected mpv source layout: {name}'
     p.write_text(text.replace(old,new))
-print('Linux Vulkan filter installed; CUDA/D3D11 code unchanged')
+# mpv uses optional queue labels introduced in Wayland 1.23. They otherwise
+# require a newer host client library even though the event queue behavior is
+# identical. Keep the public unnamed API for Ubuntu 24.04's Wayland 1.22.
+p = root / 'video/out/wayland_common.c'
+text = p.read_text()
+if 'wl_display_create_queue_with_name(' in text:
+    text, count = re.subn(r'wl_display_create_queue_with_name\(([^,]+),\s*"[^"]*"\)',
+                         r'wl_display_create_queue(\1)', text)
+    assert count == 2 and 'wl_display_create_queue_with_name(' not in text, 'Unexpected Wayland queue calls'
+    p.write_text(text)
+print('Linux Vulkan filter and Wayland queue compatibility installed; CUDA/D3D11 code unchanged')
