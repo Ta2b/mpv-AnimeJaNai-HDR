@@ -175,7 +175,16 @@ std::string wanted_provider(const AjiConf &conf)
 Ort::SessionOptions session_options(Context &c)
 {
     Ort::SessionOptions options;
-    options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+    // OpenVINO optimises the graph itself: ONNX Runtime's own rewriting is off for it, as Intel
+    // recommends. AJI_ORT_OPT=0..3 (none, basic, extended, all) overrides the level for trials.
+    GraphOptimizationLevel level = c.provider == "openvino" ? GraphOptimizationLevel::ORT_DISABLE_ALL
+                                                            : GraphOptimizationLevel::ORT_ENABLE_ALL;
+    if (const char *forced = std::getenv("AJI_ORT_OPT"); forced && *forced) {
+        const int n = std::atoi(forced);
+        level = n <= 0 ? GraphOptimizationLevel::ORT_DISABLE_ALL : n == 1 ? GraphOptimizationLevel::ORT_ENABLE_BASIC
+              : n == 2 ? GraphOptimizationLevel::ORT_ENABLE_EXTENDED : GraphOptimizationLevel::ORT_ENABLE_ALL;
+    }
+    options.SetGraphOptimizationLevel(level);
     if (c.provider == "migraphx") {
         // AMD GPUs through ROCm. FP16 as shipped; the compiled program is cached by MIGraphX.
         OrtMIGraphXProviderOptions migraphx{};
@@ -188,6 +197,19 @@ Ort::SessionOptions session_options(Context &c)
         std::unordered_map<std::string, std::string> openvino{
             {"device_type", c.device.empty() ? "GPU" : c.device}, {"precision", "FP16"}};
         if (lower(openvino["device_type"]) == "cpu") openvino["precision"] = "FP32";
+        // AJI_ORT_OPENVINO="key=value;key=value": extra or replaced provider options, for trials.
+        if (const char *extra = std::getenv("AJI_ORT_OPENVINO"); extra && *extra) {
+            std::string all = extra;
+            size_t at = 0;
+            while (at < all.size()) {
+                size_t end = all.find(';', at);
+                if (end == std::string::npos) end = all.size();
+                const std::string pair = all.substr(at, end - at);
+                const size_t eq = pair.find('=');
+                if (eq != std::string::npos && eq > 0) openvino[pair.substr(0, eq)] = pair.substr(eq + 1);
+                at = end + 1;
+            }
+        }
         options.AppendExecutionProvider_OpenVINO_V2(openvino);
         c.provider_label = "OpenVINO " + openvino["device_type"];
     } else {
