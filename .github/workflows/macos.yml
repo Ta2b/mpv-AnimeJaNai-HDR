@@ -116,9 +116,9 @@ jobs:
         # read, that the filter loads the engine and that Core ML processes frames.
         run: |
           rm -rf "$HOME/Library/Caches/AnimeJaNai"
-          "mac-out/mpv AnimeJaNai.app/Contents/MacOS/mpv" av://lavfi:testsrc2=size=640x360:rate=24 \
-            --vo=null --ao=null --frames=12 --msg-level=all=v > run.log 2>&1 || true
-          grep -E 'AnimeJaNai|animejanai|aji|Reading config|osxbundle|error|Error' run.log | cut -c1-220 | head -40
+          "mac-out/mpv AnimeJaNai.app/Contents/MacOS/mpv" av://lavfi:testsrc2=size=640x360:rate=24             --vo=null --ao=null --frames=12 --log-file=run.log > console.log 2>&1 || echo "mpv exit code $?"
+          tail -15 console.log
+          grep -iE 'config|script|animejanai|aji|osxbundle|error|fail|vf\]' run.log | cut -c1-230 | head -70
           cat "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
           grep -q 'Backend: ONNX Runtime/CoreML' "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
           grep -q 'Output: 1280x720' "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
