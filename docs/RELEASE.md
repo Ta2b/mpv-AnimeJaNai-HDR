@@ -185,3 +185,4 @@ HTTP et hors ligne, nouvelles versions, corruptions et empreintes invalides,
 téléchargement interrompu, exclusion de `latest`, désactivation et nettoyage.
 Le contrôle est ajouté à la matrice CI Windows/Linux. Cet ajout vise les
 prochains builds ; la relance de release déjà en cours n’est pas interrompue.
+Les sorties `bin/` et `obj/` des projets de test sont exclues du suivi Git.

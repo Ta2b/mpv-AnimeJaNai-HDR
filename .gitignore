@@ -26,4 +26,6 @@ benchmark-proxy/node_modules/.cache/wrangler/wrangler-account.json
 /AnimeJaNaiPlatform/obj
 /tests/platform/bin
 /tests/platform/obj
+/tests/**/bin/
+/tests/**/obj/
 /artifacts
