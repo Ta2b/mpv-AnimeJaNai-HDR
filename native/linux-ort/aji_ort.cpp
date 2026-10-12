@@ -24,6 +24,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -53,34 +54,54 @@ struct Image {
     const float *plane(int c) const { return data.data() + (size_t)c * w * h; }
 };
 
+// Runs body(first, last) over [0, count) on several threads. The host-side work of a frame is
+// a few passes over millions of pixels: on one core it costs more than the model itself.
+template <typename Body> void parallel(size_t count, size_t grain, Body body)
+{
+    static const unsigned cores = std::max(1u, std::min(8u, std::thread::hardware_concurrency()));
+    const size_t parts = std::min<size_t>(cores, std::max<size_t>(1, count / std::max<size_t>(1, grain)));
+    if (parts <= 1) { body((size_t)0, count); return; }
+    std::vector<std::thread> workers;
+    workers.reserve(parts - 1);
+    for (size_t k = 1; k < parts; k++)
+        workers.emplace_back([=] { body(count * k / parts, count * (k + 1) / parts); });
+    body((size_t)0, count / parts);
+    for (auto &w : workers) w.join();
+}
+
 Image from_rgb24(const unsigned char *pixels, ptrdiff_t stride, int w, int h)
 {
     Image m(w, h);
     float *r = m.plane(0), *g = m.plane(1), *b = m.plane(2);
-    for (int y = 0; y < h; y++) {
-        const unsigned char *row = pixels + (ptrdiff_t)y * stride;
-        const size_t o = (size_t)y * w;
-        for (int x = 0; x < w; x++) {
-            r[o + x] = row[3 * x] * (1.0f / 255.0f);
-            g[o + x] = row[3 * x + 1] * (1.0f / 255.0f);
-            b[o + x] = row[3 * x + 2] * (1.0f / 255.0f);
+    parallel((size_t)h, 64, [=](size_t first, size_t last) {
+        for (size_t y = first; y < last; y++) {
+            const unsigned char *row = pixels + (ptrdiff_t)y * stride;
+            const size_t o = y * w;
+            for (int x = 0; x < w; x++) {
+                r[o + x] = row[3 * x] * (1.0f / 255.0f);
+                g[o + x] = row[3 * x + 1] * (1.0f / 255.0f);
+                b[o + x] = row[3 * x + 2] * (1.0f / 255.0f);
+            }
         }
-    }
+    });
     return m;
 }
 
 void to_rgb24(const Image &m, unsigned char *pixels, ptrdiff_t stride)
 {
     const float *r = m.plane(0), *g = m.plane(1), *b = m.plane(2);
-    for (int y = 0; y < m.h; y++) {
-        unsigned char *row = pixels + (ptrdiff_t)y * stride;
-        const size_t o = (size_t)y * m.w;
-        for (int x = 0; x < m.w; x++) {
-            row[3 * x] = (unsigned char)(std::min(std::max(r[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
-            row[3 * x + 1] = (unsigned char)(std::min(std::max(g[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
-            row[3 * x + 2] = (unsigned char)(std::min(std::max(b[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
+    const int w = m.w;
+    parallel((size_t)m.h, 64, [=](size_t first, size_t last) {
+        for (size_t y = first; y < last; y++) {
+            unsigned char *row = pixels + (ptrdiff_t)y * stride;
+            const size_t o = y * w;
+            for (int x = 0; x < w; x++) {
+                row[3 * x] = (unsigned char)(std::min(std::max(r[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
+                row[3 * x + 1] = (unsigned char)(std::min(std::max(g[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
+                row[3 * x + 2] = (unsigned char)(std::min(std::max(b[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
+            }
         }
-    }
+    });
 }
 
 // Bilinear resize (half-pixel centres), as in the NCNN/Vulkan engine.
@@ -89,22 +110,33 @@ Image resize(const Image &src, int w, int h)
     if (src.w == w && src.h == h) return src;
     Image dst(w, h);
     const double sx = (double)src.w / w, sy = (double)src.h / h;
+    // Column positions and weights are the same for every row.
+    std::vector<int> x0s(w), x1s(w);
+    std::vector<float> wxs(w);
+    for (int x = 0; x < w; x++) {
+        double fx = std::min(std::max((x + 0.5) * sx - 0.5, 0.0), (double)src.w - 1);
+        x0s[x] = (int)fx; x1s[x] = std::min(x0s[x] + 1, src.w - 1); wxs[x] = (float)(fx - x0s[x]);
+    }
+    const int *x0 = x0s.data(), *x1 = x1s.data();
+    const float *wx = wxs.data();
+    const int sw = src.w, sh = src.h;
     for (int c = 0; c < 3; c++) {
         const float *s = src.plane(c);
         float *d = dst.plane(c);
-        for (int y = 0; y < h; y++) {
-            double fy = std::min(std::max((y + 0.5) * sy - 0.5, 0.0), (double)src.h - 1);
-            int y0 = (int)fy, y1 = std::min(y0 + 1, src.h - 1);
-            float wy = (float)(fy - y0);
-            for (int x = 0; x < w; x++) {
-                double fx = std::min(std::max((x + 0.5) * sx - 0.5, 0.0), (double)src.w - 1);
-                int x0 = (int)fx, x1 = std::min(x0 + 1, src.w - 1);
-                float wx = (float)(fx - x0);
-                float top = s[(size_t)y0 * src.w + x0] * (1 - wx) + s[(size_t)y0 * src.w + x1] * wx;
-                float bottom = s[(size_t)y1 * src.w + x0] * (1 - wx) + s[(size_t)y1 * src.w + x1] * wx;
-                d[(size_t)y * w + x] = top * (1 - wy) + bottom * wy;
+        parallel((size_t)h, 64, [=](size_t first, size_t last) {
+            for (size_t y = first; y < last; y++) {
+                double fy = std::min(std::max((y + 0.5) * sy - 0.5, 0.0), (double)sh - 1);
+                int y0 = (int)fy, y1 = std::min(y0 + 1, sh - 1);
+                float wy = (float)(fy - y0);
+                const float *top = s + (size_t)y0 * sw, *bottom = s + (size_t)y1 * sw;
+                float *out = d + y * w;
+                for (int x = 0; x < w; x++) {
+                    float a = top[x0[x]] * (1 - wx[x]) + top[x1[x]] * wx[x];
+                    float b = bottom[x0[x]] * (1 - wx[x]) + bottom[x1[x]] * wx[x];
+                    out[x] = a * (1 - wy) + b * wy;
+                }
             }
-        }
+        });
     }
     return dst;
 }
@@ -122,20 +154,20 @@ void resized_dims(int w, int h, const AjiModelConf &conf, int *ow, int *oh)
 
 #if !defined(AJI_F16C)
 // Half-float conversion through the compiler's 16-bit float type (ARM: vectorised by clang).
-void floats_to_halves(const float *src, uint16_t *dst, size_t count)
+void floats_to_halves_part(const float *src, uint16_t *dst, size_t count)
 {
     _Float16 *out = (_Float16 *)dst;
     for (size_t i = 0; i < count; i++) out[i] = (_Float16)src[i];
 }
 
-void halves_to_floats(const uint16_t *src, float *dst, size_t count)
+void halves_to_floats_part(const uint16_t *src, float *dst, size_t count)
 {
     const _Float16 *in = (const _Float16 *)src;
     for (size_t i = 0; i < count; i++) dst[i] = (float)in[i];
 }
 #else
 // Half-float conversion, 8 values at a time (F16C).
-void floats_to_halves(const float *src, uint16_t *dst, size_t count)
+void floats_to_halves_part(const float *src, uint16_t *dst, size_t count)
 {
     size_t i = 0;
     for (; i + 8 <= count; i += 8)
@@ -148,7 +180,7 @@ void floats_to_halves(const float *src, uint16_t *dst, size_t count)
     }
 }
 
-void halves_to_floats(const uint16_t *src, float *dst, size_t count)
+void halves_to_floats_part(const uint16_t *src, float *dst, size_t count)
 {
     size_t i = 0;
     for (; i + 8 <= count; i += 8)
@@ -161,6 +193,18 @@ void halves_to_floats(const uint16_t *src, float *dst, size_t count)
     }
 }
 #endif
+
+void floats_to_halves(const float *src, uint16_t *dst, size_t count)
+{
+    parallel(count, (size_t)1 << 16, [=](size_t first, size_t last) {
+        floats_to_halves_part(src + first, dst + first, last - first); });
+}
+
+void halves_to_floats(const uint16_t *src, float *dst, size_t count)
+{
+    parallel(count, (size_t)1 << 16, [=](size_t first, size_t last) {
+        halves_to_floats_part(src + first, dst + first, last - first); });
+}
 
 // NAME="key=value;key=value": extra or replaced provider options, for trials.
 void merge_env(std::unordered_map<std::string, std::string> &options, const char *name)
@@ -197,6 +241,9 @@ struct Context {
     std::vector<uint16_t> halves;
     uint64_t count = 0;
     double total_ms = 0;
+    // Where a frame's time goes: the model (ONNX Runtime, provider included) and the rest
+    // (pixel conversions, resize, half floats). Sums since the profile was configured.
+    double model_ms = 0, last_model_ms = 0;
 };
 
 // The bank's [global] backend names the provider; AJI_ORT_PROVIDER overrides it (tests).
@@ -314,7 +361,9 @@ Image run_model(Context &c, Step &step, const Image &in)
         input = Ort::Value::CreateTensor<float>(memory, const_cast<float *>(in.data.data()), count, shape, 4);
     }
     const char *input_names[1] = {step.input.c_str()}, *output_names[1] = {step.output.c_str()};
+    const auto run_start = std::chrono::steady_clock::now();
     auto outputs = step.session->Run(Ort::RunOptions{nullptr}, input_names, &input, 1, output_names, 1);
+    c.last_model_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - run_start).count();
     auto dims = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
     require(dims.size() == 4 && dims[1] == 3 && dims[2] > 0 && dims[3] > 0, "Model inference returned an unexpected shape");
     Image out((int)dims[3], (int)dims[2]);
@@ -355,6 +404,7 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
         require(width > 0 && height > 0 && width <= 16384 && height <= 16384, "Invalid source dimensions");
         require(width % 2 == 0 && height % 2 == 0, "Spatial profiles require even source dimensions");
         c.steps.clear(); c.width = width; c.height = height; c.rife_skipped = false;
+        c.count = 0; c.total_ms = 0; c.model_ms = 0;
         c.plan = {width, height, 1, 1, 0};
         if (c.slot == 0) { *plan = c.plan; return 0; }
         AjiConf conf; std::string error;
@@ -393,19 +443,22 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
     try {
         auto start = std::chrono::steady_clock::now();
         require(current && output && timestep >= 0 && timestep <= 1, "Invalid frame arguments");
+        c.last_model_ms = 0;
         Image result = from_rgb24(current, current_stride, c.width, c.height);
         if (c.plan.active) result = upscale(c, std::move(result));
         require(result.w == c.plan.width && result.h == c.plan.height,
                 "Model output dimensions differ from the configured 2x profile");
         to_rgb24(result, output, output_stride);
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
-        c.total_ms += ms; ++c.count;
+        c.total_ms += ms; ++c.count; c.model_ms += c.last_model_ms;
         if (!c.stats.empty()) {
             std::ofstream f(c.stats);
             f << "Backend: ONNX Runtime/" << c.provider_label << "\nAnimeJaNai models: " << c.steps.size()
               << "\nRIFE: " << (c.rife_skipped ? "requested, not available with this engine" : "off")
               << "\nOutput: " << result.w << "x" << result.h << "\nFrames: " << c.count
-              << "\nInference ms: " << ms << "\nAverage inference ms: " << c.total_ms / c.count << "\n";
+              << "\nInference ms: " << ms << "\nAverage inference ms: " << c.total_ms / c.count
+              << "\nModel ms: " << c.last_model_ms << "\nAverage model ms: " << c.model_ms / c.count
+              << "\nAverage conversion ms: " << (c.total_ms - c.model_ms) / c.count << "\n";
         }
         return 0;
     } catch (const std::exception &e) { c.error = e.what(); return -1; }

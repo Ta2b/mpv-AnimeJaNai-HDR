@@ -5,6 +5,8 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
+#include <string>
 #include <vector>
 
 int main(int argc, char **argv)
@@ -35,6 +37,12 @@ int main(int argc, char **argv)
                 out[((size_t)(plan.height / 2) * plan.width + plan.width / 2) * 3],
                 out[((size_t)(plan.height / 2) * plan.width + plan.width / 2) * 3 + 1],
                 out[((size_t)(plan.height / 2) * plan.width + plan.width / 2) * 3 + 2]);
+    {
+        std::ifstream stats("ort-stats.txt");
+        for (std::string line; std::getline(stats, line);)
+            if (line.rfind("Average model ms", 0) == 0 || line.rfind("Average conversion ms", 0) == 0)
+                std::printf("%s (first frame included)\n", line.c_str());
+    }
     aji_vk_destroy(c);
     return *bounds.first == *bounds.second ? 1 : 0;
 }

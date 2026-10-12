@@ -57,6 +57,8 @@ jobs:
           done
           grep -q 'plan: 640x360 active=1' coreml-CPU.log
           grep 'centre pixel' cpu.log coreml-*.log
+          echo "== 1920x1080 through profile 1 (no resize in the benchmark bank), Core ML ALL"
+          AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1920 1080 6 ALL 2>&1 | tail -4 || true
           ls models/coreml-cache | head
       - name: Benchmark bundle
         run: |
