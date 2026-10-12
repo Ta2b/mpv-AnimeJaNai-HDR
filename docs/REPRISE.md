@@ -49,9 +49,12 @@ antérieur ; elles sont conservées pour l'historique.
   sans aucune copie, sur RTX 4070 Ti : 28 ms par image en Performance 720p, soit environ 6 fois
   plus lent que TensorRT sur la même carte et que DirectML sur une carte comparable. Une réécriture
   sans copie ne comblerait pas cet écart. Détail et outil de mesure dans `LINUX-INFERENCE.md`.
-- **Moteur ONNX Runtime (MIGraphX / OpenVINO) : première étape seulement.** `native/linux-ort`,
-  même interface que le moteur Vulkan. Validé sur le fournisseur CPU ; **jamais exécuté sur
-  MIGraphX ni OpenVINO**, non intégré au lecteur. État et suite dans `LINUX-INFERENCE.md`.
+- **Moteur ONNX Runtime (MIGraphX / OpenVINO) : branché, non validé sur matériel.**
+  `native/linux-ort`, même interface que le moteur Vulkan ; reconnu par `linux-playback.lua` et
+  proposé dans le Manager sous Linux. Validé sur le fournisseur CPU ; **jamais exécuté sur
+  MIGraphX ni OpenVINO** (essais prévus par l'utilisateur). Pas de RIFE dans ce moteur.
+  TrueHDR sous Linux : impossible avec le SDK RTX Video disponible (Windows seulement).
+  Mode d'essai et limites dans `LINUX-INFERENCE.md`.
 - **Mode Vulkan Windows : il existe déjà.** Depuis la 3.8.0.5, `render_api=vulkan` fait
   tourner RTX VSR et TrueHDR dans le moteur TensorRT (`aji_trt_rtx.dll`, compilé localement,
   voir `PARTAGE.md`). La phrase « le moteur Vulkan Windows est reporté » plus bas vise

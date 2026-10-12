@@ -130,6 +130,19 @@ jobs:
           AJI_ORT_PROVIDER=cpu ort-build/animejanai-ort-test ort-ci.conf BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx 1 320 180 3 | tee ort-ci.log
           grep -q 'plan: 640x360 active=1' ort-ci.log
           grep -q 'Backend: ONNX Runtime/CPU' ort-stats.txt
+      - name: Bundle the engine with the stock ONNX Runtime
+        # A stock ONNX Runtime only has the CPU provider. For MIGraphX or OpenVINO, replace
+        # libonnxruntime.so* in animejanai/inference with the vendor build and its provider libraries.
+        run: |
+          mkdir ort-bundle
+          cp ort-build/libaji_ort.so ort-build/animejanai-ort-test ort-bundle/
+          cp -a ort/lib/libonnxruntime.so* ort/lib/libonnxruntime_providers_shared.so ort-bundle/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ort-backend-linux-x64
+          path: ort-bundle/
+          if-no-files-found: error
+          retention-days: 7
 
   vulkan-backend:
     runs-on: ubuntu-24.04

@@ -356,3 +356,37 @@ sans conversion. Le fournisseur vient de `backend=` dans la banque : `MIGraphX`,
 **Le moteur Vulkan reste nécessaire.** ROCm ne couvre que les RX 9070, 9060 XT et 7900 : une
 RX 7800 XT, une RX 7600 ou toute la série RX 6000 n'ont que NCNN/Vulkan sous Linux. Ce ne sont pas
 des cartes anciennes.
+
+### Branchement dans le lecteur et le Manager (12 octobre 2026, fin de nuit)
+
+- **Lecteur.** `linux-playback.lua` reconnaît `backend=MIGraphX` et `backend=OpenVINO` : même filtre
+  à pont d'images que Vulkan, bibliothèque `libaji_ort.so`, décodage logiciel. La variable
+  `ANIMEJANAI_ORT_DEVICE` force le périphérique (`GPU`, `GPU.1`, numéro HIP). Le moteur est proposé dès
+  que `libaji_ort.so` est présent ; l'absence du fournisseur se voit à la lecture, par le message du moteur.
+- **Manager.** *Global Settings* > *Inference engine* affiche **MIGraphX** et **OpenVINO** sous Linux,
+  actifs quand `libaji_ort.so` est installé.
+- **Paquet.** Le job `ort-backend` produit `libaji_ort.so`, `animejanai-ort-test` et l'ONNX Runtime
+  standard ; Deploy les ajoute à `animejanai/inference` quand ce job a réussi, sans jamais bloquer.
+
+**Pour essayer sur une machine réelle** : remplacer dans `animejanai/inference` les fichiers
+`libonnxruntime.so*` par ceux d'une compilation d'ONNX Runtime qui contient le fournisseur voulu, avec
+ses bibliothèques `libonnxruntime_providers_*.so` (paquet `onnxruntime-migraphx` d'AMD pour ROCm, paquet
+`onnxruntime-openvino` d'Intel). Mesure directe, sans le lecteur :
+`AJI_ORT_PROVIDER=migraphx ./animejanai-ort-test <banque.conf> <dossier onnx> <profil> 1280 720 20`.
+Risque connu, non levé : le moteur est compilé contre ONNX Runtime 1.31 ; une compilation de fabricant
+plus ancienne peut le refuser au chargement. Dans ce cas, recompiler `native/linux-ort` contre les
+en-têtes de cette version.
+
+**RIFE avec tous les moteurs : non fait.** Vulkan a RIFE 4.6 (NCNN), TensorRT a les modèles RIFE ONNX.
+Le moteur ONNX Runtime n'a pas encore l'interpolation : il faut y reproduire la préparation des entrées
+du chemin TensorRT (entrée à 11 canaux, grilles et remplissage au multiple de 64, `setup_rife` et
+`aji_infer_rife` dans `animejanai-inference/src/aji_trt.cpp`). À faire une fois le moteur validé sur
+matériel réel, sinon le travail porterait sur un moteur dont la vitesse n'est pas connue.
+
+**TrueHDR sous Linux avec TensorRT : pas possible avec le SDK disponible.** TensorRT est bien intégré
+sous Linux (banque `linux-nvidia`, `libaji_trt.so`). Mais l'étape RTX Video (`aji_rtx`) n'existe que
+sous Windows : le SDK RTX Video 1.1.0 ne contient que `lib/Windows` et `bin/Windows`
+(`nvsdk_ngx_s.lib`, `nvngx_truehdr.dll`, `nvngx_vsr.dll`), et son README ne décrit que Windows. L'API
+NGX existe pour Linux dans d'autres SDK de NVIDIA, mais elle ne sert à rien sans le fichier du modèle
+TrueHDR pour Linux, que NVIDIA ne fournit pas dans ce SDK. Sous Linux, la conversion SDR vers HDR passe
+donc par mpv, avec la courbe mesurée sur TrueHDR (`mpv_truehdr_look`), qui suit les mêmes réglages.

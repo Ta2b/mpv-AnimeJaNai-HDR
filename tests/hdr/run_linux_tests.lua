@@ -84,4 +84,11 @@ dofile(ROOT..'/hdr-tools/user-script-loader.lua')
 local loaded=S.props['user-data']['animejanai-user-runtime'].loaded
 check('loader works without display-info.dll',#loaded==5)
 for _,name in ipairs(loaded) do check('loader excludes Windows DLL '..name,not name:match('%.dll$')) end
+-- ONNX Runtime engine: backend=MIGraphX / OpenVINO uses the bridged filter with libaji_ort.so
+do
+  local playback=io.open(ROOT..'/hdr-tools/linux-playback.lua'):read('*a')
+  check('ort: engine library selected for the vendor providers', playback:find("ort and '/libaji_ort.so'",1,true)~=nil)
+  check('ort: availability follows the engine library', playback:find("/libaji_ort.so')~=nil",1,true)~=nil)
+  check('ort: software decoding with the host-frame bridge', playback:find("elseif ort then",1,true)~=nil)
+end
 print(string.format('%d passed, %d failed',pass,fail));os.exit(fail==0 and 0 or 1)

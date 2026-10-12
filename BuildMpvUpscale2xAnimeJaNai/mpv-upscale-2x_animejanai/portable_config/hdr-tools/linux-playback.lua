@@ -1,4 +1,5 @@
--- Linux SDR inference: NCNN/Vulkan on AMD/NVIDIA, optional TensorRT on NVIDIA.
+-- Linux SDR inference: NCNN/Vulkan on AMD/NVIDIA, optional TensorRT on NVIDIA, and the ONNX
+-- Runtime engine for the vendor providers: backend=MIGraphX (AMD, ROCm) or OpenVINO (Intel).
 local mp = require 'mp'
 local utils = require 'mp.utils'
 local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.lua'}))
@@ -19,6 +20,9 @@ mp.set_property('gpu-context','waylandvk')
 if hw.vulkan_device then mp.set_property('vulkan-device',hw.vulkan_device) end
 decoder(hw.vendor=='nvidia' and 'nvdec' or 'auto-safe')
 
+-- backend=migraphx / openvino: same host-frame bridge as Vulkan, another engine library.
+local function onnxruntime() return hw.backend=='migraphx' or hw.backend=='openvino' end
+local function bridged() return hw.backend=='vulkan' or onnxruntime() end
 local function ready()
     hw.backend=(policy.read_bank(hw.conf) or {}).backend or 'tensorrt'
     hw.inference_available = not failed and not hw.bank_conflict and hw.backend=='tensorrt' and hw.vendor=='nvidia' and utils.file_info(hw.inference_dir..'/libaji.so')~=nil
@@ -26,6 +30,10 @@ local function ready()
         and utils.file_info(hw.inference_dir..'/libaji_trt.so')~=nil and utils.file_info(hw.inference_dir..'/trtexec')~=nil
     if hw.backend=='vulkan' then
         hw.inference_available=not failed and not hw.bank_conflict and hw.vulkan_device~=nil and utils.file_info(hw.inference_dir..'/libaji_vulkan.so')~=nil
+    end
+    if onnxruntime() then
+        -- The provider itself is checked by the engine at configure, with its own message.
+        hw.inference_available=not failed and not hw.bank_conflict and utils.file_info(hw.inference_dir..'/libaji_ort.so')~=nil
     end
     mp.set_property_native('user-data/animejanai-hardware',hw)
     return hw.inference_available
@@ -35,7 +43,8 @@ local function select(value, preload)
     if not wanted or wanted~=math.floor(wanted) or wanted<0 then return end
     local bank=policy.read_bank(hw.conf)
     if wanted>0 and not ready() then
-        mp.osd_message(hw.backend=='vulkan' and 'Moteur Vulkan indisponible ou GPU non detecte. Lecture normale conservee.'
+        mp.osd_message(onnxruntime() and 'Moteur ONNX Runtime absent (libaji_ort.so). Lecture normale conservee.'
+            or hw.backend=='vulkan' and 'Moteur Vulkan indisponible ou GPU non detecte. Lecture normale conservee.'
             or 'TensorRT indisponible : NVIDIA et composants TensorRT requis. Choisir Vulkan pour AMD.',5)
         wanted=0
     end
@@ -56,14 +65,19 @@ local function select(value, preload)
         if mp.get_property_native('pause') then mp.command('no-osd seek 0 exact') end
     else
         local vulkan=hw.backend=='vulkan'
-        local f={name=vulkan and 'animejanai-vulkan' or 'animejanai',label='aji',enabled=true,params={
-            lib=hw.inference_dir..(vulkan and '/libaji_vulkan.so' or '/libaji.so'),conf=hw.conf_active or hw.conf,
+        local ort=onnxruntime()
+        local f={name=(vulkan or ort) and 'animejanai-vulkan' or 'animejanai',label='aji',enabled=true,params={
+            lib=hw.inference_dir..(ort and '/libaji_ort.so' or vulkan and '/libaji_vulkan.so' or '/libaji.so'),conf=hw.conf_active or hw.conf,
             ['model-dir']=path('~~/../animejanai/onnx'),['rife-model-dir']=path('~~/../animejanai/rife'),
             stats=path('~~/../animejanai/currentanimejanai.log'),slot=tostring(wanted)}}
         if vulkan then
             f.params.device=hw.vulkan_device
             f.params['rife-model-dir']=path('~~/../animejanai/rife-vulkan')
             -- The host-frame bridge requires software decoding; keep Vulkan rendering.
+            decoder('no')
+        elseif ort then
+            -- Original ONNX models; the device (GPU, GPU.1, a HIP device id) may be forced.
+            f.params.device=os.getenv('ANIMEJANAI_ORT_DEVICE') or ''
             decoder('no')
         else f.params.trtexec=hw.inference_dir..'/trtexec' end
         if index then list[index]=f else table.insert(list,1,f) end
