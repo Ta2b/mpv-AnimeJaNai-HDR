@@ -159,10 +159,19 @@ jobs:
     - name: Install native Wayland build dependencies
       run: sudo apt-get install -y build-essential git cmake python3-venv meson ninja-build pkg-config nasm libass-dev libvulkan-dev libxkbcommon-dev libwayland-dev libxml2-dev libffi-dev libexpat1-dev liblua5.2-dev liblcms2-dev libx11-dev libxrandr-dev libxss-dev libxcursor-dev libxi-dev libxpresent-dev libxinerama-dev libpulse-dev libasound2-dev libshaderc-dev spirv-cross libspirv-cross-c-shared-dev glslang-dev libfreetype-dev libfontconfig-dev libfribidi-dev libharfbuzz-dev libunibreak-dev autoconf automake libtool
 
+    - name: Restore pinned native Wayland player
+      id: native-cache
+      uses: actions/cache@v4
+      with:
+        path: native-bundle
+        key: wayland-ubuntu24-${{ runner.arch }}-${{ hashFiles('installer/linux/build-native.sh', 'native/linux-vulkan/install-filter.py', 'native/linux-vulkan/vf_animejanai_vulkan.c', 'native/linux-vulkan/aji_vulkan.h') }}
+
     - name: Build pinned native player with Wayland required
-      run: |
-        installer/linux/build-native.sh "$RUNNER_TEMP/native-work" "$GITHUB_WORKSPACE/native-bundle"
-        echo "MPV_LINUX_LOCAL=$GITHUB_WORKSPACE/native-bundle" >> "$GITHUB_ENV"
+      if: steps.native-cache.outputs.cache-hit != 'true'
+      run: installer/linux/build-native.sh "$RUNNER_TEMP/native-work" "$GITHUB_WORKSPACE/native-bundle"
+
+    - name: Configure native Wayland bundle
+      run: echo "MPV_LINUX_LOCAL=$GITHUB_WORKSPACE/native-bundle" >> "$GITHUB_ENV"
 
     - name: Reuse the Vulkan backend validated by platform checks
       uses: actions/download-artifact@v4

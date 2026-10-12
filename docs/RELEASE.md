@@ -113,3 +113,9 @@ Les shaders passent dans libplacebo sur la session Wayland disponible.
 Le premier passage CI Windows a détecté un nom de dossier PCI invalide dans
 la fixture de test sysfs : les deux-points sont remplacés seulement dans cette
 fixture Windows, sans modifier la détection Linux du produit.
+
+Les bundles Vulkan et mpv Wayland sont mis en cache sous une empreinte des
+sources, scripts et modèles. Les contrôles de fidélité tournent aussi sur un
+bundle restauré. Le build Linux réutilise le bundle Vulkan validé dans le même
+workflow, puis construit les paquets. Cela évite de recompiler les dépendances
+identiques à chaque ajustement documentaire ou relance de publication.
