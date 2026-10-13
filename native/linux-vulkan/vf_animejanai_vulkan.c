@@ -5,7 +5,11 @@
  * A frame then no longer has to be computed within the time between two frames: only the
  * average has to keep up. A pan that takes twice the budget is paid with the time saved on the
  * held drawings around it, which the engine reuses for almost nothing. The player's own thread
- * never waits for the engine, except for the frame in progress at a seek. */
+ * never waits for the engine, except for the frame in progress at a seek.
+ *
+ * An engine may ask to be shown the source frames that follow the one it is given
+ * (aji_vk_upcoming, optional): it then knows how long a drawing stays on screen before it
+ * computes it. A frame is started once that many following frames have been decoded. */
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,8 +29,9 @@
 // Memory the computed pictures may hold while they wait for their turn on screen.
 #define AHEAD_BYTES (640ll<<20)
 enum { JOB_QUEUED, JOB_RUNNING, JOB_DONE };
-// One output picture. `last`: the last one made from its source frame.
-struct job { struct mp_image *previous, *in, *out; double t; int state; bool last; };
+#define MAX_PEEK 4
+// One output picture. `last`: the last one made from its source frame, numbered `source`.
+struct job { struct mp_image *previous, *in, *out; double t; int state; bool last; uint64_t source; };
 
 struct opts { char *lib, *conf, *model_dir, *rife_model_dir, *device, *stats; int slot, ahead; };
 struct priv {
@@ -45,6 +50,8 @@ struct priv {
     int (*process)(aji_vk_context *,const unsigned char *,ptrdiff_t,const unsigned char *,ptrdiff_t,double,unsigned char *,ptrdiff_t);
     const char *(*error)(aji_vk_context *);
     void (*destroy)(aji_vk_context *);
+    int (*upcoming)(aji_vk_context *,const unsigned char *const *,const ptrdiff_t *,int);   // optional
+    uint64_t source;
     // Pictures in display order, a ring that starts at `head`. Everything below is guarded by
     // `lock`. The engine keeps state from one call to the next (reuse, RIFE pairs): one thread
     // runs the jobs, in order.
@@ -54,6 +61,11 @@ struct priv {
     bool locks, started, quit, failed;
     struct job jobs[MAX_JOBS];
     int head, count, sources;
+    // Source frames the engine wants to see after the one it computes (what aji_vk_upcoming
+    // last returned). `flush`: no further frame is coming for now (end of file, change of
+    // format, memory allowance reached): the frames in hand are computed without waiting.
+    int peek;
+    bool flush;
 };
 static struct job *job_at(struct priv *p,int i) { return &p->jobs[(p->head+i)%MAX_JOBS]; }
 static void job_free(struct job *j) {
@@ -65,18 +77,29 @@ static MP_THREAD_VOID worker(void *arg) {
     mp_thread_set_name("animejanai");
     mp_mutex_lock(&p->lock);
     while(!p->quit) {
-        struct job *j=NULL;
-        for(int i=0;i<p->count && !j && !p->failed;++i) if(job_at(p,i)->state==JOB_QUEUED) j=job_at(p,i);
-        if(!j) { mp_cond_wait(&p->work,&p->lock);continue; }
+        struct job *j=NULL;int at=0;
+        for(int i=0;i<p->count && !j && !p->failed;++i) if(job_at(p,i)->state==JOB_QUEUED) { j=job_at(p,i);at=i; }
+        // The source frames that follow this one, as far as the engine asked to see them. They
+        // stay alive during the call: a queued job is only freed once no job is running.
+        const unsigned char *next[MAX_PEEK];ptrdiff_t strides[MAX_PEEK];int known=0;
+        for(int i=at+1;j && i<p->count && known<p->peek;++i) {
+            struct job *later=job_at(p,i);
+            if(later->source==j->source || !later->last) continue;
+            if(!later->in) break;
+            next[known]=later->in->planes[0];strides[known++]=later->in->stride[0];
+        }
+        if(!j || (known<p->peek && !p->flush)) { mp_cond_wait(&p->work,&p->lock);continue; }
         // A running job keeps its place in the ring: nothing is removed before it ends.
         j->state=JOB_RUNNING;
         struct job run=*j;
         mp_mutex_unlock(&p->lock);
+        int wanted=p->upcoming?p->upcoming(p->context,next,strides,known):0;
         int result=p->process(p->context,run.previous?run.previous->planes[0]:NULL,
             run.previous?run.previous->stride[0]:0,run.in->planes[0],run.in->stride[0],run.t,
             run.out->planes[0],run.out->stride[0]);
         mp_mutex_lock(&p->lock);
         j->state=JOB_DONE;
+        p->peek=MPCLAMP(wanted,0,MAX_PEEK);
         if(result<0) p->failed=true;
         mp_cond_broadcast(&p->idle);
         mp_mutex_unlock(&p->lock);
@@ -98,8 +121,12 @@ static void drain(struct priv *p) {
         mp_cond_wait(&p->idle,&p->lock);
     }
     for(int i=0;i<p->count;++i) job_free(job_at(p,i));
-    p->head=p->count=p->sources=0;p->failed=false;
+    p->head=p->count=p->sources=0;p->failed=p->flush=false;
     mp_mutex_unlock(&p->lock);
+}
+// Nothing more is coming for now: the engine computes what it has.
+static void flush(struct priv *p) {
+    mp_mutex_lock(&p->lock);p->flush=true;mp_cond_signal(&p->work);mp_mutex_unlock(&p->lock);
 }
 static void reset(struct mp_filter *f) {
     struct priv *p=f->priv;
@@ -154,7 +181,7 @@ static void process(struct mp_filter *f) {
         p->head=(p->head+1)%MAX_JOBS;p->count--;
     }
     for(int i=0;i<p->count;++i) busy|=job_at(p,i)->state!=JOB_DONE;
-    int count=p->count,sources=p->sources;
+    int count=p->count,sources=p->sources,peek=p->peek;
     mp_mutex_unlock(&p->lock);
     if(failed) {
         if(!p->reported) MP_ERR(f,"AnimeJaNai inference: %s\n",p->error(p->context));
@@ -171,7 +198,7 @@ static void process(struct mp_filter *f) {
     }
     // A frame of another format: the profile is planned again once the engine is idle.
     if(p->pending && (!p->have_format || !mp_image_params_static_equal(&p->format,&p->pending->params))) {
-        if(busy) return;
+        if(busy) { flush(p);return; }
         struct mp_image *format=p->pending;
         mp_image_unrefp(&p->previous);
         if(format->params.color.transfer==PL_COLOR_TRC_PQ || format->params.color.transfer==PL_COLOR_TRC_HLG) {
@@ -187,14 +214,16 @@ static void process(struct mp_filter *f) {
         MP_INFO(f,"NCNN/Vulkan %dx%d -> %dx%d, RIFE %d/%d, %d frame(s) ahead\n",format->w,format->h,
             p->plan.width,p->plan.height,p->plan.numerator,p->plan.denominator,p->plan.active?p->opts->ahead:1);
     }
-    // Read ahead: up to `ahead` source frames computed or being computed, within the memory
-    // allowed (a source frame gives at most eight pictures).
-    if(sources>=(p->have_format && p->plan.active?p->opts->ahead:1) || count+8>p->capacity) return;
+    // Read ahead: up to `ahead` source frames computed or being computed, plus the ones the
+    // engine wants to see before it starts a frame, within the memory allowed (a source frame
+    // gives at most eight pictures).
+    if(count+8>p->capacity) { flush(p);return; }
+    if(sources>=(p->have_format && p->plan.active?p->opts->ahead+peek:1)) return;
     struct mp_image *in=p->pending;p->pending=NULL;
     if(!in) {
         if(!mp_pin_out_request_data(p->in)) return;
         struct mp_frame frame=mp_pin_out_read(p->in);
-        if(frame.type==MP_FRAME_EOF) { p->eof=true;mp_filter_internal_mark_progress(f);return; }
+        if(frame.type==MP_FRAME_EOF) { p->eof=true;flush(p);mp_filter_internal_mark_progress(f);return; }
         if(frame.type!=MP_FRAME_VIDEO) {
             MP_ERR(f,"unsupported frame type\n");mp_frame_unref(&frame);mp_filter_internal_mark_failed(f);return;
         }
@@ -232,9 +261,10 @@ static void process(struct mp_filter *f) {
         mp_image_unrefp(&p->previous);p->previous=in;
     }
     jobs[n-1].last=true;
+    p->source++;
     mp_mutex_lock(&p->lock);
-    for(int i=0;i<n;++i) *job_at(p,p->count++)=jobs[i];
-    p->sources++;
+    for(int i=0;i<n;++i) { jobs[i].source=p->source;*job_at(p,p->count++)=jobs[i]; }
+    p->sources++;p->flush=false;
     mp_cond_signal(&p->work);
     mp_mutex_unlock(&p->lock);
     mp_filter_internal_mark_progress(f);
@@ -261,6 +291,7 @@ static struct mp_filter *create(struct mp_filter *parent,void *options) {
 #define LOAD(field) do { *(void **)(&p->field)=dlsym(p->library,"aji_vk_" #field);if(!p->field)goto fail; } while(0)
     LOAD(create);LOAD(configure);LOAD(process);LOAD(error);LOAD(destroy);
 #undef LOAD
+    *(void **)(&p->upcoming)=dlsym(p->library,"aji_vk_upcoming");
     p->context=p->create(paths[1],paths[2],paths[3],p->opts->device,paths[4],p->opts->slot);
     if(!p->context){MP_ERR(f,"Vulkan backend: %s\n",p->error(NULL));goto fail;}
     // Frames reach the engine as RGB24, whatever the decoder gives.

@@ -233,7 +233,9 @@ for publication order and the common Windows/Linux release.
 - **ONNX model filenames are load-bearing.** They appear verbatim in
   `animejanai-inference/src/aji_conf.cpp` (the `HD_BAL` / `HD_PERF` / `SD` constants for the built-in
   presets), in the AnimeJaNai Manager's default profiles, and in `name=` fields of user
-  `animejanai.conf` slots. Renaming a model means updating all of those. (There is **no**
+  `animejanai.conf` slots. The shared engine also pairs a Performance model with its Balanced
+  sibling by name (`heavier_model` in `native/linux-ort/aji_ort.cpp`, for `engine_boost`).
+  Renaming a model means updating all of those. (There is **no**
   `animejanai_config.py` anymore — that Python layer was removed; ignore stale `__pycache__/*.pyc`.)
 - **ONNX models are committed in `animejanai/onnx/`** (currently the V3.1 HD Balanced/Performance
   models, their `…V3.1Sharp1…` variants, and the SD beta). Bumping the model lineup = replace the

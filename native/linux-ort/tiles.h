@@ -40,4 +40,7 @@ void areas_for(const char *setting, int w, int h, int *nx, int *ny);
 // (mean absolute difference of the block's bytes, in 8-bit levels). `ref` is width * 3 bytes a row.
 bool window_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *ref, int width, int height, double threshold);
 
+// The same test between two pictures that each have their own row stride.
+bool picture_unchanged(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, int width, int height, double threshold);
+
 } // namespace aji

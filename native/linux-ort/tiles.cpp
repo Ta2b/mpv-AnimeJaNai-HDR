@@ -97,19 +97,24 @@ void grid_for(const char *setting, int executors, int w, int h, int *nx, int *ny
 
 bool window_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *ref, int width, int height, double threshold)
 {
+    return picture_unchanged(window, stride, ref, (ptrdiff_t)width * 3, width, height, threshold);
+}
+
+bool picture_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *ref, ptrdiff_t ref_stride, int width, int height, double threshold)
+{
     const int block = 32;
     const int columns = (width + block - 1) / block;
     std::vector<uint32_t> sums((size_t)columns);
     if (threshold <= 0) {
         for (int y = 0; y < height; y++)
-            if (std::memcmp(window + (ptrdiff_t)y * stride, ref + (size_t)y * width * 3, (size_t)width * 3) != 0) return false;
+            if (std::memcmp(window + (ptrdiff_t)y * stride, ref + (ptrdiff_t)y * ref_stride, (size_t)width * 3) != 0) return false;
         return true;
     }
     for (int top = 0; top < height; top += block) {
         const int rows = std::min(block, height - top);
         std::fill(sums.begin(), sums.end(), 0u);
         for (int y = top; y < top + rows; y++) {
-            const uint8_t *a = window + (ptrdiff_t)y * stride, *b = ref + (size_t)y * width * 3;
+            const uint8_t *a = window + (ptrdiff_t)y * stride, *b = ref + (ptrdiff_t)y * ref_stride;
             for (int c = 0; c < columns; c++) {
                 const int first = c * block * 3, last = std::min(width, (c + 1) * block) * 3;
                 uint32_t sum = 0;

@@ -65,6 +65,34 @@ statistiques ajoute `Areas:` et `Area devices:`.
 (ONNX Runtime CPU, 640x360, coin mobile). Pas exécuté sur Mac.** Le gain réel dépend du taux
 de zones immobiles des vidéos : `reused since start` (Ctrl+j) le donne.
 
+### Lot 7 — budget par dessin (branche `perf-budget-par-dessin`, pas dans `hdr-3.8`)
+
+Gardé sur une branche à part tant que le lot 5 n'est pas validé dans le lecteur : il touche
+le même filtre.
+
+`[global] engine_boost=yes` (moteur partagé, avec `engine_reuse=frame` et un profil à un
+modèle) : un dessin qui reste plusieurs images à l'écran n'est calculé qu'une fois, puis
+repris. Quand le temps qu'il reste à l'écran couvre le modèle plus lourd de la même famille
+(Performance -> Balanced), c'est celui-ci qui le calcule. Règle : temps du modèle lourd
+<= 0,8 x nombre d'images où le dessin est tenu x durée d'une image. Chaque dessin paie donc
+pour lui-même ; un panoramique reste en Performance. Le modèle lourd est compilé à
+l'ouverture du profil, pas en cours de lecture.
+
+Pour connaître la durée d'un dessin, le moteur demande au filtre les deux images sources
+suivantes (`aji_vk_upcoming`, entrée facultative du pont, ABI inchangée) ; le filtre ne
+démarre alors une image qu'une fois ces deux-là décodées. Sans `engine_boost`, le moteur n'en
+demande aucune et le filtre se comporte comme au lot 5.
+
+`Recent ms`, que lit le choix automatique du profil, ne compte pas le surcoût du modèle
+lourd : c'est du temps libre utilisé, pas un besoin du profil. Ligne `Boost:` dans les
+statistiques (part des images calculées avec le modèle lourd, ou raison de son absence).
+
+**Vérifié (ONNX Runtime CPU, 320x180)** : dessins tenus trois images -> image finale
+identique à l'octet à celle du profil Balanced ; toutes images nouvelles à 24 i/s -> aucune
+image en modèle lourd, sortie identique au profil Performance ; `engine_reuse=tiles` -> refus
+avec sa raison. **Pas exécuté : le filtre dans mpv, ni aucun Mac.** À juger à l'œil : le
+passage d'un modèle à l'autre entre un plan fixe et un mouvement.
+
 ### Constat sur l'assembleur
 
 La boucle de comparaison d'images (`window_unchanged`) est déjà compilée en `psadbw` par GCC

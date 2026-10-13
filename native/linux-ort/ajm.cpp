@@ -70,6 +70,14 @@ AjmModel load_ajm(const std::string &path)
     return m;
 }
 
+double AjmModel::cost() const
+{
+    double sum = 0;
+    for (const auto &op : ops)
+        if (op.kind == AjmOp::Conv) sum += (double)op.o * op.i * op.k * op.k;
+    return sum;
+}
+
 int AjmModel::reach() const
 {
     // In pixels of the unshuffled image: a k x k convolution reads (k - 1) / 2 further.

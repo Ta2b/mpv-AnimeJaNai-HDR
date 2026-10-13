@@ -52,6 +52,7 @@ struct Settings {
     double threshold = 0.40;       // largest mean difference of a 32x32 block still "unchanged", in 8-bit levels
     std::string tiles = "auto";    // auto, 1, 2x2...: how a whole new frame is shared between devices
     std::string areas = "auto";    // auto, off, 4x3...: the finer grid of reuse=tiles
+    bool boost = false;            // the heavier model for drawings that stay on screen (reuse=frame)
     int overlap = -1;              // pixels a tile sees past its edges; -1 = what the model reads
 };
 
@@ -72,6 +73,7 @@ Settings read_settings(const std::string &conf)
         } else if (key == "engine_reuse_threshold") s.threshold = std::min(8.0, std::max(0.0, std::atof(value.c_str())));
         else if (key == "engine_tiles") s.tiles = lower(value);
         else if (key == "engine_areas") s.areas = lower(value);
+        else if (key == "engine_boost") { const std::string v = lower(value); s.boost = v == "yes" || v == "true" || v == "1" || v == "on"; }
         else if (key == "engine_overlap") s.overlap = std::atoi(value.c_str());
     };
     while (std::getline(file, line)) {
@@ -88,6 +90,7 @@ Settings read_settings(const std::string &conf)
     env("AJI_REUSE_THRESHOLD", "engine_reuse_threshold");
     env("AJI_TILES", "engine_tiles");
     env("AJI_AREAS", "engine_areas");
+    env("AJI_BOOST", "engine_boost");
     env("AJI_OVERLAP", "engine_overlap");
     return s;
 }
@@ -119,6 +122,19 @@ struct Step {
     int last_computed = 0, last_total = 0;
     double whole_ms = 0;                      // recent time of a frame computed with `plan`
     uint64_t whole_runs = 0;
+    // engine_boost: the heavier model of the same family (Performance -> Balanced), with the
+    // same input and output. A drawing that stays on screen for several frames is computed
+    // once and reused: when the time it stays covers the heavier model, that one computes it.
+    struct Boost {
+        std::string model, label;
+        TilePlan plan;
+        std::vector<Worker> workers;
+        double whole_ms = 0;                  // recent time of a frame, 0 until it has been timed
+        uint64_t whole_runs = 0;
+        double ratio = 2.7;                   // its cost against the profile's model, until timed
+    };
+    std::unique_ptr<Boost> boost;
+    uint64_t drawings = 0, boosted = 0;
     const TilePlan &reuse_plan() const { return fine ? areas : plan; }
 };
 
@@ -129,6 +145,12 @@ struct Context {
     aji_vk_plan plan{};
     Settings settings;
     bool rife_skipped = false;
+    // The source frames after the one being computed (aji_vk_upcoming), until that call returns.
+    std::vector<const uint8_t *> upcoming;
+    std::vector<ptrdiff_t> upcoming_stride;
+    double interval_ms = 41.7;     // time between two source frames
+    double boost_extra_ms = 0;     // this frame: what the heavier model cost beyond the profile's
+    std::string boost_note;        // why engine_boost is not active
     std::vector<Step> steps;
     uint64_t count = 0, full_frames = 0;
     double total_ms = 0, model_ms = 0, last_model_ms = 0, full_ms = 0;
@@ -246,6 +268,15 @@ std::string cache_dir(const std::string &models)
     return cache.string();
 }
 
+// The heavier model of the same family when the profile's model has one. Model file names are
+// fixed by the model lineup (CLAUDE.md, "ONNX model filenames are load-bearing").
+std::string heavier_model(const std::string &name)
+{
+    const std::string light = "_Performance_SPANF3_b5f48_", heavy = "_Balanced_SPANF3_b8f64_";
+    const size_t at = name.find(light);
+    return at == std::string::npos ? std::string() : name.substr(0, at) + heavy + name.substr(at + light.size());
+}
+
 // width x height: the source frame.
 void load_steps(Context &c, int width, int height)
 {
@@ -253,6 +284,9 @@ void load_steps(Context &c, int width, int height)
     c.backend_label.clear();
     const std::vector<std::string> devices = split_devices(c.device);
     int w = width, h = height;
+    size_t models = 0;
+    for (const auto &model : c.chain.models) models += !model.name.empty();
+    c.boost_note.clear();
     for (const auto &model : c.chain.models) {
         if (model.name.empty()) continue;
         require(model.frames <= 1, "Temporal AnimeJaNai models are not supported by this engine");
@@ -291,12 +325,12 @@ void load_steps(Context &c, int width, int height)
         step.known.assign(step.reuse_plan().tiles.size(), 0);
 
         // One executor per device and per window size, never more than there are tiles to share.
-        auto executors = [&](const TilePlan &plan, std::vector<Worker> &workers, bool named) {
+        auto executors = [&](const TilePlan &plan, std::vector<Worker> &workers, bool named, const std::string &name) {
             const size_t wanted = std::min(devices.size(), plan.tiles.size());
             for (size_t i = 0; i < wanted; i++) {
                 ExecutorRequest request;
                 request.provider = c.provider; request.device = devices[i];
-                request.models_dir = c.models; request.model = model.name; request.cache_dir = c.cache;
+                request.models_dir = c.models; request.model = name; request.cache_dir = c.cache;
                 request.width = plan.width; request.height = plan.height;
                 Worker worker;
                 worker.executor = make_executor(request);
@@ -307,8 +341,48 @@ void load_steps(Context &c, int width, int height)
                 workers.push_back(std::move(worker));
             }
         };
-        executors(step.plan, step.workers, true);
-        if (step.fine) executors(step.areas, step.area_workers, false);
+        executors(step.plan, step.workers, true, model.name);
+        if (step.fine) executors(step.areas, step.area_workers, false, model.name);
+
+        if (c.settings.boost) {
+            const std::string heavy = heavier_model(model.name);
+            if (c.settings.reuse != "frame") c.boost_note = "needs engine_reuse=frame";
+            else if (models != 1) c.boost_note = "needs a profile with one model";
+            else if (heavy.empty()) c.boost_note = "the profile's model has no heavier one";
+            else try {
+                auto boost = std::make_unique<Step::Boost>();
+                boost->model = heavy;
+                int reach = 56;
+                const std::string heavy_description = c.models + "/" + heavy + ".ajm";
+                if (std::filesystem::is_regular_file(heavy_description)) {
+                    const AjmModel described = load_ajm(heavy_description);
+                    reach = described.reach();
+                    if (std::filesystem::is_regular_file(description)) {
+                        const double light = load_ajm(description).cost();
+                        if (light > 0) boost->ratio = described.cost() / light;
+                    }
+                }
+                if (c.settings.overlap >= 0) reach = std::min(512, c.settings.overlap) / 2 * 2;
+                grid_for(c.settings.tiles.c_str(), (int)devices.size(), step.w, step.h, &nx, &ny);
+                boost->plan = plan_tiles(step.w, step.h, nx, ny, reach, align, min_window);
+                executors(boost->plan, boost->workers, false, heavy);
+                // Compiled now, on a grey picture: the first drawing it is used for must not wait
+                // for a compilation in the middle of playback.
+                std::vector<uint8_t> grey((size_t)boost->plan.width * boost->plan.height * 3, 128);
+                std::vector<uint8_t> scratch((size_t)boost->plan.width * boost->plan.height * 12);
+                for (auto &worker : boost->workers) {
+                    Job job;
+                    job.in = grey.data(); job.in_stride = (ptrdiff_t)boost->plan.width * 3;
+                    job.out = scratch.data(); job.out_stride = (ptrdiff_t)boost->plan.width * 6;
+                    job.crop_w = 2 * boost->plan.width; job.crop_h = 2 * boost->plan.height;
+                    worker.executor->run(job);
+                    worker.tiles = 1;
+                    boost->label += (boost->label.empty() ? "" : " + ") + worker.executor->label;
+                }
+                boost->whole_runs = 1;
+                step.boost = std::move(boost);
+            } catch (const std::exception &e) { c.boost_note = e.what(); }
+        }
         w *= 2; h *= 2; // the supported AnimeJaNai spatial models are 2x
         c.steps.push_back(std::move(step));
     }
@@ -423,6 +497,7 @@ bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, uint8_t *outpu
     ptrdiff_t src_stride = stride;
     int w = c.width, h = c.height;
     bool whole = true;
+    int hold = 0;   // frames this drawing stays on screen, as far as the upcoming frames tell; 0 = not looked at
     const bool reuse = c.settings.reuse != "off";
     for (size_t i = 0; i < c.steps.size(); i++) {
         Step &step = c.steps[i];
@@ -459,6 +534,22 @@ bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, uint8_t *outpu
         };
         // "frame": a frame is reused whole or not at all.
         if (c.settings.reuse == "frame" && !todo.empty() && todo.size() < grid.tiles.size()) todo = everything(grid);
+        // engine_boost: a new drawing is computed with the heavier model when the time it stays
+        // on screen covers it. The drawing pays for itself: the frames that follow it are reused.
+        bool boosted = false;
+        if (step.boost && !todo.empty()) {
+            if (hold == 0) {
+                hold = 1;
+                for (size_t k = 0; k < c.upcoming.size(); k++) {
+                    if (!picture_unchanged(c.upcoming[k], c.upcoming_stride[k], pixels, stride, c.width, c.height, c.settings.threshold)) break;
+                    hold++;
+                }
+            }
+            const Step::Boost &boost = *step.boost;
+            const double heavy = boost.whole_ms > 0 ? boost.whole_ms : step.whole_ms * boost.ratio;
+            boosted = step.whole_ms > 0 && heavy <= 0.8 * hold * c.interval_ms;
+            step.drawings++;
+        }
         // Areas only when a part of the frame changed and computing them is the shorter way.
         const bool by_areas = step.fine && !todo.empty() && todo.size() < grid.tiles.size() && areas_cheaper(step, todo.size());
         const bool by_plan = !todo.empty() && !by_areas;
@@ -475,6 +566,13 @@ bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, uint8_t *outpu
         if (by_areas) {
             c.last_model_ms += run_tiles(step.areas, step.area_workers, todo, src, src_stride, dst, dst_stride);
             step.by_areas++;
+        } else if (boosted) {
+            Step::Boost &boost = *step.boost;
+            const double took = run_tiles(boost.plan, boost.workers, everything(boost.plan), src, src_stride, dst, dst_stride);
+            c.last_model_ms += took;
+            boost.whole_ms = boost.whole_runs++ > 1 ? 0.7 * boost.whole_ms + 0.3 * took : took;
+            c.boost_extra_ms += std::max(0.0, took - step.whole_ms);
+            step.boosted++;
         } else if (by_plan) {
             const std::vector<int> tiles = step.fine ? everything(step.plan) : todo;
             const double took = run_tiles(step.plan, step.workers, tiles, src, src_stride, dst, dst_stride);
@@ -533,6 +631,11 @@ void write_stats(const Context &c, double ms)
           << ", overlap " << step.reach << " | computed " << step.last_computed << " of " << step.last_total
           << " | reused since start: " << (all ? 100 * step.reused / all : 0) << " % (reuse=" << c.settings.reuse << ")\n";
         // The finer grid of reuse=tiles, and how many frames were computed through it.
+        if (step.boost)
+            f << "Boost: " << step.boost->model << " on " << (step.drawings ? 100 * step.boosted / step.drawings : 0)
+              << " % of the computed frames (" << step.boost->label << ", "
+              << (step.boost->whole_ms > 0 ? step.boost->whole_ms : step.whole_ms * step.boost->ratio) << " ms a frame"
+              << (step.boost->whole_ms > 0 ? "" : ", estimated") << ")\n";
         if (step.fine)
             f << "Areas: " << step.areas.nx << "x" << step.areas.ny << " of " << step.areas.width << "x" << step.areas.height
               << " | frames computed by areas: " << (c.count ? 100 * step.by_areas / c.count : 0) << " %\n";
@@ -552,6 +655,7 @@ void write_stats(const Context &c, double ms)
         for (const auto &w : step.workers)
             if (!w.executor->note.empty()) f << "Placement: " << w.executor->label << ": " << w.executor->note << "\n";
     }
+    if (!c.boost_note.empty()) f << "Boost: not active (" << c.boost_note << ")\n";
 }
 } // namespace
 
@@ -577,6 +681,8 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
         require(width % 2 == 0 && height % 2 == 0, "Spatial profiles require even source dimensions");
         c.steps.clear(); c.width = width; c.height = height; c.rife_skipped = false;
         c.count = 0; c.full_frames = 0; c.total_ms = 0; c.model_ms = 0; c.full_ms = 0; c.recent.clear();
+        c.upcoming.clear(); c.upcoming_stride.clear();
+        c.interval_ms = fps > 1 ? 1000.0 / fps : 41.7;
         c.plan = {width, height, 1, 1, 0};
         if (c.slot == 0) { *plan = c.plan; return 0; }
         AjiConf conf; std::string error;
@@ -613,6 +719,7 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
         const double start = now_ms();
         require(current && output && timestep >= 0 && timestep <= 1, "Invalid frame arguments");
         c.last_model_ms = 0;
+        c.boost_extra_ms = 0;
         bool whole = false;
         if (c.plan.active) {
             whole = upscale(c, current, current_stride, output, output_stride);
@@ -623,11 +730,28 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
         const double ms = now_ms() - start;
         c.total_ms += ms; ++c.count; c.model_ms += c.last_model_ms;
         if (whole) { c.full_ms += ms; c.full_frames++; }
-        c.recent.push_back(ms);
+        // What the player compares with the time between two frames to tell whether the profile
+        // keeps up: the heavier model is extra work taken on spare time, not what the profile needs.
+        c.recent.push_back(ms - c.boost_extra_ms);
         if (c.recent.size() > 48) c.recent.pop_front();
+        c.upcoming.clear(); c.upcoming_stride.clear();
         if (!c.stats.empty()) write_stats(c, ms);
         return 0;
     } catch (const std::exception &e) { c.error = e.what(); return -1; }
+}
+
+// The frames that follow the next aji_vk_process call. Asked for (two of them) only when a
+// model can be boosted: knowing them delays the start of a frame by as many decoded frames.
+AJI_ORT_EXPORT int aji_vk_upcoming(aji_vk_context *context, const unsigned char *const *frames, const ptrdiff_t *strides, int count)
+{
+    auto &c = *(Context *)context;
+    c.upcoming.clear(); c.upcoming_stride.clear();
+    for (int k = 0; k < count && frames && strides; k++) {
+        if (!frames[k]) break;
+        c.upcoming.push_back(frames[k]); c.upcoming_stride.push_back(strides[k]);
+    }
+    for (const auto &step : c.steps) if (step.boost) return 2;
+    return 0;
 }
 
 AJI_ORT_EXPORT const char *aji_vk_error(aji_vk_context *c) { return c ? ((Context *)c)->error.c_str() : create_error.c_str(); }

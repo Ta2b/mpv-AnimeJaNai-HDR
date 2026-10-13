@@ -26,6 +26,8 @@ struct AjmModel {
     // Rows and columns of the input a pixel of the output can depend on, on each side: what a
     // tile must see past its own edges to give the same result as the whole frame.
     int reach() const;
+    // Multiplications for one pixel of the unshuffled image: to compare two models' costs.
+    double cost() const;
 };
 
 // Throws std::runtime_error with the reason.
