@@ -476,12 +476,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # The release is created by the Deploy workflow, which takes longer than this job.
-          for attempt in $(seq 1 80); do
-            if gh release view "$VER" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then break; fi
-            sleep 30
-          done
-          gh release view "$VER" --repo "$GITHUB_REPOSITORY" >/dev/null
+          # Publish independently: Deploy may fail before creating the release.
+          # Do not promote a macOS-only release over the latest Windows release.
+          if ! gh release view "$VER" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Creating release $VER for the validated macOS build"
+            gh release create "$VER" --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --title "$VER" --latest=false \
+              --notes "mpv-AnimeJaNai HDR $VER. Assets are published as platform builds succeed." \
+              || gh release view "$VER" --repo "$GITHUB_REPOSITORY" >/dev/null
+            # If Deploy created it concurrently, reuse that release; otherwise fail.
+          fi
           cp installer/macos/LISEZ-MOI.txt "LISEZ-MOI-macOS.txt"
           gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" -n mac-bench -D bench
           # The application last: installed copies take a release as an update once it is there,
