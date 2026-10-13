@@ -268,6 +268,8 @@ Ort::SessionOptions session_options(Context &c, int width, int height)
               : n == 2 ? GraphOptimizationLevel::ORT_ENABLE_EXTENDED : GraphOptimizationLevel::ORT_ENABLE_ALL;
     }
     options.SetGraphOptimizationLevel(level);
+    // AJI_ORT_LOG=0..4 (verbose .. fatal): ONNX Runtime's own messages, e.g. which nodes a provider takes.
+    if (const char *log = std::getenv("AJI_ORT_LOG"); log && *log) options.SetLogSeverityLevel(std::atoi(log));
     if (c.provider == "migraphx") {
         // AMD GPUs through ROCm. FP16 as shipped; the compiled program is cached by MIGraphX.
         OrtMIGraphXProviderOptions migraphx{};
