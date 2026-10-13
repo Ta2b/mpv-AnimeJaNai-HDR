@@ -94,9 +94,12 @@ Ort::Env &environment()
 }
 
 // Session options for a provider and a device. `cache_tag` names the folder of the models Core ML
-// compiles; `label` receives what the statistics show.
+// compiles; `label` receives what the statistics show. `precise`: no half-float sums in the GPU
+// convolutions (a model that computes positions, as RIFE does its motion, loses more to them
+// than a model that computes colours).
 Ort::SessionOptions provider_options(const std::string &provider, const std::string &device_name,
-                                     const std::string &cache_dir, const std::string &cache_tag, std::string *label_out)
+                                     const std::string &cache_dir, const std::string &cache_tag, std::string *label_out,
+                                     bool precise = false)
 {
     std::string label;
     Ort::SessionOptions options;
@@ -138,7 +141,7 @@ Ort::SessionOptions provider_options(const std::string &provider, const std::str
         // AJI_ORT_COREML="SpecializationStrategy=Default;AllowLowPrecisionAccumulationOnGPU=0".
         std::unordered_map<std::string, std::string> coreml{
             {"ModelFormat", "MLProgram"}, {"MLComputeUnits", units}, {"RequireStaticInputShapes", "1"},
-            {"SpecializationStrategy", "FastPrediction"}, {"AllowLowPrecisionAccumulationOnGPU", "1"}};
+            {"SpecializationStrategy", "FastPrediction"}, {"AllowLowPrecisionAccumulationOnGPU", precise ? "0" : "1"}};
         merge_env(coreml, "AJI_ORT_COREML");
         const bool fast = coreml["SpecializationStrategy"] == "FastPrediction";
         const bool low = coreml["AllowLowPrecisionAccumulationOnGPU"] == "1";
@@ -302,7 +305,7 @@ public:
         left_ = ((pw_ - w_) / 2) & ~1; top_ = ((ph_ - h_) / 2) & ~1;
         environment();
         Ort::SessionOptions options = provider_options(r.provider, r.device, r.cache_dir,
-            r.model + "-" + std::to_string(pw_) + "x" + std::to_string(ph_), &label);
+            r.model + "-" + std::to_string(pw_) + "x" + std::to_string(ph_), &label, true);
         // Models whose two free dimensions are named (the macOS package names them) get their
         // exact size, which Core ML needs; the others keep their dynamic shape.
         options.AddFreeDimensionOverrideByName("height", ph_);
