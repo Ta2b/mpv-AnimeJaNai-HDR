@@ -191,6 +191,14 @@ jobs:
           for f in metal-gpu metal-balanced metal-pair; do grep -q 'COMPARE | largest difference [0-3] ' "$f.log" || status=1; done
           grep 'centre pixel' cpu.log metal-small.log
           exit $status
+      - name: What failed
+        # The last lines of every log of the steps above, as annotations.
+        if: failure()
+        run: |
+          for f in $(ls -t *.log 2>/dev/null | head -9); do
+            tail -16 "$f" | cut -c1-300 > short.txt
+            LINES_KEPT=16 note "log $f" short.txt error
+          done
       - name: Benchmark bundle
         run: |
           b=AnimeJaNai-mac-bench

@@ -104,6 +104,9 @@ public:
             std::filesystem::path fused = std::filesystem::path(r.models_dir) / (r.model + ".coreml.onnx");
             if (std::filesystem::is_regular_file(fused)) path = fused;
         }
+        // Before anything else: a provider that logs while its options are read (OpenVINO) needs
+        // the environment and its logger to exist.
+        environment();
         Ort::SessionOptions options = session_options(r);
         // Every model gets its exact input size: the OpenVINO provider rejects the dynamic-shape
         // graph ("the graph is not acyclic"), and a static shape lets every provider compile once.
