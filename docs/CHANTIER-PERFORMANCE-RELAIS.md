@@ -151,6 +151,67 @@ tampon d'avance (lot 5) absorbe les à-coups. Sur un panoramique, tout est à ca
 Piste non faite : un exécuteur RIFE natif (Metal ou Core ML sans ONNX Runtime), à décider
 après avoir vu ce que Core ML fait du modèle.
 
+### Lot 10 — reconnaître un dessin tenu dans une vidéo compressée (mesuré)
+
+**Constat en lecture réelle** (PC de l'utilisateur, RTX 4070 Ti, AppImage 3.8.0.20, épisode
+1080p x264 de 24 min, profil TensorRT : 1080p ramené à 720p, RIFE 4.26 x3, SPAN Performance,
+RTX TrueHDR, sortie 2560x1440 à 71,9 i/s sur écran 4K) : carte graphique à 95-98 %, et
+**530 images perdues sur 1440 en 20 secondes** (`frame-drop-count`). L'étage d'affichage de mpv
+ne coûte que 2,3 ms par image (dont 1,0 ms de mise à l'échelle `ewa_lanczossharp` vers 4K et
+1,0 ms de shaders de rendu HDR). C'est la chaîne du moteur qui sature : par image source,
+2 interpolations, 3 upscales, 3 TrueHDR.
+
+**Cause mesurée sur le même épisode** (9 minutes, luma 720p, processeur seul). Le moteur ne
+reprend un résultat que si le pire bloc de 32x32 diffère de moins de 0,40 niveau en moyenne.
+Or une vidéo compressée ne répète jamais un dessin à l'identique :
+
+| Mesure sur l'épisode | Résultat |
+|---|---|
+| Images identiques à l'octet à la précédente | 0,0 % |
+| Images reprises avec le seuil 0,40 | 4 à 9 % |
+| Dessins réellement tenus | 45 à 58 % |
+| Écart du pire bloc sur un dessin tenu | 0,4 à 1,5 niveau, médiane 0,6 |
+| Écart du pire octet sur un dessin tenu (720p) | 7 en médiane, 19 au plus |
+| Écart du pire octet quand quelque chose bouge | 34 ou plus |
+
+Monter le seul seuil de moyenne ne suffit pas : à 1,5 niveau il laisse passer 1,5 % des
+images où un petit objet bouge (quelques pixels très différents que la moyenne du bloc dilue).
+
+**Moteur partagé (macOS, ONNX Runtime) : deux limites au lieu d'une** (`Sameness`, `tiles.h`).
+Une image est le même dessin si aucun bloc de 32x32 ne diffère de plus de
+`engine_reuse_threshold` en moyenne (1,5 par défaut) **et** si aucun octet ne diffère de plus
+de `engine_reuse_peak` (24 par défaut ; 0 = sans limite). La première limite voit ce qui
+change un peu partout (fondu), la seconde un petit objet qui bouge. Calibrage sur l'épisode,
+en RGB : à 720p, 98,3 % des dessins tenus reconnus et 0,00 % d'images en mouvement reprises à
+tort ; à 1080p, 96,5 % et 0,00 %. La valeur 0,40 écrite dans les banques existantes vaut
+désormais « défaut ». Le code du moteur lui-même, passé sur les 9 minutes :
+
+| Extrait de 3 minutes | Images reprises avant | Maintenant |
+|---|---:|---:|
+| à partir de 2 min | 2,7 % | 35,0 % |
+| à partir de 10 min | 2,5 % | 54,8 % |
+| à partir de 16 min 40 | 1,7 % | 36,3 % |
+
+Cela vaut pour la reprise d'images entières, la reprise par zones, le budget par dessin et
+RIFE (pas d'interpolation entre deux images du même dessin). Le test coûte 0,29 ms en 720p
+et 0,70 ms en 1080p ; il est écrit en deux boucles pour que le compilateur produise les deux
+instructions dédiées (`psadbw` et `pmaxub`), une boucle unique perdait la première.
+**Limite : un seul épisode, un seul encodage.** Un encodage plus bruité reconnaîtra moins de
+dessins tenus (erreur du côté sûr).
+
+**Moteur TensorRT (PC NVIDIA)** : il n'a que la limite de moyenne. Son défaut passe de 0,40 à
+0,70 (`held_threshold`), la bande de 0,40 à 0,70 ne contenant que du bruit sur l'épisode
+(aucun pixel au-delà de 24 niveaux) : 26 à 51 % d'images reprises au lieu de 8 à 12 %. La
+valeur 0,40 restée dans les fichiers de réglages vaut « défaut ». Pour aller à 45-57 % sans
+risque il faut la seconde limite dans le noyau CUDA `k_block_diff` du dépôt privé (non fait :
+pas de compilateur CUDA sur ce PC, la compilation passe par la CI de ce dépôt).
+
+**Moteur NCNN/Vulkan** : ses caches (lots 1 à 3) comparent à l'octet près, donc ne reprennent
+aucune image d'une vraie vidéo. Lui donner la même règle reste à faire.
+
+Non mesuré : le coût de chaque étage TensorRT (RIFE, SPAN, TrueHDR) ; le harnais attend que la
+carte graphique soit libre.
+
 ### Constat sur l'assembleur
 
 La boucle de comparaison d'images (`window_unchanged`) est déjà compilée en `psadbw` par GCC

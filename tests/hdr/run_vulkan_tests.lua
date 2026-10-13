@@ -16,8 +16,10 @@ os.remove(ROOT..'/cache/animejanai-rtx-state.json')
 
 -- Pure functions
 local R=dofile(ROOT..'/hdr-tools/rtx-stage.lua')
-local want={hdr=true,vsr=true,w=3840,h=2160,quality=2,contrast=100,saturation=100,middle_gray=50,peak=1000,held=true,held_threshold=0.40}
-check('echo format', R.echo(want)=='RTX Video Settings: hdr=yes vsr=yes target=3840x2160 vsr_quality=2 contrast=100 saturation=100 middle_gray=50 peak=1000 skip_held_frames=yes held_threshold=40', R.echo(want))
+-- The settings file of this test still holds held_threshold=0.40, the value shipped until
+-- 3.8.0.21: it stands for the current default, 0.70.
+local want={hdr=true,vsr=true,w=3840,h=2160,quality=2,contrast=100,saturation=100,middle_gray=50,peak=1000,held=true,held_threshold=0.70}
+check('echo format', R.echo(want)=='RTX Video Settings: hdr=yes vsr=yes target=3840x2160 vsr_quality=2 contrast=100 saturation=100 middle_gray=50 peak=1000 skip_held_frames=yes held_threshold=70', R.echo(want))
 check('text has one key per line', R.text(want):match('\nhdr=yes\nvsr=yes\ntarget=3840x2160\n')~=nil, R.text(want))
 check('held frames off by default in the pure function', R.echo({}):match('skip_held_frames=no held_threshold=40$')~=nil, R.echo({}))
 check('no target: no upscale', R.echo({hdr=true,vsr=true}):match('vsr=no target=0x0')~=nil, R.echo({hdr=true,vsr=true}))

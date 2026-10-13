@@ -49,7 +49,7 @@ double now_ms()
 // Engine settings of the bank's [global] section; the engines of the other platforms ignore them.
 struct Settings {
     std::string reuse = "frame";   // off, frame (a whole unchanged frame), tiles (each unchanged area)
-    double threshold = 0.40;       // largest mean difference of a 32x32 block still "unchanged", in 8-bit levels
+    Sameness same;                 // when two pictures are the same drawing (tiles.h); engine_reuse_threshold, engine_reuse_peak
     std::string tiles = "auto";    // auto, 1, 2x2...: how a whole new frame is shared between devices
     std::string areas = "auto";    // auto, off, 4x3...: the finer grid of reuse=tiles
     bool boost = false;            // the heavier model for drawings that stay on screen (reuse=frame)
@@ -71,7 +71,12 @@ Settings read_settings(const std::string &conf)
         if (key == "engine_reuse") {
             const std::string v = lower(value);
             s.reuse = v == "no" || v == "off" || v == "false" || v == "0" ? "off" : v == "tiles" || v == "areas" ? "tiles" : "frame";
-        } else if (key == "engine_reuse_threshold") s.threshold = std::min(8.0, std::max(0.0, std::atof(value.c_str())));
+        } else if (key == "engine_reuse_threshold") {
+            s.same.threshold = std::min(8.0, std::max(0.0, std::atof(value.c_str())));
+            // 0.40 was the value of the first versions, written in banks since: it only recognised
+            // one held drawing in thirteen on compressed video. It now means the current default.
+            if (s.same.threshold > 0.399 && s.same.threshold < 0.401) s.same.threshold = Sameness().threshold;
+        } else if (key == "engine_reuse_peak") s.same.peak = std::min(255, std::max(0, std::atoi(value.c_str())));
         else if (key == "engine_tiles") s.tiles = lower(value);
         else if (key == "engine_areas") s.areas = lower(value);
         else if (key == "engine_rife_device") s.rife_device = lower(value);
@@ -90,6 +95,7 @@ Settings read_settings(const std::string &conf)
     auto env = [&](const char *name, const char *key) { if (const char *v = std::getenv(name); v && *v) apply(key, v); };
     env("AJI_REUSE", "engine_reuse");
     env("AJI_REUSE_THRESHOLD", "engine_reuse_threshold");
+    env("AJI_REUSE_PEAK", "engine_reuse_peak");
     env("AJI_TILES", "engine_tiles");
     env("AJI_AREAS", "engine_areas");
     env("AJI_BOOST", "engine_boost");
@@ -550,7 +556,7 @@ bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, int width, int
             const Tile &t = grid.tiles[k];
             const uint8_t *window = src + (ptrdiff_t)t.wy * src_stride + 3 * t.wx;
             if (!reuse || !step.known[k]
-                || !window_unchanged(window, src_stride, step.refs[k].data(), grid.width, grid.height, c.settings.threshold))
+                || !window_unchanged(window, src_stride, step.refs[k].data(), grid.width, grid.height, c.settings.same))
                 todo.push_back((int)k);
         }
         auto everything = [](const TilePlan &plan) {
@@ -567,7 +573,7 @@ bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, int width, int
             if (hold == 0) {
                 hold = 1;
                 for (size_t k = 0; k < c.upcoming.size(); k++) {
-                    if (!picture_unchanged(c.upcoming[k], c.upcoming_stride[k], pixels, stride, c.width, c.height, c.settings.threshold)) break;
+                    if (!picture_unchanged(c.upcoming[k], c.upcoming_stride[k], pixels, stride, c.width, c.height, c.settings.same)) break;
                     hold++;
                 }
             }
@@ -760,7 +766,7 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
     if (!previous || t >= 1) { give(up_of(c, b, &whole)); return whole; }
     Endpoint &a = endpoint(c, previous, previous_stride);
     const bool same = &a == &b
-        || picture_unchanged(current, current_stride, previous, previous_stride, c.width, c.height, c.settings.threshold);
+        || picture_unchanged(current, current_stride, previous, previous_stride, c.width, c.height, c.settings.same);
     const bool cut = !same && c.chain.rife_scd_threshold > 0
         && difference(previous, previous_stride, current, current_stride, c.width, c.height) > c.chain.rife_scd_threshold;
     if (same || cut) {

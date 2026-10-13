@@ -95,15 +95,17 @@ void grid_for(const char *setting, int executors, int w, int h, int *nx, int *ny
     if (w < 2 * h / 3) std::swap(*nx, *ny);   // portrait
 }
 
-bool window_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *ref, int width, int height, double threshold)
+bool window_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *ref, int width, int height, const Sameness &same)
 {
-    return picture_unchanged(window, stride, ref, (ptrdiff_t)width * 3, width, height, threshold);
+    return picture_unchanged(window, stride, ref, (ptrdiff_t)width * 3, width, height, same);
 }
 
-bool picture_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *ref, ptrdiff_t ref_stride, int width, int height, double threshold)
+bool picture_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *ref, ptrdiff_t ref_stride, int width, int height, const Sameness &same)
 {
     const int block = 32;
     const int columns = (width + block - 1) / block;
+    const double threshold = same.threshold;
+    const int peak = same.peak > 0 ? std::min(same.peak, 255) : 255;
     std::vector<uint32_t> sums((size_t)columns);
     if (threshold <= 0) {
         for (int y = 0; y < height; y++)
@@ -115,11 +117,22 @@ bool picture_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *r
         std::fill(sums.begin(), sums.end(), 0u);
         for (int y = top; y < top + rows; y++) {
             const uint8_t *a = window + (ptrdiff_t)y * stride, *b = ref + (ptrdiff_t)y * ref_stride;
+            // Two loops over the same bytes, each in the form compilers turn into the processor's
+            // own instruction for it: the sum of absolute differences (psadbw on x86, uabdl on
+            // ARM) and the byte maximum (pmaxub, umax). One combined loop loses the first.
             for (int c = 0; c < columns; c++) {
                 const int first = c * block * 3, last = std::min(width, (c + 1) * block) * 3;
                 uint32_t sum = 0;
                 for (int k = first; k < last; k++) sum += (uint32_t)std::abs((int)a[k] - (int)b[k]);
                 sums[(size_t)c] += sum;
+            }
+            if (peak < 255) {
+                uint8_t worst = 0;
+                for (int k = 0; k < width * 3; k++) {
+                    const uint8_t d = a[k] > b[k] ? (uint8_t)(a[k] - b[k]) : (uint8_t)(b[k] - a[k]);
+                    worst = std::max(worst, d);
+                }
+                if (worst > peak) return false;
             }
         }
         for (int c = 0; c < columns; c++) {

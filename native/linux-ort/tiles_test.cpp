@@ -93,21 +93,34 @@ int main(int argc, char **argv)
         std::vector<uint8_t> a((size_t)w * h * 3), b;
         for (size_t i = 0; i < a.size(); i++) a[i] = (uint8_t)(i * 7 % 251);
         b = a;
-        check(window_unchanged(a.data(), w * 3, b.data(), w, h, 0.4), "identical windows are unchanged");
-        check(window_unchanged(a.data(), w * 3, b.data(), w, h, 0), "threshold 0 accepts identical windows");
+        const Sameness usual, exact{0, 0}, mean_only{1.5, 0};
+        check(window_unchanged(a.data(), w * 3, b.data(), w, h, usual), "identical windows are unchanged");
+        check(window_unchanged(a.data(), w * 3, b.data(), w, h, exact), "threshold 0 accepts identical windows");
         b[1234] ^= 1;
-        check(!window_unchanged(a.data(), w * 3, b.data(), w, h, 0), "threshold 0 rejects one changed value");
-        check(window_unchanged(a.data(), w * 3, b.data(), w, h, 0.4), "one value off by one is noise");
+        check(!window_unchanged(a.data(), w * 3, b.data(), w, h, exact), "threshold 0 rejects one changed value");
+        check(window_unchanged(a.data(), w * 3, b.data(), w, h, usual), "one value off by one is noise");
+        // What compression does to a held drawing: every byte moves by a few levels.
+        b = a;
+        for (size_t i = 0; i < b.size(); i++) b[i] = (uint8_t)std::min(255, std::max(0, (int)a[i] + (int)(i * 2654435761u % 5) - 2));
+        check(window_unchanged(a.data(), w * 3, b.data(), w, h, usual), "the noise of a compressed held drawing is not a change");
         b = a;
         for (int y = 40; y < 48; y++) for (int x = 150; x < 158; x++) for (int k = 0; k < 3; k++) b[((size_t)y * w + x) * 3 + k] = (uint8_t)(a[((size_t)y * w + x) * 3 + k] + 60);
-        check(!window_unchanged(a.data(), w * 3, b.data(), w, h, 0.4), "a small object that moved changes its block");
+        check(!window_unchanged(a.data(), w * 3, b.data(), w, h, usual), "a small object that moved is a change");
+        // Three by three pixels: the mean of its block hardly moves (0.5 level), one byte does.
+        b = a;
+        for (int y = 40; y < 43; y++) for (int x = 150; x < 153; x++) for (int k = 0; k < 3; k++) b[((size_t)y * w + x) * 3 + k] = (uint8_t)(a[((size_t)y * w + x) * 3 + k] ^ 0x40);
+        check(window_unchanged(a.data(), w * 3, b.data(), w, h, mean_only), "the mean of a block does not see a three-pixel object");
+        check(!window_unchanged(a.data(), w * 3, b.data(), w, h, usual), "the largest byte difference does");
+        // A fade: one level everywhere stays under the limits, two levels do not.
         b = a;
         for (auto &v : b) v = (uint8_t)std::min(255, v + 1);
-        check(!window_unchanged(a.data(), w * 3, b.data(), w, h, 0.4), "a fade of one level everywhere is a change");
+        check(window_unchanged(a.data(), w * 3, b.data(), w, h, usual), "one level everywhere is within the noise");
+        for (auto &v : b) v = (uint8_t)std::min(255, v + 1);
+        check(!window_unchanged(a.data(), w * 3, b.data(), w, h, usual), "a fade of two levels everywhere is a change");
         // Rows of the window are `stride` apart in a larger picture.
         std::vector<uint8_t> big((size_t)(w + 50) * h * 3, 9);
         for (int y = 0; y < h; y++) std::memcpy(big.data() + (size_t)y * (w + 50) * 3 + 30, a.data() + (size_t)y * w * 3, (size_t)w * 3);
-        check(window_unchanged(big.data() + 30, (w + 50) * 3, a.data(), w, h, 0.4), "a window inside a larger frame");
+        check(window_unchanged(big.data() + 30, (w + 50) * 3, a.data(), w, h, usual), "a window inside a larger frame");
     }
     if (argc >= 6) {
         const std::string models = argv[1], model = argv[2];

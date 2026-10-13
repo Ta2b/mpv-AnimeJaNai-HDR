@@ -32,7 +32,7 @@ function M.options()
         -- Vulkan output (NVIDIA): RTX Video runs inside the engine instead of D3D11 filters.
         render_api='d3d11',rtx_vsr_quality=2,rtx_contrast=100,rtx_saturation=100,rtx_middle_gray=50,
         -- Vulkan engine: a frame identical to the last processed one reuses its result.
-        skip_held_frames=true,held_threshold=0.40,
+        skip_held_frames=true,held_threshold=0.70,
         -- One HDR look: when MPV converts, it follows RTX TrueHDR's curve with the same
         -- rtx_contrast / rtx_saturation / rtx_middle_gray. mpv_contrast, mpv_saturation and
         -- mpv_middle_gray are retired: still accepted in old files, no longer used.
@@ -113,7 +113,12 @@ function M.options()
     o.rtx_saturation = number(o.rtx_saturation, 100, 0, 200)
     o.rtx_middle_gray = number(o.rtx_middle_gray, 50, 10, 100)
     o.skip_held_frames = bool(o.skip_held_frames)
-    o.held_threshold = number(o.held_threshold, 0.40, 0, 2)
+    o.held_threshold = number(o.held_threshold, 0.70, 0, 2)
+    -- 0.40 was the value shipped until 3.8.0.21, and it stayed in the settings files written
+    -- since. Measured on a web encode it recognised about one held drawing in six: the noise of
+    -- the compression alone moves the worst 32x32 block by 0.4 to 0.7 level. It now stands for
+    -- the current default; any other value is the user's.
+    if math.abs(o.held_threshold - 0.40) < 0.001 then o.held_threshold = 0.70 end
     o.mpv_truehdr_look = bool(o.mpv_truehdr_look)
     o.linux_hdr_output = o.linux_hdr_output == 'pq' and 'pq' or o.linux_hdr_output == 'sdr' and 'sdr' or 'auto'
     return o

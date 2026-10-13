@@ -36,11 +36,27 @@ void grid_for(const char *setting, int executors, int w, int h, int *nx, int *ny
 // the overlap around each one to stay a fraction of it.
 void areas_for(const char *setting, int w, int h, int *nx, int *ny);
 
+// Whether a picture is "the same drawing" as another: what decides that a result is reused.
+// Compressed video never repeats a held drawing bit for bit: on a web encode at 720p the bytes
+// of a held frame differ by 0.6 level on average over their worst 32x32 block and by 7 to 19
+// levels at their worst byte, while a frame where something moved has bytes that differ by 34
+// levels or more. Two limits tell them apart (measured, see docs/CHANTIER-PERFORMANCE-RELAIS.md):
+//   threshold  the largest mean difference of a 32x32 block, in 8-bit levels: catches what
+//              changes a little everywhere (a fade, a slow gradient);
+//   peak       the largest difference of one byte: catches a small thing that moves, which the
+//              mean of its block hides. 0 = no limit on single bytes.
+// threshold <= 0 asks for identical bytes.
+struct Sameness {
+    double threshold = 1.5;
+    int peak = 24;
+};
+
 // True when no 32x32 block of the window differs from the reference by more than `threshold`
 // (mean absolute difference of the block's bytes, in 8-bit levels). `ref` is width * 3 bytes a row.
-bool window_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *ref, int width, int height, double threshold);
+// and no byte by more than `peak`.
+bool window_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *ref, int width, int height, const Sameness &same);
 
 // The same test between two pictures that each have their own row stride.
-bool picture_unchanged(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, int width, int height, double threshold);
+bool picture_unchanged(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, int width, int height, const Sameness &same);
 
 } // namespace aji
