@@ -2,7 +2,8 @@
 -- If so, shows a one-time OSD prompt; Ctrl+U (or the AnimeJaNai > Install Update menu entry, both
 -- mapped to the "animejanai-update" script-message) applies it: the updater is launched detached,
 -- mpv quits so files unlock, the update is applied in place (user files preserved), and mpv relaunches.
--- macOS: the install is an application, replaced as a whole; see start_update_mac below.
+-- macOS (an application) and the Linux AppImage (one file) are replaced as a whole; see
+-- start_update_whole below.
 -- Ctrl+U asks again when no update is known: a release may have come out since the player was
 -- opened, and a check that failed (no connection, GitHub refusing for a while) says so.
 
@@ -19,27 +20,32 @@ local updater = is_mac and ((os.getenv("ANIMEJANAI_BUNDLE") or "") .. "/" .. exe
     or mp.command_native({ "expand-path", "~~/../" .. exe_name })
 local available_version = nil
 
--- Inside an AppImage the install tree is a read-only squashfs, so the in-place
--- updater can't apply. AppRun sets ANIMEJANAI_APPIMAGE (APPIMAGE is set by the
--- runtime too); in that case we point the user at the new AppImage instead.
+-- Inside an AppImage the install tree is a read-only squashfs: files cannot be updated in
+-- place, the AppImage file itself is replaced by the one of the release. AppRun sets
+-- ANIMEJANAI_APPIMAGE (APPIMAGE is set by the runtime too).
 local is_appimage = os.getenv("ANIMEJANAI_APPIMAGE") ~= nil or os.getenv("APPIMAGE") ~= nil
 local releases_url = "github.com/Ta2b/mpv-AnimeJaNai-HDR/releases"
 
--- macOS: why the application cannot be replaced where it is (the updater's UPDATE_BLOCKED).
+-- Why the application or the AppImage cannot be replaced where it is (the updater's
+-- UPDATE_BLOCKED).
 local blocked = nil
-local blocked_text = {
+local blocked_text = is_mac and {
     translocated = "macOS is running a temporary copy of the application.\n" ..
         "Move it to the Applications folder with the Finder,\nopen it from there, then press Ctrl+U.",
     readonly = "The folder that holds the application cannot be written to.\n" ..
         "Move the application to the Applications folder, then press Ctrl+U.",
+} or {
+    readonly = "The folder that holds the AppImage cannot be written to.\n" ..
+        "Move the AppImage to a folder of yours, then press Ctrl+U.",
+    extracted = "This copy does not run from an AppImage file.\nDownload the new AppImage:\n" .. releases_url,
 }
 local updating = false
 
--- macOS: the updater downloads and verifies the new application while the video keeps playing,
--- and reports through a one-line file. When the application is ready the player closes (the
--- position in the video is kept), the application is replaced and the player comes back on the
--- same file.
-local function start_update_mac()
+-- macOS and AppImage: the updater downloads and verifies the new application (or AppImage) while
+-- the video keeps playing, and reports through a one-line file. When it is ready the player
+-- closes (the position in the video is kept), the old one is replaced and the player comes back
+-- on the same file.
+local function start_update_whole()
     if updating then
         return
     end
@@ -158,13 +164,8 @@ local function start_update()
         end)
         return
     end
-    if is_mac then
-        start_update_mac()
-        return
-    end
-    if is_appimage then
-        mp.osd_message("AnimeJaNai " .. available_version ..
-            " is available.\nDownload the new AppImage:\n" .. releases_url, 12)
+    if is_mac or is_appimage then
+        start_update_whole()
         return
     end
     mp.osd_message("Installing AnimeJaNai " .. available_version .. " - mpv will close and reopen...", 5)
@@ -188,9 +189,7 @@ end
 check(function(state)
     if state == "update" then
         msg.info("Update available: " .. available_version)
-        local how = is_appimage and "press Ctrl+U for the download link."
-                                 or "press Ctrl+U to install."
-        mp.osd_message("AnimeJaNai update " .. available_version .. " available - " .. how, 8)
+        mp.osd_message("AnimeJaNai update " .. available_version .. " available - press Ctrl+U to install.", 8)
     elseif state == "none" then
         msg.verbose("AnimeJaNai is up to date.")
     end

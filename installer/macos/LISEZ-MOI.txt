@@ -55,9 +55,12 @@ regardez Ctrl+j. Run Benchmarks mesure aussi les profils avec RIFE.
 
 Mise à jour
 -----------
-Le lecteur annonce une nouvelle version au démarrage. Ctrl+u la télécharge pendant que la vidéo
-continue, la vérifie, puis remplace l'application et rouvre la vidéo au même endroit. Vos
-réglages et profils ne sont pas dans l'application et ne sont pas touchés.
+Le lecteur annonce une nouvelle version au démarrage. Ctrl+u vérifie de nouveau, la télécharge
+pendant que la vidéo continue, la vérifie, puis remplace l'application et rouvre la vidéo au
+même endroit. Vos réglages et profils ne sont pas dans l'application et ne sont pas touchés.
+Si la vérification échoue, le lecteur le dit avec la raison. Ctrl+j affiche la version installée.
+Les versions 3.8.0.19 et 3.8.0.20 ont un updater qui peut répondre « à jour » à tort : pour
+passer à la 3.8.0.21 ou plus, téléchargez le zip une dernière fois à la main.
 
 Choix automatique du profil
 ---------------------------

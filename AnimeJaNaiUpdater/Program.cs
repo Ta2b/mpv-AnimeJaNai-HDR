@@ -4,7 +4,8 @@
 //
 //   AnimeJaNaiUpdater.exe --check        prints UPDATE_AVAILABLE <ver> | UP_TO_DATE <ver> (for the lua)
 //   AnimeJaNaiUpdater.exe --apply        waits for mpv to close, downloads + applies, relaunches mpv
-//   macOS (the install is an application, replaced as a whole; see "macOS" below):
+//   macOS (the install is an application, replaced as a whole; see "macOS" below) and Linux
+//   AppImage (the file is replaced by the release's AppImage; see "Linux AppImage" below):
 //   AnimeJaNaiUpdater --apply [--wait-pid PID] [--status FILE] [--reopen PATH] [--no-relaunch]
 //   AnimeJaNaiUpdater.exe --components   detect GPU, list installed/available packs + recommendation
 //   AnimeJaNaiUpdater.exe --install X    download + install component pack X
@@ -91,8 +92,7 @@ try
             }
             if (Environment.GetEnvironmentVariable("ANIMEJANAI_APPIMAGE") == "1")
             {
-                Console.WriteLine($"Download the new AppImage from https://github.com/{Repo}/releases ; writable user data is preserved.");
-                return 0;
+                return await AppImageApplyAsync();
             }
             return await ApplyAsync();
         case "--components" or "--install" or "--remove" or "--auto" or "--recommend" when macApp is not null:
@@ -132,13 +132,189 @@ async Task CheckAsync()
     MigrateMpvConfProfile();
     var release = await GetLatestReleaseAsync();
     string local = ReadLocalVersion();
-    if (IsNewer(release.Tag, local))
+    // An AppImage is replaced by the AppImage of the release: a release that does not have it
+    // (yet) is not an update.
+    bool appImage = Environment.GetEnvironmentVariable("ANIMEJANAI_APPIMAGE") == "1";
+    if (IsNewer(release.Tag, local) && (!appImage || AppImageAsset(release, platformRid) is not null))
     {
         Console.WriteLine($"UPDATE_AVAILABLE {release.Tag}");
+        string? file = appImage ? Environment.GetEnvironmentVariable("APPIMAGE") : null;
+        if (appImage && (string.IsNullOrEmpty(file) || !File.Exists(file)))
+        {
+            Console.WriteLine("UPDATE_BLOCKED extracted");
+        }
+        else if (file is not null && MacBlocked(file) is string reason)
+        {
+            Console.WriteLine($"UPDATE_BLOCKED {reason}");
+        }
     }
     else
     {
         Console.WriteLine($"UP_TO_DATE {local}");
+    }
+}
+
+// ---- Linux AppImage ----------------------------------------------------------------------------
+// An AppImage is one read-only file: it cannot be updated piece by piece, so the AppImage of the
+// release replaces it. As on macOS, the new file is downloaded and verified next to the old
+// one while the player keeps playing; once the player has closed it takes its place (under the
+// new version's name when the old name carried its version) and the player comes back. The
+// user's settings are outside the file and are not touched.
+
+static Asset? AppImageAsset(Release release, string rid) =>
+    release.Assets.FirstOrDefault(a => a.Name.EndsWith(rid + ".AppImage", StringComparison.Ordinal) &&
+                                       a.Name.Contains(release.Tag, StringComparison.Ordinal));
+
+// Where the new AppImage goes: the same file, renamed to the new version when its name carries
+// the version it replaces.
+static string AppImageTarget(string current, string oldVersion, string newVersion)
+{
+    string name = Path.GetFileName(current);
+    return oldVersion.Length > 0 && name.Contains(oldVersion, StringComparison.Ordinal)
+        ? Path.Combine(Path.GetDirectoryName(current)!, name.Replace(oldVersion, newVersion))
+        : current;
+}
+
+// The SHA-256 of `name` in a SHA256SUMS listing ("<hex>  <name>" a line), or null.
+static string? ListedChecksum(string listing, string name)
+{
+    foreach (string line in listing.Split('\n'))
+    {
+        string[] parts = line.Split((char[]?)null, 2, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 2 && parts[1].Trim().TrimStart('*') == name)
+        {
+            return parts[0];
+        }
+    }
+    return null;
+}
+
+async Task<int> AppImageApplyAsync()
+{
+    string? statusPath = Option("--status");
+    string? reopen = Option("--reopen");
+    int playerPid = int.TryParse(Option("--wait-pid"), out int parsed) ? parsed : 0;
+    void Status(string line)
+    {
+        Console.WriteLine(line);
+        if (statusPath is not null)
+        {
+            TryDelete(() => File.WriteAllText(statusPath, line + "\n"));
+        }
+    }
+
+    string current = Environment.GetEnvironmentVariable("APPIMAGE") ?? "";
+    string part = "";
+    try
+    {
+        Status("CHECK");
+        if (current.Length == 0 || !File.Exists(current))
+        {
+            Status($"FAILED This copy does not run from an AppImage file. Download the new one from https://github.com/{Repo}/releases");
+            return 3;
+        }
+        if (MacBlocked(current) is not null)
+        {
+            Status("FAILED The folder that holds the AppImage cannot be written to. Move the AppImage to a folder of yours, then update.");
+            return 3;
+        }
+        var release = await GetLatestReleaseAsync();
+        string local = ReadLocalVersion();
+        var asset = AppImageAsset(release, platformRid);
+        if (!IsNewer(release.Tag, local) || asset is null)
+        {
+            Status($"UP_TO_DATE {local}");
+            return 0;
+        }
+
+        string target = AppImageTarget(current, local, release.Tag);
+        part = Path.Combine(Path.GetDirectoryName(current)!, "." + Path.GetFileName(target) + ".part");
+        double shown = -1;
+        Status("DOWNLOAD 0");
+        await DownloadFileAsync(asset.Url, part, p =>
+        {
+            if (p != shown)
+            {
+                shown = p;
+                Status($"DOWNLOAD {p:0}");
+            }
+        });
+        Status("EXTRACT");
+        // The checksums published with the release, when it has them.
+        var sums = release.Assets.FirstOrDefault(a => a.Name == "SHA256SUMS");
+        if (sums is not null)
+        {
+            using var client = NewClient();
+            string? expected = ListedChecksum(await client.GetStringAsync(sums.Url), asset.Name);
+            if (expected is not null && !ChecksumMatches(part, expected))
+            {
+                throw new IOException("The download is damaged (checksum mismatch). Nothing was changed.");
+            }
+        }
+        // An AppImage starts with an ELF header: a page of error text saved as a file does not.
+        using (var head = File.OpenRead(part))
+        {
+            var magic = new byte[4];
+            if (head.Read(magic, 0, 4) != 4 || magic[0] != 0x7f || magic[1] != (byte)'E' || magic[2] != (byte)'L' || magic[3] != (byte)'F')
+            {
+                throw new IOException("The download is not an AppImage. Nothing was changed.");
+            }
+        }
+        File.SetUnixFileMode(part, File.GetUnixFileMode(current) | UnixFileMode.UserExecute | UnixFileMode.UserRead | UnixFileMode.UserWrite);
+
+        bool playerOpen = playerPid > 0 && IsRunning(playerPid);
+        Status($"READY {release.Tag}");
+        if (playerPid > 0 && !WaitForPid(playerPid, TimeSpan.FromSeconds(90)))
+        {
+            Status("FAILED The player did not close. Nothing was changed.");
+            return 1;
+        }
+        if (statusPath is not null && File.Exists(statusPath + ".reopen"))
+        {
+            reopen = File.ReadAllText(statusPath + ".reopen").Trim();
+        }
+        // One rename puts the new file in place. This program runs from the old file, which Linux
+        // keeps readable until its last user closes, even once it has no name.
+        File.Move(part, target, true);
+        part = "";
+        if (target != current)
+        {
+            TryDelete(() => File.Delete(current));
+        }
+        Status($"DONE {release.Tag}");
+        if (!args.Contains("--no-relaunch") && (playerOpen || playerPid == 0))
+        {
+            var start = new ProcessStartInfo { FileName = target, UseShellExecute = false };
+            // What the old AppImage put in the environment points into its own mount.
+            foreach (string name in new[] { "APPIMAGE", "APPDIR", "ARGV0", "OWD", "LD_LIBRARY_PATH", "MPV_HOME",
+                         "ANIMEJANAI_APPIMAGE", "ANIMEJANAI_ROOT", "ANIMEJANAI_DATA_DIR", "ANIMEJANAI_MPV", "ANIMEJANAI_INFERENCE_DIR", "ANIMEJANAI_IPC_PATH" })
+            {
+                start.Environment.Remove(name);
+            }
+            if (!string.IsNullOrEmpty(reopen))
+            {
+                start.ArgumentList.Add(reopen);
+            }
+            try { Process.Start(start)?.Dispose(); }
+            catch (Exception e) { Console.WriteLine($"Could not relaunch the player: {e.Message}"); }
+        }
+        return 0;
+    }
+    catch (Exception e)
+    {
+        Status("FAILED " + e.Message.Replace('\n', ' '));
+        return 1;
+    }
+    finally
+    {
+        if (part.Length > 0)
+        {
+            TryDelete(() => File.Delete(part));
+        }
+        if (statusPath is not null)
+        {
+            TryDelete(() => File.Delete(statusPath + ".reopen"));
+        }
     }
 }
 
@@ -495,48 +671,9 @@ string? Option(string name)
     return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
 }
 
-// The latest release and its macOS files, without the GitHub API. The API gives one address
-// sixty anonymous requests an hour, shared by everything behind that address (another computer
-// of the house, a script): once they are spent the check fails. The page of the latest release
-// redirects to its tag, and the files of a release have fixed addresses.
-async Task<Release> MacLatestAsync()
-{
-    string prefix = ReadManifestString(localManifest, "update_asset_prefix", "mpv-AnimeJaNai-HDR-v");
-    try
-    {
-        using var client = NewClient();
-        using var page = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, $"https://github.com/{Repo}/releases/latest"));
-        string address = page.RequestMessage?.RequestUri?.AbsolutePath ?? "";
-        const string marker = "/releases/tag/";
-        int at = address.IndexOf(marker, StringComparison.Ordinal);
-        if (!page.IsSuccessStatusCode || at < 0)
-        {
-            throw new InvalidOperationException("The page of the latest release did not lead to a release.");
-        }
-        string tag = Uri.UnescapeDataString(address[(at + marker.Length)..].Trim('/'));
-        var assets = new List<Asset>();
-        string application = prefix + tag + MacAssetSuffix();
-        foreach (string name in new[] { application, application + ".sha256" })
-        {
-            string url = $"https://github.com/{Repo}/releases/download/{Uri.EscapeDataString(tag)}/{Uri.EscapeDataString(name)}";
-            using var head = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
-            if (head.IsSuccessStatusCode)
-            {
-                assets.Add(new Asset(name, url));
-            }
-        }
-        return new Release(tag, assets);
-    }
-    catch (Exception e) when (e is HttpRequestException or InvalidOperationException or TaskCanceledException)
-    {
-        // The API as a second way, where the pages are filtered and it is not.
-        return await GetLatestReleaseAsync();
-    }
-}
-
 async Task MacCheckAsync()
 {
-    var release = await MacLatestAsync();
+    var release = await GetLatestReleaseAsync();
     string local = ReadLocalVersion();
     // The macOS application is added to a release some time after the release is created: a
     // release without it is not an update yet.
@@ -581,7 +718,7 @@ async Task<int> MacApplyAsync()
             Status("FAILED " + MacBlockedText(reason));
             return 3;
         }
-        var release = await MacLatestAsync();
+        var release = await GetLatestReleaseAsync();
         string local = ReadLocalVersion();
         var asset = MacAsset(release, MacAssetSuffix());
         if (!IsNewer(release.Tag, local) || asset is null)
@@ -731,10 +868,10 @@ static Asset? MacAsset(Release release, string suffix) =>
     release.Assets.FirstOrDefault(a => a.Name.EndsWith(suffix, StringComparison.Ordinal) &&
                                        a.Name.Contains(release.Tag, StringComparison.Ordinal));
 
-// Why the application cannot be replaced where it is, or null.
+// Why the application (macOS) or the AppImage (Linux) cannot be replaced where it is, or null.
 //   translocated: opened from the downloads folder before being moved, macOS runs a read-only
 //                 copy from a temporary place; the real application is somewhere else.
-//   readonly:     the folder that holds the application cannot be written to.
+//   readonly:     the folder that holds it cannot be written to.
 static string? MacBlocked(string app)
 {
     if (app.Contains("/AppTranslocation/", StringComparison.Ordinal)) return "translocated";
@@ -1141,8 +1278,62 @@ Task<Release> GetInstalledReleaseAsync()
     return GetReleaseAsync($"https://api.github.com/repos/{Repo}/releases/tags/{Uri.EscapeDataString(tag)}");
 }
 
+// A release and its files, read from GitHub's pages. The API gives one internet address sixty
+// anonymous requests an hour, shared by everything behind that address (other computers of
+// the house, other customers of a provider that shares its addresses): once they are spent
+// every check fails. The page of the latest release redirects to its tag, and the list of a
+// release's files is a page too. tag: null for the latest release.
+async Task<Release> PagesReleaseAsync(string? tag)
+{
+    using var client = NewClient();
+    if (tag is null)
+    {
+        using var page = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, $"https://github.com/{Repo}/releases/latest"));
+        string address = page.RequestMessage?.RequestUri?.AbsolutePath ?? "";
+        const string marker = "/releases/tag/";
+        int at = address.IndexOf(marker, StringComparison.Ordinal);
+        if (!page.IsSuccessStatusCode || at < 0)
+        {
+            throw new InvalidOperationException("The page of the latest release did not lead to a release.");
+        }
+        tag = Uri.UnescapeDataString(address[(at + marker.Length)..].Trim('/'));
+    }
+    using var listing = await client.GetAsync($"https://github.com/{Repo}/releases/expanded_assets/{Uri.EscapeDataString(tag)}");
+    if (!listing.IsSuccessStatusCode)
+    {
+        throw new InvalidOperationException($"The files of release {tag} could not be listed.");
+    }
+    string html = await listing.Content.ReadAsStringAsync();
+    var assets = new List<Asset>();
+    foreach (Match m in Regex.Matches(html, "href=\"(/" + Regex.Escape(Repo) + "/releases/download/[^\"]+)\""))
+    {
+        string path = System.Net.WebUtility.HtmlDecode(m.Groups[1].Value);
+        string name = Uri.UnescapeDataString(path[(path.LastIndexOf('/') + 1)..]);
+        if (!assets.Any(a => a.Name == name))
+        {
+            assets.Add(new Asset(name, "https://github.com" + path));
+        }
+    }
+    if (assets.Count == 0)
+    {
+        throw new InvalidOperationException($"Release {tag} lists no file.");
+    }
+    return new Release(tag, assets);
+}
+
+// url: the API address of the release (.../releases/latest or .../releases/tags/TAG). The pages
+// are asked first; the API is the second way, where the pages are filtered and it is not.
 async Task<Release> GetReleaseAsync(string url)
 {
+    try
+    {
+        const string byTag = "/releases/tags/";
+        int at = url.IndexOf(byTag, StringComparison.Ordinal);
+        return await PagesReleaseAsync(at < 0 ? null : Uri.UnescapeDataString(url[(at + byTag.Length)..]));
+    }
+    catch (Exception e) when (e is HttpRequestException or InvalidOperationException or TaskCanceledException)
+    {
+    }
     using var client = NewClient();
     using var request = new HttpRequestMessage(HttpMethod.Get, url);
     // Unauthenticated requests are limited per address; a test machine that shares its address

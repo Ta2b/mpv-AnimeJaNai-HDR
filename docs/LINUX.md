@@ -146,9 +146,22 @@ Elle actualise scripts, shaders et outils HDR à chaque lancement et conserve
 banques, réglages, moteurs et fichiers utilisateur. Les téléchargements pointent
 vers `Ta2b/mpv-AnimeJaNai-HDR`. Le Manager et l'updater utilisent le même
 répertoire modifiable pour installer les composants ; l'AppImage actualise le
-manifeste et la version et relie `7zz`. La mise à jour du programme passe par le
-téléchargement d'une nouvelle AppImage. `ANIMEJANAI_OFFLINE=1` désactive ses téléchargements
-automatiques de composants ; le profil par défaut ne les déclenche pas.
+manifeste et la version et relie `7zz`. `ANIMEJANAI_OFFLINE=1` désactive ses téléchargements
+automatiques de composants ; le profil par défaut ne les déclenche pas. Un composant inchangé
+depuis une release antérieure est pris à l'adresse que donne `packs-linux-x64.json`.
+
+**Mise à jour de l'AppImage (depuis la 3.8.0.21).** Le lecteur annonce une nouvelle version au
+démarrage ; Ctrl+U vérifie de nouveau puis lance `AnimeJaNaiUpdater --apply`. L'updater
+télécharge l'AppImage de la release à côté de l'ancienne pendant que la vidéo continue, la
+contrôle (`SHA256SUMS`, en-tête ELF), attend la fermeture du lecteur, met le nouveau fichier
+à la place de l'ancien (sous le nom de la nouvelle version quand l'ancien nom portait la
+sienne) et relance le lecteur sur le même fichier. Le dossier de données n'est pas touché.
+L'AppImage doit être dans un dossier où l'on peut écrire. Les versions jusqu'à la 3.8.0.20
+n'ont pas cette mise à jour : la 3.8.0.21 se télécharge une dernière fois à la main.
+
+Sur toutes les plateformes, l'updater lit les releases sur les pages de GitHub
+(`releases/latest`, `releases/expanded_assets/TAG`) et non par son API, limitée à soixante
+requêtes anonymes par heure et par adresse internet ; l'API reste la seconde voie.
 
 Les noms d’assets Windows sont conservés. Les contrôles et compilations Windows
 et Linux sont indépendants. Par défaut `Deploy` construit les deux plateformes

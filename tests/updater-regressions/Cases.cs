@@ -218,22 +218,35 @@ try
         Pass("mac-application-replaced-or-kept");
     }
     }
-    // macOS: the latest release is read from its page and its files' addresses, not from the API.
+    // Releases are read from GitHub's pages; the API is only the second way.
     {
-        string dir = Path.Combine(root, "mac-latest"); Directory.CreateDirectory(dir);
-        var pages = new PagesHttp("3.9.0", "mpv-AnimeJaNai-HDR-v3.9.0-macos-arm64.zip", "mpv-AnimeJaNai-HDR-v3.9.0-macos-arm64.zip.sha256");
-        var release = await new Production(dir, pages).MacLatest();
-        Check(release.Tag == "3.9.0" && release.Assets.Count == 2 && release.Assets[0].Url.EndsWith("/releases/download/3.9.0/mpv-AnimeJaNai-HDR-v3.9.0-macos-arm64.zip"),
-            "Latest release not read from its page");
+        string dir = Path.Combine(root, "pages"); Directory.CreateDirectory(dir);
+        var pages = new PagesHttp("3.9.0", "manifest.json", "mpv-AnimeJaNai-HDR-v3.9.0-macos-arm64.zip", "mpv-AnimeJaNai-HDR-v3.9.0-linux-x64.AppImage", "SHA256SUMS");
+        var latest = await new Production(dir, pages).Latest();
+        Check(latest.Tag == "3.9.0" && latest.Assets.Count == 4
+            && latest.Assets.Any(a => a.Url == "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.9.0/mpv-AnimeJaNai-HDR-v3.9.0-macos-arm64.zip"),
+            "Latest release not read from its pages");
         Check(!pages.Urls.Any(u => u.Contains("api.github.com")), "The API was used although the pages answered");
-        // A release whose macOS application is not there yet: known, with no file.
-        var early = await new Production(dir, new PagesHttp("3.9.1")).MacLatest();
-        Check(early.Tag == "3.9.1" && early.Assets.Count == 0, "A release without its macOS application was given files");
-        // The pages do not answer: the API is the second way.
+        Check(Production.MacApplication(latest, "-macos-arm64.zip") != null && Production.AppImage(latest, "linux-x64") != null, "Files of the platforms not found in the page");
+        // The pages do not answer: the API.
         var api = new FixtureHttp();
-        var fallback = await new Production(dir, api).MacLatest();
-        Check(fallback.Tag == "3.5.0" && api.Urls.Any(u => u.EndsWith("/releases/latest") && u.Contains("api.github.com")), "No second way when the pages fail");
-        Pass("mac-latest-release-without-the-api");
+        var fallback = await new Production(dir, api).Latest();
+        Check(fallback.Tag == "3.5.0" && api.Urls.Single().Contains("api.github.com"), "No second way when the pages fail");
+        Pass("releases-read-from-pages");
+    }
+    // Linux AppImage: which file of the release, where it goes, and its checksum.
+    {
+        var release = new Release("3.9.0", new List<Asset> { new("mpv-upscale-2x_animejanai-v3.9.0-linux-x64.tar.zst", "tar"),
+            new("mpv-AnimeJaNai-HDR-v3.9.0-linux-x64.AppImage", "image"), new("mpv-AnimeJaNai-HDR-v3.9.0-macos-arm64.zip", "mac") });
+        Check(Production.AppImage(release, "linux-x64")?.Url == "image", "Wrong AppImage asset");
+        Check(Production.AppImage(new Release("3.9.1", release.Assets), "linux-x64") == null, "Took another version's AppImage");
+        Check(Production.Target("/home/a/Apps/mpv-AnimeJaNai-HDR-v3.8.0.20-linux-x64.AppImage", "3.8.0.20", "3.9.0") == "/home/a/Apps/mpv-AnimeJaNai-HDR-v3.9.0-linux-x64.AppImage",
+            "A name that carries its version must follow the new one");
+        Check(Production.Target("/home/a/Apps/mpv.AppImage", "3.8.0.20", "3.9.0") == "/home/a/Apps/mpv.AppImage", "A name without version must be kept");
+        const string listing = "aaaa  manifest.json\n51678e8a2f74a2db2092c5f0e387a72fa31e531e513036898366adcf07998dca  mpv-AnimeJaNai-HDR-v3.9.0-linux-x64.AppImage\nbbbb *other.bin\n";
+        Check(Production.Listed(listing, "mpv-AnimeJaNai-HDR-v3.9.0-linux-x64.AppImage") == "51678e8a2f74a2db2092c5f0e387a72fa31e531e513036898366adcf07998dca"
+            && Production.Listed(listing, "other.bin") == "bbbb" && Production.Listed(listing, "absent") == null, "Checksum listing misread");
+        Pass("appimage-asset-target-checksum");
     }
     Console.WriteLine($"Completed {passed} updater regression cases.");
     return 0;
@@ -254,8 +267,14 @@ class PagesHttp : HttpMessageHandler
             // What a client that follows redirections ends on.
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
                 RequestMessage = new HttpRequestMessage(HttpMethod.Head, new Uri(url, "tag/" + tag)) });
-        bool found = files.Any(f => url.AbsolutePath.EndsWith("/releases/download/" + tag + "/" + f));
-        return Task.FromResult(new HttpResponseMessage(found ? HttpStatusCode.OK : HttpStatusCode.NotFound) { RequestMessage = request });
+        if (url.AbsolutePath.EndsWith("/releases/expanded_assets/" + tag))
+        {
+            // As GitHub writes it: one link per file, with other links around.
+            string html = "<ul><li><a href=\"/Ta2b/mpv-AnimeJaNai-HDR/archive/refs/tags/" + tag + ".zip\">Source</a></li>"
+                + string.Concat(files.Select(f => "<li><a href=\"/Ta2b/mpv-AnimeJaNai-HDR/releases/download/" + tag + "/" + f + "\" rel=\"nofollow\">" + f + "</a></li>")) + "</ul>";
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(html), RequestMessage = request });
+        }
+        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound) { RequestMessage = request });
     }
 }
 
@@ -266,7 +285,10 @@ class FixtureHttp : HttpMessageHandler
         packs = new[] { new { name = "rife", asset = "component-rife.7z", bytes = 1, files = new[] { "fixture" } } } });
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
-        var url = request.RequestUri!; Urls.Add(url.ToString());
+        var url = request.RequestUri!;
+        // This fixture is the API: GitHub's pages do not answer, so every lookup falls back to it.
+        if (url.Host == "github.com") return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound) { RequestMessage = request });
+        Urls.Add(url.ToString());
         string path = url.AbsolutePath, version = path.Contains("3.6.0") ? "3.6.0" : "3.5.0";
         if (path.EndsWith("3.7.0")) return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
         string body = path.EndsWith(".json") ? Index(version) : JsonSerializer.Serialize(new {

@@ -272,10 +272,16 @@ mp.add_key_binding('Ctrl+e', 'animejanai-manager', open_manager)
 mp.register_script_message('animejanai-manager', open_manager)
 
 local function status()
-    local text = 'AnimeJaNai | moteur ' .. setting_engine() .. ' | cible ' .. setting_device() .. ' | profil ' .. slot
+    local version = (read(bundle .. '/version.txt') or ''):gsub('%s+$', '')
+    -- No statistics yet: the engine has not given a picture since the profile was chosen. It
+    -- compiles its models when a profile opens, and the picture stays still meanwhile.
+    local waiting = 'Le moteur prépare les modèles de ce profil : l\'image reste figée pendant ce temps.\n'
+        .. 'La première fois, cela peut durer de quelques dizaines de secondes à quelques minutes\n'
+        .. '(plus long avec RIFE) ; le résultat est gardé pour les fois suivantes.'
+    local text = 'AnimeJaNai ' .. version .. ' | moteur ' .. setting_engine() .. ' | cible ' .. setting_device() .. ' | profil ' .. slot
         .. (slot > 0 and (' : ' .. tostring(profile_name(slot))) or ' : désactivé')
         .. (setting_auto() and not manual and ' | choix automatique' or '') .. '\n'
-        .. (slot > 0 and (read(stats) or 'statistiques indisponibles') or '')
+        .. (slot > 0 and (read(stats) or waiting) or '')
     mp.osd_message(text, 10)
     mp.msg.info(text)
 end

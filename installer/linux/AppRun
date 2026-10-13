@@ -82,7 +82,7 @@ if [ -n "${APPIMAGE:-}" ] && [ ! -e "$no_entry" ] &&
     register_desktop "$APPIMAGE" 2>/dev/null || true
 fi
 
-export ANIMEJANAI_APPIMAGE=1   # animejanai_update.lua => "download the new AppImage"
+export ANIMEJANAI_APPIMAGE=1   # animejanai_update.lua and the updater: the AppImage file is replaced as a whole
 mkdir -p "$DATA/portable_config" "$DATA/animejanai/onnx" "$DATA/animejanai/rife"
 
 # Seed / refresh writable data. Managed files are overwritten on version change;
@@ -172,7 +172,12 @@ fetch_pack() { # $1 = pack base (e.g. trt-sm120, rife); $2 = human note
     [ "${ANIMEJANAI_OFFLINE:-0}" = "1" ] && return 0
     { [ -n "$ver" ] && command -v curl >/dev/null 2>&1; } || return 0
     echo "AnimeJaNai: fetching $2 (one-time)..." >&2
-    if curl --connect-timeout 5 --max-time 180 -fSL "$relbase/$pack" -o "$DATA/$pack"; then
+    # A pack that did not change since an earlier release is not published again: the index of
+    # this release then gives the address it has in that earlier one.
+    [ -n "${pack_index+x}" ] || pack_index="$(curl --connect-timeout 5 --max-time 30 -fsSL "$relbase/packs-linux-x64.json" 2>/dev/null | tr -d '\n')"
+    pack_url="$(printf '%s' "$pack_index" | grep -o "\"url\"[[:space:]]*:[[:space:]]*\"[^\"]*/$pack\"" | head -1 | sed 's/.*"\(https[^"]*\)"$/\1/')"
+    [ -n "$pack_url" ] || pack_url="$relbase/$pack"
+    if curl --connect-timeout 5 --max-time 180 -fSL "$pack_url" -o "$DATA/$pack"; then
         "$HERE/7zz" x -snl -y -o"$DATA" "$DATA/$pack" >/dev/null 2>&1 || true
         rm -f "$DATA/$pack"
     else

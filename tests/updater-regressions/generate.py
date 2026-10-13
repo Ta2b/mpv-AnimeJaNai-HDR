@@ -21,18 +21,20 @@ methods=[method(s) for s in ('void SyncInputConf()', 'string ReadLocalVersion()'
     'async Task<PackIndex> GetPackIndexAsync()', 'void CopyTree(', 'static bool IsPreserved(', 'static void TryDelete(',
     # macOS: the application is replaced as a whole.
     'static string? BundleOf(', 'static string? MacBlocked(', 'static bool ChecksumMatches(',
-    'static string StagedApp(', 'static void ReplaceBundle(', 'async Task<Release> MacLatestAsync()')]
+    'static string StagedApp(', 'static void ReplaceBundle(', 'async Task<Release> PagesReleaseAsync(',
+    'static string AppImageTarget(', 'static string? ListedChecksum(')]
 start=source.index('string ReadComponentVersion() =>')
 methods.append(source[start:source.index(';',start)+1])
 start=source.index('static string NormalizeRel(')
 methods.append(source[start:source.index(';',start)+1])
 start=source.index('static Asset? MacAsset(')
 methods.append(source[start:source.index(';',start)+1])
-start=source.index('string MacAssetSuffix() =>')
+start=source.index('static Asset? AppImageAsset(')
 methods.append(source[start:source.index(';',start)+1])
 latest=next(s for s in source.splitlines() if s.startswith('Task<Release> GetLatestReleaseAsync()'))
 repo=next(s for s in source.splitlines() if s.startswith('const string Repo ='))
 wrapper='''using System.Text.Json;
+using System.Text.RegularExpressions;
 class Production
 {
     private readonly string installDir;
@@ -56,7 +58,9 @@ class Production
     public static bool Checksum(string file, string published) => ChecksumMatches(file, published);
     public static string Staged(string staging, string launcher) => StagedApp(staging, launcher);
     public static void Replace(string staged, string app) => ReplaceBundle(staged, app);
-    public Task<Release> MacLatest() => MacLatestAsync();
+    public static Asset? AppImage(Release release, string rid) => AppImageAsset(release, rid);
+    public static string Target(string current, string oldVersion, string newVersion) => AppImageTarget(current, oldVersion, newVersion);
+    public static string? Listed(string listing, string name) => ListedChecksum(listing, name);
 '''.replace('REPO',repo)
 (out/'Production.cs').write_text(wrapper+'\n'.join(methods)+'\n'+latest+'\n}\n'+
     source[source.index('record Release('):],encoding='utf-8')

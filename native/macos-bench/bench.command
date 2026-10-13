@@ -25,6 +25,7 @@ case "$out" in /*) ;; *) out="$(pwd)/$out" ;; esac
 cd "$cd_work" || exit 1
 {
     echo "AnimeJaNai - mesure des moteurs - $(date)"
+    echo "Application : ${AJI_BENCH_VERSION:-paquet de mesure seul}"
     sw_vers 2>/dev/null
     sysctl -n machdep.cpu.brand_string 2>/dev/null
     system_profiler SPHardwareDataType 2>/dev/null | grep -E 'Model Name|Chip|Memory|Cores'
@@ -64,9 +65,13 @@ else
     essai coremlnative GPU+NPU 1 1280 720
     essai metal GPU+NPU 1 1280 720
     essai coreml GPU+ANE 1 1280 720
-    # Trois processeurs : le CPU (et son unité matricielle) prend aussi des tuiles.
+    # Trois processeurs : le CPU (et son unité matricielle) prend aussi des tuiles. Chaque moteur,
+    # puis la même image en davantage de tuiles (le plus lent en prend alors une plus petite part).
     essai coremlnative GPU+NPU+CPU 1 1280 720
     essai metal GPU+NPU+CPU 1 1280 720
+    essai coreml GPU+ANE+CPU 1 1280 720
+    essai coremlnative GPU+NPU+CPU 1 1280 720 AJI_TILES=4x3
+    essai metal GPU+NPU+CPU 1 1280 720 AJI_TILES=4x3
     # 3. Le Neural Engine préfère les petites images : la même image en 4, 6 puis 12 tuiles.
     for grid in 2x2 3x2 4x3; do essai coremlnative NPU 1 1280 720 "AJI_TILES=$grid"; done
     essai coremlnative GPU+NPU 1 1280 720 AJI_TILES=4x3
@@ -83,16 +88,20 @@ else
     essai coremlnative GPU 3 1280 720 AJI_RIFE_DEVICE=npu AJI_RIFE_PARALLEL=0
     essai metal GPU 3 1280 720 AJI_RIFE_DEVICE=npu
     essai coremlnative GPU+NPU 4 1280 720
+    essai coremlnative GPU+NPU+CPU 3 1280 720
+    essai coremlnative GPU+NPU+CPU 3 1280 720 AJI_RIFE_DEVICE=cpu
+    essai metal GPU+NPU+CPU 3 1280 720
     essai coremlnative GPU+NPU 3 960 540
+    essai coremlnative GPU+NPU+CPU 3 960 540
     if [ "$mode" != rapide ]; then
         # 6. Autres tailles, puis le modèle Balanced (profil 2).
         for size in "960 540" "1920 1080"; do
             set -- $size
-            essai coremlnative GPU 1 "$1" "$2"; essai coremlnative GPU+NPU 1 "$1" "$2"
-            essai metal GPU 1 "$1" "$2"; essai metal GPU+NPU 1 "$1" "$2"; essai coreml ALL 1 "$1" "$2"
+            essai coremlnative GPU 1 "$1" "$2"; essai coremlnative GPU+NPU 1 "$1" "$2"; essai coremlnative GPU+NPU+CPU 1 "$1" "$2"
+            essai metal GPU 1 "$1" "$2"; essai metal GPU+NPU 1 "$1" "$2"; essai metal GPU+NPU+CPU 1 "$1" "$2"; essai coreml ALL 1 "$1" "$2"
         done
-        essai coremlnative GPU 2 1280 720; essai coremlnative GPU+NPU 2 1280 720
-        essai metal GPU 2 1280 720; essai metal GPU+NPU 2 1280 720; essai coreml ALL 2 1280 720
+        essai coremlnative GPU 2 1280 720; essai coremlnative GPU+NPU 2 1280 720; essai coremlnative GPU+NPU+CPU 2 1280 720
+        essai metal GPU 2 1280 720; essai metal GPU+NPU 2 1280 720; essai metal GPU+NPU+CPU 2 1280 720; essai coreml ALL 2 1280 720
         essai coremlnative CPU 1 1280 720
     fi
 fi
@@ -119,6 +128,14 @@ rank() { # rank TITRE MOTIF
         echo "   Manager > Global Settings : moteur coreml = « Core ML (ONNX Runtime) », coremlnative ="
         echo "   « Core ML (native) », metal = « Metal » ; cible = Compute target. Une variable AJI_TILES se"
         echo "   règle par engine_tiles=... dans la section [global] de animejanai.conf."
+        # Deux et trois processeurs côte à côte, pour chaque moteur : ce que le CPU ajoute ou retire.
+        echo
+        echo "== Le CPU en plus du GPU et du Neural Engine (Performance 720p, ms par image)"
+        for engine in coremlnative metal coreml; do
+            two="$(grep '^RESULT' "$out" | grep -E "moteur=$engine cible=GPU\+(NPU|ANE) profil=1 \|.*1280x720 ->" | head -1 | awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t }')"
+            three="$(grep '^RESULT' "$out" | grep -E "moteur=$engine cible=GPU\+(NPU|ANE)\+CPU profil=1 \|.*1280x720 ->" | head -1 | awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t }')"
+            printf '   %-13s GPU + NPU : %8s      GPU + NPU + CPU : %8s\n' "$engine" "${two:-absent}" "${three:-absent}"
+        done
     fi
 } | tee -a "$out"
 echo | tee -a "$out"
