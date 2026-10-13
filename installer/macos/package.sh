@@ -76,6 +76,7 @@ cat > "$RES/manifest.json" <<EOF
   "install": "application",
   "player_executable": "mpv",
   "player_launcher": "mpv-animejanai",
+  "update_asset_prefix": "mpv-AnimeJaNai-HDR-v",
   "update_asset_suffix": "-macos-arm64.zip"
 }
 EOF

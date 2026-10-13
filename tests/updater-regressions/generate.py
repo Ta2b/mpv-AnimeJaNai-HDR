@@ -21,12 +21,14 @@ methods=[method(s) for s in ('void SyncInputConf()', 'string ReadLocalVersion()'
     'async Task<PackIndex> GetPackIndexAsync()', 'void CopyTree(', 'static bool IsPreserved(', 'static void TryDelete(',
     # macOS: the application is replaced as a whole.
     'static string? BundleOf(', 'static string? MacBlocked(', 'static bool ChecksumMatches(',
-    'static string StagedApp(', 'static void ReplaceBundle(')]
+    'static string StagedApp(', 'static void ReplaceBundle(', 'async Task<Release> MacLatestAsync()')]
 start=source.index('string ReadComponentVersion() =>')
 methods.append(source[start:source.index(';',start)+1])
 start=source.index('static string NormalizeRel(')
 methods.append(source[start:source.index(';',start)+1])
 start=source.index('static Asset? MacAsset(')
+methods.append(source[start:source.index(';',start)+1])
+start=source.index('string MacAssetSuffix() =>')
 methods.append(source[start:source.index(';',start)+1])
 latest=next(s for s in source.splitlines() if s.startswith('Task<Release> GetLatestReleaseAsync()'))
 repo=next(s for s in source.splitlines() if s.startswith('const string Repo ='))
@@ -54,6 +56,7 @@ class Production
     public static bool Checksum(string file, string published) => ChecksumMatches(file, published);
     public static string Staged(string staging, string launcher) => StagedApp(staging, launcher);
     public static void Replace(string staged, string app) => ReplaceBundle(staged, app);
+    public Task<Release> MacLatest() => MacLatestAsync();
 '''.replace('REPO',repo)
 (out/'Production.cs').write_text(wrapper+'\n'.join(methods)+'\n'+latest+'\n}\n'+
     source[source.index('record Release('):],encoding='utf-8')

@@ -16,12 +16,12 @@ local function boot(platform,env,answer,props)
   os.getenv=function(k) if env[k]~=nil then return env[k] or nil end; if k=='APPIMAGE' or k=='ANIMEJANAI_APPIMAGE' or k=='ANIMEJANAI_BUNDLE' then return nil end; return real_getenv(k) end
   props=props or {}; props.platform=platform
   local S=H.new{root=ROOT,props=props}
-  S.runs={}; S.commands={}; S.keys={}
+  S.runs={}; S.commands={}; S.keys={}; S.answer=answer
   local base=mp.command_native
   mp.command_native=function(c)
     if c.name=='subprocess' then
       S.runs[#S.runs+1]=c
-      if c.args[2]=='--check' then return answer end
+      if c.args[2]=='--check' then return S.answer end
       return {status=0,stdout=''}
     end
     return base(c)
@@ -62,8 +62,20 @@ check('mac: quiet when up to date', #S.osd==0)
 check('mac: Ctrl+u bound', type(S.keys['Ctrl+u'])=='function')
 S.keys['Ctrl+u'](); S.tick(2)
 check('mac: nothing to install', applied(S)==nil and last(S):match('up to date')~=nil, last(S))
-S=boot('darwin',{ANIMEJANAI_BUNDLE='/A/X.app/Contents/Resources',TMPDIR=ROOT..'/cache'},{status=1,stdout='Updater error: offline\n'})
-check('mac: quiet when the check fails', #S.osd==0)
+check('mac: Ctrl+u asked the updater again', #S.runs==2 and S.runs[2].args[2]=='--check', #S.runs)
+-- A release that came out after the player was opened is found by Ctrl+u.
+S.answer={status=0,stdout='UPDATE_AVAILABLE 3.9.1\n'}
+S.keys['Ctrl+u']()
+check('mac: an update published since startup is installed', applied(S)~=nil and last(S):match('3%.9%.1')~=nil, last(S))
+S=boot('darwin',{ANIMEJANAI_BUNDLE='/A/X.app/Contents/Resources',TMPDIR=ROOT..'/cache'},{status=1,stdout='Updater error: Response status code does not indicate success: 403 (rate limit exceeded).\n'})
+check('mac: quiet at startup when the check fails', #S.osd==0)
+S.keys['Ctrl+u'](); S.tick(1)
+check('mac: a failed check is said, not shown as up to date', applied(S)==nil and last(S):match('check failed')~=nil
+  and last(S):match('403')~=nil and last(S):match('up to date')==nil, last(S))
+S=boot('windows',{},{status=0,stdout='UP_TO_DATE 3.9.0\n'})
+S.answer={status=0,stdout='UPDATE_AVAILABLE 3.9.1\n'}
+S.msg('animejanai-update'); S.tick(2)
+check('windows: Ctrl+u finds an update published since startup', applied(S)~=nil and S.commands[1]=='quit', last(S))
 
 -- macOS, update available: download while playing, then close on the current file.
 local env={ANIMEJANAI_BUNDLE='/A/mpv AnimeJaNai.app/Contents/Resources',TMPDIR=ROOT..'/cache/'}
@@ -123,9 +135,10 @@ check('mac: Ctrl+u tries again after a failure', count==2, count)
 -- The release was withdrawn between the check and the key.
 status('UP_TO_DATE 3.8.0.20'); S.tick(1)
 check('mac: up to date after all', last(S):match('up to date')~=nil and #S.commands==0, last(S))
+S.answer={status=0,stdout='UP_TO_DATE 3.8.0.20\n'}
 S.keys['Ctrl+u'](); S.tick(1)
 count=0; for _,c in ipairs(S.runs) do if c.args[2]=='--apply' then count=count+1 end end
-check('mac: no further download once up to date', count==2, count)
+check('mac: no further download once up to date', count==2 and last(S):match('up to date')~=nil, count)
 
 -- The updater never reports: given up after thirty seconds, the player stays open.
 S=boot('darwin',env,{status=0,stdout='UPDATE_AVAILABLE 3.9.0\n'},{path='/a.mkv'})

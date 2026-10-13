@@ -3,6 +3,8 @@
 -- mapped to the "animejanai-update" script-message) applies it: the updater is launched detached,
 -- mpv quits so files unlock, the update is applied in place (user files preserved), and mpv relaunches.
 -- macOS: the install is an application, replaced as a whole; see start_update_mac below.
+-- Ctrl+U asks again when no update is known: a release may have come out since the player was
+-- opened, and a check that failed (no connection, GitHub refusing for a while) says so.
 
 local mp = require 'mp'
 local msg = require 'mp.msg'
@@ -114,9 +116,46 @@ local function start_update_mac()
     end)
 end
 
+-- Asks the updater. done(state, detail): "update" (available_version is set), "none", or
+-- "failed" with the updater's message when it gave one.
+local function check(done)
+    mp.command_native_async({
+        name = "subprocess",
+        args = { updater, "--check" },
+        capture_stdout = true,
+        playback_only = false,
+    }, function(success, result)
+        local out = result and result.stdout or ""
+        if not success or not result or result.status ~= 0 then
+            done("failed", out:match("Updater error:%s*([^\r\n]*)"))
+            return
+        end
+        local ver = out:match("UPDATE_AVAILABLE%s+(%S+)")
+        available_version = ver
+        blocked = ver and out:match("UPDATE_BLOCKED%s+(%S+)") or nil
+        done(ver and "update" or "none")
+    end)
+end
+
+local checking = false
 local function start_update()
     if not available_version then
-        mp.osd_message("AnimeJaNai is up to date.", 3)
+        if checking then
+            return
+        end
+        checking = true
+        mp.osd_message("AnimeJaNai: checking for an update...", 30)
+        check(function(state, detail)
+            checking = false
+            if state == "update" then
+                start_update()
+            elseif state == "failed" then
+                mp.osd_message("AnimeJaNai: the update check failed" .. (detail and detail ~= "" and (":\n" .. detail) or ".") ..
+                    "\nTry again in a few minutes.", 10)
+            else
+                mp.osd_message("AnimeJaNai is up to date.", 3)
+            end
+        end)
         return
     end
     if is_mac then
@@ -145,26 +184,14 @@ if is_mac then
     mp.add_key_binding("Ctrl+u", "animejanai-update-key", start_update)
 end
 
-local function on_check(success, result)
-    if not success or not result or result.status ~= 0 then
-        return -- offline / updater missing / error: stay quiet
-    end
-    local ver = (result.stdout or ""):match("UPDATE_AVAILABLE%s+(%S+)")
-    if ver then
-        available_version = ver
-        blocked = (result.stdout or ""):match("UPDATE_BLOCKED%s+(%S+)")
-        msg.info("Update available: " .. ver)
+-- At startup: an update is announced; no update, no connection or no updater stay quiet.
+check(function(state)
+    if state == "update" then
+        msg.info("Update available: " .. available_version)
         local how = is_appimage and "press Ctrl+U for the download link."
                                  or "press Ctrl+U to install."
-        mp.osd_message("AnimeJaNai update " .. ver .. " available - " .. how, 8)
-    else
+        mp.osd_message("AnimeJaNai update " .. available_version .. " available - " .. how, 8)
+    elseif state == "none" then
         msg.verbose("AnimeJaNai is up to date.")
     end
-end
-
-mp.command_native_async({
-    name = "subprocess",
-    args = { updater, "--check" },
-    capture_stdout = true,
-    playback_only = false,
-}, on_check)
+end)

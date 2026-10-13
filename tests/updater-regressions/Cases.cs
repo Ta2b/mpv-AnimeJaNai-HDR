@@ -218,10 +218,46 @@ try
         Pass("mac-application-replaced-or-kept");
     }
     }
+    // macOS: the latest release is read from its page and its files' addresses, not from the API.
+    {
+        string dir = Path.Combine(root, "mac-latest"); Directory.CreateDirectory(dir);
+        var pages = new PagesHttp("3.9.0", "mpv-AnimeJaNai-HDR-v3.9.0-macos-arm64.zip", "mpv-AnimeJaNai-HDR-v3.9.0-macos-arm64.zip.sha256");
+        var release = await new Production(dir, pages).MacLatest();
+        Check(release.Tag == "3.9.0" && release.Assets.Count == 2 && release.Assets[0].Url.EndsWith("/releases/download/3.9.0/mpv-AnimeJaNai-HDR-v3.9.0-macos-arm64.zip"),
+            "Latest release not read from its page");
+        Check(!pages.Urls.Any(u => u.Contains("api.github.com")), "The API was used although the pages answered");
+        // A release whose macOS application is not there yet: known, with no file.
+        var early = await new Production(dir, new PagesHttp("3.9.1")).MacLatest();
+        Check(early.Tag == "3.9.1" && early.Assets.Count == 0, "A release without its macOS application was given files");
+        // The pages do not answer: the API is the second way.
+        var api = new FixtureHttp();
+        var fallback = await new Production(dir, api).MacLatest();
+        Check(fallback.Tag == "3.5.0" && api.Urls.Any(u => u.EndsWith("/releases/latest") && u.Contains("api.github.com")), "No second way when the pages fail");
+        Pass("mac-latest-release-without-the-api");
+    }
     Console.WriteLine($"Completed {passed} updater regression cases.");
     return 0;
 }
 catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
+
+// GitHub's pages: releases/latest leads to the tag, and a file of a release exists or not.
+class PagesHttp : HttpMessageHandler
+{
+    public List<string> Urls = new();
+    readonly string tag; readonly string[] files;
+    public PagesHttp(string tag, params string[] files) { this.tag = tag; this.files = files; }
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+    {
+        var url = request.RequestUri!; Urls.Add(url.ToString());
+        if (url.Host != "github.com") return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Forbidden));
+        if (url.AbsolutePath.EndsWith("/releases/latest"))
+            // What a client that follows redirections ends on.
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
+                RequestMessage = new HttpRequestMessage(HttpMethod.Head, new Uri(url, "tag/" + tag)) });
+        bool found = files.Any(f => url.AbsolutePath.EndsWith("/releases/download/" + tag + "/" + f));
+        return Task.FromResult(new HttpResponseMessage(found ? HttpStatusCode.OK : HttpStatusCode.NotFound) { RequestMessage = request });
+    }
+}
 
 class FixtureHttp : HttpMessageHandler
 {

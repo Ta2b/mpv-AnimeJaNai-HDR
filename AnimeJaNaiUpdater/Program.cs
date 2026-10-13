@@ -495,9 +495,48 @@ string? Option(string name)
     return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
 }
 
+// The latest release and its macOS files, without the GitHub API. The API gives one address
+// sixty anonymous requests an hour, shared by everything behind that address (another computer
+// of the house, a script): once they are spent the check fails. The page of the latest release
+// redirects to its tag, and the files of a release have fixed addresses.
+async Task<Release> MacLatestAsync()
+{
+    string prefix = ReadManifestString(localManifest, "update_asset_prefix", "mpv-AnimeJaNai-HDR-v");
+    try
+    {
+        using var client = NewClient();
+        using var page = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, $"https://github.com/{Repo}/releases/latest"));
+        string address = page.RequestMessage?.RequestUri?.AbsolutePath ?? "";
+        const string marker = "/releases/tag/";
+        int at = address.IndexOf(marker, StringComparison.Ordinal);
+        if (!page.IsSuccessStatusCode || at < 0)
+        {
+            throw new InvalidOperationException("The page of the latest release did not lead to a release.");
+        }
+        string tag = Uri.UnescapeDataString(address[(at + marker.Length)..].Trim('/'));
+        var assets = new List<Asset>();
+        string application = prefix + tag + MacAssetSuffix();
+        foreach (string name in new[] { application, application + ".sha256" })
+        {
+            string url = $"https://github.com/{Repo}/releases/download/{Uri.EscapeDataString(tag)}/{Uri.EscapeDataString(name)}";
+            using var head = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+            if (head.IsSuccessStatusCode)
+            {
+                assets.Add(new Asset(name, url));
+            }
+        }
+        return new Release(tag, assets);
+    }
+    catch (Exception e) when (e is HttpRequestException or InvalidOperationException or TaskCanceledException)
+    {
+        // The API as a second way, where the pages are filtered and it is not.
+        return await GetLatestReleaseAsync();
+    }
+}
+
 async Task MacCheckAsync()
 {
-    var release = await GetLatestReleaseAsync();
+    var release = await MacLatestAsync();
     string local = ReadLocalVersion();
     // The macOS application is added to a release some time after the release is created: a
     // release without it is not an update yet.
@@ -542,7 +581,7 @@ async Task<int> MacApplyAsync()
             Status("FAILED " + MacBlockedText(reason));
             return 3;
         }
-        var release = await GetLatestReleaseAsync();
+        var release = await MacLatestAsync();
         string local = ReadLocalVersion();
         var asset = MacAsset(release, MacAssetSuffix());
         if (!IsNewer(release.Tag, local) || asset is null)
