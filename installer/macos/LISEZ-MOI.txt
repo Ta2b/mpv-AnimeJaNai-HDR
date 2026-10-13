@@ -32,8 +32,8 @@ Ctrl+i  état de la sortie HDR
 Moteurs (Manager > Global Settings)
 -----------------------------------
 Trois moteurs calculent les mêmes modèles : Core ML par ONNX Runtime (celui par défaut), Core ML
-natif et Metal. La cible dit quel processeur calcule : Auto, GPU, Neural Engine (NPU), CPU, ou
-GPU + Neural Engine (l'image est partagée entre les deux). Le plus rapide dépend du Mac :
+natif et Metal. La cible dit quel processeur calcule : Auto, GPU, Neural Engine (NPU), CPU,
+GPU + Neural Engine (l'image est partagée entre les deux) ou GPU + Neural Engine + CPU. Le plus rapide dépend du Mac :
 « Run Benchmarks » dans le Manager les mesure tous (Quick : quelques minutes) et les classe ;
 le résultat est aussi écrit dans
 ~/Library/Application Support/AnimeJaNai/animejanai/benchmark-mac.txt.
@@ -42,6 +42,16 @@ précédente, Tiles reprend aussi les zones immobiles d'une image (décor fixe, 
 Ctrl+j affiche le moteur, le temps par image et la part reprise depuis le début.
 Le lecteur calcule quelques images d'avance : une image lourde (un panoramique) est absorbée
 par le temps gagné sur les images tenues qui l'entourent.
+
+Interpolation RIFE
+------------------
+À activer par profil dans le Manager (onglet Profiles, « Enable RIFE Interpolation »), avec le
+facteur (x2, x3...) et le modèle : 4.26, 4.25 ou 4.22 lite (plus léger). Laisser « Interpolate
+before upscaling » coché : l'interpolation se fait à la taille de la vidéo, ce qui coûte bien
+moins. Global Settings choisit le processeur qui interpole (Auto, GPU, Neural Engine, CPU).
+Deux images identiques (un dessin tenu) et les changements de scène ne sont pas interpolés.
+Interpoler double au moins le travail : commencez par un profil léger (Ctrl+5, Ctrl+6) et
+regardez Ctrl+j. Run Benchmarks mesure aussi les profils avec RIFE.
 
 Mise à jour
 -----------
@@ -85,9 +95,10 @@ Activée d'office sur un écran XDR ; ailleurs, Ctrl+h (ou linux_hdr_output=pq d
 animejanai_hdr_auto.conf). Sur un écran qui n'est pas HDR, la laisser désactivée.
 Jamais vérifiée à l'écran par le développement : si l'image paraît fausse, Ctrl+h et signalez-le.
 
-Ce que cette version ne fait pas encore
----------------------------------------
-Interpolation RIFE.
+Ce qui n'a pas encore été essayé sur un vrai Mac
+------------------------------------------------
+L'interpolation RIFE et la cible à trois processeurs : elles sont vérifiées par le calcul,
+pas à l'écran ni en vitesse.
 
 En cas de problème
 ------------------

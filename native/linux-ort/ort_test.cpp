@@ -6,6 +6,11 @@
 //                     holds: a new picture every third frame, as a drawing held on screen. The
 //                     engine is then told the two frames that follow each one (aji_vk_upcoming)
 //   AJI_TEST_FPS      frame rate given to the engine (23.976)
+//   AJI_TEST_RIFE_DIR folder of the RIFE models (default: MODELS). With a profile that
+//                     interpolates, every frame after the first is asked for as the player does:
+//                     the pictures between it and the previous one, then the frame itself.
+//   AJI_TEST_TRIO     prefix: the last pair as raw RGB24, PREFIX-a.rgb, PREFIX-between.rgb (the
+//                     first picture between them) and PREFIX-b.rgb
 //   AJI_TEST_DUMP     file: the last output frame as raw RGB24
 //   AJI_TEST_COMPARE  file: a dump to compare the last frame with (prints the largest and mean
 //                     difference); AJI_TEST_TOLERANCE: fail above this largest difference
@@ -25,13 +30,18 @@ int main(int argc, char **argv)
     const int w = std::atoi(argv[4]), h = std::atoi(argv[5]), frames = argc > 6 ? std::atoi(argv[6]) : 10;
     const char *motion_env = std::getenv("AJI_TEST_MOTION");
     const std::string motion = motion_env && *motion_env ? motion_env : "all";
-    auto c = aji_vk_create(argv[1], argv[2], "", argc > 7 ? argv[7] : "", "ort-stats.txt", std::atoi(argv[3]));
+    const char *rife_dir = std::getenv("AJI_TEST_RIFE_DIR");
+    auto c = aji_vk_create(argv[1], argv[2], rife_dir && *rife_dir ? rife_dir : argv[2], argc > 7 ? argv[7] : "", "ort-stats.txt", std::atoi(argv[3]));
     if (!c) { std::printf("create failed: %s\n", aji_vk_error(nullptr)); return 1; }
     aji_vk_plan plan;
     const char *fps_env = std::getenv("AJI_TEST_FPS");
     if (aji_vk_configure(c, w, h, fps_env && *fps_env ? std::atof(fps_env) : 23.976, &plan)) { std::printf("configure failed: %s\n", aji_vk_error(c)); aji_vk_destroy(c); return 1; }
-    std::printf("plan: %dx%d active=%d\n", plan.width, plan.height, plan.active);
+    std::printf("plan: %dx%d active=%d", plan.width, plan.height, plan.active);
+    if (plan.numerator != plan.denominator) std::printf(" interpolation=%d/%d", plan.numerator, plan.denominator);
+    std::printf("\n");
     std::vector<unsigned char> in((size_t)w * h * 3), out((size_t)plan.width * plan.height * 3);
+    std::vector<unsigned char> before, first_out, between_out, trio[3];
+    const bool interpolating = plan.numerator > plan.denominator;
     std::vector<unsigned char> ahead[2] = {in, in};
     // A picture with edges and gradients; `shift` moves it. The last frame is always shift 0,
     // so that two runs of the same length end on the same picture whatever the motion.
@@ -46,8 +56,9 @@ int main(int argc, char **argv)
     // frames are the picture of shift 0.
     auto shift_of = [&](int i) { return motion == "none" ? 0 : motion == "holds" ? (frames - 1 - i) / 3 : frames - 1 - i; };
     double total = 0, model = 0, best = 0;
-    std::string backend, devices, tiles, placement, boost;
+    std::string backend, devices, tiles, placement, boost, rife;
     for (int i = 0; i < frames; i++) {
+        if (interpolating) before = in;
         draw(in, shift_of(i), motion == "corner");
         if (motion == "holds") {
             const unsigned char *next[2]; ptrdiff_t strides[2]; int count = 0;
@@ -58,9 +69,23 @@ int main(int argc, char **argv)
             aji_vk_upcoming(c, next, strides, count);
         }
         auto t0 = std::chrono::steady_clock::now();
-        if (aji_vk_process(c, nullptr, 0, in.data(), (ptrdiff_t)w * 3, 1.0, out.data(), (ptrdiff_t)plan.width * 3)) {
+        // As the player's filter does: the instants between the previous frame and this one.
+        if (interpolating && i > 0) {
+            first_out = out;
+            int pictures = 0;
+            for (int acc = plan.denominator; acc < plan.numerator; acc += plan.denominator, pictures++) {
+                if (aji_vk_process(c, before.data(), (ptrdiff_t)w * 3, in.data(), (ptrdiff_t)w * 3, (double)acc / plan.numerator,
+                                   out.data(), (ptrdiff_t)plan.width * 3)) {
+                    std::printf("process failed: %s\n", aji_vk_error(c)); aji_vk_destroy(c); return 1;
+                }
+                if (pictures == 0) between_out = out;
+            }
+        }
+        if (aji_vk_process(c, interpolating && i > 0 ? before.data() : nullptr, (ptrdiff_t)w * 3, in.data(), (ptrdiff_t)w * 3, 1.0,
+                           out.data(), (ptrdiff_t)plan.width * 3)) {
             std::printf("process failed: %s\n", aji_vk_error(c)); aji_vk_destroy(c); return 1;
         }
+        if (interpolating && i > 0) { trio[0] = first_out; trio[1] = between_out; trio[2] = out; }
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
         if (i > 0) total += ms;      // the first frame includes provider compilation
         if (i > 0 && (best == 0 || ms < best)) best = ms;
@@ -75,6 +100,7 @@ int main(int argc, char **argv)
             if (line.rfind("Tiles:", 0) == 0) tiles = line;
             if (line.rfind("Placement:", 0) == 0) placement += line + "\n";
             if (line.rfind("Boost:", 0) == 0) boost = line;
+            if (line.rfind("RIFE:", 0) == 0) rife = line;
         }
     }
     auto bounds = std::minmax_element(out.begin(), out.end());
@@ -93,6 +119,12 @@ int main(int argc, char **argv)
     if (!devices.empty()) std::printf("%s\n", devices.c_str());
     if (!placement.empty()) std::printf("%s", placement.c_str());
     if (!boost.empty()) std::printf("%s\n", boost.c_str());
+    if (!rife.empty() && rife != "RIFE: off") std::printf("%s\n", rife.c_str());
+    if (const char *prefix = std::getenv("AJI_TEST_TRIO"); prefix && *prefix && !trio[0].empty()) {
+        const char *names[3] = {"-a.rgb", "-between.rgb", "-b.rgb"};
+        for (int k = 0; k < 3; k++)
+            std::ofstream(std::string(prefix) + names[k], std::ios::binary).write((const char *)trio[k].data(), (std::streamsize)trio[k].size());
+    }
     int status = *bounds.first == *bounds.second ? 1 : 0;
     if (const char *dump = std::getenv("AJI_TEST_DUMP"); dump && *dump)
         std::ofstream(dump, std::ios::binary).write((const char *)out.data(), (std::streamsize)out.size());

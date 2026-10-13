@@ -71,6 +71,31 @@ struct ExecutorRequest {
 };
 
 std::unique_ptr<Executor> make_ort_executor(const ExecutorRequest &request);
+
+// Frame interpolation: RIFE 4.x as exported for this project (one input of eleven planes: the
+// two pictures, the instant, and four planes that describe the sampling grid; any size that is
+// a multiple of 64, the pictures being padded to it).
+struct InterpolatorRequest {
+    std::string provider, device;   // as for an executor
+    std::string models_dir;         // folder of rife_v4.NN.onnx
+    std::string model;              // rife_v4.26, rife_v4.22_lite...
+    std::string cache_dir;
+    int width = 0, height = 0;      // of the pictures
+};
+
+class Interpolator {
+public:
+    virtual ~Interpolator() = default;
+    // The picture at instant t (0 < t < 1) between a and b, three RGB24 pictures of the size the
+    // interpolator was made for. The two pictures are kept in the model's input from one call
+    // to the next: a pair is converted once whatever the number of instants, and the second
+    // picture of a pair is not converted again when it becomes the first of the next one.
+    virtual void run(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
+                     uint8_t *out, ptrdiff_t out_stride) = 0;
+    std::string label;
+};
+
+std::unique_ptr<Interpolator> make_ort_interpolator(const InterpolatorRequest &request);
 std::unique_ptr<Executor> make_reference_executor(const ExecutorRequest &request);
 #if defined(__APPLE__)
 std::unique_ptr<Executor> make_coreml_executor(const ExecutorRequest &request);

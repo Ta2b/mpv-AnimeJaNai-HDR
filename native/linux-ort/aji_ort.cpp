@@ -53,6 +53,7 @@ struct Settings {
     std::string tiles = "auto";    // auto, 1, 2x2...: how a whole new frame is shared between devices
     std::string areas = "auto";    // auto, off, 4x3...: the finer grid of reuse=tiles
     bool boost = false;            // the heavier model for drawings that stay on screen (reuse=frame)
+    std::string rife_device = "auto";   // the processor of the interpolation: auto, gpu, npu, cpu
     int overlap = -1;              // pixels a tile sees past its edges; -1 = what the model reads
 };
 
@@ -73,6 +74,7 @@ Settings read_settings(const std::string &conf)
         } else if (key == "engine_reuse_threshold") s.threshold = std::min(8.0, std::max(0.0, std::atof(value.c_str())));
         else if (key == "engine_tiles") s.tiles = lower(value);
         else if (key == "engine_areas") s.areas = lower(value);
+        else if (key == "engine_rife_device") s.rife_device = lower(value);
         else if (key == "engine_boost") { const std::string v = lower(value); s.boost = v == "yes" || v == "true" || v == "1" || v == "on"; }
         else if (key == "engine_overlap") s.overlap = std::atoi(value.c_str());
     };
@@ -91,6 +93,7 @@ Settings read_settings(const std::string &conf)
     env("AJI_TILES", "engine_tiles");
     env("AJI_AREAS", "engine_areas");
     env("AJI_BOOST", "engine_boost");
+    env("AJI_RIFE_DEVICE", "engine_rife_device");
     env("AJI_OVERLAP", "engine_overlap");
     return s;
 }
@@ -138,8 +141,28 @@ struct Step {
     const TilePlan &reuse_plan() const { return fine ? areas : plan; }
 };
 
+// A source frame of the pair being interpolated, recognised by its bytes (the player reuses its
+// buffers: an address says nothing), with what was derived from it.
+struct Endpoint {
+    std::vector<uint8_t> source, work, up;   // as given; at the interpolation size; upscaled
+    bool valid = false, has_work = false, has_up = false;
+    uint64_t used = 0;
+};
+
 struct Context {
-    std::string conf, models, device, stats, error, provider, backend_label, cache;
+    std::string conf, models, rife_dir, device, stats, error, provider, backend_label, cache;
+    // Interpolation. Before the upscale (the profile's default): the two source frames are
+    // interpolated at the size the first model takes, and the result is upscaled like a frame.
+    // After: the two upscaled frames are interpolated.
+    std::unique_ptr<Interpolator> rife;
+    bool rife_before = true;
+    int rife_w = 0, rife_h = 0;
+    std::string rife_model, rife_note;
+    Endpoint ends[2];
+    uint64_t tick = 0;
+    std::vector<uint8_t> between;
+    uint64_t interpolated = 0, held = 0, cuts = 0;
+    double rife_ms = 0;
     int slot = 0, width = 0, height = 0;
     AjiChainConf chain;
     aji_vk_plan plan{};
@@ -348,6 +371,7 @@ void load_steps(Context &c, int width, int height)
             const std::string heavy = heavier_model(model.name);
             if (c.settings.reuse != "frame") c.boost_note = "needs engine_reuse=frame";
             else if (models != 1) c.boost_note = "needs a profile with one model";
+            else if (c.chain.rife && c.chain.rife_factor_num > c.chain.rife_factor_den) c.boost_note = "not with RIFE";
             else if (heavy.empty()) c.boost_note = "the profile's model has no heavier one";
             else try {
                 auto boost = std::make_unique<Step::Boost>();
@@ -491,11 +515,13 @@ bool areas_cheaper(const Step &step, size_t changed)
 
 // The whole chain, from the source frame's bytes to the output frame's bytes. Returns whether
 // every tile of every model was computed (nothing reused).
-bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, uint8_t *output, ptrdiff_t output_stride)
+// width x height: the size of `pixels` (the source frame, or a frame already at the size the
+// first model takes).
+bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, int width, int height, uint8_t *output, ptrdiff_t output_stride)
 {
     const uint8_t *src = pixels;
     ptrdiff_t src_stride = stride;
-    int w = c.width, h = c.height;
+    int w = width, h = height;
     bool whole = true;
     int hold = 0;   // frames this drawing stays on screen, as far as the upcoming frames tell; 0 = not looked at
     const bool reuse = c.settings.reuse != "off";
@@ -610,14 +636,176 @@ bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, uint8_t *outpu
     return whole;
 }
 
+// rife_v4.26, rife_v4.22_lite, rife_v4.18_ensemble...: the file of a profile's model code
+// (426, 4221, 418), as the other engines of the project name them.
+std::string rife_file(int code, bool ensemble)
+{
+    const std::string digits = std::to_string(code);
+    if (digits.size() < 2) return "";
+    std::string name = "rife_v" + digits.substr(0, 1) + "." + digits.substr(1, digits.size() == 2 ? 1 : 2);
+    if (digits.size() == 4 && digits.back() == '1') name += "_lite";
+    return ensemble ? name + "_ensemble" : name;
+}
+
+// The interpolator of the profile, when it asks for one and the model is there.
+void load_rife(Context &c)
+{
+    c.rife.reset(); c.rife_note.clear(); c.rife_model.clear();
+    for (auto &e : c.ends) e = Endpoint{};
+    c.interpolated = c.held = c.cuts = 0; c.rife_ms = 0;
+    if (!c.chain.rife || c.chain.rife_factor_num <= c.chain.rife_factor_den) return;
+    try {
+        require(!c.rife_dir.empty(), "no folder of RIFE models was given");
+        require(c.chain.rife_factor_den > 0 && c.chain.rife_factor_num <= 8 * c.chain.rife_factor_den, "interpolation factor above 8");
+        InterpolatorRequest request;
+        // The native engines of macOS have no interpolator of their own: Core ML through ONNX
+        // Runtime runs it, on the processor of engine_rife_device (auto: Core ML chooses).
+        request.provider = c.provider == "coremlnative" || c.provider == "metal" ? "coreml" : c.provider;
+        if (request.provider == "reference") request.provider = "cpu";
+        const std::vector<std::string> devices = split_devices(c.device);
+        request.device = c.settings.rife_device != "auto" ? c.settings.rife_device
+            : request.provider == "coreml" ? "ALL" : devices.empty() ? "" : devices[0];
+        request.models_dir = c.rife_dir;
+        request.model = rife_file(c.chain.rife_model, c.chain.rife_ensemble);
+        require(!request.model.empty(), "unknown RIFE model " + std::to_string(c.chain.rife_model));
+        request.cache_dir = c.cache;
+        c.rife_before = c.chain.rife_before_upscale;
+        c.rife_w = c.rife_before ? c.steps.front().in_w : 2 * c.steps.back().in_w;
+        c.rife_h = c.rife_before ? c.steps.front().in_h : 2 * c.steps.back().in_h;
+        request.width = c.rife_w; request.height = c.rife_h;
+        std::unique_ptr<Interpolator> rife = make_ort_interpolator(request);
+        // Run once now, on two grey pictures: the model is compiled when the profile opens, and
+        // a provider that cannot run it is found out here, not in the middle of playback.
+        {
+            const std::vector<uint8_t> dark((size_t)c.rife_w * c.rife_h * 3, 96), light((size_t)c.rife_w * c.rife_h * 3, 160);
+            std::vector<uint8_t> scratch(dark.size());
+            const ptrdiff_t stride = (ptrdiff_t)c.rife_w * 3;
+            rife->run(dark.data(), stride, light.data(), stride, 0.5, scratch.data(), stride);
+        }
+        c.rife = std::move(rife);
+        c.rife_model = request.model;
+    } catch (const std::exception &e) { c.rife_note = e.what(); }
+}
+
+bool same_bytes(const std::vector<uint8_t> &kept, const uint8_t *pixels, ptrdiff_t stride, int width, int height)
+{
+    for (int y = 0; y < height; y++)
+        if (std::memcmp(pixels + (ptrdiff_t)y * stride, kept.data() + (size_t)y * width * 3, (size_t)width * 3) != 0) return false;
+    return true;
+}
+
+// The entry of a source frame: found by its bytes, or taking the place of the one used longest ago.
+Endpoint &endpoint(Context &c, const uint8_t *pixels, ptrdiff_t stride)
+{
+    for (auto &e : c.ends)
+        if (e.valid && same_bytes(e.source, pixels, stride, c.width, c.height)) { e.used = ++c.tick; return e; }
+    Endpoint &e = c.ends[0].used <= c.ends[1].used ? c.ends[0] : c.ends[1];
+    e.source.resize((size_t)c.width * c.height * 3);
+    for (int y = 0; y < c.height; y++)
+        std::memcpy(e.source.data() + (size_t)y * c.width * 3, pixels + (ptrdiff_t)y * stride, (size_t)c.width * 3);
+    e.valid = true; e.has_work = e.has_up = false; e.used = ++c.tick;
+    return e;
+}
+
+// The frame at the size the interpolation runs at (before the upscale).
+const std::vector<uint8_t> &work_of(Context &c, Endpoint &e)
+{
+    if (c.rife_w == c.width && c.rife_h == c.height) return e.source;
+    if (!e.has_work) {
+        e.work.resize((size_t)c.rife_w * c.rife_h * 3);
+        resize_rgb24(e.source.data(), (ptrdiff_t)c.width * 3, c.width, c.height, e.work.data(), c.rife_w, c.rife_h);
+        e.has_work = true;
+    }
+    return e.work;
+}
+
+// The upscaled frame, computed once.
+const std::vector<uint8_t> &up_of(Context &c, Endpoint &e, bool *whole)
+{
+    if (!e.has_up) {
+        e.up.resize((size_t)c.plan.width * c.plan.height * 3);
+        *whole = upscale(c, e.source.data(), (ptrdiff_t)c.width * 3, c.width, c.height, e.up.data(), (ptrdiff_t)c.plan.width * 3);
+        e.has_up = true;
+    }
+    return e.up;
+}
+
+// The share of the full range by which two frames differ on average: the measure of a cut.
+double difference(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, int width, int height)
+{
+    uint64_t sum = 0;
+    for (int y = 0; y < height; y++) {
+        const uint8_t *x = a + (ptrdiff_t)y * a_stride, *z = b + (ptrdiff_t)y * b_stride;
+        uint32_t row = 0;
+        for (int k = 0; k < width * 3; k++) row += (uint32_t)std::abs((int)x[k] - (int)z[k]);
+        sum += row;
+    }
+    return (double)sum / (255.0 * width * height * 3);
+}
+
+// One output frame of a profile that interpolates. t = 1 (or no previous frame): the frame
+// itself. Otherwise the picture between the two: nothing is computed when the two frames are
+// the same drawing (it is that drawing) or belong to two scenes (the first one stays).
+bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride, const uint8_t *current, ptrdiff_t current_stride,
+                 double t, uint8_t *output, ptrdiff_t output_stride)
+{
+    bool whole = false;
+    auto give = [&](const std::vector<uint8_t> &picture) {
+        const size_t row = (size_t)c.plan.width * 3;
+        parallel((size_t)c.plan.height, 256, [&, row](size_t first, size_t end) {
+            for (size_t y = first; y < end; y++) std::memcpy(output + (ptrdiff_t)y * output_stride, picture.data() + y * row, row);
+        });
+    };
+    Endpoint &b = endpoint(c, current, current_stride);
+    if (!previous || t >= 1) { give(up_of(c, b, &whole)); return whole; }
+    Endpoint &a = endpoint(c, previous, previous_stride);
+    const bool same = &a == &b
+        || picture_unchanged(current, current_stride, previous, previous_stride, c.width, c.height, c.settings.threshold);
+    const bool cut = !same && c.chain.rife_scd_threshold > 0
+        && difference(previous, previous_stride, current, current_stride, c.width, c.height) > c.chain.rife_scd_threshold;
+    if (same || cut) {
+        (same ? c.held : c.cuts)++;
+        give(up_of(c, a, &whole));
+        return whole;
+    }
+    const double start = now_ms();
+    if (c.rife_before) {
+        const std::vector<uint8_t> &wa = work_of(c, a), &wb = work_of(c, b);
+        c.between.resize((size_t)c.rife_w * c.rife_h * 3);
+        const ptrdiff_t stride = (ptrdiff_t)c.rife_w * 3;
+        c.rife->run(wa.data(), stride, wb.data(), stride, t, c.between.data(), stride);
+        c.rife_ms += now_ms() - start;
+        whole = upscale(c, c.between.data(), stride, c.rife_w, c.rife_h, output, output_stride);
+    } else {
+        // Both upscaled frames first: the second one is the frame that follows this picture.
+        const std::vector<uint8_t> &ua = up_of(c, a, &whole), &ub = up_of(c, b, &whole);
+        const ptrdiff_t stride = (ptrdiff_t)c.plan.width * 3;
+        const double began = now_ms();
+        c.rife->run(ua.data(), stride, ub.data(), stride, t, output, output_stride);
+        c.rife_ms += now_ms() - began;
+    }
+    c.interpolated++;
+    return whole;
+}
+
 void write_stats(const Context &c, double ms)
 {
     std::ofstream f(c.stats);
     double recent = 0;
     for (double v : c.recent) recent += v;
     recent = c.recent.empty() ? 0 : recent / c.recent.size();
+    // The player compares this with the time between two source frames: with interpolation a
+    // source frame is several calls.
+    if (c.rife) recent *= (double)c.plan.numerator / c.plan.denominator;
     f << "Backend: " << c.backend_label << "\nAnimeJaNai models: " << c.steps.size()
-      << "\nRIFE: " << (c.rife_skipped ? "requested, not available with this engine" : "off")
+      << "\nRIFE: ";
+    if (c.rife)
+        f << c.rife_model << " (" << c.rife->label << "), " << (c.rife_before ? "before" : "after") << " the upscale at "
+          << c.rife_w << "x" << c.rife_h << ", x" << (double)c.plan.numerator / c.plan.denominator
+          << " | interpolated " << c.interpolated << ", held " << c.held << ", cuts " << c.cuts
+          << " | " << (c.interpolated ? c.rife_ms / c.interpolated : 0) << " ms an interpolation";
+    else f << (c.rife_skipped ? "requested, not available: " + c.rife_note : std::string("off"));
+    f
       << "\nOutput: " << c.plan.width << "x" << c.plan.height << "\nFrames: " << c.count
       << "\nInference ms: " << ms << "\nAverage inference ms: " << c.total_ms / c.count
       << "\nModel ms: " << c.last_model_ms << "\nAverage model ms: " << c.model_ms / c.count
@@ -664,11 +852,11 @@ AJI_ORT_EXPORT uint32_t aji_vk_version(void) { return AJI_VK_ABI; }
 AJI_ORT_EXPORT aji_vk_context *aji_vk_create(const char *conf, const char *models, const char *rife,
                                              const char *device, const char *stats, int slot)
 {
-    (void)rife;
     try {
         auto c = std::make_unique<Context>();
         c->conf = conf ? conf : ""; c->models = models ? models : "";
         c->device = device ? device : ""; c->stats = stats ? stats : ""; c->slot = slot;
+        c->rife_dir = rife ? rife : "";
         return c.release();
     } catch (const std::exception &e) { create_error = e.what(); return nullptr; }
 }
@@ -680,6 +868,7 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
         require(width > 0 && height > 0 && width <= 16384 && height <= 16384, "Invalid source dimensions");
         require(width % 2 == 0 && height % 2 == 0, "Spatial profiles require even source dimensions");
         c.steps.clear(); c.width = width; c.height = height; c.rife_skipped = false;
+        c.rife.reset();
         c.count = 0; c.full_frames = 0; c.total_ms = 0; c.model_ms = 0; c.full_ms = 0; c.recent.clear();
         c.upcoming.clear(); c.upcoming_stride.clear();
         c.interval_ms = fps > 1 ? 1000.0 / fps : 41.7;
@@ -702,8 +891,10 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
         if (!matched) { *plan = c.plan; return 0; }
         load_steps(c, width, height);
         require(!c.steps.empty(), "This engine needs at least one upscale model in the profile");
-        c.rife_skipped = c.chain.rife && c.chain.rife_factor_num > c.chain.rife_factor_den;
+        load_rife(c);
+        c.rife_skipped = !c.rife && c.chain.rife && c.chain.rife_factor_num > c.chain.rife_factor_den;
         c.plan = {2 * c.steps.back().in_w, 2 * c.steps.back().in_h, 1, 1, 1};
+        if (c.rife) { c.plan.numerator = c.chain.rife_factor_num; c.plan.denominator = c.chain.rife_factor_den; }
         *plan = c.plan;
         return 0;
     } catch (const std::exception &e) { c.error = e.what(); return -1; }
@@ -713,7 +904,6 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
                                   const unsigned char *current, ptrdiff_t current_stride, double timestep,
                                   unsigned char *output, ptrdiff_t output_stride)
 {
-    (void)previous; (void)previous_stride;
     auto &c = *(Context *)context;
     try {
         const double start = now_ms();
@@ -721,8 +911,10 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
         c.last_model_ms = 0;
         c.boost_extra_ms = 0;
         bool whole = false;
-        if (c.plan.active) {
-            whole = upscale(c, current, current_stride, output, output_stride);
+        if (c.plan.active && c.rife) {
+            whole = interpolate(c, previous, previous_stride, current, current_stride, timestep, output, output_stride);
+        } else if (c.plan.active) {
+            whole = upscale(c, current, current_stride, c.width, c.height, output, output_stride);
         } else {
             for (int y = 0; y < c.height; y++)
                 std::copy_n(current + (ptrdiff_t)y * current_stride, (size_t)c.width * 3, output + (ptrdiff_t)y * output_stride);

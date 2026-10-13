@@ -19,18 +19,21 @@ for file in mpv.conf script-opts/animejanai_mac.conf script-opts/animejanai_hdr_
     [ -f "$CONF/$file" ] || cp "$SRC/$file" "$CONF/$file"
 done
 [ -f "$DATA/animejanai/animejanai.conf" ] || cp "$RES/animejanai/animejanai.conf" "$DATA/animejanai/animejanai.conf"
-# Models: a folder of the user's, filled with links to the application's models. The Manager
-# lists it and the engine reads it; a model the user adds there stays through updates. Links to
-# models an update removed are dropped.
-MODELS="$DATA/animejanai/onnx"
-mkdir -p "$MODELS"
-for link in "$MODELS"/*; do
-    if [ -L "$link" ] && [ ! -e "$link" ]; then rm -f "$link"; fi
-done
-for model in "$RES/animejanai/onnx"/*; do
-    [ -e "$model" ] || continue
-    target="$MODELS/$(basename "$model")"
-    if [ -L "$target" ] || [ ! -e "$target" ]; then ln -sfn "$model" "$target"; fi
+# Models (upscale in onnx, interpolation in rife): folders of the user's, filled with links to
+# the application's models. The Manager lists them and the engine reads them; a model the user
+# adds there stays through updates. Links to models an update removed are dropped.
+for kind in onnx rife; do
+    [ -d "$RES/animejanai/$kind" ] || continue
+    MODELS="$DATA/animejanai/$kind"
+    mkdir -p "$MODELS"
+    for link in "$MODELS"/*; do
+        if [ -L "$link" ] && [ ! -e "$link" ]; then rm -f "$link"; fi
+    done
+    for model in "$RES/animejanai/$kind"/*; do
+        [ -e "$model" ] || continue
+        target="$MODELS/$(basename "$model")"
+        if [ -L "$target" ] || [ ! -e "$target" ]; then ln -sfn "$model" "$target"; fi
+    done
 done
 # "Run Benchmarks" of the Manager looks for its launcher in the data folder.
 if [ -d "$RES/animejanai/benchmarks" ] && { [ -L "$DATA/animejanai/benchmarks" ] || [ ! -e "$DATA/animejanai/benchmarks" ]; }; then

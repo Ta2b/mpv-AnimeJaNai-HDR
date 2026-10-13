@@ -9,6 +9,7 @@ DATA="${ANIMEJANAI_DATA_DIR:-$HOME/Library/Application Support/AnimeJaNai/animej
 export AJI_BENCH_TOOL="$RES/animejanai/inference/animejanai-ort-test"
 export AJI_BENCH_MODELS="$RES/animejanai/onnx"
 export AJI_BENCH_CONF="$HERE/bench.conf"
+export AJI_BENCH_RIFE="$RES/animejanai/rife"
 export AJI_BENCH_OUT="$DATA/benchmark-mac.txt"
 export AJI_BENCH_WORK="$HOME/Library/Caches/AnimeJaNai/bench"
 # The compiled models of the benchmark are kept apart from the player's.

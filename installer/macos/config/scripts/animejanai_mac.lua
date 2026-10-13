@@ -5,6 +5,8 @@
 --   backend             the engine (read by the engine itself)
 --   apple_device        AUTO, GPU, NPU, CPU or GPU+NPU: where the model runs
 --   engine_reuse        off, frame, tiles (read by the engine)
+--   engine_boost        yes: Balanced on drawings that stay on screen (read by the engine)
+--   engine_rife_device  auto, gpu, npu, cpu: the processor of RIFE (read by the engine)
 --   apple_auto_profile  yes: move to a lighter profile when this Mac cannot keep up
 --   default_slot        the profile applied when a file opens
 -- The engine and the models are read from the application bundle (ANIMEJANAI_BUNDLE, set by the
@@ -97,6 +99,12 @@ local function models_dir()
     return bundle .. '/animejanai/onnx'
 end
 
+-- The same for the interpolation models (RIFE).
+local function rife_dir()
+    if utils.file_info(data .. '/rife') then return data .. '/rife' end
+    return bundle .. '/animejanai/rife'
+end
+
 local function select(value, quiet)
     local wanted = tonumber(value)
     if not wanted or wanted < 0 or wanted ~= math.floor(wanted) then return end
@@ -116,7 +124,7 @@ local function select(value, quiet)
     for i = #list, 1, -1 do if list[i].label == 'aji' then table.remove(list, i) end end
     if wanted > 0 then
         table.insert(list, 1, {name = 'animejanai-vulkan', label = 'aji', enabled = true, params = {
-            lib = engine, conf = bank_for(wanted), ['model-dir'] = models_dir(),
+            lib = engine, conf = bank_for(wanted), ['model-dir'] = models_dir(), ['rife-model-dir'] = rife_dir(),
             device = setting_device(), stats = stats, slot = tostring(wanted)}})
     end
     os.remove(stats)   -- the measure below must not read the previous profile's figures

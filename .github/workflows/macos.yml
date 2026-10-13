@@ -5,8 +5,9 @@ name: macOS
 on:
   workflow_dispatch:
   # On the release branch, the application and the benchmark bundle are added to the release.
+  # Work branches (perf-...) are built too, so that their application can be tried before a merge.
   push:
-    branches: [hdr-3.8, release]
+    branches: [hdr-3.8, release, 'perf-**']
     paths:
       - 'release-version.txt'
       - 'native/linux-ort/**'
@@ -73,6 +74,21 @@ jobs:
           fi
           grep -v 'Failed to load' convert.log | cut -c1-200
           ls models check
+      - name: RIFE models for macOS
+        # The other platforms download about forty models. Three are kept here: the latest, the
+        # one before and the latest light one, with their picture size named so that Core ML,
+        # which only takes models whose input size is known, accepts them.
+        run: |
+          curl -fsSL --retry 3 -o rife.7z "https://github.com/the-database/animejanai-inference/releases/download/models-rife-fp16-1/rife-fp16-1.7z"
+          mkdir rife-all rife
+          tar -xf rife.7z -C rife-all || { brew install sevenzip >/dev/null && 7zz x -y -orife-all rife.7z >/dev/null; }
+          for name in rife_v4.26 rife_v4.25 rife_v4.22_lite; do
+            source="$(find rife-all -name "$name.onnx" -print -quit)"
+            test -n "$source" || { echo "::error title=RIFE model missing from the archive::$name"; exit 1; }
+            python native/linux-ort/name_rife_dims.py "$source" "rife/$name.onnx"
+          done
+          ls -la rife
+          rm -rf rife-all rife.7z
       - name: Build the engine
         run: |
           cmake -S native/linux-ort -B ort-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 \
@@ -210,6 +226,33 @@ jobs:
           for f in metal-gpu metal-planes metal-balanced metal-pair; do grep -q 'COMPARE | largest difference [0-3] ' "$f.log" || status=1; done
           grep 'centre pixel' cpu.log metal-small.log
           exit $status
+      - name: RIFE through Core ML
+        # Informative: annotations, never a failure of the job. The interpolation runs before the
+        # upscale, on the same source frames whatever the provider, so the picture between two
+        # frames can be compared with the CPU provider's. On this virtual machine Core ML computes
+        # on the CPU: what is learnt is whether it takes the whole model, and the picture.
+        run: |
+          export AJI_TEST_RIFE_DIR="$PWD/rife"
+          AJI_ORT_PROVIDER=cpu AJI_REUSE=off AJI_TEST_TRIO=rife-cpu ort-build/animejanai-ort-test native/macos-bench/bench.conf models 3 320 180 3 > rife-cpu.log 2>&1 || echo "exit code $?" >> rife-cpu.log
+          grep -E '^plan|^RIFE|^RESULT|failed|exit code' rife-cpu.log | cut -c1-300 > short.txt; note "rife, cpu provider" short.txt
+          for device in all gpu npu cpu; do
+            AJI_ORT_LOG=0 AJI_ORT_PROVIDER=coremlnative AJI_RIFE_DEVICE=$device AJI_REUSE=off AJI_TEST_TRIO="rife-$device" \
+              ort-build/animejanai-ort-test native/macos-bench/bench.conf models 3 320 180 4 GPU > "rife-$device.log" 2>&1 || echo "exit code $?" >> "rife-$device.log"
+            {
+              grep -E '^plan|^RIFE|^RESULT|exit code' "rife-$device.log" | cut -c1-300
+              grep -E 'number of partitions supported by CoreML|number of nodes in the graph' "rife-$device.log" | sed 's/.*CoreMLExecutionProvider::GetCapability, //' | sort | uniq -c | head -6
+              grep -iE 'not supported|unsupported' "rife-$device.log" | sed 's/.*\] //' | cut -c1-200 | sort | uniq -c | sort -rn | head -8
+              python - "rife-cpu-between.rgb" "rife-$device-between.rgb" <<'EOF' 2>&1 | tail -1
+          import sys, numpy as np
+          a, b = (np.fromfile(p, dtype=np.uint8).astype(int) for p in sys.argv[1:3])
+          d = abs(a - b)
+          print('picture between two frames against the CPU provider: largest difference %d, mean %.3f, more than 3 levels: %.2f %%' % (d.max(), d.mean(), 100 * (d > 3).mean()))
+          EOF
+            } > short.txt 2>&1
+            if grep -q '^RIFE: rife_v4.26' "rife-$device.log"; then note "rife through core ml, $device" short.txt
+            else tail -6 "rife-$device.log" | cut -c1-300 >> short.txt; note "rife through core ml, $device: NOT RUNNING" short.txt warning; fi
+          done
+          exit 0
       - name: What failed
         # The last lines of every log of the steps above, as annotations.
         if: failure()
@@ -226,13 +269,15 @@ jobs:
           cp -a ort/lib/libonnxruntime*.dylib "$b/"
           cp native/macos-bench/bench.command native/macos-bench/bench.conf native/macos-bench/LISEZ-MOI.txt "$b/"
           for kind in Sharp1_Performance Sharp1_Balanced; do cp -R models/*"$kind"* "$b/models/"; done
+          cp rife/*.onnx "$b/models/"
           chmod +x "$b/bench.command" "$b/animejanai-ort-test"
           # The test program finds the engine and ONNX Runtime next to itself.
           install_name_tool -add_rpath @loader_path "$b/animejanai-ort-test" 2>/dev/null || true
           install_name_tool -add_rpath @loader_path "$b/libaji_ort.dylib" 2>/dev/null || true
           codesign --force -s - "$b"/*.dylib "$b/animejanai-ort-test"
           ( cd "$b" && AJI_ORT_PROVIDER=cpu AJI_REUSE=off ./animejanai-ort-test bench.conf models 1 320 180 2 | tail -2 )
-          ( cd "$b" && bash bench.command essai > bench-try.log 2>&1; tail -14 bench-try.log | cut -c1-300 > short.txt; note "benchmark script, short run" short.txt; grep -q '^RESULT' resultats.txt; ! grep -q 'failed' resultats.txt )
+          # The RIFE line is left out of the check: whether Core ML runs it is reported by its own step.
+          ( cd "$b" && bash bench.command essai > bench-try.log 2>&1; tail -16 bench-try.log | cut -c1-300 > short.txt; note "benchmark script, short run" short.txt; grep -q '^RESULT' resultats.txt; ! grep -v '^RIFE' resultats.txt | grep -q 'failed' )
           rm -rf "$b/models/coreml-cache" "$b/ort-stats.txt" "$b/resultats.txt" "$b/bench-try.log" "$b/short.txt"
           ditto -c -k --keepParent "$b" "$b.zip"
           ls -la "$b.zip"
@@ -249,6 +294,7 @@ jobs:
           # Everything the three engines read besides the ONNX files of the repository.
           cp models/*.coreml.onnx models/*.ajm models/*.ajw models/*.mlpatch mac-engine/onnx/
           cp -R models/*.mlpackage mac-engine/onnx/
+          mkdir -p mac-engine/rife && cp rife/*.onnx mac-engine/rife/
           cp native/macos-bench/bench.command native/macos-bench/bench.conf mac-engine/
           ls -la mac-engine mac-engine/onnx
       - uses: actions/upload-artifact@v4
@@ -358,6 +404,7 @@ jobs:
             ls "$DATA/animejanai/onnx"/*Sharp1_Performance*."$kind" >/dev/null || { echo "::error title=model link missing::$kind"; exit 1; }
           done
           test -L "$DATA/animejanai/benchmarks" && test -x "$DATA/animejanai/benchmarks/animejanai_benchmark_all.sh"
+          for model in rife_v4.26 rife_v4.25 rife_v4.22_lite; do test -L "$DATA/animejanai/rife/$model.onnx"; done
           for script in animejanai_mac.lua animejanai_hdr_mac.lua animejanai_update.lua; do test -f "$DATA/portable_config/scripts/$script"; done
           grep -q 'animejanai_update' run.log
           # The player was given a socket of its own for the Manager.
@@ -388,13 +435,38 @@ jobs:
           done
           cp conf.saved "$conf"
           exit $status
+      - name: RIFE through the player
+        # Informative, never a failure: the first profile with interpolation x2 written as the
+        # Manager writes it, played through the real filter. Frames out against frames in, and
+        # what the engine reports.
+        run: |
+          conf="$HOME/Library/Application Support/AnimeJaNai/animejanai/animejanai.conf"
+          log="$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
+          cp "$conf" conf.saved
+          python3 - "$conf" <<'EOF'
+          import re, sys
+          path = sys.argv[1]
+          text = open(path, encoding='utf-8').read()
+          keys = ('=yes\nchain_\\1_rife_factor_numerator=2\nchain_\\1_rife_factor_denominator=1\nchain_\\1_rife_model=426'
+                  '\nchain_\\1_rife_ensemble=no\nchain_\\1_rife_scene_detect_threshold=0.150\nchain_\\1_rife_before_upscale=yes')
+          open(path, 'w', encoding='utf-8').write(re.sub(r'(?m)^chain_(\d+)_rife=no$', r'chain_\1_rife' + keys, text))
+          EOF
+          rm -f "$log"
+          perl -e 'alarm 240; exec @ARGV' "$APP/Contents/MacOS/mpv-animejanai" av://lavfi:testsrc2=size=640x360:rate=24 \
+            --vo=null --ao=null --frames=24 --keep-open=no --log-file=run-rife.log > console.log 2>&1 || echo "mpv exit code $?" >> console.log
+          { grep -E '^Backend|^RIFE|^Output|^Frames|^Recent' "$log" 2>/dev/null; grep -E 'exit code' console.log
+            grep -E 'NCNN/Vulkan .* RIFE|animejanai.*(error|fail)' run-rife.log | sed 's/^\[[^]]*\]//' | cut -c1-200 | head -6; } | cut -c1-300 > short.txt
+          if grep -q '^RIFE: rife_v4.26' "$log" 2>/dev/null; then note "rife through the player" short.txt
+          else note "rife through the player: NOT RUNNING" short.txt warning; fi
+          cp conf.saved "$conf"
+          exit 0
       - name: Run Benchmarks from the application
         # What the Manager's button starts, in its short form: every engine once.
         run: |
           DATA="$HOME/Library/Application Support/AnimeJaNai"
           sh "$DATA/animejanai/benchmarks/animejanai_benchmark_all.sh" essai > bench-app.log 2>&1 || echo "exit code $?" >> bench-app.log
           tail -14 bench-app.log | cut -c1-300 > short.txt
-          if grep -q '^RESULT' "$DATA/animejanai/benchmark-mac.txt" && ! grep -q 'failed\|exit code' bench-app.log; then note "benchmark from the application" short.txt
+          if grep -q '^RESULT' "$DATA/animejanai/benchmark-mac.txt" && ! grep -v '^RIFE' bench-app.log | grep -q 'failed\|exit code'; then note "benchmark from the application" short.txt
           else note "benchmark from the application FAILED" short.txt error; exit 1; fi
           test "$(grep -c '^RESULT' "$DATA/animejanai/benchmark-mac.txt")" -ge 5
       - name: Updater

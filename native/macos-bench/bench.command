@@ -18,6 +18,9 @@ mkdir -p "$work" && cd_work="$work"
 tool="$(cd "$(dirname "$tool")" && pwd)/$(basename "$tool")"
 models="$(cd "$models" && pwd)"
 conf="$(cd "$(dirname "$conf")" && pwd)/$(basename "$conf")"
+# Les modèles RIFE : dans l'application, ou avec les autres modèles dans le dossier de mesure.
+rife="${AJI_BENCH_RIFE:-$models}"
+[ -d "$rife" ] && export AJI_TEST_RIFE_DIR="$(cd "$rife" && pwd)"
 case "$out" in /*) ;; *) out="$(pwd)/$out" ;; esac
 cd "$cd_work" || exit 1
 {
@@ -32,7 +35,9 @@ frames=30
 [ "$mode" = essai ] && frames=3
 # essai MOTEUR CIBLE PROFIL LARGEUR HAUTEUR [VARIABLE=VALEUR...]
 #   MOTEUR : coreml (Core ML par ONNX Runtime), coremlnative (Core ML natif), metal
-#   Variables d'essai : AJI_TILES=2x2 (découpe en tuiles), AJI_METAL_LAYOUT=nchw, AJI_METAL_OPT=1
+#   PROFIL : 1 Performance, 2 Balanced, 3 Performance + RIFE x2 avant l'upscale, 4 le même après
+#   Variables d'essai : AJI_TILES=2x2 (découpe en tuiles), AJI_METAL_LAYOUT=nchw, AJI_METAL_OPT=1,
+#   AJI_RIFE_DEVICE=gpu|npu|cpu (processeur de RIFE ; sans elle, Core ML choisit)
 essai() {
     local engine="$1" device="$2" slot="$3" w="$4" h="$5" n="$frames"
     shift 5
@@ -41,7 +46,7 @@ essai() {
     echo | tee -a "$out"
     echo "== $engine | $device | profil $slot | ${w}x${h}$extra" | tee -a "$out"
     env AJI_ORT_PROVIDER="$engine" AJI_REUSE=off "$@" "$tool" "$conf" "$models" "$slot" "$w" "$h" "$n" "$device" 2>&1 \
-        | grep -E '^RESULT|^Tiles|^Devices|^Placement|failed|rror' \
+        | grep -E '^RESULT|^Tiles|^Devices|^Placement|^RIFE|failed|rror' \
         | sed "s/^RESULT/RESULT | moteur=$engine cible=$device profil=$slot$extra/" | cut -c1-420 | tee -a "$out"
 }
 
@@ -49,6 +54,7 @@ if [ "$mode" = essai ]; then
     # Passage court de l'intégration continue : chaque moteur une fois, petite image.
     essai coreml ALL 1 640 360; essai coremlnative GPU 1 640 360; essai metal GPU 1 640 360
     essai metal GPU 1 640 360 AJI_METAL_LAYOUT=nchw; essai coremlnative NPU 1 640 360 AJI_TILES=2x2
+    essai coremlnative GPU 3 640 360
 else
     # 1. Chaque moteur sur chaque processeur seul, Performance en 720p.
     for device in ALL GPU ANE; do essai coreml "$device" 1 1280 720; done
@@ -68,8 +74,17 @@ else
     # 4. Variantes du moteur Metal : disposition des données, placement par le graphe.
     essai metal GPU 1 1280 720 AJI_METAL_LAYOUT=nchw
     essai metal GPU 1 1280 720 AJI_METAL_OPT=1
+    # 5. Interpolation RIFE x2 : le temps est celui d'une image source, soit deux images affichées.
+    #    Avant l'upscale (profil 3) puis après (profil 4), et RIFE sur chaque processeur.
+    essai coremlnative GPU+NPU 3 1280 720
+    essai coremlnative GPU+NPU 3 1280 720 AJI_RIFE_DEVICE=gpu
+    essai coremlnative GPU+NPU 3 1280 720 AJI_RIFE_DEVICE=npu
+    essai coremlnative GPU 3 1280 720 AJI_RIFE_DEVICE=npu
+    essai metal GPU 3 1280 720 AJI_RIFE_DEVICE=npu
+    essai coremlnative GPU+NPU 4 1280 720
+    essai coremlnative GPU+NPU 3 960 540
     if [ "$mode" != rapide ]; then
-        # 5. Autres tailles, puis le modèle Balanced (profil 2).
+        # 6. Autres tailles, puis le modèle Balanced (profil 2).
         for size in "960 540" "1920 1080"; do
             set -- $size
             essai coremlnative GPU 1 "$1" "$2"; essai coremlnative GPU+NPU 1 "$1" "$2"
@@ -91,6 +106,7 @@ rank() { # rank TITRE MOTIF
     if [ "$mode" = essai ]; then rank "Classement" "640x360 ->"
     else
         rank "Performance, 1280x720 vers 2560x1440" "profil=1 .*1280x720 ->"
+        rank "Performance + RIFE x2, 1280x720 vers 2560x1440 (temps par image source : il en faut moins de 41,7 ms)" "profil=[34] .*1280x720 ->"
         if [ "$mode" != rapide ]; then
             rank "Performance, 1920x1080 vers 3840x2160" "profil=1 .*1920x1080 ->"
             rank "Performance, 960x540 vers 1920x1080" "profil=1 .*960x540 ->"

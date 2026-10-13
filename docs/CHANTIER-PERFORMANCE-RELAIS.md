@@ -93,6 +93,59 @@ image en modèle lourd, sortie identique au profil Performance ; `engine_reuse=t
 avec sa raison. **Pas exécuté : le filtre dans mpv, ni aucun Mac.** À juger à l'œil : le
 passage d'un modèle à l'autre entre un plan fixe et un mouvement.
 
+### Lot 8 — trois processeurs sur Mac (branche `perf-mac-rife`)
+
+La cible `GPU+NPU+CPU` existait déjà dans le moteur (liste de processeurs séparés par `+`,
+grille 3x2). Elle est maintenant dans le Manager (« GPU + Neural Engine + CPU »), normalisée
+quel que soit l'ordre, et le paquet de mesure la compare aux autres. Avec Metal, le NPU et le
+CPU passent par Core ML. Réserve connue : le CPU décode aussi la vidéo ; c'est la mesure sur
+le Mac qui dira si le troisième processeur apporte quelque chose.
+
+### Lot 9 — RIFE dans le moteur partagé, donc sur Mac (branche `perf-mac-rife`)
+
+Le moteur partagé (`native/linux-ort`) interpole maintenant : RIFE 4.x tel que le projet
+l'exporte (une entrée de 11 plans), exécuté par ONNX Runtime. Sur Mac, Core ML le fait
+tourner quel que soit le moteur qui upscale (ONNX Runtime, Core ML natif ou Metal), sur le
+processeur de `[global] engine_rife_device` (`auto`, `gpu`, `npu`, `cpu`). Les moteurs ONNX
+Runtime de Linux (CPU, OpenVINO, MIGraphX) en héritent.
+
+Ce qui est fait pour le coût :
+- une paire d'images est convertie une fois quel que soit le nombre d'instants, et la seconde
+  image d'une paire n'est pas reconvertie quand elle devient la première de la suivante ;
+- deux images qui sont le même dessin (seuil de `engine_reuse`) ne sont pas interpolées : la
+  sortie est ce dessin, déjà calculé ;
+- une coupe de scène (seuil du profil, 0,15) n'est pas interpolée ;
+- avant l'upscale (défaut des profils), RIFE calcule à la taille d'entrée du premier modèle
+  et l'image obtenue est upscalée comme une image ; après, chaque image source n'est upscalée
+  qu'une fois et gardée pour ses deux paires ;
+- le modèle est compilé à l'ouverture du profil sur deux images grises : un fournisseur qui
+  ne sait pas l'exécuter est détecté là, et le profil joue alors sans interpolation
+  (`RIFE: requested, not available: raison` dans les statistiques) ;
+- `Recent ms` est ramené à l'image source, pour que le choix automatique du profil compare
+  toujours au temps entre deux images sources.
+
+Paquet Mac : trois modèles (`rife_v4.26`, `rife_v4.25`, `rife_v4.22_lite`), dont les deux
+dimensions libres sont nommées `height` et `width` (`name_rife_dims.py`) : Core ML n'accepte
+que des entrées de taille connue. Le Manager propose RIFE par profil dès que ces modèles sont
+là, et le processeur de RIFE dans Global Settings.
+
+**Vérifié (ONNX Runtime CPU)** : l'image interpolée par le moteur est identique à l'octet à
+celle du modèle exécuté directement, avec et sans bordure de remplissage ; dessins tenus trois
+images : 2 interpolations pour 6 images tenues ; dossier de modèles absent : le profil joue
+sans interpolation. **Inconnu tant que la CI macOS ou un Mac n'a pas tourné** : si Core ML
+prend tout le modèle (cinq `GridSample`, des `Resize` dans les deux sens) ou le découpe avec
+des retours sur le CPU, ce qui déciderait de sa vitesse. Les étapes « RIFE through Core ML »
+et « RIFE through the player » de la CI le disent par annotations, sans bloquer.
+
+Ordre de grandeur à garder en tête : avant l'upscale et en x2, une image source coûte une
+interpolation et deux upscales. Sur un anime animé « sur deux », une image sur deux est tenue
+et ne coûte rien : la moyenne retombe près d'un upscale et demie par image source, et le
+tampon d'avance (lot 5) absorbe les à-coups. Sur un panoramique, tout est à calculer.
+
+Pistes non faites : un exécuteur RIFE natif (Metal ou Core ML sans ONNX Runtime), à décider
+après avoir vu ce que Core ML fait du modèle ; faire tourner RIFE et l'upscale en même temps
+sur deux processeurs (l'interpolation de l'image suivante pendant l'upscale de la courante).
+
 ### Constat sur l'assembleur
 
 La boucle de comparaison d'images (`window_unchanged`) est déjà compilée en `psadbw` par GCC

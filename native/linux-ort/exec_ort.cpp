@@ -7,6 +7,7 @@
 #define AJI_F16C 1
 #endif
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <unordered_map>
 
@@ -92,6 +93,73 @@ Ort::Env &environment()
     return env;
 }
 
+// Session options for a provider and a device. `cache_tag` names the folder of the models Core ML
+// compiles; `label` receives what the statistics show.
+Ort::SessionOptions provider_options(const std::string &provider, const std::string &device_name,
+                                     const std::string &cache_dir, const std::string &cache_tag, std::string *label_out)
+{
+    std::string label;
+    Ort::SessionOptions options;
+    // ONNX Runtime's optimisation must stay on: it folds the shape arithmetic of the models once
+    // the input size is fixed. AJI_ORT_OPT=0..3 (none, basic, extended, all) is for trials.
+    GraphOptimizationLevel level = GraphOptimizationLevel::ORT_ENABLE_ALL;
+    if (const char *forced = std::getenv("AJI_ORT_OPT"); forced && *forced) {
+        const int n = std::atoi(forced);
+        level = n <= 0 ? GraphOptimizationLevel::ORT_DISABLE_ALL : n == 1 ? GraphOptimizationLevel::ORT_ENABLE_BASIC
+              : n == 2 ? GraphOptimizationLevel::ORT_ENABLE_EXTENDED : GraphOptimizationLevel::ORT_ENABLE_ALL;
+    }
+    options.SetGraphOptimizationLevel(level);
+    // AJI_ORT_LOG=0..4 (verbose .. fatal): ONNX Runtime's own messages, e.g. which nodes a provider takes.
+    if (const char *log = std::getenv("AJI_ORT_LOG"); log && *log) options.SetLogSeverityLevel(std::atoi(log));
+    if (provider == "migraphx") {
+        // AMD GPUs through ROCm. FP16 as shipped; the compiled program is cached by MIGraphX.
+        OrtMIGraphXProviderOptions migraphx{};
+        migraphx.device_id = device_name.empty() ? 0 : std::atoi(device_name.c_str());
+        migraphx.migraphx_fp16_enable = 1;
+        options.AppendExecutionProvider_MIGraphX(migraphx);
+        label = "ONNX Runtime/MIGraphX";
+    } else if (provider == "openvino") {
+        // Intel GPUs. device: GPU, GPU.0, GPU.1 or CPU; empty = GPU.
+        std::unordered_map<std::string, std::string> openvino{
+            {"device_type", device_name.empty() ? "GPU" : device_name}, {"precision", "FP16"}};
+        if (lower(openvino["device_type"]) == "cpu") openvino["precision"] = "FP32";
+        merge_env(openvino, "AJI_ORT_OPENVINO");
+        options.AppendExecutionProvider_OpenVINO_V2(openvino);
+        label = "ONNX Runtime/OpenVINO " + openvino["device_type"];
+    } else if (provider == "coreml") {
+        // Apple Silicon. device: ALL (default), GPU, ANE (Neural Engine) or CPU. ML Program keeps
+        // the models in half floats; the compiled model is cached.
+        const std::string device = lower(device_name);
+        const std::string units = device == "gpu" ? "CPUAndGPU" : device == "ane" || device == "npu" ? "CPUAndNeuralEngine"
+            : device == "cpu" ? "CPUOnly" : "ALL";
+        // FastPrediction: Core ML spends longer preparing the model to make each prediction
+        // faster. Low-precision accumulation: half-float sums in the GPU convolutions, the
+        // precision the models already use. Both can be turned off for a comparison:
+        // AJI_ORT_COREML="SpecializationStrategy=Default;AllowLowPrecisionAccumulationOnGPU=0".
+        std::unordered_map<std::string, std::string> coreml{
+            {"ModelFormat", "MLProgram"}, {"MLComputeUnits", units}, {"RequireStaticInputShapes", "1"},
+            {"SpecializationStrategy", "FastPrediction"}, {"AllowLowPrecisionAccumulationOnGPU", "1"}};
+        merge_env(coreml, "AJI_ORT_COREML");
+        const bool fast = coreml["SpecializationStrategy"] == "FastPrediction";
+        const bool low = coreml["AllowLowPrecisionAccumulationOnGPU"] == "1";
+        if (!cache_dir.empty() && !coreml.count("ModelCacheDirectory")) {
+            // One folder per input size and compute units: Core ML keys its cache on the model
+            // alone, and a model compiled for another size fails at the first frame.
+            std::error_code ignored;
+            std::filesystem::path cache = std::filesystem::path(cache_dir)
+                / (cache_tag + "-" + coreml["MLComputeUnits"] + (fast ? "-fast" : "") + (low ? "-low" : ""));
+            std::filesystem::create_directories(cache, ignored);
+            if (std::filesystem::is_directory(cache, ignored)) coreml["ModelCacheDirectory"] = cache.string();
+        }
+        options.AppendExecutionProvider("CoreML", coreml);
+        label = "ONNX Runtime/CoreML " + coreml["MLComputeUnits"] + (fast ? " fast" : "") + (low ? " half-sums" : "");
+    } else {
+        label = "ONNX Runtime/CPU";
+    }
+    if (label_out) *label_out = label;
+    return options;
+}
+
 class OrtExecutor : public Executor {
 public:
     explicit OrtExecutor(const ExecutorRequest &r) : w_(r.width), h_(r.height)
@@ -107,7 +175,8 @@ public:
         // Before anything else: a provider that logs while its options are read (OpenVINO) needs
         // the environment and its logger to exist.
         environment();
-        Ort::SessionOptions options = session_options(r);
+        Ort::SessionOptions options = provider_options(r.provider, r.device, r.cache_dir,
+                                                       std::to_string(w_) + "x" + std::to_string(h_), &label);
         // Every model gets its exact input size: the OpenVINO provider rejects the dynamic-shape
         // graph ("the graph is not acyclic"), and a static shape lets every provider compile once.
         options.AddFreeDimensionOverrideByName("height", h_);
@@ -209,68 +278,6 @@ public:
     }
 
 private:
-    Ort::SessionOptions session_options(const ExecutorRequest &r)
-    {
-        Ort::SessionOptions options;
-        // ONNX Runtime's optimisation must stay on: it folds the shape arithmetic of the models once
-        // the input size is fixed. AJI_ORT_OPT=0..3 (none, basic, extended, all) is for trials.
-        GraphOptimizationLevel level = GraphOptimizationLevel::ORT_ENABLE_ALL;
-        if (const char *forced = std::getenv("AJI_ORT_OPT"); forced && *forced) {
-            const int n = std::atoi(forced);
-            level = n <= 0 ? GraphOptimizationLevel::ORT_DISABLE_ALL : n == 1 ? GraphOptimizationLevel::ORT_ENABLE_BASIC
-                  : n == 2 ? GraphOptimizationLevel::ORT_ENABLE_EXTENDED : GraphOptimizationLevel::ORT_ENABLE_ALL;
-        }
-        options.SetGraphOptimizationLevel(level);
-        // AJI_ORT_LOG=0..4 (verbose .. fatal): ONNX Runtime's own messages, e.g. which nodes a provider takes.
-        if (const char *log = std::getenv("AJI_ORT_LOG"); log && *log) options.SetLogSeverityLevel(std::atoi(log));
-        if (r.provider == "migraphx") {
-            // AMD GPUs through ROCm. FP16 as shipped; the compiled program is cached by MIGraphX.
-            OrtMIGraphXProviderOptions migraphx{};
-            migraphx.device_id = r.device.empty() ? 0 : std::atoi(r.device.c_str());
-            migraphx.migraphx_fp16_enable = 1;
-            options.AppendExecutionProvider_MIGraphX(migraphx);
-            label = "ONNX Runtime/MIGraphX";
-        } else if (r.provider == "openvino") {
-            // Intel GPUs. device: GPU, GPU.0, GPU.1 or CPU; empty = GPU.
-            std::unordered_map<std::string, std::string> openvino{
-                {"device_type", r.device.empty() ? "GPU" : r.device}, {"precision", "FP16"}};
-            if (lower(openvino["device_type"]) == "cpu") openvino["precision"] = "FP32";
-            merge_env(openvino, "AJI_ORT_OPENVINO");
-            options.AppendExecutionProvider_OpenVINO_V2(openvino);
-            label = "ONNX Runtime/OpenVINO " + openvino["device_type"];
-        } else if (r.provider == "coreml") {
-            // Apple Silicon. device: ALL (default), GPU, ANE (Neural Engine) or CPU. ML Program keeps
-            // the models in half floats; the compiled model is cached.
-            const std::string device = lower(r.device);
-            const std::string units = device == "gpu" ? "CPUAndGPU" : device == "ane" || device == "npu" ? "CPUAndNeuralEngine"
-                : device == "cpu" ? "CPUOnly" : "ALL";
-            // FastPrediction: Core ML spends longer preparing the model to make each prediction
-            // faster. Low-precision accumulation: half-float sums in the GPU convolutions, the
-            // precision the models already use. Both can be turned off for a comparison:
-            // AJI_ORT_COREML="SpecializationStrategy=Default;AllowLowPrecisionAccumulationOnGPU=0".
-            std::unordered_map<std::string, std::string> coreml{
-                {"ModelFormat", "MLProgram"}, {"MLComputeUnits", units}, {"RequireStaticInputShapes", "1"},
-                {"SpecializationStrategy", "FastPrediction"}, {"AllowLowPrecisionAccumulationOnGPU", "1"}};
-            merge_env(coreml, "AJI_ORT_COREML");
-            const bool fast = coreml["SpecializationStrategy"] == "FastPrediction";
-            const bool low = coreml["AllowLowPrecisionAccumulationOnGPU"] == "1";
-            if (!r.cache_dir.empty() && !coreml.count("ModelCacheDirectory")) {
-                // One folder per input size and compute units: Core ML keys its cache on the model
-                // alone, and a model compiled for another size fails at the first frame.
-                std::error_code ignored;
-                std::filesystem::path cache = std::filesystem::path(r.cache_dir)
-                    / (std::to_string(w_) + "x" + std::to_string(h_) + "-" + coreml["MLComputeUnits"] + (fast ? "-fast" : "") + (low ? "-low" : ""));
-                std::filesystem::create_directories(cache, ignored);
-                if (std::filesystem::is_directory(cache, ignored)) coreml["ModelCacheDirectory"] = cache.string();
-            }
-            options.AppendExecutionProvider("CoreML", coreml);
-            label = "ONNX Runtime/CoreML " + coreml["MLComputeUnits"] + (fast ? " fast" : "") + (low ? " half-sums" : "");
-        } else {
-            label = "ONNX Runtime/CPU";
-        }
-        return options;
-    }
-
     int w_, h_;
     std::unique_ptr<Ort::Session> session_;
     std::string input_, output_;
@@ -279,11 +286,175 @@ private:
     std::vector<float> floats_;
 };
 
+
+// RIFE through ONNX Runtime. The model's input is kept from one call to the next: planes 0-2 the
+// first picture, 3-5 the second, 6 the instant, 7-10 the sampling grid (x and y from -1 to 1,
+// then the steps 2 / (w - 1) and 2 / (h - 1)), all at the padded size.
+class OrtInterpolator : public Interpolator {
+public:
+    explicit OrtInterpolator(const InterpolatorRequest &r) : w_(r.width), h_(r.height)
+    {
+        const std::filesystem::path path = std::filesystem::path(r.models_dir) / (r.model + ".onnx");
+        require(std::filesystem::is_regular_file(path), "RIFE model not found: " + r.model + ".onnx");
+        // The models take sizes that are multiples of 64. The picture is centred in the padded
+        // one, on even offsets, as the other engines of the project do.
+        pw_ = (w_ + 63) / 64 * 64; ph_ = (h_ + 63) / 64 * 64;
+        left_ = ((pw_ - w_) / 2) & ~1; top_ = ((ph_ - h_) / 2) & ~1;
+        environment();
+        Ort::SessionOptions options = provider_options(r.provider, r.device, r.cache_dir,
+            r.model + "-" + std::to_string(pw_) + "x" + std::to_string(ph_), &label);
+        // Models whose two free dimensions are named (the macOS package names them) get their
+        // exact size, which Core ML needs; the others keep their dynamic shape.
+        options.AddFreeDimensionOverrideByName("height", ph_);
+        options.AddFreeDimensionOverrideByName("width", pw_);
+        session_ = std::make_unique<Ort::Session>(environment(), path.c_str(), options);
+        Ort::AllocatorWithDefaultOptions allocator;
+        require(session_->GetInputCount() == 1 && session_->GetOutputCount() >= 1, "Unexpected RIFE model signature: " + r.model);
+        input_ = session_->GetInputNameAllocated(0, allocator).get();
+        output_ = session_->GetOutputNameAllocated(0, allocator).get();
+        auto info = session_->GetInputTypeInfo(0);
+        auto tensor = info.GetTensorTypeAndShapeInfo();
+        auto shape = tensor.GetShape();
+        require(shape.size() == 4 && shape[1] == 11, "This engine handles the RIFE 4.x models with an input of 11 planes: " + r.model);
+        const auto in = tensor.GetElementType();
+        const auto out = session_->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetElementType();
+        auto supported = [](ONNXTensorElementDataType t) {
+            return t == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT || t == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16; };
+        require(supported(in) && supported(out), "RIFE tensors must be float or half float: " + r.model);
+        half_in_ = in == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
+        half_out_ = out == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
+
+        const size_t plane = (size_t)pw_ * ph_;
+        floats_.assign(11 * plane, 0.0f);
+        for (int y = 0; y < ph_; y++) for (int x = 0; x < pw_; x++) {
+            const size_t at = (size_t)y * pw_ + x;
+            floats_[7 * plane + at] = 2.0f * x / (pw_ - 1) - 1.0f;
+            floats_[8 * plane + at] = 2.0f * y / (ph_ - 1) - 1.0f;
+            floats_[9 * plane + at] = 2.0f / (pw_ - 1);
+            floats_[10 * plane + at] = 2.0f / (ph_ - 1);
+        }
+        if (half_in_) {
+            halves_.resize(11 * plane);
+            floats_to_halves(floats_.data(), halves_.data(), 11 * plane);
+            floats_.clear(); floats_.shrink_to_fit();
+        }
+        for (auto &kept : kept_) kept.assign((size_t)w_ * h_ * 3, 0);
+    }
+
+    void run(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
+             uint8_t *out, ptrdiff_t out_stride) override
+    {
+        const size_t plane = (size_t)pw_ * ph_;
+        // The second picture of the last pair is the first of this one: its planes move, no
+        // conversion.
+        if (!(have_[0] && same(a, a_stride, kept_[0])) && have_[1] && same(a, a_stride, kept_[1])) {
+            if (half_in_) std::memcpy(halves_.data(), halves_.data() + 3 * plane, 3 * plane * sizeof(uint16_t));
+            else std::memcpy(floats_.data(), floats_.data() + 3 * plane, 3 * plane * sizeof(float));
+            kept_[0].swap(kept_[1]);
+            have_[0] = true; have_[1] = false;
+        }
+        if (!(have_[0] && same(a, a_stride, kept_[0]))) load(0, a, a_stride);
+        if (!(have_[1] && same(b, b_stride, kept_[1]))) load(1, b, b_stride);
+        if (half_in_) {
+            uint16_t value[8]; float instant[8] = {(float)t};
+            floats_to_halves(instant, value, 8);
+            std::fill_n(halves_.data() + 6 * plane, plane, value[0]);
+        } else std::fill_n(floats_.data() + 6 * plane, plane, (float)t);
+
+        const int64_t shape[4] = {1, 11, ph_, pw_};
+        Ort::MemoryInfo memory = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+        Ort::Value input = half_in_
+            ? Ort::Value::CreateTensor(memory, halves_.data(), halves_.size() * sizeof(uint16_t), shape, 4, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16)
+            : Ort::Value::CreateTensor<float>(memory, floats_.data(), floats_.size(), shape, 4);
+        const char *input_names[1] = {input_.c_str()}, *output_names[1] = {output_.c_str()};
+        auto outputs = session_->Run(Ort::RunOptions{nullptr}, input_names, &input, 1, output_names, 1);
+        auto dims = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
+        require(dims.size() == 4 && dims[1] == 3 && dims[2] == ph_ && dims[3] == pw_, "RIFE returned an unexpected shape");
+
+        // The picture inside the padded result, planar half or single floats, to RGB24.
+        const bool half = half_out_;
+        const uint16_t *hs = half ? outputs[0].GetTensorData<uint16_t>() : nullptr;
+        const float *fs = half ? nullptr : outputs[0].GetTensorData<float>();
+        const int w = w_, pw = pw_, left = left_, top = top_;
+        parallel((size_t)h_, 32, [=](size_t begin, size_t end) {
+            std::vector<float> line((size_t)3 * w);
+            for (size_t y = begin; y < end; y++) {
+                const size_t source = (y + top) * pw + left;
+                const float *r, *g, *bl;
+                if (half) {
+                    for (int k = 0; k < 3; k++) halves_to_floats(hs + k * plane + source, line.data() + (size_t)k * w, (size_t)w);
+                    r = line.data(); g = r + w; bl = g + w;
+                } else { r = fs + source; g = r + plane; bl = g + plane; }
+                uint8_t *row = out + (ptrdiff_t)y * out_stride;
+                for (int x = 0; x < w; x++) {
+                    row[3 * x] = (uint8_t)(std::min(std::max(r[x], 0.0f), 1.0f) * 255.0f + 0.5f);
+                    row[3 * x + 1] = (uint8_t)(std::min(std::max(g[x], 0.0f), 1.0f) * 255.0f + 0.5f);
+                    row[3 * x + 2] = (uint8_t)(std::min(std::max(bl[x], 0.0f), 1.0f) * 255.0f + 0.5f);
+                }
+            }
+        });
+    }
+
+private:
+    bool same(const uint8_t *pixels, ptrdiff_t stride, const std::vector<uint8_t> &kept) const
+    {
+        for (int y = 0; y < h_; y++)
+            if (std::memcmp(pixels + (ptrdiff_t)y * stride, kept.data() + (size_t)y * w_ * 3, (size_t)w_ * 3) != 0) return false;
+        return true;
+    }
+
+    // Picture `slot` (0 or 1) into its three planes; the padding around it stays black.
+    void load(int slot, const uint8_t *pixels, ptrdiff_t stride)
+    {
+        const size_t plane = (size_t)pw_ * ph_;
+        const int w = w_, pw = pw_, left = left_, top = top_;
+        uint8_t *kept = kept_[slot].data();
+        if (half_in_) {
+            uint16_t *r = halves_.data() + (size_t)slot * 3 * plane, *g = r + plane, *b = g + plane;
+            const uint16_t *table = byte_halves();
+            parallel((size_t)h_, 64, [=](size_t first, size_t last) {
+                for (size_t y = first; y < last; y++) {
+                    const uint8_t *row = pixels + (ptrdiff_t)y * stride;
+                    std::memcpy(kept + y * (size_t)w * 3, row, (size_t)w * 3);
+                    const size_t o = (y + top) * pw + left;
+                    for (int x = 0; x < w; x++) { r[o + x] = table[row[3 * x]]; g[o + x] = table[row[3 * x + 1]]; b[o + x] = table[row[3 * x + 2]]; }
+                }
+            });
+        } else {
+            float *r = floats_.data() + (size_t)slot * 3 * plane, *g = r + plane, *b = g + plane;
+            parallel((size_t)h_, 64, [=](size_t first, size_t last) {
+                for (size_t y = first; y < last; y++) {
+                    const uint8_t *row = pixels + (ptrdiff_t)y * stride;
+                    std::memcpy(kept + y * (size_t)w * 3, row, (size_t)w * 3);
+                    const size_t o = (y + top) * pw + left;
+                    for (int x = 0; x < w; x++) {
+                        r[o + x] = row[3 * x] * (1.0f / 255.0f); g[o + x] = row[3 * x + 1] * (1.0f / 255.0f); b[o + x] = row[3 * x + 2] * (1.0f / 255.0f);
+                    }
+                }
+            });
+        }
+        have_[slot] = true;
+    }
+
+    int w_, h_, pw_ = 0, ph_ = 0, left_ = 0, top_ = 0;
+    std::unique_ptr<Ort::Session> session_;
+    std::string input_, output_;
+    bool half_in_ = false, half_out_ = false;
+    std::vector<uint16_t> halves_;
+    std::vector<float> floats_;
+    std::vector<uint8_t> kept_[2];   // the two pictures as they were given, to recognise them
+    bool have_[2] = {false, false};
+};
 } // namespace
 
 std::unique_ptr<Executor> make_ort_executor(const ExecutorRequest &request)
 {
     return std::make_unique<OrtExecutor>(request);
+}
+
+std::unique_ptr<Interpolator> make_ort_interpolator(const InterpolatorRequest &request)
+{
+    return std::make_unique<OrtInterpolator>(request);
 }
 
 } // namespace aji

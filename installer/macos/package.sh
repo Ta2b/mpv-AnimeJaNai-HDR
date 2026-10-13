@@ -37,6 +37,12 @@ cp "$ONNX"/*SPANF3*.onnx "$RES/animejanai/onnx/"
 # (fuse_unshuffle.py), the Core ML templates with their size tables and the Metal model files
 # (native/apple/convert_models.py).
 if [ -d "$ENGINE/onnx" ]; then cp -R "$ENGINE/onnx/." "$RES/animejanai/onnx/"; fi
+# The RIFE models chosen for macOS, their picture size named so that Core ML takes them
+# (native/linux-ort/name_rife_dims.py).
+if [ -d "$ENGINE/rife" ]; then
+    mkdir -p "$RES/animejanai/rife"
+    cp "$ENGINE/rife/"*.onnx "$RES/animejanai/rife/"
+fi
 cp "$ENGINE/libaji_ort.dylib" "$RES/animejanai/inference/"
 # One ONNX Runtime file, under the name the engine links to.
 cp -L "$ENGINE/libonnxruntime.1.dylib" "$RES/animejanai/inference/libonnxruntime.1.dylib"
