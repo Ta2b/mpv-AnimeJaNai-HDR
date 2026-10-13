@@ -60,7 +60,7 @@ TilePlan plan_tiles(int w, int h, int nx, int ny, int reach, int align, int min_
     return plan;
 }
 
-void grid_for(const char *setting, int executors, bool reuse_tiles, int w, int h, int *nx, int *ny)
+void areas_for(const char *setting, int w, int h, int *nx, int *ny)
 {
     const std::string s = setting ? setting : "";
     *nx = *ny = 1;
@@ -71,7 +71,22 @@ void grid_for(const char *setting, int executors, bool reuse_tiles, int w, int h
         *ny = std::max(1, std::min(8, std::atoi(s.substr(by + 1).c_str())));
         return;
     }
-    if (executors <= 1 && !reuse_tiles) return;
+    *nx = std::max(1, std::min(8, (w + 160) / 320));
+    *ny = std::max(1, std::min(8, (h + 120) / 240));
+}
+
+void grid_for(const char *setting, int executors, int w, int h, int *nx, int *ny)
+{
+    const std::string s = setting ? setting : "";
+    *nx = *ny = 1;
+    if (s == "1" || s == "off" || s == "no") return;
+    const size_t by = s.find('x');
+    if (by != std::string::npos) {
+        *nx = std::max(1, std::min(8, std::atoi(s.substr(0, by).c_str())));
+        *ny = std::max(1, std::min(8, std::atoi(s.substr(by + 1).c_str())));
+        return;
+    }
+    if (executors <= 1) return;
     // Four tiles for two devices: the faster one takes three while the slower takes one. More
     // devices get two tiles each. Wide columns rather than rows: frames are wider than tall.
     const int wanted = std::max(4, 2 * executors);

@@ -1,11 +1,12 @@
 mpv AnimeJaNai - macOS (puce Apple) - APERÇU
 
-Version pour Mac en cours de mise au point. Elle est compilée et vérifiée automatiquement sans
-écran ; l'affichage, le HDR et l'ouverture depuis le Finder n'ont été essayés que par vous.
+Version pour Mac en cours de mise au point. Elle est compilée et vérifiée automatiquement sur une
+machine sans écran : chaque moteur y donne la bonne image, mais sa vitesse, l'affichage, le HDR
+et l'ouverture depuis le Finder ne peuvent être essayés que sur un vrai Mac.
 
 Installer
 ---------
-1. Décompresser, glisser « mpv AnimeJaNai » dans Applications.
+1. Décompresser, glisser « mpv AnimeJaNai » dans Applications (nécessaire pour les mises à jour).
 2. L'application n'est pas signée par un développeur Apple : macOS la bloque au premier lancement.
    Dans le Terminal :
        xattr -dr com.apple.quarantine "/Applications/mpv AnimeJaNai.app"
@@ -13,6 +14,8 @@ Installer
 
 Raccourcis
 ----------
+Ctrl+e  AnimeJaNai Manager : moteur, processeur, profils, HDR, mesure des moteurs
+Ctrl+u  installer la mise à jour quand le lecteur en annonce une
 Ctrl+1  Performance, 1080p ramené à 720p puis doublé (le plus léger)
 Ctrl+2  Performance, résolution d'origine doublée
 Ctrl+3  Balanced, 1080p ramené à 720p puis doublé
@@ -26,13 +29,33 @@ Ctrl+j  état et temps par image : total, modèle (Core ML) et conversions
 Ctrl+g  rendu HDR : personnalisé / naturel / désactivé
 Ctrl+i  état de la sortie HDR
 
+Moteurs (Manager > Global Settings)
+-----------------------------------
+Trois moteurs calculent les mêmes modèles : Core ML par ONNX Runtime (celui par défaut), Core ML
+natif et Metal. La cible dit quel processeur calcule : Auto, GPU, Neural Engine (NPU), CPU, ou
+GPU + Neural Engine (l'image est partagée entre les deux). Le plus rapide dépend du Mac :
+« Run Benchmarks » dans le Manager les mesure tous (Quick : quelques minutes) et les classe ;
+le résultat est aussi écrit dans
+~/Library/Application Support/AnimeJaNai/animejanai/benchmark-mac.txt.
+« Reuse » évite de recalculer ce qui n'a pas changé : Frame reprend une image identique à la
+précédente, Tiles reprend aussi les zones immobiles d'une image (décor fixe, bouche qui bouge).
+Ctrl+j affiche le moteur, le temps par image et la part reprise depuis le début.
+Le lecteur calcule quelques images d'avance : une image lourde (un panoramique) est absorbée
+par le temps gagné sur les images tenues qui l'entourent.
+
+Mise à jour
+-----------
+Le lecteur annonce une nouvelle version au démarrage. Ctrl+u la télécharge pendant que la vidéo
+continue, la vérifie, puis remplace l'application et rouvre la vidéo au même endroit. Vos
+réglages et profils ne sont pas dans l'application et ne sont pas touchés.
+
 Choix automatique du profil
 ---------------------------
-Il n'y a pas de Manager sur Mac : le lecteur règle lui-même ce qui dépend de la machine.
+Le lecteur règle lui-même ce qui dépend de la machine (Manager : « automatic lighter profile »).
 - Il mesure le temps passé sur chaque image. Si le profil est plus lent que la vidéo, il passe
   au profil plus léger suivant (1, puis 5, puis 6, puis désactivé), l'affiche et s'en souvient
   pour les lancements suivants. Ctrl+r efface ce choix. Un profil choisi au clavier est gardé
-  pour la séance. Pour tout régler à la main : auto_profile=no dans animejanai_mac.conf.
+  pour la séance. Pour tout régler à la main : décocher l'option dans le Manager.
 - Au premier lancement sur un Mac à écran XDR (MacBook Pro, Pro Display XDR), la conversion
   SDR vers HDR est activée et l'écran décrit (pic 1600 nits). Ctrl+h la coupe ou la remet.
   Sur un autre écran, la vidéo garde son format ; Ctrl+h active la conversion.
@@ -43,19 +66,18 @@ La première image d'un profil est lente : Core ML compile le modèle, puis le g
 Réglages
 --------
 Dossier : ~/Library/Application Support/AnimeJaNai (créé au premier lancement).
-  portable_config/script-opts/animejanai_mac.conf
-      default_slot  profil au démarrage (0 = désactivé)
-      auto_profile  yes : profil plus léger quand le Mac ne suit pas (voir plus haut)
-      device        ALL, GPU, ANE (Neural Engine) ou CPU : essayez-les, le plus rapide dépend du Mac.
-                    GPU+ANE coupe l'image en deux bandes traitées en même temps, une par
-                    processeur (non mesuré sur un vrai Mac : le paquet de mesure le compare)
+  animejanai/animejanai.conf     profils et, section [global], ce que le Manager écrit :
+      backend             CoreML, CoreMLNative ou Metal
+      apple_device        AUTO, GPU, NPU, CPU ou GPU+NPU
+      engine_reuse        off, frame ou tiles
+      apple_auto_profile  yes : profil plus léger quand le Mac ne suit pas
+      default_slot        profil au démarrage (0 = désactivé)
   portable_config/script-opts/animejanai_hdr_auto.conf
       linux_hdr_output  auto (la vidéo SDR reste SDR), pq (conversion SDR vers HDR), sdr ;
                         pq est choisi au premier lancement sur un écran XDR
       rtx_contrast, rtx_saturation, rtx_middle_gray, display_peak, paper_white : rendu HDR,
       mêmes réglages que sous Windows et Linux
   portable_config/mpv.conf       réglages de mpv (sortie vidéo, décodage)
-  animejanai/animejanai.conf     profils Ctrl+1 à Ctrl+4
 
 Conversion SDR vers HDR
 -----------------------
@@ -65,7 +87,7 @@ Jamais vérifiée à l'écran par le développement : si l'image paraît fausse,
 
 Ce que cette version ne fait pas encore
 ---------------------------------------
-Interpolation RIFE, Manager, mise à jour automatique.
+Interpolation RIFE.
 
 En cas de problème
 ------------------

@@ -1,24 +1,42 @@
-/* mpv software-frame bridge for the NCNN/Vulkan backend. LGPL-2.1-or-later. */
+/* mpv software-frame bridge for the host-frame engines (NCNN/Vulkan, ONNX Runtime, Core ML,
+ * Metal). LGPL-2.1-or-later.
+ *
+ * The engine runs on a thread of its own, a few source frames ahead of the display ("ahead").
+ * A frame then no longer has to be computed within the time between two frames: only the
+ * average has to keep up. A pan that takes twice the budget is paid with the time saved on the
+ * held drawings around it, which the engine reuses for almost nothing. The player's own thread
+ * never waits for the engine, except for the frame in progress at a seek. */
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
 #include "config.h"
 #include "common/common.h"
+#include "filters/f_autoconvert.h"
 #include "filters/filter.h"
 #include "filters/filter_internal.h"
 #include "filters/user_filters.h"
 #include "options/m_option.h"
 #include "options/path.h"
+#include "osdep/threads.h"
 #include "video/mp_image.h"
-#include "refqueue.h"
 #include "aji_vulkan.h"
 
-struct opts { char *lib, *conf, *model_dir, *rife_model_dir, *device, *stats; int slot; };
+#define MAX_JOBS 128
+// Memory the computed pictures may hold while they wait for their turn on screen.
+#define AHEAD_BYTES (640ll<<20)
+enum { JOB_QUEUED, JOB_RUNNING, JOB_DONE };
+// One output picture. `last`: the last one made from its source frame.
+struct job { struct mp_image *previous, *in, *out; double t; int state; bool last; };
+
+struct opts { char *lib, *conf, *model_dir, *rife_model_dir, *device, *stats; int slot, ahead; };
 struct priv {
     struct opts *opts;
-    struct mp_refqueue *queue;
-    struct mp_image *previous, *outq[8];
-    int outq_n, outq_pos, acc;
+    struct mp_autoconvert *conv;
+    struct mp_pin *in;
+    struct mp_image *previous, *pending;
+    struct mp_image_params format;
+    bool have_format, eof, reported;
+    int acc, capacity;
     aji_vk_context *context;
     void *library;
     struct aji_vk_plan plan;
@@ -27,22 +45,80 @@ struct priv {
     int (*process)(aji_vk_context *,const unsigned char *,ptrdiff_t,const unsigned char *,ptrdiff_t,double,unsigned char *,ptrdiff_t);
     const char *(*error)(aji_vk_context *);
     void (*destroy)(aji_vk_context *);
+    // Pictures in display order, a ring that starts at `head`. Everything below is guarded by
+    // `lock`. The engine keeps state from one call to the next (reuse, RIFE pairs): one thread
+    // runs the jobs, in order.
+    mp_mutex lock;
+    mp_cond work, idle;
+    mp_thread thread;
+    bool locks, started, quit, failed;
+    struct job jobs[MAX_JOBS];
+    int head, count, sources;
 };
+static struct job *job_at(struct priv *p,int i) { return &p->jobs[(p->head+i)%MAX_JOBS]; }
+static void job_free(struct job *j) {
+    mp_image_unrefp(&j->previous);mp_image_unrefp(&j->in);mp_image_unrefp(&j->out);
+    *j=(struct job){0};
+}
+static MP_THREAD_VOID worker(void *arg) {
+    struct mp_filter *f=arg;struct priv *p=f->priv;
+    mp_thread_set_name("animejanai");
+    mp_mutex_lock(&p->lock);
+    while(!p->quit) {
+        struct job *j=NULL;
+        for(int i=0;i<p->count && !j && !p->failed;++i) if(job_at(p,i)->state==JOB_QUEUED) j=job_at(p,i);
+        if(!j) { mp_cond_wait(&p->work,&p->lock);continue; }
+        // A running job keeps its place in the ring: nothing is removed before it ends.
+        j->state=JOB_RUNNING;
+        struct job run=*j;
+        mp_mutex_unlock(&p->lock);
+        int result=p->process(p->context,run.previous?run.previous->planes[0]:NULL,
+            run.previous?run.previous->stride[0]:0,run.in->planes[0],run.in->stride[0],run.t,
+            run.out->planes[0],run.out->stride[0]);
+        mp_mutex_lock(&p->lock);
+        j->state=JOB_DONE;
+        if(result<0) p->failed=true;
+        mp_cond_broadcast(&p->idle);
+        mp_mutex_unlock(&p->lock);
+        mp_filter_wakeup(f);
+        mp_mutex_lock(&p->lock);
+    }
+    mp_mutex_unlock(&p->lock);
+    MP_THREAD_RETURN();
+}
+// Forgets every picture. The one being computed is waited for: an engine call cannot be cut.
+static void drain(struct priv *p) {
+    if(!p->locks) return;
+    mp_mutex_lock(&p->lock);
+    for(int i=0;i<p->count;++i) if(job_at(p,i)->state==JOB_QUEUED) job_at(p,i)->state=JOB_DONE;
+    for(;;) {
+        bool running=false;
+        for(int i=0;i<p->count;++i) running|=job_at(p,i)->state==JOB_RUNNING;
+        if(!running) break;
+        mp_cond_wait(&p->idle,&p->lock);
+    }
+    for(int i=0;i<p->count;++i) job_free(job_at(p,i));
+    p->head=p->count=p->sources=0;p->failed=false;
+    mp_mutex_unlock(&p->lock);
+}
 static void reset(struct mp_filter *f) {
     struct priv *p=f->priv;
-    mp_image_unrefp(&p->previous);
-    for(int i=0;i<8;++i) mp_image_unrefp(&p->outq[i]);
-    p->outq_n=p->outq_pos=0;p->acc=p->plan.denominator;
-    if(p->queue) mp_refqueue_flush(p->queue);
+    drain(p);
+    mp_image_unrefp(&p->previous);mp_image_unrefp(&p->pending);
+    p->eof=p->reported=false;p->acc=p->plan.denominator;
 }
 static void destroy(struct mp_filter *f) {
     struct priv *p=f->priv;reset(f);
-    // Destroy refqueue before mpv frees its autoconvert child filter.
-    talloc_free(p->queue);p->queue=NULL;
+    if(p->started) {
+        mp_mutex_lock(&p->lock);p->quit=true;mp_cond_signal(&p->work);mp_mutex_unlock(&p->lock);
+        mp_thread_join(p->thread);
+    }
+    if(p->locks) { mp_cond_destroy(&p->work);mp_cond_destroy(&p->idle);mp_mutex_destroy(&p->lock); }
     if(p->context) p->destroy(p->context);
     if(p->library) dlclose(p->library);
 }
-static struct mp_image *render(struct mp_filter *f,struct mp_image *in,double t) {
+// The picture a job writes to, with what it inherits from its source frame.
+static struct mp_image *blank(struct mp_filter *f,struct mp_image *in) {
     struct priv *p=f->priv;
     struct mp_image *out=mp_image_alloc(IMGFMT_RGB24,p->plan.width,p->plan.height);
     if(!out) return NULL;
@@ -57,27 +133,46 @@ static struct mp_image *render(struct mp_filter *f,struct mp_image *in,double t)
     }
     // Preserve display aspect ratio through uniform pre-resize/upscale.
     out->params.p_w=in->params.p_w;out->params.p_h=in->params.p_h;
-    if(p->process(p->context,p->previous?p->previous->planes[0]:NULL,
-        p->previous?p->previous->stride[0]:0,in->planes[0],in->stride[0],t,out->planes[0],out->stride[0])<0) {
-        MP_ERR(f,"NCNN/Vulkan inference: %s\n",p->error(p->context));mp_image_unrefp(&out);return NULL;
-    }
     if(in->nominal_fps>0) out->nominal_fps=in->nominal_fps*p->plan.numerator/p->plan.denominator;
     return out;
 }
+static bool drop_pre_seek(struct mp_filter *f,struct mp_image *image) {
+    struct mp_stream_info *info=mp_filter_find_stream_info(f);double target;
+    return image->pts!=MP_NOPTS_VALUE && info && info->get_hrseek && info->get_hrseek(info,&target) && image->pts<target-.005;
+}
 static void process(struct mp_filter *f) {
     struct priv *p=f->priv;
-    // Drain interpolation frames before requesting more inputs or forwarding EOF.
-    if(p->outq_n) {
-        if(mp_pin_in_needs_data(f->ppins[1])) {
-            struct mp_image *image=p->outq[p->outq_pos];p->outq[p->outq_pos++]=NULL;
-            if(--p->outq_n==0)p->outq_pos=0;
-            mp_pin_in_write(f->ppins[1],MAKE_FRAME(MP_FRAME_VIDEO,image));
-            mp_filter_internal_mark_progress(f);
-        }
+    // The oldest picture goes out as soon as it is finished and wanted.
+    struct mp_image *ready=NULL;bool busy=false;
+    mp_mutex_lock(&p->lock);
+    bool failed=p->failed;
+    if(!failed && p->count && job_at(p,0)->state==JOB_DONE && mp_pin_in_needs_data(f->ppins[1])) {
+        struct job *j=job_at(p,0);
+        ready=j->out;j->out=NULL;
+        if(j->last) p->sources--;
+        job_free(j);
+        p->head=(p->head+1)%MAX_JOBS;p->count--;
+    }
+    for(int i=0;i<p->count;++i) busy|=job_at(p,i)->state!=JOB_DONE;
+    int count=p->count,sources=p->sources;
+    mp_mutex_unlock(&p->lock);
+    if(failed) {
+        if(!p->reported) MP_ERR(f,"AnimeJaNai inference: %s\n",p->error(p->context));
+        p->reported=true;mp_filter_internal_mark_failed(f);return;
+    }
+    if(ready) {
+        mp_pin_in_write(f->ppins[1],MAKE_FRAME(MP_FRAME_VIDEO,ready));
+        mp_filter_internal_mark_progress(f);
+    }
+    // End of file: forwarded once every picture is out.
+    if(p->eof) {
+        if(!count && mp_pin_in_needs_data(f->ppins[1])) { mp_pin_in_write(f->ppins[1],MP_EOF_FRAME);p->eof=false; }
         return;
     }
-    struct mp_image *format=mp_refqueue_execute_reinit(p->queue);
-    if(format) {
+    // A frame of another format: the profile is planned again once the engine is idle.
+    if(p->pending && (!p->have_format || !mp_image_params_static_equal(&p->format,&p->pending->params))) {
+        if(busy) return;
+        struct mp_image *format=p->pending;
         mp_image_unrefp(&p->previous);
         if(format->params.color.transfer==PL_COLOR_TRC_PQ || format->params.color.transfer==PL_COLOR_TRC_HLG) {
             MP_ERR(f,"Vulkan inference currently accepts SDR sources only; use normal playback for HDR.\n");
@@ -86,49 +181,76 @@ static void process(struct mp_filter *f) {
         if(p->configure(p->context,format->w,format->h,format->nominal_fps,&p->plan)<0) {
             MP_ERR(f,"Vulkan profile: %s\n",p->error(p->context));mp_filter_internal_mark_failed(f);return;
         }
-        p->acc=p->plan.denominator;
-        MP_INFO(f,"NCNN/Vulkan %dx%d -> %dx%d, RIFE %d/%d\n",format->w,format->h,p->plan.width,p->plan.height,p->plan.numerator,p->plan.denominator);
+        p->format=format->params;p->have_format=true;p->acc=p->plan.denominator;
+        long long bytes=(long long)p->plan.width*p->plan.height*3;
+        p->capacity=MPCLAMP(bytes>0?(int)(AHEAD_BYTES/bytes):MAX_JOBS,9,MAX_JOBS);
+        MP_INFO(f,"NCNN/Vulkan %dx%d -> %dx%d, RIFE %d/%d, %d frame(s) ahead\n",format->w,format->h,
+            p->plan.width,p->plan.height,p->plan.numerator,p->plan.denominator,p->plan.active?p->opts->ahead:1);
     }
-    if(!mp_refqueue_can_output(p->queue))return;
-    struct mp_image *in=mp_refqueue_get(p->queue,0);
-    if(!in)return;
+    // Read ahead: up to `ahead` source frames computed or being computed, within the memory
+    // allowed (a source frame gives at most eight pictures).
+    if(sources>=(p->have_format && p->plan.active?p->opts->ahead:1) || count+8>p->capacity) return;
+    struct mp_image *in=p->pending;p->pending=NULL;
+    if(!in) {
+        if(!mp_pin_out_request_data(p->in)) return;
+        struct mp_frame frame=mp_pin_out_read(p->in);
+        if(frame.type==MP_FRAME_EOF) { p->eof=true;mp_filter_internal_mark_progress(f);return; }
+        if(frame.type!=MP_FRAME_VIDEO) {
+            MP_ERR(f,"unsupported frame type\n");mp_frame_unref(&frame);mp_filter_internal_mark_failed(f);return;
+        }
+        in=frame.data;
+        if(drop_pre_seek(f,in)) { talloc_free(in);mp_filter_internal_mark_progress(f);return; }
+        if(!p->have_format || !mp_image_params_static_equal(&p->format,&in->params)) {
+            p->pending=in;mp_filter_internal_mark_progress(f);return;
+        }
+    }
+    struct job jobs[8]={0};int n=0;
     if(!p->plan.active) {
         mp_image_unrefp(&p->previous);
-        mp_refqueue_write_out_pin(p->queue,mp_image_new_ref(in));return;
-    }
-    struct mp_image *frames[8]={0};int n=0;
-    bool pair=p->previous && p->previous->pts!=MP_NOPTS_VALUE && in->pts!=MP_NOPTS_VALUE && in->pts>p->previous->pts;
-    if(pair && in->nominal_fps>0 && in->pts-p->previous->pts>3.0/in->nominal_fps)pair=false;
-    if(pair && p->plan.numerator>p->plan.denominator) {
-        while(p->acc<=p->plan.numerator && n<8) {
-            double t=(double)p->acc/p->plan.numerator;
-            frames[n]=render(f,in,t);if(!frames[n])goto fail;
-            frames[n]->pts=p->previous->pts+(in->pts-p->previous->pts)*t;
-            ++n;p->acc+=p->plan.denominator;
+        jobs[n++]=(struct job){.out=in,.state=JOB_DONE};in=NULL;
+    } else {
+        bool pair=p->previous && p->previous->pts!=MP_NOPTS_VALUE && in->pts!=MP_NOPTS_VALUE && in->pts>p->previous->pts;
+        if(pair && in->nominal_fps>0 && in->pts-p->previous->pts>3.0/in->nominal_fps)pair=false;
+        if(pair && p->plan.numerator>p->plan.denominator) {
+            while(p->acc<=p->plan.numerator && n<8) {
+                double t=(double)p->acc/p->plan.numerator;
+                struct mp_image *out=blank(f,in);if(!out)goto fail;
+                out->pts=p->previous->pts+(in->pts-p->previous->pts)*t;
+                jobs[n++]=(struct job){.out=out,.t=t};p->acc+=p->plan.denominator;
+            }
+            p->acc-=p->plan.numerator;
         }
-        p->acc-=p->plan.numerator;
+        if(!n) {
+            struct mp_image *out=blank(f,in);if(!out)goto fail;
+            out->pts=in->pts;
+            jobs[n++]=(struct job){.out=out,.t=1};p->acc=p->plan.denominator;
+        }
+        for(int i=0;i<n;++i) {
+            jobs[i].in=mp_image_new_ref(in);MP_HANDLE_OOM(jobs[i].in);
+            if(p->previous) { jobs[i].previous=mp_image_new_ref(p->previous);MP_HANDLE_OOM(jobs[i].previous); }
+        }
+        mp_image_unrefp(&p->previous);p->previous=in;
     }
-    if(!n) {
-        frames[0]=render(f,in,1);if(!frames[0])goto fail;
-        frames[0]->pts=in->pts;n=1;p->acc=p->plan.denominator;
-    }
-    mp_image_unrefp(&p->previous);p->previous=mp_image_new_ref(in);
-    for(int i=1;i<n;++i)p->outq[p->outq_n++]=frames[i];
-    p->outq_pos=0;
-    mp_refqueue_write_out_pin(p->queue,frames[0]);return;
+    jobs[n-1].last=true;
+    mp_mutex_lock(&p->lock);
+    for(int i=0;i<n;++i) *job_at(p,p->count++)=jobs[i];
+    p->sources++;
+    mp_cond_signal(&p->work);
+    mp_mutex_unlock(&p->lock);
+    mp_filter_internal_mark_progress(f);
+    return;
 fail:
-    for(int i=0;i<8;++i)mp_image_unrefp(&frames[i]);
+    for(int i=0;i<n;++i) job_free(&jobs[i]);
+    talloc_free(in);
     mp_filter_internal_mark_failed(f);
-}
-static bool drop_pre_seek(void *ctx,struct mp_image *image) {
-    struct mp_stream_info *info=mp_filter_find_stream_info(ctx);double target;
-    return image->pts!=MP_NOPTS_VALUE && info && info->get_hrseek && info->get_hrseek(info,&target) && image->pts<target-.005;
 }
 static const struct mp_filter_info info={.name="animejanai-vulkan",.process=process,.reset=reset,.destroy=destroy,.priv_size=sizeof(struct priv)};
 static struct mp_filter *create(struct mp_filter *parent,void *options) {
     struct mp_filter *f=mp_filter_create(parent,&info);
     if(!f){talloc_free(options);return NULL;}
     struct priv *p=f->priv;p->opts=talloc_steal(p,options);
+    mp_mutex_init(&p->lock);mp_cond_init(&p->work);mp_cond_init(&p->idle);p->locks=true;
+    p->capacity=MAX_JOBS;
     mp_filter_add_pin(f,MP_PIN_IN,"in");mp_filter_add_pin(f,MP_PIN_OUT,"out");
     char *paths[5];char *sources[]={p->opts->lib,p->opts->conf,p->opts->model_dir,p->opts->rife_model_dir,p->opts->stats};
     for(int i=0;i<5;++i)paths[i]=sources[i]?mp_normalize_user_path(p,f->global,sources[i]):NULL;
@@ -141,10 +263,14 @@ static struct mp_filter *create(struct mp_filter *parent,void *options) {
 #undef LOAD
     p->context=p->create(paths[1],paths[2],paths[3],p->opts->device,paths[4],p->opts->slot);
     if(!p->context){MP_ERR(f,"Vulkan backend: %s\n",p->error(NULL));goto fail;}
-    p->queue=mp_refqueue_alloc(f);
-    mp_refqueue_add_in_format(p->queue,IMGFMT_RGB24,0);
-    mp_refqueue_set_refs(p->queue,0,0);mp_refqueue_set_mode(p->queue,0);
-    mp_refqueue_set_drop_check(p->queue,drop_pre_seek,f);
+    // Frames reach the engine as RGB24, whatever the decoder gives.
+    p->conv=mp_autoconvert_create(f);
+    if(!p->conv)goto fail;
+    mp_autoconvert_add_imgfmt(p->conv,IMGFMT_RGB24,0);
+    mp_pin_connect(p->conv->f->pins[0],f->ppins[0]);
+    p->in=p->conv->f->pins[1];
+    if(mp_thread_create(&p->thread,worker,f)){MP_ERR(f,"Vulkan backend: no thread for the engine\n");goto fail;}
+    p->started=true;
     return f;
 fail:
     talloc_free(f);return NULL;
@@ -154,9 +280,11 @@ static const m_option_t fields[]={
     {"lib",OPT_STRING(lib),.flags=M_OPT_FILE},{"conf",OPT_STRING(conf),.flags=M_OPT_FILE},
     {"model-dir",OPT_STRING(model_dir),.flags=M_OPT_FILE},{"rife-model-dir",OPT_STRING(rife_model_dir),.flags=M_OPT_FILE},
     {"stats",OPT_STRING(stats),.flags=M_OPT_FILE},{"device",OPT_STRING(device)},
-    {"slot",OPT_INT(slot),M_RANGE(0,9999)},{0}
+    {"slot",OPT_INT(slot),M_RANGE(0,9999)},
+    // Source frames computed in advance; 1 = each frame when it is asked for.
+    {"ahead",OPT_INT(ahead),M_RANGE(1,16)},{0}
 };
 const struct mp_user_filter_entry vf_animejanai_vulkan={
     .desc={.description="AnimeJaNai/RIFE NCNN Vulkan (SDR host-frame bridge)",.name="animejanai-vulkan",
-        .priv_size=sizeof(struct opts),.priv_defaults=&(const struct opts){.slot=1},.options=fields},.create=create
+        .priv_size=sizeof(struct opts),.priv_defaults=&(const struct opts){.slot=1,.ahead=6},.options=fields},.create=create
 };

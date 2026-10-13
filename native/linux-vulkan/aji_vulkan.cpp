@@ -233,6 +233,21 @@ void load_steps(Context &c) {
         // Shipped FP16 SPAN weights; validate GPU output against ONNX Runtime.
         step.net->opt.use_fp16_arithmetic=true;
         step.net->opt.num_threads=2;
+        // NCNN computes 3x3 convolutions through Winograd transforms by default. On a GPU whose
+        // matrix units it can use (cooperative matrices), the direct product is faster and its
+        // FP16 result closer to ONNX Runtime: measured on an RTX 4070 Ti, 720p, 42.7 -> 35.7 ms
+        // (Performance) and 61.9 -> 44.1 ms (Balanced), largest difference with the reference
+        // 5 instead of 10 levels. Without matrix units Winograd is the faster one (43 against
+        // 53 ms). Only NVIDIA was measured: other GPUs keep NCNN's choice.
+        const ncnn::GpuInfo &gpu=ncnn::get_gpu_info(c.gpu);
+        if (gpu.vendor_id()==0x10de && gpu.support_cooperative_matrix()) step.net->opt.use_winograd_convolution=false;
+        // To measure another GPU (1 = on, 0 = off): AJI_VK_WINOGRAD, AJI_VK_WINOGRAD43,
+        // AJI_VK_COOPMAT (matrix units), AJI_VK_SGEMM.
+        auto kernel=[](const char *name,bool &option) { if (const char *v=std::getenv(name); v && *v) option=std::atoi(v)!=0; };
+        kernel("AJI_VK_WINOGRAD",step.net->opt.use_winograd_convolution);
+        kernel("AJI_VK_WINOGRAD43",step.net->opt.use_winograd43_convolution);
+        kernel("AJI_VK_COOPMAT",step.net->opt.use_cooperative_matrix);
+        kernel("AJI_VK_SGEMM",step.net->opt.use_sgemm_convolution);
         step.net->set_vulkan_device(c.gpu);
         require(step.net->load_param((base+".param").c_str())==0 && step.net->load_model((base+".bin").c_str())==0,
             "Cannot load NCNN model " + model.name);

@@ -1,5 +1,76 @@
 # Chantier performances — document de relais
 
+## Suite du 13 octobre 2026 (autre session) — lots 4 à 6
+
+Trois changements faits après les lots 1 à 3, dans une autre session. Ce qui a été exécuté
+et ce qui ne l'a pas été est indiqué pour chacun : l'utilisateur fait lui-même les essais
+dans le lecteur.
+
+### Lot 4 — choix des noyaux de convolution NCNN (mesuré sur RTX 4070 Ti)
+
+NCNN calcule par défaut les convolutions 3x3 par transformées de Winograd, et sait utiliser
+les unités matricielles du GPU (matrices coopératives). Mesure de SPAN seul, images toutes
+nouvelles, cache désactivé, 20 à 30 images par cas, bureau actif :
+
+| Cas | Winograd (défaut NCNN) | Produit direct | Gain |
+|---|---:|---:|---:|
+| Performance 540p | 19,4 ms | 16,7 ms | ×1,16 |
+| Performance 720p | 42,7 ms | 35,7 ms | ×1,20 |
+| Performance 1080p | 116,1 ms | 94,8 ms | ×1,22 |
+| Balanced 720p | 61,9 ms | 44,1 ms | ×1,40 |
+
+Autres combinaisons, Performance 720p : sans unités matricielles 43,0 ms avec Winograd et
+53,0 ms sans. Sans unités matricielles, Winograd reste donc le plus rapide ; avec elles,
+c'est le produit direct.
+
+Écart avec ONNX Runtime CPU sur une image de bruit 720p : Performance, plus grand écart 5
+niveaux au lieu de 10 et 0,009 % des valeurs à plus de 2 niveaux au lieu de 0,134 % ;
+Balanced, 3 au lieu de 7. Le produit direct est donc aussi le plus fidèle.
+
+**Activé** dans `aji_vulkan.cpp` pour les GPU NVIDIA qui exposent les matrices coopératives ;
+les autres GPU gardent le choix de NCNN (non mesurés). Variables de mesure, 1 ou 0 :
+`AJI_VK_WINOGRAD`, `AJI_VK_WINOGRAD43`, `AJI_VK_COOPMAT`, `AJI_VK_SGEMM`.
+Conséquence : sur NVIDIA, la sortie SPAN n'est plus identique à l'octet à la bibliothèque
+initiale des lots 1 à 3 (elle est plus proche de la référence ONNX). La comparaison de la CI,
+qui oppose la même bibliothèque avec et sans cache sur un pilote logiciel, n'est pas touchée.
+
+RIFE 4.6 : même essai, **aucun gain** (720p : 20,5 contre 21,1 ms ; 1440p : 90,4 contre
+85,9 ms, dans le bruit). Son arithmétique en FP16 casse l'image (écart jusqu'à 241 niveaux) :
+à ne pas activer. RIFE n'est pas modifié. À 1440p, RIFE coûte environ 90 ms par image
+interpolée sur ce moteur : seul l'ordre RIFE avant SPAN peut tenir le temps réel.
+
+### Lot 5 — le moteur calcule en avance (filtre `vf_animejanai_vulkan.c`)
+
+Le filtre faisait chaque appel au moteur dans le fil du lecteur, image par image : chaque
+image devait tenir seule dans le temps entre deux images. Le moteur tourne maintenant sur un
+fil à lui et garde jusqu'à `ahead` images sources d'avance (option du filtre, 6 par défaut,
+1 = comme avant ; 640 Mo d'images au plus). Seule la moyenne doit tenir : un panoramique est
+payé par le temps gagné sur les dessins tenus, que le moteur reprend presque gratuitement.
+Les images sortent dans l'ordre ; un seek attend la fin de l'image en cours puis vide tout ;
+un changement de format attend que le moteur soit au repos. Concerne tous les moteurs du
+pont (NCNN/Vulkan, ONNX Runtime, Core ML, Metal), donc Linux et macOS.
+**Vérifié : compilation contre les en-têtes du mpv épinglé, sans avertissement. Pas exécuté
+dans mpv.** Premier essai à faire : lecture, seek, pause, fin de fichier, RIFE.
+
+### Lot 6 — reprise par zones dans le moteur partagé (`native/linux-ort`)
+
+`engine_reuse=tiles` coupait toute image en quatre tuiles, y compris quand tout bouge (16 %
+de calcul en plus à cause des recouvrements). Il y a maintenant deux découpes : le plan
+d'une image entièrement nouvelle (une tuile, ou le partage entre processeurs) et une grille
+fine de zones d'environ 320x240 (4x3 en 720p, `engine_areas`, `AJI_AREAS`) avec ses propres
+exécuteurs. Seules les zones changées sont calculées, et seulement si c'est plus court que
+l'image entière (temps mesurés, nombre de pixels avant qu'ils existent). Le fichier de
+statistiques ajoute `Areas:` et `Area devices:`.
+**Vérifié : tests unitaires des découpes, et sortie identique à l'octet à l'image entière
+(ONNX Runtime CPU, 640x360, coin mobile). Pas exécuté sur Mac.** Le gain réel dépend du taux
+de zones immobiles des vidéos : `reused since start` (Ctrl+j) le donne.
+
+### Constat sur l'assembleur
+
+La boucle de comparaison d'images (`window_unchanged`) est déjà compilée en `psadbw` par GCC
+et Clang : une version écrite à la main n'apporterait rien. Les gains de ces lots viennent
+du choix des noyaux, de l'ordonnancement et du calcul évité.
+
 ## État à lire en premier — fin du 13 octobre 2026, lots 1 à 3 terminés
 
 **Lot 2 terminé : conserver sur GPU les entrées préparées de RIFE 4.6.**

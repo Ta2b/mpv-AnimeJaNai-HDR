@@ -174,7 +174,8 @@ jobs:
           done
           grep -q 'COMPARE | largest difference [0-3] ' native-balanced.log || status=1
           grep -q 'COMPARE | largest difference [0-3] ' native-pair.log || status=1
-          grep -q 'computed 1 of 4' native-pair.log || status=1
+          # The moving corner touches two of the twelve areas of 720p (one, and its neighbour's overlap).
+          grep -q 'computed 2 of 12' native-pair.log || status=1
           grep 'centre pixel' cpu.log native-small.log
           ls models/coreml-cache/native | head
           exit $status

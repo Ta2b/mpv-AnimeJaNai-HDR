@@ -58,6 +58,9 @@ else
     essai coremlnative GPU+NPU 1 1280 720
     essai metal GPU+NPU 1 1280 720
     essai coreml GPU+ANE 1 1280 720
+    # Trois processeurs : le CPU (et son unité matricielle) prend aussi des tuiles.
+    essai coremlnative GPU+NPU+CPU 1 1280 720
+    essai metal GPU+NPU+CPU 1 1280 720
     # 3. Le Neural Engine préfère les petites images : la même image en 4, 6 puis 12 tuiles.
     for grid in 2x2 3x2 4x3; do essai coremlnative NPU 1 1280 720 "AJI_TILES=$grid"; done
     essai coremlnative GPU+NPU 1 1280 720 AJI_TILES=4x3

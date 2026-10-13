@@ -76,11 +76,17 @@ int main(int argc, char **argv)
         const TilePlan small = plan_tiles(128, 96, 2, 2, 36);
         check(small.tiles.size() == 1, "tiles smaller than their overlap are not cut");
         int nx, ny;
-        grid_for("auto", 1, false, 1280, 720, &nx, &ny); check(nx == 1 && ny == 1, "auto: one device, one tile");
-        grid_for("auto", 2, false, 1280, 720, &nx, &ny); check(nx == 2 && ny == 2, "auto: two devices share four tiles");
-        grid_for("auto", 1, true, 1280, 720, &nx, &ny); check(nx == 2 && ny == 2, "auto: partial reuse cuts in four");
-        grid_for("3x2", 1, false, 1280, 720, &nx, &ny); check(nx == 3 && ny == 2, "explicit grid");
-        grid_for("1", 2, true, 1280, 720, &nx, &ny); check(nx == 1 && ny == 1, "tiles off");
+        grid_for("auto", 1, 1280, 720, &nx, &ny); check(nx == 1 && ny == 1, "auto: one device, one tile");
+        grid_for("auto", 2, 1280, 720, &nx, &ny); check(nx == 2 && ny == 2, "auto: two devices share four tiles");
+        grid_for("3x2", 1, 1280, 720, &nx, &ny); check(nx == 3 && ny == 2, "explicit grid");
+        grid_for("1", 2, 1280, 720, &nx, &ny); check(nx == 1 && ny == 1, "tiles off");
+        // The finer grid of partial reuse: areas of about 320x240 pixels.
+        areas_for("auto", 1280, 720, &nx, &ny); check(nx == 4 && ny == 3, "areas of 720p: 4x3");
+        areas_for("auto", 1920, 1080, &nx, &ny); check(nx == 6 && ny == 5, "areas of 1080p: 6x5");
+        areas_for("auto", 640, 360, &nx, &ny); check(nx == 2 && ny == 2, "areas of 360p: 2x2");
+        areas_for("auto", 256, 256, &nx, &ny); check(nx == 1 && ny == 1, "a small frame is one area");
+        areas_for("off", 1280, 720, &nx, &ny); check(nx == 1 && ny == 1, "areas off");
+        areas_for("3x2", 1280, 720, &nx, &ny); check(nx == 3 && ny == 2, "explicit areas");
     }
     {
         const int w = 200, h = 100;

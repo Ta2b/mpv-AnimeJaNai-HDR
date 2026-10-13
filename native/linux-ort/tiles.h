@@ -27,9 +27,14 @@ struct TilePlan {
 // is reduced along an axis until its windows reach it. The frame itself is at least that large.
 TilePlan plan_tiles(int w, int h, int nx, int ny, int reach, int align = 2, int min_window = 0);
 
-// "auto", "1", "off", "2x2", "3x2"...: the grid for `executors` devices. Auto keeps one tile for
-// one device unless tiles are wanted for partial reuse.
-void grid_for(const char *setting, int executors, bool reuse_tiles, int w, int h, int *nx, int *ny);
+// "auto", "1", "off", "2x2", "3x2"...: the grid a frame is cut in when all of it is computed,
+// for `executors` devices. Auto keeps one tile for one device.
+void grid_for(const char *setting, int executors, int w, int h, int *nx, int *ny);
+
+// "auto", "off", "4x3"...: the finer grid used when only a part of the frame changed. Auto aims
+// at areas of about 320x240 pixels: small enough to follow a mouth or a blink, large enough for
+// the overlap around each one to stay a fraction of it.
+void areas_for(const char *setting, int w, int h, int *nx, int *ny);
 
 // True when no 32x32 block of the window differs from the reference by more than `threshold`
 // (mean absolute difference of the block's bytes, in 8-bit levels). `ref` is width * 3 bytes a row.

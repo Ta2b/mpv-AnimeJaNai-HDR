@@ -48,9 +48,10 @@ double now_ms()
 
 // Engine settings of the bank's [global] section; the engines of the other platforms ignore them.
 struct Settings {
-    std::string reuse = "frame";   // off, frame (a whole unchanged frame), tiles (each unchanged tile)
+    std::string reuse = "frame";   // off, frame (a whole unchanged frame), tiles (each unchanged area)
     double threshold = 0.40;       // largest mean difference of a 32x32 block still "unchanged", in 8-bit levels
-    std::string tiles = "auto";    // auto, 1, 2x2...
+    std::string tiles = "auto";    // auto, 1, 2x2...: how a whole new frame is shared between devices
+    std::string areas = "auto";    // auto, off, 4x3...: the finer grid of reuse=tiles
     int overlap = -1;              // pixels a tile sees past its edges; -1 = what the model reads
 };
 
@@ -70,6 +71,7 @@ Settings read_settings(const std::string &conf)
             s.reuse = v == "no" || v == "off" || v == "false" || v == "0" ? "off" : v == "tiles" || v == "areas" ? "tiles" : "frame";
         } else if (key == "engine_reuse_threshold") s.threshold = std::min(8.0, std::max(0.0, std::atof(value.c_str())));
         else if (key == "engine_tiles") s.tiles = lower(value);
+        else if (key == "engine_areas") s.areas = lower(value);
         else if (key == "engine_overlap") s.overlap = std::atoi(value.c_str());
     };
     while (std::getline(file, line)) {
@@ -85,6 +87,7 @@ Settings read_settings(const std::string &conf)
     env("AJI_REUSE", "engine_reuse");
     env("AJI_REUSE_THRESHOLD", "engine_reuse_threshold");
     env("AJI_TILES", "engine_tiles");
+    env("AJI_AREAS", "engine_areas");
     env("AJI_OVERLAP", "engine_overlap");
     return s;
 }
@@ -102,13 +105,21 @@ struct Step {
     int in_w = 0, in_h = 0;    // what the profile gives the model
     int w = 0, h = 0;          // the same, padded up to the smallest window an executor takes
     int reach = 0;
-    TilePlan plan;
-    std::vector<Worker> workers;
-    std::vector<std::vector<uint8_t>> refs;   // per tile: its window when it was last computed
+    // A frame that is all new is cut by `plan` (one tile, or a few shared between devices).
+    // With reuse=tiles, a frame of which a part changed is cut by `areas`, a finer grid with
+    // executors of its own size: only the areas that changed are computed. Cutting every frame
+    // finely would compute each overlap again on the frames where everything moves.
+    TilePlan plan, areas;
+    std::vector<Worker> workers, area_workers;
+    bool fine = false;                        // `areas` exists and differs from `plan`
+    std::vector<std::vector<uint8_t>> refs;   // per tile of the reuse grid: its window when last computed
     std::vector<char> known;
     std::vector<uint8_t> resized, padded, canvas;
-    uint64_t computed = 0, reused = 0;
-    int last_computed = 0;
+    uint64_t computed = 0, reused = 0, by_areas = 0;
+    int last_computed = 0, last_total = 0;
+    double whole_ms = 0;                      // recent time of a frame computed with `plan`
+    uint64_t whole_runs = 0;
+    const TilePlan &reuse_plan() const { return fine ? areas : plan; }
 };
 
 struct Context {
@@ -268,24 +279,36 @@ void load_steps(Context &c, int width, int height)
         if (c.settings.overlap >= 0) step.reach = std::min(512, c.settings.overlap) / 2 * 2;
 
         int nx = 1, ny = 1;
-        grid_for(c.settings.tiles.c_str(), (int)devices.size(), c.settings.reuse == "tiles", step.w, step.h, &nx, &ny);
-        step.plan = plan_tiles(step.w, step.h, nx, ny, step.reach, align, templated ? kCoreMLMinSide : 0);
-        step.refs.assign(step.plan.tiles.size(), {});
-        step.known.assign(step.plan.tiles.size(), 0);
-
-        // One executor per device, never more than there are tiles to share.
-        const size_t wanted = std::min(devices.size(), step.plan.tiles.size());
-        for (size_t i = 0; i < wanted; i++) {
-            ExecutorRequest request;
-            request.provider = c.provider; request.device = devices[i];
-            request.models_dir = c.models; request.model = model.name; request.cache_dir = c.cache;
-            request.width = step.plan.width; request.height = step.plan.height;
-            Worker worker;
-            worker.executor = make_executor(request);
-            if (!c.backend_label.empty()) c.backend_label += " + ";
-            c.backend_label += worker.executor->label;
-            step.workers.push_back(std::move(worker));
+        const int min_window = templated ? kCoreMLMinSide : 0;
+        grid_for(c.settings.tiles.c_str(), (int)devices.size(), step.w, step.h, &nx, &ny);
+        step.plan = plan_tiles(step.w, step.h, nx, ny, step.reach, align, min_window);
+        if (c.settings.reuse == "tiles") {
+            areas_for(c.settings.areas.c_str(), step.w, step.h, &nx, &ny);
+            step.areas = plan_tiles(step.w, step.h, nx, ny, step.reach, align, min_window);
+            step.fine = step.areas.tiles.size() > step.plan.tiles.size();
         }
+        step.refs.assign(step.reuse_plan().tiles.size(), {});
+        step.known.assign(step.reuse_plan().tiles.size(), 0);
+
+        // One executor per device and per window size, never more than there are tiles to share.
+        auto executors = [&](const TilePlan &plan, std::vector<Worker> &workers, bool named) {
+            const size_t wanted = std::min(devices.size(), plan.tiles.size());
+            for (size_t i = 0; i < wanted; i++) {
+                ExecutorRequest request;
+                request.provider = c.provider; request.device = devices[i];
+                request.models_dir = c.models; request.model = model.name; request.cache_dir = c.cache;
+                request.width = plan.width; request.height = plan.height;
+                Worker worker;
+                worker.executor = make_executor(request);
+                if (named) {
+                    if (!c.backend_label.empty()) c.backend_label += " + ";
+                    c.backend_label += worker.executor->label;
+                }
+                workers.push_back(std::move(worker));
+            }
+        };
+        executors(step.plan, step.workers, true);
+        if (step.fine) executors(step.areas, step.area_workers, false);
         w *= 2; h *= 2; // the supported AnimeJaNai spatial models are 2x
         c.steps.push_back(std::move(step));
     }
@@ -293,16 +316,16 @@ void load_steps(Context &c, int width, int height)
 
 // A slower device takes a tile only when that still finishes the frame sooner than leaving the
 // tile to the others: without this, the frame would wait for the last tile of the slowest one.
-bool worth_taking(const Step &step, size_t me, size_t queued)
+bool worth_taking(const std::vector<Worker> &workers, size_t me, size_t queued)
 {
-    const double mine = step.workers[me].pace_ms;
+    const double mine = workers[me].pace_ms;
     if (mine <= 0) return true;
     // A device that keeps declining would never be timed again: it takes one tile from time to
     // time, in case it got faster (another program left it) or was misjudged.
-    if (step.workers[me].idle >= 96) return true;
+    if (workers[me].idle >= 96) return true;
     double rate = 0, fastest = 0;
-    for (size_t i = 0; i < step.workers.size(); i++) {
-        const double pace = step.workers[i].pace_ms;
+    for (size_t i = 0; i < workers.size(); i++) {
+        const double pace = workers[i].pace_ms;
         if (i == me) continue;
         if (pace <= 0) return true;                    // someone has not been timed yet
         rate += 1 / pace;
@@ -326,30 +349,31 @@ Job job_for(const Tile &t, const uint8_t *src, ptrdiff_t stride, uint8_t *dst, p
     return job;
 }
 
-// Computes the tiles of `todo`: every device takes the next one when it is free. Returns the
-// time it took.
-double run_tiles(Step &step, const std::vector<int> &todo, const uint8_t *src, ptrdiff_t stride, uint8_t *dst, ptrdiff_t dst_stride)
+// Computes the tiles of `todo` in `plan`: every device takes the next one when it is free.
+// Returns the time it took.
+double run_tiles(const TilePlan &plan, std::vector<Worker> &workers, const std::vector<int> &todo,
+                 const uint8_t *src, ptrdiff_t stride, uint8_t *dst, ptrdiff_t dst_stride)
 {
     const double start = now_ms();
     std::mutex lock;
     size_t next = 0;
-    std::vector<std::string> errors(step.workers.size());
-    const bool alone = step.workers.size() == 1;
+    std::vector<std::string> errors(workers.size());
+    const bool alone = workers.size() == 1;
     auto work = [&](size_t me) {
-        Worker &worker = step.workers[me];
+        Worker &worker = workers[me];
         bool took_one = false;
         try {
             while (true) {
                 int index;
                 {
                     std::lock_guard<std::mutex> guard(lock);
-                    if (next >= todo.size() || !worth_taking(step, me, todo.size() - next)) break;
+                    if (next >= todo.size() || !worth_taking(workers, me, todo.size() - next)) break;
                     index = todo[next++];
                     worker.idle = 0;
                     took_one = true;
                 }
                 const double began = now_ms();
-                worker.executor->run(job_for(step.plan.tiles[(size_t)index], src, stride, dst, dst_stride, alone));
+                worker.executor->run(job_for(plan.tiles[(size_t)index], src, stride, dst, dst_stride, alone));
                 const double took = now_ms() - began;
                 std::lock_guard<std::mutex> guard(lock);
                 // The first tile of a device includes the compilation of its model: not a pace.
@@ -363,17 +387,32 @@ double run_tiles(Step &step, const std::vector<int> &todo, const uint8_t *src, p
         } catch (const std::exception &e) { errors[me] = e.what(); }
     };
     std::vector<std::thread> threads;
-    for (size_t i = 1; i < step.workers.size(); i++) threads.emplace_back(work, i);
+    for (size_t i = 1; i < workers.size(); i++) threads.emplace_back(work, i);
     work(0);
     for (auto &t : threads) t.join();
     for (const auto &error : errors) require(error.empty(), error);
     // The fastest device never declines, so the queue is empty here; were the paces ever to tie
     // in a way that leaves tiles, the first device finishes them.
     for (; next < todo.size(); next++) {
-        step.workers[0].executor->run(job_for(step.plan.tiles[(size_t)todo[next]], src, stride, dst, dst_stride, true));
-        step.workers[0].tiles++;
+        workers[0].executor->run(job_for(plan.tiles[(size_t)todo[next]], src, stride, dst, dst_stride, true));
+        workers[0].tiles++;
     }
     return now_ms() - start;
+}
+
+// Whether computing `changed` areas takes less time than the whole frame with the main plan:
+// from the times measured so far, or from the number of pixels until both have been timed.
+bool areas_cheaper(const Step &step, size_t changed)
+{
+    double rate = 0;
+    bool timed = step.whole_ms > 0;
+    for (const auto &w : step.area_workers) {
+        if (w.pace_ms <= 0) timed = false; else rate += 1 / w.pace_ms;
+    }
+    if (timed) return changed / rate < 0.85 * step.whole_ms;
+    const double areas = (double)changed * step.areas.width * step.areas.height;
+    const double whole = (double)step.plan.tiles.size() * step.plan.width * step.plan.height;
+    return areas < 0.85 * whole;
 }
 
 // The whole chain, from the source frame's bytes to the output frame's bytes. Returns whether
@@ -402,21 +441,28 @@ bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, uint8_t *outpu
         const int ow = 2 * step.in_w, oh = 2 * step.in_h;
         if (last) require(ow == c.plan.width && oh == c.plan.height, "Model output dimensions differ from the configured 2x profile");
 
-        // Which tiles changed since they were computed.
-        const size_t window_bytes = (size_t)step.plan.width * 3;
+        // Which tiles of the reuse grid changed since they were computed.
+        const TilePlan &grid = step.reuse_plan();
+        const size_t window_bytes = (size_t)grid.width * 3;
         std::vector<int> todo;
-        for (size_t k = 0; k < step.plan.tiles.size(); k++) {
-            const Tile &t = step.plan.tiles[k];
+        for (size_t k = 0; k < grid.tiles.size(); k++) {
+            const Tile &t = grid.tiles[k];
             const uint8_t *window = src + (ptrdiff_t)t.wy * src_stride + 3 * t.wx;
             if (!reuse || !step.known[k]
-                || !window_unchanged(window, src_stride, step.refs[k].data(), step.plan.width, step.plan.height, c.settings.threshold))
+                || !window_unchanged(window, src_stride, step.refs[k].data(), grid.width, grid.height, c.settings.threshold))
                 todo.push_back((int)k);
         }
+        auto everything = [](const TilePlan &plan) {
+            std::vector<int> all(plan.tiles.size());
+            for (size_t k = 0; k < all.size(); k++) all[k] = (int)k;
+            return all;
+        };
         // "frame": a frame is reused whole or not at all.
-        if (c.settings.reuse == "frame" && !todo.empty() && todo.size() < step.plan.tiles.size()) {
-            todo.clear();
-            for (size_t k = 0; k < step.plan.tiles.size(); k++) todo.push_back((int)k);
-        }
+        if (c.settings.reuse == "frame" && !todo.empty() && todo.size() < grid.tiles.size()) todo = everything(grid);
+        // Areas only when a part of the frame changed and computing them is the shorter way.
+        const bool by_areas = step.fine && !todo.empty() && todo.size() < grid.tiles.size() && areas_cheaper(step, todo.size());
+        const bool by_plan = !todo.empty() && !by_areas;
+        if (step.fine && by_plan) todo = everything(grid);   // the main plan computes all of it
         // Straight into the output frame when nothing has to be kept or cropped; otherwise into
         // the step's own picture, which keeps the result of the tiles that are not recomputed.
         const bool direct = last && !reuse && !padded;
@@ -426,21 +472,32 @@ bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, uint8_t *outpu
             step.canvas.resize((size_t)2 * step.w * 2 * step.h * 3);
             dst = step.canvas.data(); dst_stride = (ptrdiff_t)2 * step.w * 3;
         }
-        if (!todo.empty()) c.last_model_ms += run_tiles(step, todo, src, src_stride, dst, dst_stride);
+        if (by_areas) {
+            c.last_model_ms += run_tiles(step.areas, step.area_workers, todo, src, src_stride, dst, dst_stride);
+            step.by_areas++;
+        } else if (by_plan) {
+            const std::vector<int> tiles = step.fine ? everything(step.plan) : todo;
+            const double took = run_tiles(step.plan, step.workers, tiles, src, src_stride, dst, dst_stride);
+            c.last_model_ms += took;
+            // The first frame includes the compilation of the models: not a time to compare with.
+            if (tiles.size() == step.plan.tiles.size() && step.whole_runs++ > 0)
+                step.whole_ms = step.whole_ms <= 0 ? took : 0.7 * step.whole_ms + 0.3 * took;
+        }
         if (reuse) {
             for (int k : todo) {
-                const Tile &t = step.plan.tiles[(size_t)k];
+                const Tile &t = grid.tiles[(size_t)k];
                 auto &ref = step.refs[(size_t)k];
-                ref.resize(window_bytes * step.plan.height);
-                for (int y = 0; y < step.plan.height; y++)
+                ref.resize(window_bytes * grid.height);
+                for (int y = 0; y < grid.height; y++)
                     std::memcpy(ref.data() + (size_t)y * window_bytes, src + (ptrdiff_t)(t.wy + y) * src_stride + 3 * t.wx, window_bytes);
                 step.known[(size_t)k] = 1;
             }
         }
         step.computed += todo.size();
-        step.reused += step.plan.tiles.size() - todo.size();
+        step.reused += grid.tiles.size() - todo.size();
         step.last_computed = (int)todo.size();
-        whole = whole && todo.size() == step.plan.tiles.size();
+        step.last_total = (int)grid.tiles.size();
+        whole = whole && todo.size() == grid.tiles.size();
         if (last && !direct) {
             const uint8_t *from = step.canvas.data();
             parallel((size_t)oh, 256, [=](size_t first, size_t end) {
@@ -473,8 +530,12 @@ void write_stats(const Context &c, double ms)
     for (const auto &step : c.steps) {
         const uint64_t all = step.computed + step.reused;
         f << "Tiles: " << step.plan.nx << "x" << step.plan.ny << " of " << step.plan.width << "x" << step.plan.height
-          << ", overlap " << step.reach << " | computed " << step.last_computed << " of " << step.plan.tiles.size()
+          << ", overlap " << step.reach << " | computed " << step.last_computed << " of " << step.last_total
           << " | reused since start: " << (all ? 100 * step.reused / all : 0) << " % (reuse=" << c.settings.reuse << ")\n";
+        // The finer grid of reuse=tiles, and how many frames were computed through it.
+        if (step.fine)
+            f << "Areas: " << step.areas.nx << "x" << step.areas.ny << " of " << step.areas.width << "x" << step.areas.height
+              << " | frames computed by areas: " << (c.count ? 100 * step.by_areas / c.count : 0) << " %\n";
         f << "Devices:";
         uint64_t tiles = 0;
         for (const auto &w : step.workers) tiles += w.tiles;
@@ -482,6 +543,12 @@ void write_stats(const Context &c, double ms)
             f << " [" << w.executor->label << ": " << (w.tiles > 1 ? w.total_ms / (w.tiles - 1) : 0) << " ms a tile, "
               << (tiles ? 100 * w.tiles / tiles : 0) << " % of the tiles]";
         f << "\n";
+        if (step.fine) {
+            f << "Area devices:";
+            for (const auto &w : step.area_workers)
+                f << " [" << w.executor->label << ": " << (w.tiles > 1 ? w.total_ms / (w.tiles - 1) : 0) << " ms an area]";
+            f << "\n";
+        }
         for (const auto &w : step.workers)
             if (!w.executor->note.empty()) f << "Placement: " << w.executor->label << ": " << w.executor->note << "\n";
     }
