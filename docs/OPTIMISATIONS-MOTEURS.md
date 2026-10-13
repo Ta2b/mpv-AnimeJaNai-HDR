@@ -25,6 +25,63 @@ Le retour utilisateur sur la dernière application macOS classe Core ML natif
 GPU+NPU devant Metal GPU+NPU. C'est une observation qualitative sur cette
 machine ; elle ne fournit pas un facteur d'accélération ni un classement universel.
 
+## Piste SVP — complément du 14 octobre 2026
+
+Retour utilisateur : une RTX 2070 Super arrivait à combiner AnimeJaNai ×2 et
+RIFE ×2 via SVP, contrairement à son autre configuration AnimeJaNai/RIFE.
+C'est un indice de différence de chaîne, pas encore une comparaison contrôlée :
+modèle RIFE, résolution réellement interpolée, ordre des filtres, version du
+runtime et réglages SVP de cette ancienne utilisation restent inconnus. Une
+équivalence graphique approximative avec un M4 Pro ne prédit pas les performances
+RIFE, particulièrement quand le chemin Mac emploie aussi le Neural Engine.
+
+Sources primaires consultées : [documentation SVP RIFE](https://www.svp-team.com/docs/rife-ai/),
+[interface vstrt](https://github.com/AmusementClub/vs-mlrt/blob/master/vstrt/README.md)
+et [wrapper vs-mlrt](https://github.com/AmusementClub/vs-mlrt/blob/master/scripts/vsmlrt.py).
+SVP documente TensorRT et ncnn/Vulkan, plusieurs threads GPU et une optimisation
+par résolution. Le plugin TensorRT référencé propose `num_streams` et
+`use_cuda_graph`. Le wrapper expose aussi la spécialisation de forme et deux
+implémentations ONNX de RIFE. Cela ne prouve pas quels réglages l'utilisateur
+avait activés dans SVP.
+
+Priorités renforcées, en conservant les modèles et sans lancer de nouveaux tests :
+
+1. **Chaîne GPU asynchrone avec concurrence bornée.** Plusieurs contextes et jeux
+   de buffers peuvent préparer/exécuter des images indépendantes et éviter des
+   creux entre décodage, RIFE, upscale et affichage. Préserver l'ordre de sortie,
+   les PTS et une file bornée. Le filtre en avance existe déjà ; il ne suffit pas
+   à rendre chaque étape d'inférence concurrente. Le gain dépend de la saturation
+   du GPU et de la mémoire disponible, pas du seul nombre de threads.
+2. **Étendre les CUDA Graphs au chemin RIFE NVIDIA.** Dans le dépôt voisin,
+   `src/aji_trt.cpp:aji_infer_rife` appelle directement `enqueueV3`, contrairement
+   au chemin spatial capturé. Le code relit le score de coupe sur CPU via
+   `cudaMemcpyAsync` puis `cudaStreamSynchronize` avant la préparation des entrées.
+   Une préparation par paire et une décision anticipée ou restant sur GPU sont
+   des pistes pour réduire ces attentes, en conservant exactement la règle de
+   coupe. Aucun code du dépôt voisin n'est modifié pour cette analyse.
+3. **RIFE natif sur Apple et intermédiaires résidents.** Dans notre moteur partagé,
+   `load_rife` appelle toujours `make_ort_interpolator`. Choisir Metal ou Core ML
+   natif pour SPAN ne sélectionne donc pas un RIFE natif équivalent. Étudier la
+   compilation de l'actuel RIFE dans Core ML/Metal et la liaison directe des
+   tenseurs SPAN/RIFE, sans retour RGB CPU entre étages. Faisabilité et bénéfice
+   restent à démontrer ; ne pas promettre que le NPU prend tout le graphe.
+4. **Comparer les exports du même RIFE et la spécialisation de forme.** Le
+   wrapper vs-mlrt sélectionne des graphes `rife` ou `rife_v2`, distincts d'un
+   changement de génération entraînée. Garder poids, padding et précision
+   sensibles ; un export différent n'est pas automatiquement identique à l'octet.
+   Notre TensorRT a déjà FP16, cache de compilation/timings et builder niveau 5 :
+   ces mécanismes ne sont pas des nouveautés à réimplémenter aveuglément.
+
+Avant d'attribuer l'écart à ces optimisations, identifier le modèle et la taille
+traitée : un upscale spatial ×2 quadruple le nombre de pixels présenté à RIFE
+lorsqu'il est placé après, mais cet ordre évite d'upscaler chaque image interpolée.
+Un autre modèle, `scale<1`, un crop ou l'interpolation classique de SVP changeraient
+le travail/rendu demandé et ne prouveraient pas un gain à qualité constante.
+Aucune de ces options n'est activée sur la seule base du souvenir rapporté.
+
+**État : analyse documentaire et lecture du code seulement, aucun nouveau test,
+aucun gain mesuré, aucune nouvelle implémentation dans la release 3.8.0.23.**
+
 ## Constats dans les sources
 
 | Constat | Preuve | Conséquence |
