@@ -120,6 +120,17 @@ Manager, le helper, le lanceur et les banques manquantes figurent dans l'overlay
 
 ## Paquets, mises à jour et releases
 
+**Benchmark de lecture sous Linux (3.8.0.19).** *Run Benchmarks* du Manager lance la même série que
+sous Windows : gabarits Balanced (1010) et Performance (1011) sur les cinq clips fournis, hors
+écran, résultat dans `animejanai/benchmark.txt` au format que *Submit Benchmark* lit. Il demande le
+moteur TensorRT (NVIDIA). Le Manager affiche la progression dans une fenêtre ; la fermer arrête la
+mesure. L'AppImage relie `animejanai/benchmarks` de l'image dans le dossier de données à chaque
+lancement, et l'outil prend le lecteur de l'image (`ANIMEJANAI_MPV`). Deux défauts corrigés dans
+`AnimeJaNaiBenchmark` : il mesurait pendant la construction d'un moteur, quand le filtre laisse
+passer les images telles quelles (615 i/s affichés en 720p, soit le décodage seul) ; et la sortie
+du lecteur, jamais lue, remplissait son tube et le bloquait pendant la construction. Mesuré sur
+RTX 4070 Ti, lecteur ouvert à côté : Performance 720p 237 i/s, Balanced 720p 129 i/s.
+
 **Intégration au bureau (AppImage, depuis la 3.8.0.17).** Lancée sans fichier, l'AppImage ouvre la
 fenêtre du lecteur et attend un fichier (glisser-déposer). À chaque lancement normal, elle
 enregistre son entrée de menu et ses associations vidéo (`mpv-animejanai-hdr.desktop`), et les

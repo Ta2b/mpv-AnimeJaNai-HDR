@@ -151,6 +151,11 @@ cp -f "$HERE/version.txt" "$DATA/version.txt"
 [ ! -f "$HERE/manifest.json" ] || cp -f "$HERE/manifest.json" "$DATA/manifest.json"
 export ANIMEJANAI_DATA_DIR="$DATA/animejanai"
 export ANIMEJANAI_ROOT="$DATA"
+# The benchmark (clips, tool, launcher) stays in the image; the Manager's "Run Benchmarks"
+# looks for it in the data folder and the results are written next to animejanai.conf.
+if [ -d "$HERE/animejanai/benchmarks" ] && { [ -L "$DATA/animejanai/benchmarks" ] || [ ! -e "$DATA/animejanai/benchmarks" ]; }; then
+    ln -sfn "$HERE/animejanai/benchmarks" "$DATA/animejanai/benchmarks"
+fi
 
 # Component packs fetched on demand into $DATA (writable). Like the Windows
 # slim-install model, the AppImage bakes in ONLY the base TensorRT runtime; the

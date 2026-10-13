@@ -12,7 +12,9 @@
 //
 // Usage:
 //   AnimeJaNaiBenchmark [--install-root DIR] [--slots 1010,1011]
-//                       [--fps-floor N] [--out results.json]
+//                       [--fps-floor N] [--only-res 1280x720]
+// ANIMEJANAI_MPV names the player when it is not in the install tree (AppImage: the
+// player is in the read-only image, the install root is the writable data folder).
 // The Manager's "Run Benchmarks" button and the benchmark launcher both call
 // this same executable.
 using System.Diagnostics;
@@ -29,6 +31,7 @@ static string? Arg(string[] a, string name)
 }
 
 bool isWin = OperatingSystem.IsWindows();
+Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
 
 // ---- locate the install tree -------------------------------------------------
 // Default: this exe sits at the install root (Windows) or is invoked from it.
@@ -54,6 +57,8 @@ string trtexec = Path.Combine(inference, isWin ? "trtexec.exe" : "trtexec");
 string player = isWin
     ? Path.Combine(installRoot, "mpvnet.com")
     : Path.Combine(installRoot, "mpv", "mpv");
+if (!isWin && !File.Exists(player) && Environment.GetEnvironmentVariable("ANIMEJANAI_MPV") is { Length: > 0 } named)
+    player = named;
 if (!File.Exists(player))
 {
     Console.Error.WriteLine($"player not found at {player}");
@@ -61,6 +66,15 @@ if (!File.Exists(player))
 }
 
 string backend = ReadBackend(confPath);
+// The benchmark templates (1010, 1011) run in the TensorRT / DirectML engine. On Linux that is
+// TensorRT only: say so instead of failing cell by cell.
+if (!isWin && (!backend.Equals("TensorRT", StringComparison.OrdinalIgnoreCase)
+    || !File.Exists(Path.Combine(inference, ajiLib)) || !File.Exists(Path.Combine(inference, "libnvinfer.so.11"))))
+{
+    Console.Error.WriteLine("The playback benchmark needs the TensorRT engine (NVIDIA GPU, TensorRT components installed),");
+    Console.Error.WriteLine($"selected in Global Settings. Current engine: {backend}.");
+    return 2;
+}
 int fpsFloor = int.TryParse(Arg(args, "--fps-floor"), out var ff) ? ff : 8;
 int[] slots = (Arg(args, "--slots") ?? "1010,1011")
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -69,6 +83,8 @@ int[] slots = (Arg(args, "--slots") ?? "1010,1011")
 var clips = Directory.GetFiles(benchDir, "*.mp4")
     .OrderBy(f => ClipPixels(Path.GetFileNameWithoutExtension(f)))
     .ToList();
+if (Arg(args, "--only-res") is { } only)
+    clips = clips.Where(c => Path.GetFileNameWithoutExtension(c).Contains(only, StringComparison.OrdinalIgnoreCase)).ToList();
 if (clips.Count == 0) { Console.Error.WriteLine("No benchmark clips (*.mp4) found."); return 1; }
 
 Console.WriteLine($"AnimeJaNai playback benchmark — backend: {backend}");
@@ -141,7 +157,8 @@ async Task<double> BenchmarkCell(int slot, string clip)
         : Path.Combine(Path.GetTempPath(), $"aji-bench-{Environment.ProcessId}-{slot}.sock");
     if (!isWin) { try { File.Delete(ipc); } catch { } }
 
-    string stats = Path.Combine(Path.GetTempPath(), $"aji-bench-{slot}.log");
+    string stats = Path.Combine(Path.GetTempPath(), $"aji-bench-{Environment.ProcessId}-{slot}.log");
+    try { File.Delete(stats); } catch (IOException) { }
     string vf = $"@aji:animejanai:lib={Path.Combine(inference, ajiLib)}:conf={confPath}" +
                 $":model-dir={onnxDir}:rife-model-dir={rifeDir}:trtexec={trtexec}" +
                 $":stats={stats}:slot={slot}";
@@ -157,7 +174,9 @@ async Task<double> BenchmarkCell(int slot, string clip)
     {
         // Loop the short seed clip so playback stays active over the sampling
         // window (--untimed = uncapped throughput).
-        "--no-config", "--vo=null", "--untimed", "--no-audio", "--loop-file=inf",
+        // No terminal output: the status line would fill the unread pipe during an engine
+        // build and block the player (it then never notices the finished engine).
+        "--no-config", "--terminal=no", "--vo=null", "--untimed", "--no-audio", "--loop-file=inf",
         $"--input-ipc-server={ipc}", "--hwdec=nvdec", "--gpu-api=vulkan",
         $"--vf={vf}", clip,
     }) psi.ArgumentList.Add(a);
@@ -170,9 +189,36 @@ async Task<double> BenchmarkCell(int slot, string clip)
     }
 
     using var proc = Process.Start(psi)!;
+    // Whatever is still printed (library messages) is read and dropped, never left to block.
+    proc.OutputDataReceived += (_, _) => { };
+    proc.ErrorDataReceived += (_, _) => { };
+    proc.BeginOutputReadLine();
+    proc.BeginErrorReadLine();
     try
     {
         using var ipcConn = await ConnectIpc(ipc, proc, TimeSpan.FromSeconds(60));
+        // While TensorRT builds an engine the filter passes the frames through unchanged: sampling
+        // then would time the decoder alone. The filter's statistics say when the models are
+        // really applied. Without that information (30 s), measure as before.
+        var buildDeadline = DateTime.UtcNow + TimeSpan.FromMinutes(15);
+        var infoDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        bool announced = false;
+        while (true)
+        {
+            string text = "";
+            try { if (File.Exists(stats)) text = File.ReadAllText(stats); } catch (IOException) { }
+            bool building = text.Contains("Building TensorRT engine");
+            if (text.Contains("FAILED")) { Console.Write("(engine build failed) "); return -1; }
+            if (text.Contains("Applied") && !building) break;
+            if (proc.HasExited) return -1;
+            if (!building && DateTime.UtcNow > infoDeadline) break;
+            if (DateTime.UtcNow > buildDeadline) { Console.Write("(engine build timed out) "); return -1; }
+            if (building && !announced) { Console.Write("(building the engine, a minute or two) "); announced = true; }
+            // The filter only looks for the finished engine when a frame or a command reaches it,
+            // and no frame flows while it waits: the same no-op the player's monitor script sends.
+            if (building) await ipcConn.Command("vf-command", "aji", "poll", "1");
+            await Task.Delay(500);
+        }
         // Wait for the first decoded frame: this excludes process launch AND the
         // one-time TensorRT engine build (the filter pauses playback to build, so
         // the counter only starts advancing once real upscaling begins).
@@ -207,6 +253,7 @@ async Task<double> BenchmarkCell(int slot, string clip)
     {
         try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); } catch { }
         if (!isWin) { try { File.Delete(ipc); } catch { } }
+        try { File.Delete(stats); } catch { }
     }
 }
 
@@ -280,6 +327,18 @@ sealed class IpcConn : IDisposable
     readonly StreamReader _r;
     readonly StreamWriter _w;
     public IpcConn(Stream s) { _s = s; _r = new StreamReader(s); _w = new StreamWriter(s) { AutoFlush = true }; }
+
+    // A command whose reply does not matter; the reply line is consumed like any other.
+    public async Task Command(params string[] words)
+    {
+        await _w.WriteLineAsync("{\"command\":[" + string.Join(",", words.Select(w => "\"" + w + "\"")) + "]}");
+        var until = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+        while (DateTime.UtcNow < until)
+        {
+            var line = await _r.ReadLineAsync();
+            if (line == null || line.Contains("\"error\"")) return;
+        }
+    }
 
     public async Task<object?> GetProperty(string prop)
     {

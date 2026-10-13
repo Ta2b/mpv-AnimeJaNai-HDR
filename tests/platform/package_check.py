@@ -33,6 +33,7 @@ with tempfile.TemporaryDirectory(prefix='ajn-package-') as tmp:
         'animejanai/onnx/model.onnx': 'model', 'animejanai/onnx/model.ncnn.bin': 'vulkan-v1',
         'animejanai/rife-vulkan/rife-v4.6/flownet.bin': 'rife-v1', 'animejanai/inference/libaji_vulkan.so': 'library-v1', 'AnimeJaNaiManager-HDR': 'manager',
         'AnimeJaNaiPlatform': 'helper', 'libSkiaSharp.so': 'native library',
+        'animejanai/benchmarks/animejanai_benchmark_all.sh': 'benchmark launcher',
     }.items(): write(path, value)
     write('mpv/mpv', '''#!/bin/sh
 printf '%s\n' "$ANIMEJANAI_ROOT" "$ANIMEJANAI_IPC_PATH" "$ANIMEJANAI_INFERENCE_DIR" > "$AJ_CAPTURE"
@@ -55,6 +56,8 @@ stat -c '%a' "$(dirname "$ANIMEJANAI_IPC_PATH")" >> "$AJ_CAPTURE"
     check('IPC parent private', capture[3] == '700')
     check('IPC directory removed after exit', not Path(capture[1]).parent.exists())
     check('upstream data untouched', (upstream / 'sentinel').read_text() == 'keep')
+    check('benchmark reachable from the data folder', (data / 'animejanai/benchmarks/animejanai_benchmark_all.sh').read_text() == 'benchmark launcher'
+        and (data / 'animejanai/benchmarks').is_symlink())
     check('HDR Manager and helper linked', (data / 'AnimeJaNaiManager-HDR').is_symlink() and (data / 'AnimeJaNaiPlatform').is_symlink())
     preserved = {
         'portable_config/mpv.conf': '# personal player settings',
@@ -79,6 +82,7 @@ stat -c '%a' "$(dirname "$ANIMEJANAI_IPC_PATH")" >> "$AJ_CAPTURE"
     check('new bank seeded during upgrade', (data / 'portable_config/profiles/linux-nvidia/animejanai.conf').read_text() == 'new bank')
     check('updater receives current Linux manifest and version', (data / 'version.txt').read_text() == 'test-2' and 'linux-x64' in (data / 'manifest.json').read_text())
     check('archive tool linked for writable component installation', (data / '7zz').is_symlink())
+    check('benchmark relinked for new mount path', (data / 'animejanai/benchmarks').resolve() == image / 'animejanai/benchmarks')
     check('Manager relinked for new mount path', (data / 'AnimeJaNaiManager-HDR').resolve() == image / 'AnimeJaNaiManager-HDR')
     check('Vulkan weights refreshed', (data / 'animejanai/onnx/model.ncnn.bin').read_text() == 'vulkan-v2')
     check('RIFE Vulkan refreshed', (data / 'animejanai/rife-vulkan/rife-v4.6/flownet.bin').read_text() == 'rife-v2')
