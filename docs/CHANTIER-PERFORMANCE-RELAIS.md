@@ -1,5 +1,100 @@
 # Chantier performances — document de relais
 
+## Suite SVP du 14 octobre — lot RIFE codé après la 3.8.0.23
+
+Demande utilisateur : travailler sur les pistes SVP pendant le build. **Tests
+locaux toujours arrêtés.** Aucun benchmark, test de parité ou essai de lecture
+lancé pour ce nouveau lot. Modèles, poids, types de calcul, filtres de couleur,
+padding et critères de coupe conservés dans le code. **Aucun gain mesuré ni
+parité des pixels démontrée pour ce lot** : les résultats précédents de 516
+images concernent le moteur de la 3.8.0.23, pas ces nouvelles modifications.
+
+### Moteur partagé (Mac / ORT)
+
+Base `785983c`, branche `hdr-3.8`, changements de ce lot dans
+`native/linux-ort/aji_ort.cpp` et `exec_ort.cpp` :
+
+- Décision dessin tenu/coupe conservée par paire. Chaque endpoint reçoit une
+  identité renouvelée quand ses octets RGB changent, distincte de son compteur
+  d'utilisation. Les identités ne sont pas des adresses de décodeur. Un changement
+  de source ou une reconfiguration invalide la décision ; les règles existantes
+  et les compteurs par sortie restent les mêmes. Réduit les parcours répétés
+  pour ×4/×8 ou une même paire rappelée ; **pas de gain systématique en ×2**.
+- Buffer et descripteur de sortie RIFE ORT préalloués, FP16 ou FP32 selon le
+  modèle, à la même taille paddée. L'appel ORT écrit dans ce buffer au lieu
+  d'allouer une nouvelle sortie à chaque interpolation. La conversion RGB24
+  reste inchangée. `AJI_RIFE_OUTPUT_BUFFER=0` garde l'allocation précédente.
+- `AJI_RIFE_PAIR_CACHE=0` permet la comparaison avec la décision recalculée à
+  chaque instant. Statistiques : `RIFE pair decisions` / `RIFE pair decision hits`.
+
+Compilation **Release de `libaji_ort.so` réussie** avec ORT C++ 1.24.1 dans
+`artifacts/performance/svp-rife-shared/build/`, journaux `configure.log` et
+`build.log`. Binaire de référence copié avant compilation :
+`svp-rife-shared/reference-libaji_ort.so`, issu du lot précédent. Les builds et
+rapports immuables de `rife-cpu-prep` et `resume-ncnn` sont préservés.
+
+### Backend NVIDIA / TensorRT, copie Git isolée
+
+Le dépôt voisin avait des changements d'une autre session dans
+`aji-rtx-linux/aji_rtx_vfx.cpp` et un binaire non suivi : **préservés**.
+Worktree dédié : `artifacts/performance/svp-rife-trt/source`, base `2577252`,
+branche [perf-rife-cuda-graphs-20261014](https://github.com/Ta2b/animejanai-inference-rtx/tree/perf-rife-cuda-graphs-20261014).
+Commit poussé : **`f4fcd17df4686c9978e49359a12a5c6d53128f72`**. Instructions propres au backend dans
+`docs/PERFORMANCE-RIFE.md` de cette branche.
+
+- CUDA Graph capturant **le réseau TensorRT RIFE seulement**, un par contexte,
+  avec entrée/sortie fixes. Pas de modification du contexte après capture.
+  Échauffement hors capture, capture sur stream privé non bloquant, replay sur
+  le stream appelant. Le timestep, les copies de source et les conversions
+  restent vivants hors du graphe. Échec de capture/replay : chemin normal
+  pour cette configuration. `AJI_RIFE_CUDA_GRAPH=0` désactive la capture.
+- Plan de timestep conservé tant que ses bits float sont identiques. En ×2,
+  `.5` n'est plus rempli à chaque sortie ; même kernel de conversion FP16.
+- Score de coupe rapatrié dans un float épinglé, avec allocation pageable
+  précédente si l'allocation épinglée échoue. **La synchronisation CPU de coupe
+  reste présente** : le retour public `AJI_SCENE` exige encore cette décision.
+- Libération graphe/stream avant tenseurs ; float épinglé libéré au teardown.
+  Log de teardown : replays, timestep updates/hits. ABI publique inchangée.
+- Le workflow de build Linux accepte désormais `perf-rife-**`. Il compile la
+  bibliothèque CUDA complète et archive un binaire ; il ne publie pas de release
+  et ne lance pas de benchmark. Le paquet du lecteur utilise encore la librairie
+  amont `AjiVersion=v0.11.1` : **ces changements NVIDIA ne sont pas installés dans
+  la 3.8.0.23**. Intégration au paquet et compilation Windows restent à faire.
+
+Compilation **de l'unité C++**, deux versions de headers : TensorRT 10.9 du SDK
+VideoFX local et 11.3.0.99 téléchargé depuis NVIDIA, headers CUDA 12.8 dans les
+deux cas. Objets et journaux sous `svp-rife-trt/` : `aji_trt-candidate.o`,
+`aji_trt-trt11-candidate.o`, `build-object.log`, `build-object-trt11.log`.
+Ce n'est pas une édition de liens CUDA complète ni une validation GPU.
+Le SDK local était hors du PATH ; aucune installation système faite.
+Les headers Debian sont extraits sous `trt11/` sans installer le paquet.
+
+Référence de capture et durée de vie :
+[documentation NVIDIA](https://docs.nvidia.com/deeplearning/tensorrt/latest/performance/optimization.html#inference-with-cuda-graphs).
+
+### État de la release et reprise
+
+**3.8.0.23 Mac publiée**, application, SHA-256, notice et paquet de benchmark
+présents dans [la release](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.23).
+Sources de cette release : `aab89ba`, qui précède ce lot. Build Windows réussi ;
+contrôles Vulkan/ORT/HDR/plateforme réussis ; packaging Linux encore en cours au
+moment de ce checkpoint. Suivi : run Deploy `38479416318`. Ne pas réécrire les
+assets de cette version avec les modifications du lot SVP.
+
+Manifeste et patch locaux de ce lot : `svp-rife-shared/checkpoint.json`,
+`shared.patch`, et `svp-rife-trt/backend.patch`. Les SHAs des commits et les runs
+complémentaires sont enregistrés dans le checkpoint après push.
+
+Prochaines étapes : attendre les compilations CI, intégrer le backend construit
+au paquet avec une référence immuable, puis, lorsque des essais seront à nouveau
+souhaités, comparer les modes désactivés/activés sur les mêmes sorties.
+**Ne pas lancer de tests locaux sur la base de cette liste sans tenir compte de
+la consigne d'arrêt toujours active.** Une compilation seule ne démontre ni
+accélération ni fidélité. RIFE natif Core ML/Metal, buffers GPU partagés entre
+SPAN/RIFE et contextes GPU concurrents ne sont pas implémentés dans ce lot.
+Une API orientée paire sera nécessaire pour réduire les attentes NVIDIA sans
+identifier faussement une image par un pointeur GPU réutilisé.
+
 ## Livraison 3.8.0.23 — état du 14 octobre 2026
 
 **Consigne utilisateur la plus récente : arrêter les tests locaux, terminer le

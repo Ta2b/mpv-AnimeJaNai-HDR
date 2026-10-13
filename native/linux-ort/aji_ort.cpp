@@ -152,7 +152,7 @@ struct Step {
 struct Endpoint {
     std::vector<uint8_t> source, work, up;   // as given; at the interpolation size; upscaled
     bool valid = false, has_work = false, has_up = false;
-    uint64_t used = 0;
+    uint64_t used = 0, identity = 0; // identity changes only when source bytes are replaced
 };
 
 struct Context {
@@ -165,6 +165,11 @@ struct Context {
     int rife_w = 0, rife_h = 0;
     std::string rife_model, rife_note;
     Endpoint ends[2];
+    struct PairDecision {
+        uint64_t a = 0, b = 0;
+        bool same = false, cut = false;
+    } pair_decision;
+    uint64_t rife_decisions = 0, rife_decision_hits = 0;
     uint64_t tick = 0;
     std::vector<uint8_t> between;
     uint64_t interpolated = 0, held = 0, cuts = 0;
@@ -660,6 +665,8 @@ void load_rife(Context &c)
 {
     c.rife.reset(); c.rife_note.clear(); c.rife_model.clear();
     for (auto &e : c.ends) e = Endpoint{};
+    c.pair_decision = Context::PairDecision{};
+    c.rife_decisions = c.rife_decision_hits = 0;
     c.interpolated = c.held = c.cuts = 0; c.rife_ms = c.rife_wait_ms = 0;
     c.rife_profiled = false;
     if (!c.chain.rife || c.chain.rife_factor_num <= c.chain.rife_factor_den) return;
@@ -716,7 +723,7 @@ Endpoint &endpoint(Context &c, const uint8_t *pixels, ptrdiff_t stride)
     e.source.resize((size_t)c.width * c.height * 3);
     for (int y = 0; y < c.height; y++)
         std::memcpy(e.source.data() + (size_t)y * c.width * 3, pixels + (ptrdiff_t)y * stride, (size_t)c.width * 3);
-    e.valid = true; e.has_work = e.has_up = false; e.used = ++c.tick;
+    e.valid = true; e.has_work = e.has_up = false; e.identity = e.used = ++c.tick;
     return e;
 }
 
@@ -772,10 +779,23 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
     Endpoint &b = endpoint(c, current, current_stride);
     if (!previous || t >= 1) { give(up_of(c, b, &whole)); return whole; }
     Endpoint &a = endpoint(c, previous, previous_stride);
-    const bool same = &a == &b
-        || picture_unchanged(current, current_stride, previous, previous_stride, c.width, c.height, c.settings.same);
-    const bool cut = !same && c.chain.rife_scd_threshold > 0
-        && difference(previous, previous_stride, current, current_stride, c.width, c.height) > c.chain.rife_scd_threshold;
+    // Endpoints were matched by all active RGB bytes, not decoder addresses. Once
+    // a pair is recognised, every timestep has the same drawing/cut decision.
+    // Replacing either endpoint changes its identity and invalidates the decision.
+    auto &decision = c.pair_decision;
+    static const bool keep_decision = [] {
+        const char *value = std::getenv("AJI_RIFE_PAIR_CACHE");
+        return !(value && *value == '0');
+    }();
+    if (!keep_decision || decision.a != a.identity || decision.b != b.identity) {
+        decision.same = &a == &b
+            || picture_unchanged(current, current_stride, previous, previous_stride, c.width, c.height, c.settings.same);
+        decision.cut = !decision.same && c.chain.rife_scd_threshold > 0
+            && difference(previous, previous_stride, current, current_stride, c.width, c.height) > c.chain.rife_scd_threshold;
+        decision.a = a.identity; decision.b = b.identity;
+        ++c.rife_decisions;
+    } else ++c.rife_decision_hits;
+    const bool same = decision.same, cut = decision.cut;
     if (same || cut) {
         (same ? c.held : c.cuts)++;
         give(up_of(c, a, &whole));
@@ -850,6 +870,8 @@ void write_stats(const Context &c, double ms)
     if (c.rife) {
         const auto &timing = c.rife->timing;
         f << "RIFE profiling: " << (c.rife_profiled ? "on" : "off")
+          << "\nRIFE pair decisions: " << c.rife_decisions
+          << "\nRIFE pair decision hits: " << c.rife_decision_hits
           << "\nRIFE source preparations: " << timing.source_preparations
           << "\nRIFE source hits: " << timing.source_hits
           << "\nRIFE source promotions: " << timing.source_promotions

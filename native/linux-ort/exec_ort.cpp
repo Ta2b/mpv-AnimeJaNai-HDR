@@ -349,6 +349,22 @@ public:
         input_tensor_ = half_in_
             ? Ort::Value::CreateTensor(memory_, halves_.data(), halves_.size() * sizeof(uint16_t), input_shape, 4, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16)
             : Ort::Value::CreateTensor<float>(memory_, floats_.data(), floats_.size(), input_shape, 4);
+        // A fixed output shape also allows ORT to write into persistent storage.
+        // Only allocation changes: type, padded geometry and output conversion stay identical.
+        const char *buffer = std::getenv("AJI_RIFE_OUTPUT_BUFFER");
+        buffered_output_ = !(buffer && *buffer == '0');
+        if (buffered_output_) {
+            const int64_t output_shape[4] = {1, 3, ph_, pw_};
+            if (half_out_) {
+                output_halves_.resize(3 * plane);
+                output_tensor_ = Ort::Value::CreateTensor(memory_, output_halves_.data(),
+                    output_halves_.size() * sizeof(uint16_t), output_shape, 4, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16);
+            } else {
+                output_floats_.resize(3 * plane);
+                output_tensor_ = Ort::Value::CreateTensor<float>(memory_, output_floats_.data(),
+                    output_floats_.size(), output_shape, 4);
+            }
+        }
     }
 
     void run(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
@@ -386,18 +402,22 @@ public:
             timing.preparation_ms += ready - began; began = ready;
         }
         const char *input_names[1] = {input_.c_str()}, *output_names[1] = {output_.c_str()};
-        auto outputs = session_->Run(Ort::RunOptions{nullptr}, input_names, &input_tensor_, 1, output_names, 1);
+        std::vector<Ort::Value> allocated;
+        if (buffered_output_)
+            session_->Run(Ort::RunOptions{nullptr}, input_names, &input_tensor_, 1, output_names, &output_tensor_, 1);
+        else allocated = session_->Run(Ort::RunOptions{nullptr}, input_names, &input_tensor_, 1, output_names, 1);
         if (profile_) {
             const double inferred = now_ms();
             timing.inference_ms += inferred - began; began = inferred;
         }
-        auto dims = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
+        const Ort::Value &result = buffered_output_ ? output_tensor_ : allocated[0];
+        auto dims = result.GetTensorTypeAndShapeInfo().GetShape();
         require(dims.size() == 4 && dims[1] == 3 && dims[2] == ph_ && dims[3] == pw_, "RIFE returned an unexpected shape");
 
         // The picture inside the padded result, planar half or single floats, to RGB24.
         const bool half = half_out_;
-        const uint16_t *hs = half ? outputs[0].GetTensorData<uint16_t>() : nullptr;
-        const float *fs = half ? nullptr : outputs[0].GetTensorData<float>();
+        const uint16_t *hs = half ? result.GetTensorData<uint16_t>() : nullptr;
+        const float *fs = half ? nullptr : result.GetTensorData<float>();
         const int w = w_, pw = pw_, left = left_, top = top_;
         parallel((size_t)h_, 32, [=](size_t begin, size_t end) {
             // FP32 outputs need no scratch line. With FP16, each persistent pixel worker keeps
@@ -479,6 +499,10 @@ private:
     uint32_t time_bits_ = 0;
     Ort::MemoryInfo memory_{Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault)};
     Ort::Value input_tensor_{nullptr};
+    bool buffered_output_ = true;
+    std::vector<uint16_t> output_halves_;
+    std::vector<float> output_floats_;
+    Ort::Value output_tensor_{nullptr};
 };
 } // namespace
 

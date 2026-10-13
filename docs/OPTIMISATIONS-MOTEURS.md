@@ -90,6 +90,13 @@ Aucune de ces options n'est activée sur la seule base du souvenir rapporté.
 **État : analyse documentaire et lecture du code seulement, aucun nouveau test,
 aucun gain mesuré, aucune nouvelle implémentation dans la release 3.8.0.23.**
 
+La suite de cette piste est maintenant codée : cache de décision par paire et
+sortie préallouée dans le moteur partagé ; CUDA Graph RIFE, timestep conservé et
+score de coupe épinglé dans une branche isolée du backend NVIDIA. Compilation
+seulement, aucun nouveau test local ni gain mesuré. Ces changements sont
+postérieurs aux binaires de la 3.8.0.23 ; détails et limites dans
+[le relais](CHANTIER-PERFORMANCE-RELAIS.md).
+
 ## Constats dans les sources
 
 | Constat | Preuve | Conséquence |
