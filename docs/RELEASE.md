@@ -29,7 +29,7 @@ Manager sont publiées dans leur dépôt : aucun patch inter-dépôts n’est re
 
 ## Sources et versions
 
-- `release-version.txt` : version Windows, actuellement **3.8.0.9**.
+- `release-version.txt` : version commune de la release (Windows, Linux, macOS).
 - `manager-source-ref.txt` : SHA exact du Manager utilisé par les contrôles
   et le build Linux. L’assembleur télécharge ses paquets via le tag immuable
   `hdr-<SHA>` ; le binaire et ses bibliothèques natives proviennent du même build.

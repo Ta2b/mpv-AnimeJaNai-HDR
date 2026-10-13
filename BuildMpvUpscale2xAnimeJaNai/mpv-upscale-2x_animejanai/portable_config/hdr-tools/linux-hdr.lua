@@ -65,16 +65,24 @@ local function schedule()
 end
 local function report()
     local h=native('user-data/animejanai-hardware') or hw
+    local out=native('video-out-params') or {}
+    local function rate(name,unit) local v=tonumber(native(name));return v and v>0 and string.format('%.3f %s',v,unit) or 'indisponible' end
+    -- What really runs: the engine marks its TrueHDR output, and a failed filter is reported as such.
+    local truehdr=native('user-data/animejanai-truehdr')==true
+    local filter='aucun'
+    for _,f in ipairs(native('vf') or {}) do if f.label=='aji' then filter=f.enabled and 'AnimeJaNai' or 'AnimeJaNai (desactive)' end end
     local text=table.concat({
         'Linux / Wayland | GPU inference : '..h.name,
         'GPU ecran (connecteurs PCI) : '..table.concat(h.display_pci or {},', '),
         'Rendu Vulkan : '..tostring(h.vulkan_device or native('vulkan-device') or 'selection automatique'),
         'Sortie demandee : '..options.linux_hdr_output..' | negociee : '..tostring(native('video-target-params/gamma') or 'inconnue'),
-        'Ecran HDR : verification physique requise ; activer HDR dans GNOME avant de choisir PQ.',
+        'Ecran HDR : verification physique requise ; activer HDR dans le bureau (GNOME, KDE) avant de choisir PQ.',
+        'Sortie video (apres filtres) : '..tostring(out.w or '?')..'x'..tostring(out.h or '?')..' | '..rate('estimated-vf-fps','images/s')..' (estime)',
+        'Source : '..rate('container-fps','images/s')..' | ecran : '..rate('display-fps','Hz'),
         'Grading : '..state.mode..' | comparaison : '..choice,
-        'Mise a l echelle : mpv | conversion : '..(options.hdr_conversion and 'mpv' or 'desactivee'),
+        'Filtre : '..filter..' | conversion SDR -> HDR : '..(truehdr and 'TrueHDR (moteur)' or options.hdr_conversion and 'mpv' or 'desactivee'),
         'Profil : '..tostring(native('user-data/animejanai-active-slot') or 0)..' | '..tostring(native('user-data/animejanai-interpolation') or 'cadence originale'),
-        'Decodage : '..tostring(native('hwdec-current') or 'logiciel')..' | images perdues : '..tostring(native('frame-drop-count') or 0),
+        'Decodage : '..tostring(native('hwdec-current') or 'logiciel')..' | images perdues : sortie='..tostring(native('frame-drop-count') or 0)..' decodage='..tostring(native('decoder-frame-drop-count') or 0),
         'RIFE : '..tostring(native('user-data/animejanai-rife-sync') or 'facteur du profil'),
     },'\n')
     mp.msg.info(text);mp.osd_message(text,12)

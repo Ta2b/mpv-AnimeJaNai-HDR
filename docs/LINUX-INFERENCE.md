@@ -460,3 +460,60 @@ demande le pilote OpenCL d'Intel sur la machine (`intel-compute-runtime` sous Fe
 sous Ubuntu). Essais : `ANIMEJANAI_ORT_DEVICE=CPU` force le processeur ; `AJI_ORT_OPENVINO="clé=valeur;…"`
 ajoute des options du fournisseur ; `AJI_ORT_OPT=0..3` change le niveau d'optimisation.
 MIGraphX : remplacer `libonnxruntime.so.1` par la compilation d'AMD, version 1.24 ou plus récente.
+
+## Premier essai réel sur NVIDIA sous Linux (3.8.0.16, 13 octobre 2026)
+
+Machine : CachyOS, KDE Wayland avec HDR activé, RTX 4070 Ti, pilote 615.78, AppImage 3.8.0.15.
+
+**TensorRT et RIFE : fonctionnent.** Constructions mesurées dans les journaux de `trtexec` :
+AnimeJaNai Performance 640x360 en 53 s, 1920x1080 en 64 s, RIFE 4.26 en 1920x1088 en 22 s.
+
+- **Cause du « model not found: rife_v4.6.onnx ».** La banque `linux-nvidia` livrée est celle du
+  moteur Vulkan (`rife_model=46`, RIFE 4.6 au format NCNN). En passant le moteur sur TensorRT dans
+  le Manager, ce code restait, alors que le pack RIFE de TensorRT va de 4.7 à 4.26. Le Manager
+  (`20473e7`) remplace désormais, sous Linux, un modèle RIFE que le nouveau moteur ne peut pas
+  charger : 4.26 sur TensorRT, 4.6 sur Vulkan.
+- **Compteur de construction sans fin.** Après cet échec, le filtre était désactivé sans réécrire
+  son fichier de statistiques ; `animejanai_engine_monitor.lua` y lisait toujours « Building
+  TensorRT engine », gardait la lecture en pause et comptait indéfiniment. Il s'arrête maintenant
+  sur l'erreur du filtre, reprend la lecture et affiche la cause.
+
+**TrueHDR (Maxine) : première exécution réussie.** Avec le SDK 1.3.0.0, la fonction
+`nvvfxtruehdr`, `libaji_trt_rtx.so` et `libaji_rtx.so` installés : profil RIFE x4 en 720p puis
+AnimeJaNai vers 2560x1440, sortie du filtre mesurée à 95,9 images/s en PQ / BT.2020, journal
+`Applied RTX Video: TrueHDR (peak 1000 nits)`. Vérifié par les propriétés de mpv, en lecture hors
+écran et dans le lecteur ; la qualité de l'image HDR n'a pas été jugée à l'écran par un contrôle
+indépendant.
+
+- **Bogue de la bibliothèque de liaison, corrigé dans le dépôt privé (non commité à cette date).**
+  `aji_rtx_vfx.cpp` passait à `NvVFX_SetImage` des descripteurs `NvCVImage` locaux ; le SDK en
+  garde le pointeur. `NvVFX_Run` échouait à la première image (« invalid parameter value »), le
+  filtre entier était désactivé : ni RIFE ni mise à l'échelle, image 1080p à 24 i/s étiquetée PQ.
+  Les descripteurs sont maintenant statiques.
+- **Les deux incertitudes notées plus haut sont levées** sur cette machine : `libVideoFX` charge
+  la fonction, et le TensorRT du SDK cohabite avec celui du moteur dans le même processus.
+- **Pic lumineux.** Avec `display_peak=auto`, l'étage recevait 1000 nits fixes alors que mpv
+  visait le pic négocié (794 nits ici). Il reçoit maintenant le pic négocié, comme sous Windows,
+  quand il est connu au moment de la configuration.
+- **Reste ouvert.** Les images TrueHDR sont étiquetées PQ sans pic propre (`sig-peak` de 10 000
+  nits) : mpv peut comprimer les hautes lumières vers le pic de l'écran. Non mesuré. Si l'étage
+  échoue en cours de lecture, le lecteur garde l'étiquette PQ sur une image restée SDR : à corriger.
+- **Diagnostic `Ctrl+Alt+h`.** La version Linux affichait un texte figé (« conversion : mpv ») et
+  aucune cadence. Elle donne maintenant la résolution et la cadence après filtres, la cadence
+  source, la fréquence de l'écran, l'état réel du filtre et la conversion réellement active.
+
+**Ce qui n'est pas dans la release.** Le SDK NVIDIA ne peut pas être redistribué (clé NGC par
+utilisateur, « déploiement serveur » selon NVIDIA) ; `libaji_trt_rtx.so` et le source de la
+bibliothèque de liaison sont dans le dépôt privé `Ta2b/animejanai-inference-rtx` et n'ont pas été
+copiés dans ce dépôt public. L'installation reste donc celle décrite plus haut. Piste pour la
+réduire : les en-têtes `nvCVImage.h`, `nvCVStatus.h` et `nvVideoEffects.h` du SDK sont sous licence
+MIT ; une bibliothèque de liaison qui ouvre `libVideoFX.so` à l'exécution (`dlopen`) se compile
+sans le SDK et pourrait être livrée précompilée, avec le moteur. L'utilisateur n'aurait plus qu'à
+installer le SDK et la fonction avec sa clé.
+
+**Manager.** *RTX Video HDR* n'est plus grisé sous Linux avec un GPU NVIDIA. Les options propres à
+un fabricant sont grisées quand la machine n'a pas de GPU de ce fabricant : MIGraphX (AMD),
+OpenVINO (Intel), RTX VSR et AMD VideoSR / AMF (Windows). Une machine hybride garde les options
+de chacun de ses GPU. Sous Windows, le Manager ne distingue que NVIDIA du reste : AMD VideoSR et
+AMF y restent proposés sur Intel.
+

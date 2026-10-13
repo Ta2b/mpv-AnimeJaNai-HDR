@@ -33,6 +33,8 @@ local we_paused = false
 local started_at = 0
 local build_name = "?"
 local build_res = "?"
+-- stats log content left behind by a failed configure (see the log-message handler below)
+local dead_stats = nil
 
 local function read_stats()
     local f = io.open(stats_path, "r")
@@ -44,7 +46,9 @@ end
 
 mp.add_periodic_timer(o.poll_interval, function()
     local s = read_stats()
-    local b = s ~= nil and s:find("Building TensorRT engine", 1, true) ~= nil
+    if s ~= dead_stats then dead_stats = nil end
+    local b = s ~= nil and dead_stats == nil and
+              s:find("Building TensorRT engine", 1, true) ~= nil
 
     -- the user taking over wins: if they unpause mid-build, stay hands-off
     if we_paused and not mp.get_property_bool("pause") then
@@ -105,4 +109,26 @@ mp.add_periodic_timer(o.poll_interval, function()
         -- finished build; this no-op command wakes it so it polls
         mp.commandv("vf-command", "aji", "poll", "1")
     end
+end)
+
+-- A configure failure after a build (a later model of the chain is missing, for
+-- example) disables the filter without rewriting the stats log: its "Building"
+-- line would keep this script paused and counting forever. Stop on mpv's own
+-- error instead, and ignore that stale log until the filter rewrites it.
+mp.enable_messages("warn")
+mp.register_event("log-message", function(e)
+    if not building or not e.text then return end
+    local reason = e.text:match("configure failed: ([^\r\n]+)")
+    if not reason and not e.text:find("Disabling filter aji", 1, true) then
+        return
+    end
+    building = false
+    dead_stats = read_stats()
+    msg.warn("filter failed while an engine build was reported; monitor stopped")
+    if we_paused then
+        mp.set_property_bool("pause", false)
+        we_paused = false
+    end
+    mp.osd_message("AnimeJaNai: the filter failed, upscaling is disabled.\n" ..
+        (reason or "See the terminal for the cause."), 10)
 end)

@@ -222,3 +222,23 @@ Dernière release : 3.8.0.15. Essais attendus de l'utilisateur, aucun n'est reve
   depuis.
 - **AppImage** : le plantage du chargeur Vulkan est corrigé depuis la 3.8.0.11 (confirmé par le
   journal de la machine Fedora).
+
+## État au 13 octobre 2026, 4 h : 3.8.0.16
+
+Essai réel sur NVIDIA sous Linux (CachyOS, RTX 4070 Ti) : TensorRT, RIFE et TrueHDR fonctionnent.
+Détail, causes et corrections dans `docs/LINUX-INFERENCE.md`, dernière section.
+
+- **Dans la 3.8.0.16** : compteur de construction qui ne s'arrête plus sur une erreur, diagnostic
+  `Ctrl+Alt+h` réel sous Linux, pic TrueHDR négocié, Manager `20473e7` (options grisées par
+  fabricant, RTX Video HDR sous Linux NVIDIA, modèle RIFE qui suit le moteur), et le correctif
+  Core ML de macOS resté non publié depuis la 3.8.0.15.
+- **Hors release** : le correctif de `aji_rtx_vfx.cpp` est dans la copie de travail de
+  `~/Documents/animejanai-inference-rtx`, ni commité ni poussé. La bibliothèque corrigée est
+  installée sur la machine de l'utilisateur (ancienne version en `.avant-correctif.bak`).
+- **À décider par l'utilisateur** : publier ou non, dans ce dépôt public, le moteur
+  `libaji_trt_rtx.so` et une bibliothèque de liaison précompilée, pour que TrueHDR ne demande plus
+  que l'installation du SDK NVIDIA.
+- Outils sur cette machine : .NET 10 dans `~/.animejanai-tools/dotnet`, Manager dans
+  `~/Documents/AnimeJaNaiManager-HDR`. Les chemins `/goinfre/hcombaud/…` plus haut sont ceux d'un
+  autre poste.
+

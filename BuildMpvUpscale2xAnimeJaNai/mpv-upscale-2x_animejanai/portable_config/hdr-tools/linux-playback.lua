@@ -40,7 +40,9 @@ local function write_stage(on)
     local f=io.open(rtx_conf,'w')
     if not f then return end
     f:write(rtx.text({hdr=true,vsr=false,contrast=options.rtx_contrast,saturation=options.rtx_saturation,
-        middle_gray=options.rtx_middle_gray,peak=tonumber(grade.display(options,hw.vendor).peak) or 1000,
+        middle_gray=options.rtx_middle_gray,
+        -- display_peak=auto: the peak negotiated with the compositor, as on Windows.
+        peak=tonumber(grade.display(options,hw.vendor).peak) or tonumber((mp.get_property_native('video-target-params/max-luma'))) or 1000,
         held=options.skip_held_frames,held_threshold=options.held_threshold}))
     f:close()
 end
