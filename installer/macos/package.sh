@@ -28,6 +28,8 @@ cp "$HERE/config/script-opts/animejanai_mac.conf" "$CONF/script-opts/"
 install -m755 "$HERE/launcher.sh" "$APP/Contents/MacOS/mpv-animejanai"
 cp "$HERE/config/animejanai.conf" "$RES/animejanai/animejanai.conf"
 cp "$ONNX"/*SPANF3*.onnx "$RES/animejanai/onnx/"
+# Core ML variants made by native/linux-ort/fuse_unshuffle.py, when the engine build provides them.
+if [ -d "$ENGINE/onnx" ]; then cp "$ENGINE/onnx/"*.coreml.onnx "$RES/animejanai/onnx/"; fi
 cp "$ENGINE/libaji_ort.dylib" "$RES/animejanai/inference/"
 # One ONNX Runtime file, under the name the engine links to.
 cp -L "$ENGINE/libonnxruntime.1.dylib" "$RES/animejanai/inference/libonnxruntime.1.dylib"

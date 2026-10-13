@@ -53,6 +53,11 @@ jobs:
         # gives the same picture, not how fast a real Mac is.
         run: |
           mkdir models && cp "$ONNX"/*SPANF3*.onnx models/
+          # Core ML variants: pixel-unshuffle as one convolution.
+          python3 -m venv "$RUNNER_TEMP/py" && "$RUNNER_TEMP/py/bin/pip" install -q onnx numpy
+          for f in "$ONNX"/*SPANF3*.onnx; do
+            "$RUNNER_TEMP/py/bin/python" native/linux-ort/fuse_unshuffle.py "$f" "models/$(basename "${f%.onnx}").coreml.onnx"
+          done
           for device in CPU ALL GPU ANE; do
             echo "== $device"
             AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 320 180 5 $device 2>&1 | tee "coreml-$device.log" | tail -5 || true
@@ -61,11 +66,16 @@ jobs:
           grep 'centre pixel' cpu.log coreml-*.log
           echo "== 1920x1080 through profile 1 (no resize in the benchmark bank), Core ML ALL"
           AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1920 1080 6 ALL 2>&1 | tee coreml-1080.log | tail -4
-          echo "== what Core ML takes from the graph (1280x720), ML Program then NeuralNetwork"
-          AJI_ORT_LOG=0 AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 2 ALL > verbose-mlprogram.log 2>&1 || true
-          grep -iE 'coreml|partition|not assigned|fallback|unsupported|not supported|Node placements|\(CPUExecutionProvider\)|average after' verbose-mlprogram.log | cut -c1-300 | sort | uniq -c | sort -rn | head -60
-          AJI_ORT_LOG=0 AJI_ORT_COREML="ModelFormat=NeuralNetwork" AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 2 ALL > verbose-nn.log 2>&1 || true
-          grep -iE 'number of|not assigned|average after|failed' verbose-nn.log | cut -c1-300 | head -12
+          echo "== what Core ML takes from the graph (1280x720): fused model, then original"
+          rm -rf models/coreml-cache/1280x720-ALL
+          AJI_ORT_LOG=0 AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 3 ALL > verbose-fused.log 2>&1 || true
+          grep -E 'number of partitions|average after|Average|failed|is not supported|unsupported inputs' verbose-fused.log | cut -c1-330 | sort | uniq -c | head -20
+          grep -q 'number of partitions supported by CoreML: 1 ' verbose-fused.log
+          rm -rf models/coreml-cache/1280x720-ALL
+          echo "== original"
+          AJI_ORT_ORIGINAL=1 AJI_ORT_LOG=0 AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 3 ALL > verbose-original.log 2>&1 || true
+          grep -E 'number of partitions|average after|Average' verbose-original.log | cut -c1-330 | head -6
+          rm -rf models/coreml-cache/1280x720-ALL
           # A second size after the first: the compiled-model cache must not be shared between sizes.
           grep -q 'plan: 3840x2160 active=1' coreml-1080.log
           grep -q 'average after the first frame' coreml-1080.log
@@ -78,8 +88,7 @@ jobs:
           cp ort-build/libaji_ort.dylib ort-build/animejanai-ort-test "$b/"
           cp -a ort/lib/libonnxruntime*.dylib "$b/"
           cp native/macos-bench/bench.command native/macos-bench/bench.conf native/macos-bench/LISEZ-MOI.txt "$b/"
-          cp "$ONNX"/2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16.onnx \
-             "$ONNX"/2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16.onnx "$b/models/"
+          cp models/2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16*.onnx models/2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16*.onnx "$b/models/"
           chmod +x "$b/bench.command" "$b/animejanai-ort-test"
           # The test program finds the engine and ONNX Runtime next to itself.
           install_name_tool -add_rpath @loader_path "$b/animejanai-ort-test" 2>/dev/null || true
@@ -99,6 +108,7 @@ jobs:
           mkdir mac-engine
           cp ort-build/libaji_ort.dylib mac-engine/
           cp -L ort/lib/libonnxruntime.1.dylib mac-engine/libonnxruntime.1.dylib
+          mkdir mac-engine/onnx && cp models/*.coreml.onnx mac-engine/onnx/
       - uses: actions/upload-artifact@v4
         with:
           name: mac-engine
