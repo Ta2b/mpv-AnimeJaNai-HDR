@@ -106,12 +106,12 @@ bool picture_unchanged(const uint8_t *window, ptrdiff_t stride, const uint8_t *r
     const int columns = (width + block - 1) / block;
     const double threshold = same.threshold;
     const int peak = same.peak > 0 ? std::min(same.peak, 255) : 255;
-    std::vector<uint32_t> sums((size_t)columns);
     if (threshold <= 0) {
         for (int y = 0; y < height; y++)
             if (std::memcmp(window + (ptrdiff_t)y * stride, ref + (ptrdiff_t)y * ref_stride, (size_t)width * 3) != 0) return false;
         return true;
     }
+    std::vector<uint32_t> sums((size_t)columns);
     for (int top = 0; top < height; top += block) {
         const int rows = std::min(block, height - top);
         std::fill(sums.begin(), sums.end(), 0u);

@@ -1,38 +1,55 @@
-AnimeJaNai - mesure de vitesse Core ML (Mac à puce Apple)
+AnimeJaNai — mesure des moteurs sur Mac à puce Apple
 
-Ce dossier ne contient pas le lecteur : il mesure seulement le temps de calcul des modèles
-AnimeJaNai sur ce Mac, pour savoir si une version Mac du lecteur vaut la peine.
+Ce paquet autonome mesure les modèles ; il ne contient pas le lecteur. Le Manager
+utilise le même programme pour ses mesures depuis l'application.
 
 Lancer la mesure
 ----------------
-macOS bloque les programmes téléchargés qui ne sont pas signés. Ouvrir le Terminal et taper,
-en adaptant le chemin du dossier :
+Dans le Terminal, en adaptant le chemin :
 
     xattr -dr com.apple.quarantine ~/Downloads/AnimeJaNai-mac-bench
     ~/Downloads/AnimeJaNai-mac-bench/bench.command
 
-La mesure complète dure une dizaine de minutes la première fois : Core ML compile le modèle à
-chaque nouvel essai (le résultat est gardé dans models/coreml-cache). Pour un essai court,
-Performance en 720p seulement :
+Pour limiter la série à Performance et RIFE, principalement en 720p :
 
     ~/Downloads/AnimeJaNai-mac-bench/bench.command rapide
 
+Garder la session déverrouillée et fermer les applications qui sollicitent les
+processeurs. Le script empêche temporairement la veille automatique pendant la
+série ; il ne garantit pas l'absence de verrouillage ou de suspension manuelle.
+Cette protection ne modifie aucun réglage système. AJI_BENCH_STAY_AWAKE=0 la
+désactive. La compilation initiale des modèles peut rallonger le premier passage.
+
 Ce qui est comparé
 ------------------
-seul    chaque processeur seul : ALL (Core ML choisit), GPU, ANE (Neural Engine)
-ancien  les réglages Core ML d'avant la 3.8.0.18, pour chiffrer le gain des nouveaux
-bandes  l'image coupée en deux bandes traitées en même temps, une par processeur (GPU+ANE),
-        avec 50, 60 puis 70 % de l'image pour le premier
-taille  les mêmes essais en 960x540 et 1920x1080 ; balanced : le modèle Balanced
+Core ML via ONNX Runtime, Core ML natif et Metal, avec les cibles disponibles :
+GPU, Neural Engine, CPU et plusieurs processeurs partageant des tuiles de l'image.
+Les profils sont Performance (1), Balanced (2), Performance + RIFE x2 avant
+upscale (3) et après upscale (4). La série complète inclut 540p, 720p et 1080p.
+Le cache des dessins est désactivé : toutes les images synthétiques changent.
+Ce résultat ne représente pas le débit d'une vidéo comportant des dessins tenus.
 
-Lire le résultat
-----------------
-Le fichier resultats.txt contient une ligne RESULT par essai, puis un classement du plus rapide
-au plus lent :
-    RESULT | bandes | profil 1 | ... | frame X ms (best Y) | model Z ms | conversions W ms | N fps
-frame est le temps par image, copies en mémoire comprises ; model la part passée dans Core ML.
-Pour une vidéo à 24 images par seconde il faut moins de 41,7 ms. Les essais « bandes » ajoutent une
-ligne Lanes avec le temps de chaque processeur : s'ils sont très différents, la part de l'image
-de chacun est à ajuster.
+Lire resultats.txt
+-----------------
+RESULT : frame est la durée moyenne par intervalle source après échauffement,
+best son meilleur temps. Avec RIFE x2, un intervalle produit deux images affichées.
+Pour suivre une source à 24 images/s, il faut rester sous 41,7 ms par intervalle.
 
-Envoyer le fichier resultats.txt en entier.
+upscale work est le travail cumulé des exécutants d'upscale ; other est le reste
+du temps total, comprenant notamment RIFE. other n'est pas un temps de copies.
+Les exécutants peuvent travailler en parallèle ; leurs durées ne constituent
+pas nécessairement des parts additionnables du temps total.
+
+SPREAD donne la médiane, le p95 et le maximum. TIMING détaille la préparation
+RIFE, son appel d'inférence, sa conversion de sortie et l'attente de l'upscale
+simultané, par intervalle source. MEASUREMENT signale un échec ou de longues
+pauses ; le message ne détermine pas leur cause. Un passage perturbé mérite une
+nouvelle mesure dans les mêmes conditions, session déverrouillée.
+
+Les moyennes utilisent 30 images sources, dont trois d'échauffement exclues
+(10 images pour la cible CPU seule). AJI_BENCH_FRAMES et AJI_BENCH_WARMUP permettent
+de modifier ces nombres. AJI_PIXEL_POOL=0 rétablit les anciens threads par appel
+pour comparer le pool CPU persistant, avec le même programme de mesure.
+
+Conserver et partager le fichier resultats.txt entier, avec la version du paquet
+et toute interruption observée. Aucun gain universel n'est déduit d'une seule série.

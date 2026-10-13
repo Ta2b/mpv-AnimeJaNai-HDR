@@ -14,6 +14,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include "pixel_workers.h"
 
 namespace aji {
 
@@ -26,12 +27,23 @@ inline std::string lower(std::string s)
 }
 
 // Runs body(first, last) over [0, count) on several threads. The host-side work of a frame is
-// a few passes over millions of pixels: on one core it costs more than the model itself.
+// a few passes over millions of pixels. Helper threads persist across calls. AJI_PIXEL_POOL=0
+// retains the former per-call threads for comparison. Nested helper calls run locally so
+// several occupied helpers cannot deadlock waiting for one another.
 template <typename Body> void parallel(size_t count, size_t grain, Body body)
 {
-    static const unsigned cores = std::max(1u, std::min(8u, std::thread::hardware_concurrency()));
+    const unsigned cores = detail::pixel_cores();
     const size_t parts = std::min<size_t>(cores, std::max<size_t>(1, count / std::max<size_t>(1, grain)));
     if (parts <= 1) { body((size_t)0, count); return; }
+    if (detail::pixel_pool_enabled()) {
+        if (detail::on_pixel_worker()) { body((size_t)0, count); return; }
+        std::vector<std::function<void()>> jobs;
+        jobs.reserve(parts - 1);
+        for (size_t k = 1; k < parts; k++)
+            jobs.emplace_back([=] { body(count * k / parts, count * (k + 1) / parts); });
+        detail::run_pixel_jobs(std::move(jobs), [=] { body((size_t)0, count / parts); });
+        return;
+    }
     std::vector<std::thread> workers;
     workers.reserve(parts - 1);
     for (size_t k = 1; k < parts; k++)
@@ -81,6 +93,7 @@ struct InterpolatorRequest {
     std::string model;              // rife_v4.26, rife_v4.22_lite...
     std::string cache_dir;
     int width = 0, height = 0;      // of the pictures
+    bool profile = false;         // separate CPU preparation / ORT run / output timings
 };
 
 class Interpolator {
@@ -92,6 +105,10 @@ public:
     // picture of a pair is not converted again when it becomes the first of the next one.
     virtual void run(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
                      uint8_t *out, ptrdiff_t out_stride) = 0;
+    struct Timing {
+        uint64_t runs = 0, source_preparations = 0, source_hits = 0, source_promotions = 0, timestep_updates = 0;
+        double preparation_ms = 0, inference_ms = 0, output_ms = 0;
+    } timing;
     std::string label;
 };
 

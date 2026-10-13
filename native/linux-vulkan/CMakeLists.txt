@@ -47,10 +47,12 @@ execute_process(COMMAND "${PATCH_EXECUTABLE}" --batch --fuzz=0 -p1
 if(NOT patch_result EQUAL 0)
   message(FATAL_ERROR "Cannot apply the RIFE cache adapter")
 endif()
+# tiles.cpp of the shared engine: the test that tells a held drawing from a new picture.
 add_library(aji_vulkan SHARED aji_vulkan.cpp "${AJI_SOURCE}/src/aji_conf.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../linux-ort/tiles.cpp"
   "${rife_cache_dir}/rife.cpp" "${CMAKE_CURRENT_BINARY_DIR}/warp-compatible.cpp" ${shader_headers})
 target_include_directories(aji_vulkan PRIVATE "${rife_cache_dir}"
-  "${CMAKE_CURRENT_SOURCE_DIR}" "${AJI_SOURCE}/src" "${RIFE_SOURCE}/src"
+  "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/../linux-ort" "${AJI_SOURCE}/src" "${RIFE_SOURCE}/src"
   "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(aji_vulkan PRIVATE ncnn Vulkan::Vulkan OpenMP::OpenMP_CXX)
 add_executable(animejanai-vulkan-test smoke.cpp)

@@ -9,7 +9,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #
 # One library on every platform. The core (aji_ort.cpp) and the ONNX Runtime executor are built
 # everywhere; on macOS the Core ML and Metal executors of native/apple are added.
-set(ENGINE_SOURCES aji_ort.cpp tiles.cpp ajm.cpp mlpatch.cpp exec_ort.cpp exec_ref.cpp "${AJI_SOURCE}/src/aji_conf.cpp")
+set(ENGINE_SOURCES aji_ort.cpp tiles.cpp ajm.cpp mlpatch.cpp pixel_workers.cpp exec_ort.cpp exec_ref.cpp "${AJI_SOURCE}/src/aji_conf.cpp")
 if(APPLE)
   enable_language(OBJCXX)
   list(APPEND ENGINE_SOURCES ../apple/exec_coreml.mm ../apple/exec_metal.mm)
@@ -36,6 +36,8 @@ target_link_libraries(animejanai-ort-test PRIVATE aji_ort)
 # Tile plans, "unchanged" test and Core ML size patch: no model, no GPU.
 add_executable(animejanai-tiles-test tiles_test.cpp tiles.cpp ajm.cpp mlpatch.cpp)
 target_include_directories(animejanai-tiles-test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+add_executable(animejanai-pixel-workers-test pixel_workers_test.cpp pixel_workers.cpp)
+target_link_libraries(animejanai-pixel-workers-test PRIVATE Threads::Threads)
 if(APPLE)
   # The engine, the test program and ONNX Runtime sit in one folder.
   set_target_properties(aji_ort animejanai-ort-test PROPERTIES BUILD_RPATH "@loader_path;${ORT_ROOT}/lib")

@@ -11,8 +11,7 @@
 //   - reuse: anime holds a drawing for several frames and moves little of the picture. A tile
 //     whose pixels did not change since it was computed keeps its result;
 //   - the statistics the player shows.
-// RIFE is not handled by this engine: a profile that asks for it is upscaled without
-// interpolation, and the statistics file says so.
+// RIFE is run by the interpolator, with cached endpoints and optional overlap with upscaling.
 #include "aji_vulkan.h"
 #include "aji_conf.h"
 #include "ajm.h"
@@ -26,6 +25,7 @@
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <mutex>
 
 #if defined(AJI_ORT_STATIC)
@@ -169,6 +169,8 @@ struct Context {
     std::vector<uint8_t> between;
     uint64_t interpolated = 0, held = 0, cuts = 0;
     double rife_ms = 0;
+    double rife_wait_ms = 0;
+    bool rife_profiled = false;
     int slot = 0, width = 0, height = 0;
     AjiChainConf chain;
     aji_vk_plan plan{};
@@ -658,7 +660,8 @@ void load_rife(Context &c)
 {
     c.rife.reset(); c.rife_note.clear(); c.rife_model.clear();
     for (auto &e : c.ends) e = Endpoint{};
-    c.interpolated = c.held = c.cuts = 0; c.rife_ms = 0;
+    c.interpolated = c.held = c.cuts = 0; c.rife_ms = c.rife_wait_ms = 0;
+    c.rife_profiled = false;
     if (!c.chain.rife || c.chain.rife_factor_num <= c.chain.rife_factor_den) return;
     try {
         require(!c.rife_dir.empty(), "no folder of RIFE models was given");
@@ -679,6 +682,8 @@ void load_rife(Context &c)
         c.rife_w = c.rife_before ? c.steps.front().in_w : 2 * c.steps.back().in_w;
         c.rife_h = c.rife_before ? c.steps.front().in_h : 2 * c.steps.back().in_h;
         request.width = c.rife_w; request.height = c.rife_h;
+        const char *profile = std::getenv("AJI_RIFE_PROFILE");
+        request.profile = profile && *profile && *profile != '0';
         std::unique_ptr<Interpolator> rife = make_ort_interpolator(request);
         // Run once now, on two grey pictures: the model is compiled when the profile opens, and
         // a provider that cannot run it is found out here, not in the middle of playback.
@@ -688,7 +693,9 @@ void load_rife(Context &c)
             const ptrdiff_t stride = (ptrdiff_t)c.rife_w * 3;
             rife->run(dark.data(), stride, light.data(), stride, 0.5, scratch.data(), stride);
         }
+        rife->timing = Interpolator::Timing{}; // exclude the compilation/warm-up run
         c.rife = std::move(rife);
+        c.rife_profiled = request.profile;
         c.rife_model = request.model;
     } catch (const std::exception &e) { c.rife_note = e.what(); }
 }
@@ -794,7 +801,11 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
         try {
             c.rife->run(wa.data(), stride, wb.data(), stride, t, c.between.data(), stride);
         } catch (...) { if (following.joinable()) following.join(); throw; }
-        if (following.joinable()) following.join();
+        if (following.joinable()) {
+            const double wait = c.rife_profiled ? now_ms() : 0;
+            following.join();
+            if (c.rife_profiled) c.rife_wait_ms += now_ms() - wait;
+        }
         require(failure.empty(), failure);
         c.rife_ms += now_ms() - start;
         whole = upscale(c, c.between.data(), stride, c.rife_w, c.rife_h, output, output_stride);
@@ -832,9 +843,24 @@ void write_stats(const Context &c, double ms)
       << "\nInference ms: " << ms << "\nAverage inference ms: " << c.total_ms / c.count
       << "\nModel ms: " << c.last_model_ms << "\nAverage model ms: " << c.model_ms / c.count
       << "\nAverage conversion ms: " << (c.total_ms - c.model_ms) / c.count
+      << "\nModel total ms: " << std::setprecision(12) << c.model_ms << std::setprecision(6)
       // What the player's automatic profile choice reads: the last two seconds, and what a frame
       // costs when nothing can be reused (a pan, a cut).
       << "\nRecent ms: " << recent << "\nFull frame ms: " << (c.full_frames ? c.full_ms / c.full_frames : 0) << "\n";
+    if (c.rife) {
+        const auto &timing = c.rife->timing;
+        f << "RIFE profiling: " << (c.rife_profiled ? "on" : "off")
+          << "\nRIFE source preparations: " << timing.source_preparations
+          << "\nRIFE source hits: " << timing.source_hits
+          << "\nRIFE source promotions: " << timing.source_promotions
+          << "\nRIFE timestep updates: " << timing.timestep_updates << "\n";
+        if (c.rife_profiled)
+            f << "RIFE measured runs: " << timing.runs
+              << "\nRIFE preparation total ms: " << std::setprecision(12) << timing.preparation_ms
+              << "\nRIFE inference total ms: " << timing.inference_ms
+              << "\nRIFE output total ms: " << timing.output_ms
+              << "\nRIFE overlap wait total ms: " << c.rife_wait_ms << std::setprecision(6) << "\n";
+    }
     for (const auto &step : c.steps) {
         const uint64_t all = step.computed + step.reused;
         f << "Tiles: " << step.plan.nx << "x" << step.plan.ny << " of " << step.plan.width << "x" << step.plan.height

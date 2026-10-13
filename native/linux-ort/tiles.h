@@ -38,9 +38,12 @@ void areas_for(const char *setting, int w, int h, int *nx, int *ny);
 
 // Whether a picture is "the same drawing" as another: what decides that a result is reused.
 // Compressed video never repeats a held drawing bit for bit: on a web encode at 720p the bytes
-// of a held frame differ by 0.6 level on average over their worst 32x32 block and by 7 to 19
+// of a held frame differed by 0.6 level on average over their worst 32x32 block and by 7 to 19
 // levels at their worst byte, while a frame where something moved has bytes that differ by 34
-// levels or more. Two limits tell them apart (measured, see docs/CHANTIER-PERFORMANCE-RELAIS.md):
+// levels or more in that sample. These measurements do not cover every movement: a small
+// low-contrast change can satisfy both limits and be discarded. Positive thresholds are
+// approximate reuse, not a guarantee of unchanged quality (see docs/CHANTIER-PERFORMANCE-RELAIS.md).
+// The two limits are:
 //   threshold  the largest mean difference of a 32x32 block, in 8-bit levels: catches what
 //              changes a little everywhere (a fade, a slow gradient);
 //   peak       the largest difference of one byte: catches a small thing that moves, which the

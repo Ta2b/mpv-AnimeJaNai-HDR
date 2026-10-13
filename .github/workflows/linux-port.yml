@@ -138,6 +138,10 @@ jobs:
         run: |
           cmake -S native/linux-ort -B ort-build -DCMAKE_BUILD_TYPE=Release -DORT_ROOT="$GITHUB_WORKSPACE/ort" -DAJI_SOURCE="$GITHUB_WORKSPACE/aji-source"
           cmake --build ort-build -j 4
+      - name: Persistent pixel workers, simultaneous calls and nesting
+        run: |
+          ort-build/animejanai-pixel-workers-test
+          AJI_PIXEL_POOL=0 ort-build/animejanai-pixel-workers-test
       - name: Run a profile on the CPU provider
         run: |
           {
@@ -200,7 +204,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vulkan-bundle
-          key: vulkan-ubuntu24-${{ runner.arch }}-${{ hashFiles('native/linux-vulkan/CMakeLists.txt', 'native/linux-vulkan/aji_vulkan.cpp', 'native/linux-vulkan/aji_vulkan.h', 'native/linux-vulkan/rife_frame_cache.h', 'native/linux-vulkan/rife-v4-cache.patch', 'native/linux-vulkan/convert_span.py', 'native/linux-vulkan/smoke.cpp', 'installer/linux/build-inference.sh', 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx/*SPANF3*') }}
+          key: vulkan-ubuntu24-${{ runner.arch }}-${{ hashFiles('native/linux-vulkan/CMakeLists.txt', 'native/linux-vulkan/aji_vulkan.cpp', 'native/linux-vulkan/aji_vulkan.h', 'native/linux-vulkan/rife_frame_cache.h', 'native/linux-vulkan/rife-v4-cache.patch', 'native/linux-ort/tiles.cpp', 'native/linux-ort/tiles.h', 'native/linux-vulkan/convert_span.py', 'native/linux-vulkan/smoke.cpp', 'installer/linux/build-inference.sh', 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx/*SPANF3*') }}
       - name: Install model validation dependencies
         run: |
           python3 -m venv "$RUNNER_TEMP/model-python"
@@ -230,6 +234,18 @@ jobs:
             --candidate vulkan-bundle/inference/libaji_vulkan.so \
             --models vulkan-bundle/onnx --rife vulkan-bundle/rife-vulkan \
             --device "$device" --report artifacts/vulkan-cache-parity-ci.json
+      - name: Exact default and opt-in drawing recognition through software Vulkan
+        run: |
+          export VK_ICD_FILENAMES="$(find /usr/share/vulkan/icd.d -name '*lvp*json' -print -quit)"
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/vulkan-runtime"
+          device="$(vulkaninfo --summary 2>/dev/null | sed -n 's/^[[:space:]]*deviceName[[:space:]]*=[[:space:]]*//p' | head -1)"
+          test -n "$device"
+          "$RUNNER_TEMP/model-python/bin/python" tests/inference/vulkan_sameness.py \
+            --reference vulkan-bundle/inference/libaji_vulkan.so \
+            --candidate vulkan-bundle/inference/libaji_vulkan.so \
+            --models vulkan-bundle/onnx --rife vulkan-bundle/rife-vulkan \
+            --width 64 --height 64 --device "$device" \
+            --report artifacts/vulkan-sameness-ci.json
       - uses: actions/upload-artifact@v4
         with:
           name: vulkan-backend-linux-x64
@@ -244,3 +260,4 @@ jobs:
             vulkan-bundle/inference/vulkan-build-info.txt
             artifacts/vulkan-model-parity-ci.json
             artifacts/vulkan-cache-parity-ci.json
+            artifacts/vulkan-sameness-ci.json

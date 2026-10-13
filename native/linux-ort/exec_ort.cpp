@@ -8,6 +8,8 @@
 #endif
 #include <cstdlib>
 #include <cstring>
+#include <array>
+#include <chrono>
 #include <filesystem>
 #include <unordered_map>
 
@@ -59,15 +61,14 @@ void halves_to_floats(const uint16_t *src, float *dst, size_t count)
 // 256 possible byte values as half floats: converted once, then looked up.
 const uint16_t *byte_halves()
 {
-    static uint16_t table[256];
-    static bool ready = false;
-    if (!ready) {
-        float values[256];
+    static const std::array<uint16_t, 256> table = [] {
+        std::array<float, 256> values;
+        std::array<uint16_t, 256> result;
         for (int i = 0; i < 256; i++) values[i] = i * (1.0f / 255.0f);
-        floats_to_halves(values, table, 256);
-        ready = true;
-    }
-    return table;
+        floats_to_halves(values.data(), result.data(), values.size());
+        return result;
+    }();
+    return table.data();
 }
 
 // NAME="key=value;key=value": extra or replaced provider options, for trials.
@@ -295,7 +296,7 @@ private:
 // then the steps 2 / (w - 1) and 2 / (h - 1)), all at the padded size.
 class OrtInterpolator : public Interpolator {
 public:
-    explicit OrtInterpolator(const InterpolatorRequest &r) : w_(r.width), h_(r.height)
+    explicit OrtInterpolator(const InterpolatorRequest &r) : w_(r.width), h_(r.height), profile_(r.profile)
     {
         const std::filesystem::path path = std::filesystem::path(r.models_dir) / (r.model + ".onnx");
         require(std::filesystem::is_regular_file(path), "RIFE model not found: " + r.model + ".onnx");
@@ -342,35 +343,54 @@ public:
             floats_.clear(); floats_.shrink_to_fit();
         }
         for (auto &kept : kept_) kept.assign((size_t)w_ * h_ * 3, 0);
+        // The shape and storage stay fixed until this interpolator is destroyed. Reusing the
+        // descriptor changes no input bytes and avoids creating it at every instant.
+        const int64_t input_shape[4] = {1, 11, ph_, pw_};
+        input_tensor_ = half_in_
+            ? Ort::Value::CreateTensor(memory_, halves_.data(), halves_.size() * sizeof(uint16_t), input_shape, 4, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16)
+            : Ort::Value::CreateTensor<float>(memory_, floats_.data(), floats_.size(), input_shape, 4);
     }
 
     void run(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
              uint8_t *out, ptrdiff_t out_stride) override
     {
         const size_t plane = (size_t)pw_ * ph_;
+        double began = profile_ ? now_ms() : 0;
         // The second picture of the last pair is the first of this one: its planes move, no
         // conversion.
-        if (!(have_[0] && same(a, a_stride, kept_[0])) && have_[1] && same(a, a_stride, kept_[1])) {
+        bool have_a = have_[0] && same(a, a_stride, kept_[0]);
+        if (!have_a && have_[1] && same(a, a_stride, kept_[1])) {
             if (half_in_) std::memcpy(halves_.data(), halves_.data() + 3 * plane, 3 * plane * sizeof(uint16_t));
             else std::memcpy(floats_.data(), floats_.data() + 3 * plane, 3 * plane * sizeof(float));
             kept_[0].swap(kept_[1]);
             have_[0] = true; have_[1] = false;
+            have_a = true;
+            ++timing.source_promotions;
         }
-        if (!(have_[0] && same(a, a_stride, kept_[0]))) load(0, a, a_stride);
-        if (!(have_[1] && same(b, b_stride, kept_[1]))) load(1, b, b_stride);
-        if (half_in_) {
-            uint16_t value[8]; float instant[8] = {(float)t};
-            floats_to_halves(instant, value, 8);
-            std::fill_n(halves_.data() + 6 * plane, plane, value[0]);
-        } else std::fill_n(floats_.data() + 6 * plane, plane, (float)t);
-
-        const int64_t shape[4] = {1, 11, ph_, pw_};
-        Ort::MemoryInfo memory = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-        Ort::Value input = half_in_
-            ? Ort::Value::CreateTensor(memory, halves_.data(), halves_.size() * sizeof(uint16_t), shape, 4, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16)
-            : Ort::Value::CreateTensor<float>(memory, floats_.data(), floats_.size(), shape, 4);
+        if (!have_a) load(0, a, a_stride); else ++timing.source_hits;
+        if (!(have_[1] && same(b, b_stride, kept_[1]))) load(1, b, b_stride); else ++timing.source_hits;
+        const float instant = (float)t;
+        uint32_t instant_bits;
+        std::memcpy(&instant_bits, &instant, sizeof(instant_bits));
+        if (!have_time_ || instant_bits != time_bits_) {
+            if (half_in_) {
+                uint16_t value[8]; float values[8] = {instant};
+                floats_to_halves(values, value, 8);
+                std::fill_n(halves_.data() + 6 * plane, plane, value[0]);
+            } else std::fill_n(floats_.data() + 6 * plane, plane, instant);
+            have_time_ = true; time_bits_ = instant_bits;
+            ++timing.timestep_updates;
+        }
+        if (profile_) {
+            const double ready = now_ms();
+            timing.preparation_ms += ready - began; began = ready;
+        }
         const char *input_names[1] = {input_.c_str()}, *output_names[1] = {output_.c_str()};
-        auto outputs = session_->Run(Ort::RunOptions{nullptr}, input_names, &input, 1, output_names, 1);
+        auto outputs = session_->Run(Ort::RunOptions{nullptr}, input_names, &input_tensor_, 1, output_names, 1);
+        if (profile_) {
+            const double inferred = now_ms();
+            timing.inference_ms += inferred - began; began = inferred;
+        }
         auto dims = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
         require(dims.size() == 4 && dims[1] == 3 && dims[2] == ph_ && dims[3] == pw_, "RIFE returned an unexpected shape");
 
@@ -380,7 +400,10 @@ public:
         const float *fs = half ? nullptr : outputs[0].GetTensorData<float>();
         const int w = w_, pw = pw_, left = left_, top = top_;
         parallel((size_t)h_, 32, [=](size_t begin, size_t end) {
-            std::vector<float> line((size_t)3 * w);
+            // FP32 outputs need no scratch line. With FP16, each persistent pixel worker keeps
+            // its scratch storage; concurrent callers use distinct thread-local buffers.
+            thread_local std::vector<float> line;
+            if (half) line.resize((size_t)3 * w);
             for (size_t y = begin; y < end; y++) {
                 const size_t source = (y + top) * pw + left;
                 const float *r, *g, *bl;
@@ -396,9 +419,13 @@ public:
                 }
             }
         });
+        if (profile_) { timing.output_ms += now_ms() - began; ++timing.runs; }
     }
 
 private:
+    static double now_ms() {
+        return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    }
     bool same(const uint8_t *pixels, ptrdiff_t stride, const std::vector<uint8_t> &kept) const
     {
         for (int y = 0; y < h_; y++)
@@ -437,6 +464,7 @@ private:
             });
         }
         have_[slot] = true;
+        ++timing.source_preparations;
     }
 
     int w_, h_, pw_ = 0, ph_ = 0, left_ = 0, top_ = 0;
@@ -447,6 +475,10 @@ private:
     std::vector<float> floats_;
     std::vector<uint8_t> kept_[2];   // the two pictures as they were given, to recognise them
     bool have_[2] = {false, false};
+    bool profile_ = false, have_time_ = false;
+    uint32_t time_bits_ = 0;
+    Ort::MemoryInfo memory_{Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault)};
+    Ort::Value input_tensor_{nullptr};
 };
 } // namespace
 

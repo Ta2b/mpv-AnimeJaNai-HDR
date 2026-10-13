@@ -2,6 +2,7 @@
 #include "aji_conf.h"
 #include "rife.h"
 #include "gpu.h"
+#include "tiles.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -21,7 +22,9 @@ int contexts = 0;
 thread_local std::string create_error;
 struct Step { std::unique_ptr<ncnn::Net> net; AjiModelConf conf; };
 // The bridge has no frame IDs: decoder buffers can be reused. Only the active RGB bytes,
-// compared exactly (including chroma), identify a source. Derived pictures are immutable:
+// compared according to the reuse policy (exact by default, including chroma), identify a
+// source. Approximate hits retain their original anchor to avoid accumulating drift.
+// Derived pictures are immutable:
 // upscale() normalizes its argument in place, so a cached input must be cloned before use.
 struct CachedFrame {
     std::vector<unsigned char> source, output, rife_pixels;
@@ -43,6 +46,10 @@ struct Context {
     uint64_t count=0;
     double total_ms=0;
     bool cache=true, rife_gpu_cache=true;
+    // Exact content remains the default. Similarity is opt-in: a numerical noise threshold
+    // cannot distinguish every low-contrast movement from compression noise.
+    aji::Sameness same{0,0};
+    uint64_t held_outputs=0;
     CachedFrame frames[2];
     CachedPair pair;
     uint64_t clock=0, identity=0, cache_hits=0, source_preparations=0;
@@ -104,6 +111,9 @@ ncnn::Mat upscale(Context &c, ncnn::Mat m, bool already_resized=false) {
     return m;
 }
 bool scene_changed(Context &c, const ncnn::Mat &a, const ncnn::Mat &b) {
+    // The disabled detector cannot reject a pair. Identical immutable tensors have zero
+    // difference. Neither case needs a full-resolution CPU traversal (RIFE still runs).
+    if (!(c.chain.rife_scd_threshold>0) || a.data==b.data) return false;
     double difference=0;
     for (int channel=0; channel<3; ++channel) {
         const float *x=a.channel(channel), *y=b.channel(channel);
@@ -140,16 +150,14 @@ ncnn::Mat interpolate(Context &c, const ncnn::Mat &a, const ncnn::Mat &b, float 
     auto pa=pixels(a), pb=pixels(b);
     return interpolate_pixels(c,a,pa,pb,t);
 }
-bool same_source(const CachedFrame &frame, const unsigned char *data, ptrdiff_t stride, int w, int h) {
+bool same_source(const CachedFrame &frame, const unsigned char *data, ptrdiff_t stride, int w, int h, const aji::Sameness &same) {
     const size_t row=(size_t)w*3;
     if (!frame.identity || frame.source.size()!=row*(size_t)h) return false;
-    for (int y=0;y<h;++y)
-        if (std::memcmp(frame.source.data()+(size_t)y*row,data+(ptrdiff_t)y*stride,row)) return false;
-    return true;
+    return aji::picture_unchanged(data,stride,frame.source.data(),(ptrdiff_t)row,w,h,same);
 }
 CachedFrame &prepare_frame(Context &c, const unsigned char *data, ptrdiff_t stride) {
     for (auto &frame:c.frames) {
-        if (same_source(frame,data,stride,c.width,c.height)) {
+        if (same_source(frame,data,stride,c.width,c.height,c.same)) {
             frame.used=++c.clock;
             ++c.cache_hits;
             return frame;
@@ -266,6 +274,19 @@ extern "C" aji_vk_context *aji_vk_create(const char *conf, const char *models,
         c->cache=!(cache && std::strcmp(cache,"0")==0);
         const char *rife_cache=std::getenv("AJI_VK_RIFE_GPU_CACHE");
         c->rife_gpu_cache=!(rife_cache && std::strcmp(rife_cache,"0")==0);
+        // AJI_VK_SAME=similar opts in to the shared drawing detector. Explicit thresholds
+        // also opt in. AJI_VK_SAME=exact takes precedence over both threshold variables.
+        const char *same=std::getenv("AJI_VK_SAME");
+        require(!same || !*same || std::strcmp(same,"exact")==0 || std::strcmp(same,"similar")==0,
+            "AJI_VK_SAME must be exact or similar");
+        if (!(same && std::strcmp(same,"exact")==0)) {
+            if (same && std::strcmp(same,"similar")==0) c->same=aji::Sameness{};
+            if (const char *v=std::getenv("AJI_REUSE_THRESHOLD"); v && *v) {
+                c->same=aji::Sameness{};
+                c->same.threshold=std::min(8.0,std::max(0.0,std::atof(v)));
+            }
+            if (const char *v=std::getenv("AJI_REUSE_PEAK"); v && *v) c->same.peak=std::min(255,std::max(0,std::atoi(v)));
+        }
         c->gpu=choose_gpu(c->device); return c.release();
     } catch (const std::exception &e) { create_error=e.what();return nullptr; }
 }
@@ -334,9 +355,15 @@ extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previ
             else {
                 auto &a=prepare_frame(c,previous,previous_stride);
                 auto &b=prepare_frame(c,current,current_stride);
-                result=interpolate_pair(c,a,b,(float)timestep,packed_output);
-                if (c.pair.scene) { result=endpoint(c,a); output_frame=&a; }
-                else if (c.chain.rife_before_upscale) result=upscale(c,result,true);
+                if (&a==&b && c.same.threshold>0) {
+                    // The two frames are the same drawing: the picture between them is that drawing.
+                    // (With identical bytes only, the interpolation runs as it always did.)
+                    result=endpoint(c,a); output_frame=&a; ++c.held_outputs;
+                } else {
+                    result=interpolate_pair(c,a,b,(float)timestep,packed_output);
+                    if (c.pair.scene) { result=endpoint(c,a); output_frame=&a; }
+                    else if (c.chain.rife_before_upscale) result=upscale(c,result,true);
+                }
             }
         } else {
             auto b=rgb(current,current_stride,c.width,c.height);
@@ -367,7 +394,10 @@ extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previ
              <<"\nAnimeJaNai models: "<<c.steps.size()<<"\nRIFE: "<<(c.rife?"4.6":"off")
              <<"\nOutput: "<<result.w<<"x"<<result.h<<"\nFrames: "<<c.count
              <<"\nInference ms: "<<ms<<"\nAverage inference ms: "<<c.total_ms/c.count<<"\n";
-            f<<"Exact source cache: "<<(c.cache?"on":"off")
+            f<<"Source cache: "<<(c.cache?"on":"off");
+            if (c.cache && c.same.threshold>0) f<<", same drawing within "<<c.same.threshold<<" level a block and "<<c.same.peak<<" a byte";
+            else if (c.cache) f<<", identical bytes only";
+            f<<"\nHeld RIFE outputs reused: "<<c.held_outputs
              <<"\nSource preparations: "<<c.source_preparations<<"\nSource cache hits: "<<c.cache_hits
              <<"\nSPAN inferences: "<<c.span_inferences<<"\nRIFE inferences: "<<c.rife_inferences
              <<"\nPair preparations: "<<c.pair_preparations

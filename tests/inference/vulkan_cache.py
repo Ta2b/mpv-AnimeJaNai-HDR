@@ -26,12 +26,12 @@ class Plan(ct.Structure):
                 ('width', 'height', 'numerator', 'denominator', 'active')]
 
 
-def profile(model, before, factor, threshold, resize, chain_models, ensemble=False):
+def profile(model, before, factor, threshold, resize, chain_models, ensemble=False, rife_code=46):
     text = ('[global]\nbackend=Vulkan\n[slot_1]\n'
             'chain_1_min_resolution=0x0\nchain_1_max_resolution=16384x16384\n'
             f'chain_1_rife={"yes" if factor != (1, 1) else "no"}\n'
             f'chain_1_rife_factor_numerator={factor[0]}\nchain_1_rife_factor_denominator={factor[1]}\n'
-            'chain_1_rife_model=46\n'
+            f'chain_1_rife_model={rife_code}\n'
             f'chain_1_rife_ensemble={"yes" if ensemble else "no"}\n'
             f'chain_1_rife_before_upscale={"yes" if before else "no"}\n'
             f'chain_1_rife_scene_detect_threshold={threshold}\n')
@@ -57,7 +57,7 @@ def worker(args):
     conf, stats = Path(spec['conf']), Path(spec['stats'])
     conf.write_text(profile(spec['model'], spec['before'], tuple(spec['factor']),
                             spec['threshold'], spec['resize'], spec['chain_models'],
-                            spec.get('ensemble', False)))
+                            spec.get('ensemble', False), spec.get('rife_code', 46)))
     context = lib.aji_vk_create(os.fsencode(conf), os.fsencode(spec['models']),
                                os.fsencode(spec['rife']), spec['device'].encode(),
                                os.fsencode(stats), 1)
@@ -171,6 +171,8 @@ def main():
     p.add_argument('--device', default='')
     p.add_argument('--report', type=Path)
     p.add_argument('--benchmark', action='store_true')
+    p.add_argument('--benchmark-scene-threshold', type=float, default=0,
+                   help='measure with scene-cut detection enabled; zero disables it')
     p.add_argument('--width', type=int)
     p.add_argument('--height', type=int)
     p.add_argument('--case', action='append', help='run only named cases (repeatable)')
@@ -219,7 +221,7 @@ def main():
         ('rife-zero-endpoint', perf, False, (2, 1), 0, 0, 1, False),
     ]
     if args.benchmark:
-        cases = [(name, perf, before, factor, 0, 0, 1, False) for name, before, factor in
+        cases = [(name, perf, before, factor, args.benchmark_scene_threshold, 0, 1, False) for name, before, factor in
                  [('span-changing', False, (1, 1)), ('span-held', False, (1, 1)),
                   ('rife-after-x4', False, (4, 1)), ('rife-before-x4', True, (4, 1))]]
     if args.case:
@@ -233,6 +235,7 @@ def main():
               'reference_rife_cache': args.reference_rife_cache,
               'candidate_cache': args.candidate_cache,
               'candidate_rife_cache': args.candidate_rife_cache,
+              'benchmark_scene_threshold': args.benchmark_scene_threshold if args.benchmark else None,
               'benchmark': args.benchmark, 'comparisons': []}
     report['model_files'] = {
         mode: {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
@@ -278,7 +281,9 @@ def main():
                     spec_path.write_text(json.dumps(spec))
                     result = subprocess.run([sys.executable, str(Path(__file__).resolve()),
                                              '--worker', str(spec_path), '--library', str(library.resolve())],
-                                            env=dict(os.environ, AJI_VK_CACHE=cache,
+                                            # Identical bytes only: this test proves that the caches
+                                            # change no output, which needs exact reuse.
+                                            env=dict(os.environ, AJI_VK_CACHE=cache, AJI_VK_SAME='exact',
                                                      AJI_VK_RIFE_GPU_CACHE=rife_cache),
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
                     assert result.returncode == 0, f'{name}/{variant}:\n{result.stdout}'

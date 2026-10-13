@@ -6,6 +6,8 @@
 //                     holds: a new picture every third frame, as a drawing held on screen. The
 //                     engine is then told the two frames that follow each one (aji_vk_upcoming)
 //   AJI_TEST_FPS      frame rate given to the engine (23.976)
+//   AJI_TEST_WARMUP   number of initial source frames excluded (default 1)
+//   AJI_RIFE_PROFILE  1: report preparation, inference and output separately
 //   AJI_TEST_RIFE_DIR folder of the RIFE models (default: MODELS). With a profile that
 //                     interpolates, every frame after the first is asked for as the player does:
 //                     the pictures between it and the previous one, then the frame itself.
@@ -42,6 +44,10 @@ int main(int argc, char **argv)
     std::vector<unsigned char> in((size_t)w * h * 3), out((size_t)plan.width * plan.height * 3);
     std::vector<unsigned char> before, first_out, between_out, trio[3];
     const bool interpolating = plan.numerator > plan.denominator;
+    const char *trio_prefix = std::getenv("AJI_TEST_TRIO");
+    const bool keep_trio = trio_prefix && *trio_prefix;
+    const char *warmup_env = std::getenv("AJI_TEST_WARMUP");
+    const int warmup = std::max(1, std::min(std::max(1, frames - 1), warmup_env ? std::atoi(warmup_env) : 1));
     std::vector<unsigned char> ahead[2] = {in, in};
     // A picture with edges and gradients; `shift` moves it. The last frame is always shift 0,
     // so that two runs of the same length end on the same picture whatever the motion.
@@ -56,6 +62,10 @@ int main(int argc, char **argv)
     // frames are the picture of shift 0.
     auto shift_of = [&](int i) { return motion == "none" ? 0 : motion == "holds" ? (frames - 1 - i) / 3 : frames - 1 - i; };
     double total = 0, model = 0, best = 0;
+    double previous_model = 0, previous_prepare = 0, previous_infer = 0, previous_output = 0, previous_wait = 0;
+    double prepare = 0, infer = 0, output_time = 0, overlap_wait = 0;
+    std::vector<double> samples;
+    std::string rife_profile;
     std::string backend, devices, tiles, placement, boost, rife;
     for (int i = 0; i < frames; i++) {
         if (interpolating) before = in;
@@ -71,59 +81,95 @@ int main(int argc, char **argv)
         auto t0 = std::chrono::steady_clock::now();
         // As the player's filter does: the instants between the previous frame and this one.
         if (interpolating && i > 0) {
-            first_out = out;
+            if (keep_trio) first_out = out;
             int pictures = 0;
             for (int acc = plan.denominator; acc < plan.numerator; acc += plan.denominator, pictures++) {
                 if (aji_vk_process(c, before.data(), (ptrdiff_t)w * 3, in.data(), (ptrdiff_t)w * 3, (double)acc / plan.numerator,
                                    out.data(), (ptrdiff_t)plan.width * 3)) {
                     std::printf("process failed: %s\n", aji_vk_error(c)); aji_vk_destroy(c); return 1;
                 }
-                if (pictures == 0) between_out = out;
+                if (keep_trio && pictures == 0) between_out = out;
             }
         }
         if (aji_vk_process(c, interpolating && i > 0 ? before.data() : nullptr, (ptrdiff_t)w * 3, in.data(), (ptrdiff_t)w * 3, 1.0,
                            out.data(), (ptrdiff_t)plan.width * 3)) {
             std::printf("process failed: %s\n", aji_vk_error(c)); aji_vk_destroy(c); return 1;
         }
-        if (interpolating && i > 0) { trio[0] = first_out; trio[1] = between_out; trio[2] = out; }
+        if (keep_trio && interpolating && i > 0) { trio[0] = first_out; trio[1] = between_out; trio[2] = out; }
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
-        if (i > 0) total += ms;      // the first frame includes provider compilation
-        if (i > 0 && (best == 0 || ms < best)) best = ms;
+        if (i >= warmup) { total += ms; samples.push_back(ms); }
+        if (i >= warmup && (best == 0 || ms < best)) best = ms;
         if (i == 0) std::printf("first frame: %.1f ms\n", ms);
-        // The engine rewrites its statistics at every frame: this frame's time inside the model.
+        // A source interval can contain several calls. Read cumulative work, not only the
+        // final endpoint call (which is cached when RIFE precomputed it).
         std::ifstream stats("ort-stats.txt");
         placement.clear();
+        double current_model = 0, average_model = 0, current_prepare = 0, current_infer = 0, current_output = 0, current_wait = 0;
+        uint64_t calls = 0;
+        bool model_total_available = false;
         for (std::string line; std::getline(stats, line);) {
             if (line.rfind("Backend: ", 0) == 0) backend = line.substr(9);
-            if (i > 0 && line.rfind("Model ms: ", 0) == 0) model += std::atof(line.c_str() + 10);
+            auto value = [&](const char *key, double &to) {
+                const std::string prefix = std::string(key) + ": ";
+                if (line.rfind(prefix, 0) != 0) return false;
+                to = std::atof(line.c_str() + prefix.size()); return true;
+            };
+            if (value("Model total ms", current_model)) model_total_available = true;
+            value("Average model ms", average_model);
+            if (line.rfind("Frames: ", 0) == 0) calls = std::strtoull(line.c_str() + 8, nullptr, 10);
+            value("RIFE preparation total ms", current_prepare);
+            value("RIFE inference total ms", current_infer);
+            value("RIFE output total ms", current_output);
+            value("RIFE overlap wait total ms", current_wait);
+            if (line.rfind("RIFE profiling: ", 0) == 0) rife_profile = line.substr(16);
             if (line.rfind("Devices:", 0) == 0) devices = line;
             if (line.rfind("Tiles:", 0) == 0) tiles = line;
             if (line.rfind("Placement:", 0) == 0) placement += line + "\n";
             if (line.rfind("Boost:", 0) == 0) boost = line;
             if (line.rfind("RIFE:", 0) == 0) rife = line;
         }
+        if (!model_total_available) current_model = average_model * calls; // older libraries
+        if (i >= warmup) {
+            model += current_model - previous_model;
+            prepare += current_prepare - previous_prepare;
+            infer += current_infer - previous_infer;
+            output_time += current_output - previous_output;
+            overlap_wait += current_wait - previous_wait;
+        }
+        previous_model = current_model; previous_prepare = current_prepare; previous_infer = current_infer;
+        previous_output = current_output; previous_wait = current_wait;
     }
     auto bounds = std::minmax_element(out.begin(), out.end());
-    std::printf("average after the first frame: %.1f ms | output range %d..%d | centre pixel %d %d %d\n",
-                frames > 1 ? total / (frames - 1) : 0.0, *bounds.first, *bounds.second,
+    std::printf("average after warmup (%d source frames): %.1f ms | output range %d..%d | centre pixel %d %d %d\n",
+                warmup, !samples.empty() ? total / samples.size() : 0.0, *bounds.first, *bounds.second,
                 out[((size_t)(plan.height / 2) * plan.width + plan.width / 2) * 3],
                 out[((size_t)(plan.height / 2) * plan.width + plan.width / 2) * 3 + 1],
                 out[((size_t)(plan.height / 2) * plan.width + plan.width / 2) * 3 + 2]);
-    if (frames > 1) {
-        const double frame = total / (frames - 1), inside = model / (frames - 1);
-        // One line per run, easy to collect: everything after the first frame.
-        std::printf("RESULT | %s | %dx%d -> %dx%d | frame %.1f ms (best %.1f) | model %.1f ms | conversions %.1f ms | %.1f fps\n",
+    if (!samples.empty()) {
+        const double frame = total / samples.size(), inside = model / samples.size();
+        std::printf("RESULT | %s | %dx%d -> %dx%d | frame %.1f ms (best %.1f) | upscale work %.1f ms | other %.1f ms | %.1f fps\n",
                     backend.c_str(), w, h, plan.width, plan.height, frame, best, inside, frame - inside, 1000.0 / frame);
+        std::sort(samples.begin(), samples.end());
+        const size_t middle = samples.size() / 2;
+        const double median = samples.size() % 2 ? samples[middle] : (samples[middle-1] + samples[middle]) / 2;
+        const size_t p95 = (95 * samples.size() + 99) / 100 - 1;
+        std::printf("SPREAD | %zu source intervals | warmup %d | median %.1f ms | p95 %.1f ms | max %.1f ms\n",
+                    samples.size(), warmup, median, samples[p95], samples.back());
+        if (median > 0 && samples.back() > 3 * median)
+            std::printf("MEASUREMENT | large stalls observed: repeat with session unlocked; this run does not identify their cause\n");
+        if (rife_profile == "on")
+            std::printf("TIMING | per source | RIFE prep %.3f ms | inference %.3f ms | output %.3f ms | overlap wait %.3f ms | workloads can overlap\n",
+                        prepare / samples.size(), infer / samples.size(), output_time / samples.size(), overlap_wait / samples.size());
     }
     if (!tiles.empty()) std::printf("%s\n", tiles.c_str());
     if (!devices.empty()) std::printf("%s\n", devices.c_str());
     if (!placement.empty()) std::printf("%s", placement.c_str());
     if (!boost.empty()) std::printf("%s\n", boost.c_str());
     if (!rife.empty() && rife != "RIFE: off") std::printf("%s\n", rife.c_str());
-    if (const char *prefix = std::getenv("AJI_TEST_TRIO"); prefix && *prefix && !trio[0].empty()) {
+    if (keep_trio && !trio[0].empty()) {
         const char *names[3] = {"-a.rgb", "-between.rgb", "-b.rgb"};
         for (int k = 0; k < 3; k++)
-            std::ofstream(std::string(prefix) + names[k], std::ios::binary).write((const char *)trio[k].data(), (std::streamsize)trio[k].size());
+            std::ofstream(std::string(trio_prefix) + names[k], std::ios::binary).write((const char *)trio[k].data(), (std::streamsize)trio[k].size());
     }
     int status = *bounds.first == *bounds.second ? 1 : 0;
     if (const char *dump = std::getenv("AJI_TEST_DUMP"); dump && *dump)

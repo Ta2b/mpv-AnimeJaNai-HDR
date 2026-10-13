@@ -1,5 +1,262 @@
 # Chantier performances — document de relais
 
+## Livraison 3.8.0.23 — état du 14 octobre 2026
+
+**Consigne utilisateur la plus récente : arrêter les tests locaux, terminer le
+code, committer, pousser et publier une release.** Aucun nouveau test ni
+benchmark local après cette consigne. Les contrôles existants de publication
+GitHub restent actifs. Les poids, modèles, précision et profils sont conservés.
+
+Base du lot : `894c94fa09bdc4169ca832634416d34bb4fb8d98` (3.8.0.22),
+branche `hdr-3.8`. Version de livraison : **3.8.0.23**. Le push sur `release`
+déclenche Deploy (Windows/Linux) et macOS ; seul un fichier effectivement joint
+à la release prouve sa publication. Au moment de ce checkpoint, code terminé,
+commit/push et builds de publication à suivre. Les références locales finales,
+le SHA du commit et le suivi des workflows seront consignés dans
+`artifacts/performance/rife-cpu-prep/publication.json`.
+
+Le lot NCNN précédent est inclus dans cette livraison ; ses snapshots et
+rapports restent intacts dans `resume-ncnn/`. Les sections suivantes décrivent
+leur état historique, notamment les mentions « non commité ». Pour reprendre,
+utiliser cette section et le commit de livraison, pas ces anciens statuts.
+
+### Code livré dans le moteur partagé
+
+- `pixel_workers.{h,cpp}` et `engine.h` : pool permanent de sept helpers au
+  maximum, plus le thread appelant, partagé entre les conversions CPU. Même
+  découpage des plages et mêmes opérations de pixels qu'avant. Les appels
+  simultanés partagent le pool ; un appel imbriqué sur un helper s'exécute
+  localement. Tous les travaux sont rejoints avant propagation d'une exception.
+  `AJI_PIXEL_POOL=0` conserve les threads par appel, pour comparaison ultérieure.
+- `exec_ort.cpp`, RIFE : table byte/FP16 initialisée de façon sûre entre threads,
+  suppression de la seconde comparaison de A après promotion de B, plan du
+  timestep réécrit seulement si ses bits float changent, descripteur du tenseur
+  d'entrée ORT conservé pendant la vie de l'interpolateur. Les lignes de travail
+  FP16 sont conservées par thread ; les sorties FP32 n'en allouent plus.
+- `AJI_RIFE_PROFILE=1` mesure séparément préparation CPU, appel ORT, conversion
+  de sortie et attente de l'upscale simultané. Hors de ce mode, aucun nouveau
+  chronométrage par phase. Compteurs de préparation, cache, promotion et timestep
+  dans les statistiques. L'ABI publique du pont reste inchangée.
+- `ort_test.cpp` : temps cumulé d'upscale lu après chaque intervalle source,
+  avec exclusion de l'échauffement (`AJI_TEST_WARMUP`). L'ancien endpoint en
+  cache pouvait masquer tout le calcul de l'intervalle. Les colonnes deviennent
+  `upscale work` et `other` : le résidu n'est pas un temps de copies. Les travaux
+  simultanés ne doivent pas être additionnés comme une durée séquentielle.
+  Médiane/p95/max et signalement des longues pauses ; copies de diagnostic trio
+  uniquement sur demande. Ce dernier changement réduit le coût du **benchmark**,
+  pas le coût du lecteur, et ne doit pas être annoncé comme un gain moteur.
+- `native/macos-bench/bench.command` : mesures plus longues, échauffement explicite,
+  phases RIFE, essais NPU supplémentaires et classement indépendant de la locale.
+  `caffeinate -di` protège temporairement contre la veille automatique ; cela ne
+  garantit pas l'absence de verrouillage ou de suspension manuelle. Désactivation
+  possible avec `AJI_BENCH_STAY_AWAKE=0`. Notice du paquet actualisée.
+- CI : les exécutables de vérification du pool sont compilés avec le moteur et
+  appelés par les workflows Linux/macOS. La vérification de reconnaissance
+  Vulkan et sa dépendance `tiles.{cpp,h}` sont incluses dans la clé de cache.
+
+Le pool profite aux préparations/conversions du moteur partagé, notamment sur
+Mac (Core ML natif, Metal et ORT). RIFE reste exécuté par son interpolateur ORT.
+Le backend Windows TensorRT/DirectML distinct n'est pas réécrit dans ce lot.
+
+### Preuves déjà obtenues avant l'arrêt des tests
+
+Artefacts : `artifacts/performance/rife-cpu-prep/`. Le snapshot initial comprend
+`starting-tree`, `starting.patch` et `starting-manifest.json`. Une copie des
+sources d'avant ce lot est dans `reference-source/` ; les anciens lots 1 à 3 et
+`resume-ncnn` ne sont ni remplacés ni modifiés.
+
+| Travail terminé avant la dernière consigne | Résultat et trace |
+|---|---|
+| Compilation Release référence et candidat, ORT C++ 1.24.1, mêmes dépendances | `reference-build/libaji_ort.so`, `candidate-build/libaji_ort.so`, journaux de build ; dernier build terminé |
+| Quatre modèles SPAN et RIFE 4.26 / 4.25 / 4.22 lite livrés, provider CPU | `tests/inference/ort_pixel_cache.py` : **17 cas, 516 images par variante**, quatre variantes, **2 064 sorties identiques à l'octet**, `parity.json` / `parity.log` |
+| Variantes de cette comparaison | Référence immuable, candidat pool off + profiling on, pool on + profiling on, pool on + profiling off ; pas de tolérance numérique |
+| Scénarios | Avant/après, ×2/×4/5:2, resize, coupes, deux SPAN, reconfigure, strides, adresses réutilisées, mutation de source et chroma d'un octet |
+| Pool de workers | Plages vides/petites/irrégulières, six appelants simultanés et 600 batches, imbrication, persistance, exceptions et reprise réussies ; mode off également exercé |
+| ThreadSanitizer du pool | Terminé avec code 0 ; cinq groupes PASS dans `tsan.log` |
+| Détecteur partagé | 33 contrôles de `tiles_test.cpp` réussis |
+| Syntaxe des scripts et workflows | Python, bash et lecture YAML exécutés avant l'arrêt ; **pas une exécution macOS** |
+
+SHA-256 de la référence ORT :
+`bc5403e36dd42a80b9652b323f554c1f85a841aa6830fc54659c832ed9f18c49`.
+SHA-256 du candidat comparé :
+`85e671d7d22f10a1f25623306fcd04bb508b732dbdd4c357a5d03aab1368c7f1`.
+Les empreintes des modèles sont dans `parity.json`. Les ONNX RIFE viennent de
+l'archive officielle déjà utilisée par le paquet Mac ; seuls leurs noms de
+dimensions sont adaptés par `name_rife_dims.py`, sans changement des poids.
+Le manifeste final archive les sources, binaires et rapports de ce lot.
+
+**Aucun gain chiffré établi pour ce nouveau lot CPU/RIFE.** Aucun microbenchmark
+ni benchmark de bout en bout lancé. Ne pas convertir les timings du contrôle
+CPU en promesse de performances, ni attribuer un effet de pool à la suppression
+des copies du programme de mesure. La parité exacte CPU ne prouve pas la parité
+sur les providers GPU/NPU ou les autres pilotes.
+
+### Mesures Mac et suite du chantier
+
+La session du Mac s'est verrouillée pendant le benchmark 3.8.0.21. Les
+classements et l'incident Balanced à 3 535,9 ms restent provisoires ; le
+verrouillage est une explication possible, pas une cause démontrée. Ne pas
+écarter un moteur sur cette seule série. Le Mac n'est pas accessible ici.
+
+Pour une reprise autorisée de mesures : comparer pool on/off avec mêmes poids,
+profil, sortie et programme de mesure, session déverrouillée ; isoler préparation,
+transferts, inférence et attente, dans les deux ordres RIFE. Une mesure de qualité
+sur Mac et une mesure de vitesse restent distinctes. **Ne pas relancer ces tests
+sans tenir compte de la demande actuelle de l'utilisateur de les arrêter.**
+
+Prochains chantiers de code : chaîne SPAN/RIFE résidente sur GPU et cache des
+calculs indépendants du timestep, puis spécialisation des graphes des backends
+PC. Ils ne sont pas implémentés ici. Conserver poids et précision des opérations
+sensibles. Aucun nouveau modèle RIFE, assembleur maison, changement automatique
+d'ordre ou backend Windows annoncé comme terminé.
+
+## Reprise NCNN/Vulkan — lot terminé, checkpoint de relais
+
+Reprise depuis HEAD `894c94f` (3.8.0.22), branche `hdr-3.8`. Les modifications
+NCNN non commitées et la correction de la clé de cache CI sont préservées dans
+`artifacts/performance/resume-ncnn/starting-tree`, avec `starting.patch` et
+`starting-manifest.json`. Une référence C++ du HEAD commité est conservée dans
+`resume-ncnn/reference-source/aji_vulkan.cpp` ; les références des lots 1 à 3
+restent intactes. Aucun commit, push ou changement de l'installation utilisateur.
+
+**État : ce lot est construit et validé ; les séries de mesures sont terminées.**
+Le chantier général reste ouvert. Les modèles restent
+inchangés. GPU initialement observé à 98 % / 7 Go ; l'utilisateur a libéré le GPU
+pour les tests, charge ensuite observée à 15 % / 2 Go (bureau actif). Ne pas
+confondre la parité exacte et les limites du mode de similarité expérimental.
+Les lots 7 à 9 sont désormais dans `hdr-3.8` : les indications de branches dans
+les sections historiques ci-dessous décrivent leur état à l'époque.
+
+Audit CPU : une zone de 3×3 pixels changée de 16 niveaux est déclarée identique
+par les seuils 1,5 / 24 (`resume-ncnn/check-sameness.cpp`, exécuté). C'est une
+limite réelle de la règle, pas une preuve d'absence de baisse de qualité.
+**Correction décidée : exact par défaut dans NCNN ; similarité opt-in via
+`AJI_VK_SAME=similar` ou un seuil explicite.** Les réglages du moteur partagé
+déjà livré ne sont pas changés. `AJI_VK_SAME=exact` prévaut désormais sur les
+deux variables de seuil (elles pouvaient auparavant annuler le mode exact).
+Le compteur est nommé `Held RIFE outputs reused`, car il compte les sorties
+intermédiaires évitées, pas les paires. Le mode exact du détecteur partagé évite
+désormais l'allocation inutilisée de son tableau de sommes, résultat inchangé.
+
+Validation intermédiaire achevée : compilation Release et 33 contrôles CPU de
+`tiles_test.cpp` réussis, puis **18 cas GPU, 657 images par variante**, sorties
+identiques à l'octet au HEAD commité avec cache désactivé. Variantes : cache
+désactivé, cache CPU seul, caches CPU + RIFE GPU. Rapport `strict-parity.json`,
+binaire intermédiaire `candidate/libaji_vulkan.so`. Le premier lancement avait
+un mauvais chemin RIFE (sous-dossier au lieu de racine) ; conservé séparément
+dans `strict-parity-invalid-path.{json,log}`, corrigé sans changement de code.
+
+Optimisation exacte supplémentaire construite ensuite : `scene_changed` ne
+parcourt plus les trois plans float quand la détection des coupes est désactivée
+ou que les deux vues désignent le même tenseur immuable. L'inférence RIFE reste
+exécutée en mode exact, y compris entre deux images strictement identiques.
+Binaire final en test : `final-candidate/libaji_vulkan.so`, SHA-256
+`74e29caff5a907851a2f0cb383f4c5155c09be8165a3e5ffaade33e932d60f74`.
+Référence HEAD, mêmes dépendances et réglages de convolution :
+`reference/libaji_vulkan.so`, SHA-256
+`d36191e5205d10b50254d635afeb5f37978150cfa3316614e6e12645ab88ca8e`.
+Les commandes de compilation de cette référence sont dans
+`reference-build-commands.txt`. Elles remplacent uniquement l'objet du pont
+dans le lien CMake courant ; pas de comparaison avec le Winograd des lots 1–3.
+
+### Vérifications du binaire final
+
+| Vérification exécutée localement | Résultat / rapport dans `resume-ncnn` |
+|---|---|
+| `vulkan_cache.py`, référence committée, 18 configurations, 657 images par variante | Parité à l'octet pour les trois variantes du candidat : cache off, cache CPU seul, cache CPU + RIFE GPU. `final-strict-parity.json` |
+| `vulkan_sameness.py`, 128×96 puis 144×104 puis retour | Défaut sans variables et `exact` avec seuils 8 / 255 : chacun des 225 résultats identique à l'octet à la référence. `sameness.json` |
+| Similarité opt-in, mêmes configurations | Ancre conservée, fade +2 et objet +64 rejetés, pitch respecté, cache vidé à reconfigure. Le mouvement réel de 3×3 à +16 est effacé : **3 215 octets de sortie SPAN différents**, ce mode n'est pas équivalent en qualité. `sameness.json` |
+| Nouvelle commande de CI, même bibliothèque des deux côtés, tailles 64×64 / 80×72 / 64×64 | 225 résultats par variante, contrôles réussis. GPU NVIDIA local, **pas une exécution du pilote logiciel de la CI**. `sameness-ci-settings.json` |
+| Ancien filtre mpv, vidéo mobile FFV1 12 images, 720p, après ×4 et avant ×2 | 45 / 23 images de sortie, pixels RGB décodés et PTS identiques. `playback.json`, script `playback.py` |
+| Filtre en avance de l'AppImage 3.8.0.20 locale, même vidéo, après ×4, avant ×2 et avant 5/2 | 45 / 23 / 28 images, mêmes pixels et PTS entre référence et candidat ; mêmes résultats avec `ahead=1` et `ahead=6`. Fin de fichier comprise. `playback-current.json`, script `playback-current.py` |
+
+Le lecteur 3.8.0.20 est extrait dans `resume-ncnn/squashfs-root`, lancé directement
+avec `--no-config --load-scripts=no --hwdec=no` et ses bibliothèques propres. Aucun
+changement à l'installation ni aux fichiers de configuration de l'utilisateur.
+Ces tests n'ont pas exercé le seek/pause en lecture interactive, ni le filtre sur
+Mac. Les sections historiques « pas exécuté » ci-dessous ne tenaient pas encore
+compte de cette vérification du filtre en avance.
+
+CI : la clé du bundle inclut désormais `native/linux-ort/tiles.cpp` et `tiles.h`.
+Une étape `vulkan_sameness.py` est ajoutée, rapport archivé. Le test de cache exact
+force `AJI_VK_SAME=exact`. Le YAML est lu avec succès ; GitHub Actions et les GPU
+AMD/Intel/Mac ne sont pas exécutés dans cette reprise.
+
+### Mesures de cette reprise, caches activés des deux côtés
+
+RTX 4070 Ti, pilote 615.78.08, bureau actif. SPAN Sharp1 Performance, entrées
+synthétiques 1280×720, RIFE 4.6 ×4, poids identiques. Cinq essais alternés par
+cas, 24 paires avec échauffement exclu. `run-benchmarks.py`, rapports
+`benchmark-scd-off.json` et `benchmark-scd-on.json`, environnement et commandes
+dans `benchmark-environment.json`. Les durées ci-dessous sont les médianes des
+durées par essai ; le facteur est la médiane des rapports référence/candidat de
+chaque essai, donc ne correspond pas nécessairement au rapport des deux durées.
+
+| Cas | Référence HEAD, ms / intervalle source | Candidat, ms / intervalle source | Facteur médian et plage des 5 essais |
+|---|---:|---:|---|
+| SPAN seul, changeant | 38,51 | 42,20 | ×0,912 ; 0,876–1,001 ; écart suspect vérifié ci-dessous |
+| SPAN seul, tenu | 3,05 | 2,88 | ×1,001 ; 0,986–1,186 ; pas de gain confirmé |
+| RIFE après ×4, coupes désactivées | 186,75 | 159,45 | **×1,142 ; 1,042–1,209**, gain dans chacun des cinq essais |
+| RIFE avant ×4, coupes désactivées | 184,80 | 185,52 | ×0,994 ; 0,930–1,033 ; pas de gain confirmé |
+| RIFE après ×4, seuil de coupe 0,15 | 171,96 | 160,63 | ×1,054 ; 0,904–1,148 ; variation trop large pour attribuer un gain |
+| RIFE avant ×4, seuil de coupe 0,15 | 178,39 | 183,31 | ×0,966 ; 0,921–0,990 ; petit ralentissement observé, à surveiller |
+
+**Contrôle de l'écart SPAN :** seconde série de cinq essais avec 64 paires,
+référence 38,61 / candidat 38,84 ms, facteur médian ×0,985 (0,915–1,062).
+Témoin comparant **le même binaire de référence à lui-même**, mêmes caches et
+64 paires : 41,12 / 40,27 ms, facteur médian ×1,030 (0,943–1,052). Le ralentissement
+de 9 % de la première série n'est donc pas confirmé ; le bruit de mesure empêche
+d'attribuer les petits écarts au code. Rapports `benchmark-span-repeat.json`,
+`benchmark-span-control.json`, `benchmark-span-environment.json`, script
+`run-span-confirmation.py`. Agrégation dans `benchmark-summary.json`.
+
+Conclusion limitée : le parcours évité quand les coupes sont désactivées accélère
+RIFE après upscale dans ce test. Aucun gain global promis, ni gain établi avec
+la détection active ou sur SPAN. La charge du bureau reste présente (40 % relevés
+avant une série), ce ne sont pas des mesures isolées de laboratoire. Aucun
+benchmark de la similarité approximative présenté comme un gain sans perte.
+Les ratios du test de parité ont une référence **sans cache** et incluent les
+anciens lots : ne pas les attribuer aux changements de cette reprise.
+
+### Pourquoi continuer à optimiser RIFE après upscale
+
+Question utilisateur pendant cette reprise : RIFE avant upscale serait-il
+toujours plus rentable ? **Non, le cache peut inverser le classement.** Avec S
+le coût d'un upscale d'image source, Rb/Rh les coûts de RIFE basse/haute résolution
+et un facteur F entier, hors première image et coupes : avant ≈ F×S + (F−1)×Rb ;
+après avec extrémités en cache ≈ S + (F−1)×Rh. Après gagne si Rh−Rb < S. Sans
+cache, les upscales répétés pénalisaient fortement l'ordre après. Le coût réel
+dépend des modèles, tailles, matériel et contenu ; il faut aussi comparer le
+rendu. Dans le candidat testé ici sans coupe, après ×4 ≈159 ms contre avant
+≈186 ms. Cela ne justifie aucun changement automatique de l'ordre des profils.
+
+### Reprendre depuis ce checkpoint
+
+- Base `894c94fa09bdc4169ca832634416d34bb4fb8d98`, modifications **non commitées**.
+  `resume-ncnn/final.patch` et `final-manifest.json` décrivent l'état final ; le
+  manifeste comprend les SHA des sources, binaires, rapports et poids. Ne pas
+  confondre `candidate/` (intermédiaire) et `final-candidate/` (validé et mesuré).
+- Aucun test ou benchmark de cette reprise ne reste lancé. Pour une nouvelle
+  expérience, utiliser un nouveau sous-dossier et de nouveaux rapports : conserver
+  ces preuves et les références immuables des lots 1 à 3.
+- Recompilation : CMake existant dans `artifacts/performance/vulkan-build-v2`,
+  dépendances épinglées sous `artifacts/performance/build-work`, outils sous
+  `artifacts/performance/python/bin`. Commandes de référence dans
+  `reference-build-commands.txt`, journaux `configure.log` / `build-final.log`.
+  Les scripts locaux de lecteur/mesure reproduisent exactement les appels.
+- Prochaine priorité de mesure : profiler CPU/transferts/temps GPU, puis essais
+  prolongés des **deux ordres**, sur contenu réel et avec détection des coupes
+  active. Conserver le petit ralentissement observé avant ×4 dans le suivi ; ne
+  pas le masquer par le gain après ×4 sans coupe.
+- Prochain chantier de calcul : chaîne SPAN/RIFE résidente sur GPU et préparation
+  partagée des instants RIFE, en identifiant les dépendances réelles au timestep.
+  Les poids et les couches sensibles gardent leur précision. Comparer chaque
+  sortie au binaire de référence, pas seulement les FPS. Un export « v2 » des
+  mêmes poids peut être une expérience de graphe ; aucun modèle n'est remplacé.
+- Contrôles encore à faire : seek/pause interactifs du filtre en avance, GitHub
+  Actions avec Vulkan logiciel, GPU AMD/Intel et Mac. Les modifications du dépôt
+  voisin RTX appartiennent à l'autre session et ne sont pas touchées.
+
 ## Suite du 13 octobre 2026 (autre session) — lots 4 à 6
 
 Trois changements faits après les lots 1 à 3, dans une autre session. Ce qui a été exécuté
@@ -207,7 +464,20 @@ risque il faut la seconde limite dans le noyau CUDA `k_block_diff` du dépôt pr
 pas de compilateur CUDA sur ce PC, la compilation passe par la CI de ce dépôt).
 
 **Moteur NCNN/Vulkan** : ses caches (lots 1 à 3) comparent à l'octet près, donc ne reprennent
-aucune image d'une vraie vidéo. Lui donner la même règle reste à faire.
+aucune image différente à cause de la compression. L'adaptation à la même règle est maintenant
+écrite dans l'arbre de travail, non commitée : `aji_vulkan.cpp`, `aji_vulkan.h`,
+`CMakeLists.txt` et `tests/inference/vulkan_cache.py`. CMake compile `native/linux-ort/tiles.cpp` ;
+`AJI_VK_SAME=exact` conserve le chemin de comparaison exacte pour les tests de parité.
+Le chemin de similarité peut également éviter RIFE entre deux dessins reconnus identiques.
+
+**Point de reprise retrouvé grâce au dernier message de l'autre IA :** vérifier les listes
+de sources dans les clés de cache des builds. Vérification faite : la clé `vulkan-cache` de
+`.github/workflows/linux-port.yml` omettait `native/linux-ort/tiles.cpp` et `tiles.h`.
+Ces deux dépendances ont été ajoutées à `hashFiles`. Le script de build utilise CMake et
+n'énumère pas ces sources séparément ; le cache du lecteur mpv est distinct et n'a pas besoin
+de ces fichiers. YAML et présence des deux fichiers dans la clé vérifiés localement.
+Pas de compilation ou de validation GPU supplémentaire pendant cette vérification ; la
+validation de l'adaptation NCNN reste à consigner avant de l'annoncer comme terminée.
 
 Non mesuré : le coût de chaque étage TensorRT (RIFE, SPAN, TrueHDR) ; le harnais attend que la
 carte graphique soit libre.

@@ -6,6 +6,16 @@ propose des expériences ; aucune modification de moteur ni nouvelle mesure de
 performance n'a été réalisée pour cette analyse. Il couvre les familles de
 pistes pertinentes, sans prétendre épuiser tous les algorithmes possibles.
 
+Le chantier d'implémentation a avancé depuis cette analyse. L'état courant, les
+mesures exécutées et les commandes pour reprendre sont consignés dans
+[CHANTIER-PERFORMANCE-RELAIS.md](CHANTIER-PERFORMANCE-RELAIS.md). La reprise
+NCNN/Vulkan conserve le mode exact par défaut : la reconnaissance approximative
+des dessins reste une option, car les tests montrent qu'elle peut effacer de
+petits mouvements de faible contraste. Le lot 3.8.0.23 ajoute un pool CPU
+persistant et réduit les préparations RIFE redondantes dans le moteur partagé.
+Les modèles restent inchangés ; aucun gain chiffré n’est encore établi pour ce
+nouveau lot. Les mesures locales sont arrêtées à la demande de l’utilisateur.
+
 DirectML, TensorRT, OpenVINO, MIGraphX et NCNN sont des moteurs d'exécution.
 SPAN/AnimeJaNai et RIFE sont les modèles qu'ils exécutent. On peut modifier la
 chaîne du lecteur, le graphe équivalent, les noyaux ou les modèles entraînés :

@@ -105,6 +105,10 @@ jobs:
           grep -E 'warning' build.log | grep -E 'native/(apple|linux-ort)' | sort -u | head -12 > warnings.txt || true
           test -s warnings.txt && LINES_KEPT=12 note "engine build warnings" warnings.txt warning
           otool -L ort-build/libaji_ort.dylib
+      - name: Persistent pixel workers, simultaneous calls and nesting
+        run: |
+          ort-build/animejanai-pixel-workers-test
+          AJI_PIXEL_POOL=0 ort-build/animejanai-pixel-workers-test
       - name: Tile plans, reuse test and Core ML size patch
         run: |
           for package in check/*.mlpackage; do

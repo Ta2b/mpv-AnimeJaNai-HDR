@@ -1,7 +1,10 @@
 /* Host RGB24 bridge, ABI 1. Independent of CUDA/D3D11 aji ABI 9. */
 /* Sources are compared byte for byte before reuse; row padding is ignored. Configure clears
  * every derived picture. AJI_VK_CACHE=0 keeps the uncached path for comparison/diagnosis.
- * AJI_VK_RIFE_GPU_CACHE=0 disables only resident RIFE inputs, retaining source reuse. */
+ * AJI_VK_RIFE_GPU_CACHE=0 disables only resident RIFE inputs, retaining source reuse.
+ * Reuse is exact by default. AJI_VK_SAME=similar opts in to the drawing detector with two
+ * thresholds (tiles.h); this may discard real low-contrast changes. AJI_VK_SAME=exact
+ * forces identical bytes even when AJI_REUSE_THRESHOLD / AJI_REUSE_PEAK are set. */
 #pragma once
 #include <stddef.h>
 #include <stdint.h>

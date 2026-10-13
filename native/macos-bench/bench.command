@@ -5,6 +5,11 @@
 #   bench.command rapide   Performance en 720p seulement
 # Le Manager lance ce même script (Run Benchmarks) depuis l'application ; il fonctionne aussi
 # seul, dans le dossier AnimeJaNai-mac-bench.
+# Temporary idle-sleep assertions only while this batch runs. No system settings are changed.
+# Apple implementation: https://github.com/apple-oss-distributions/PowerManagement/blob/main/caffeinate/caffeinate.c
+if [ "${AJI_BENCH_CAFFEINATED:-0}" != 1 ] && [ "${AJI_BENCH_STAY_AWAKE:-1}" != 0 ] && [ -x /usr/bin/caffeinate ]; then
+    exec /usr/bin/caffeinate -di /usr/bin/env AJI_BENCH_CAFFEINATED=1 /bin/bash "$0" "$@"
+fi
 cd "$(dirname "$0")" || exit 1
 mode="${1:-}"
 tool="${AJI_BENCH_TOOL:-./animejanai-ort-test}"
@@ -30,9 +35,12 @@ cd "$cd_work" || exit 1
     sysctl -n machdep.cpu.brand_string 2>/dev/null
     system_profiler SPHardwareDataType 2>/dev/null | grep -E 'Model Name|Chip|Memory|Cores'
     echo "Aucune image n'est réutilisée ici (engine_reuse=off) : c'est le coût d'une image entièrement nouvelle."
+    echo "Mesurer session déverrouillée ; le temps RIFE est par image source. Les travaux peuvent se chevaucher."
+    echo "Median/p95/max signalent les variations ; upscale work inclut le travail des exécutants, other n'est pas un temps de copies."
+    echo "Protection contre la veille automatique : ${AJI_BENCH_CAFFEINATED:-0} (ne garantit pas l'absence de verrouillage)."
 } | tee "$out"
 
-frames=30
+frames="${AJI_BENCH_FRAMES:-30}"
 [ "$mode" = essai ] && frames=3
 # essai MOTEUR CIBLE PROFIL LARGEUR HAUTEUR [VARIABLE=VALEUR...]
 #   MOTEUR : coreml (Core ML par ONNX Runtime), coremlnative (Core ML natif), metal
@@ -42,13 +50,19 @@ frames=30
 essai() {
     local engine="$1" device="$2" slot="$3" w="$4" h="$5" n="$frames"
     shift 5
-    [ "$device" = CPU ] && n=4
+    [ "$device" = CPU ] && n=10
+    local warmup="${AJI_BENCH_WARMUP:-3}"
+    [ "$mode" = essai ] && warmup=1
     local extra="${*:+ $*}"
     echo | tee -a "$out"
     echo "== $engine | $device | profil $slot | ${w}x${h}$extra" | tee -a "$out"
-    env AJI_ORT_PROVIDER="$engine" AJI_REUSE=off "$@" "$tool" "$conf" "$models" "$slot" "$w" "$h" "$n" "$device" 2>&1 \
-        | grep -E '^RESULT|^Tiles|^Devices|^Placement|^RIFE|failed|rror' \
-        | sed "s/^RESULT/RESULT | moteur=$engine cible=$device profil=$slot$extra/" | cut -c1-420 | tee -a "$out"
+    env AJI_ORT_PROVIDER="$engine" AJI_REUSE=off AJI_TEST_WARMUP="$warmup" AJI_RIFE_PROFILE=1 "$@" "$tool" "$conf" "$models" "$slot" "$w" "$h" "$n" "$device" 2>&1 \
+        | grep -E '^RESULT|^SPREAD|^TIMING|^MEASUREMENT|^Tiles|^Devices|^Placement|^RIFE|failed|rror' \
+        | sed "s/^RESULT/RESULT | moteur=$engine cible=$device profil=$slot$extra/" | cut -c1-800 | tee -a "$out"
+    local status="${PIPESTATUS[0]}"
+    if [ "$status" != 0 ]; then
+        echo "MEASUREMENT | $engine $device profile $slot failed, exit $status" | tee -a "$out"
+    fi
 }
 
 if [ "$mode" = essai ]; then
@@ -82,6 +96,8 @@ else
     # 5. Interpolation RIFE x2 : le temps est celui d'une image source, soit deux images affichées.
     #    Avant l'upscale (profil 3) puis après (profil 4), et RIFE sur chaque processeur.
     essai coremlnative GPU+NPU 3 1280 720
+    essai coremlnative NPU 3 1280 720
+    essai coremlnative NPU 3 1280 720 AJI_RIFE_DEVICE=gpu
     essai coremlnative GPU+NPU 3 1280 720 AJI_RIFE_DEVICE=gpu
     essai coremlnative GPU+NPU 3 1280 720 AJI_RIFE_DEVICE=npu
     essai coremlnative GPU 3 1280 720 AJI_RIFE_DEVICE=npu
@@ -98,9 +114,11 @@ else
         for size in "960 540" "1920 1080"; do
             set -- $size
             essai coremlnative GPU 1 "$1" "$2"; essai coremlnative GPU+NPU 1 "$1" "$2"; essai coremlnative GPU+NPU+CPU 1 "$1" "$2"
+            essai coremlnative NPU 1 "$1" "$2"
             essai metal GPU 1 "$1" "$2"; essai metal GPU+NPU 1 "$1" "$2"; essai metal GPU+NPU+CPU 1 "$1" "$2"; essai coreml ALL 1 "$1" "$2"
         done
         essai coremlnative GPU 2 1280 720; essai coremlnative GPU+NPU 2 1280 720; essai coremlnative GPU+NPU+CPU 2 1280 720
+        essai coremlnative NPU 2 1280 720
         essai metal GPU 2 1280 720; essai metal GPU+NPU 2 1280 720; essai metal GPU+NPU+CPU 2 1280 720; essai coreml ALL 2 1280 720
         essai coremlnative CPU 1 1280 720
     fi
@@ -109,8 +127,8 @@ fi
 rank() { # rank TITRE MOTIF
     echo
     echo "== $1 (temps par image, du plus rapide au plus lent ; 41,7 ms = 24 images/s)"
-    grep '^RESULT' "$out" | grep -- "$2" | awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t "\t" $2 "|" $5 }' \
-        | sort -n | awk -F'\t' '{ printf "%8.1f ms  %s\n", $1, $2 }' | cut -c1-200
+    grep '^RESULT' "$out" | grep -- "$2" | LC_ALL=C awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t "\t" $2 "|" $5 }' \
+        | LC_ALL=C sort -n | LC_ALL=C awk -F'\t' '{ printf "%8.1f ms  %s\n", $1, $2 }' | cut -c1-200
 }
 {
     if [ "$mode" = essai ]; then rank "Classement" "640x360 ->"
@@ -122,7 +140,7 @@ rank() { # rank TITRE MOTIF
             rank "Performance, 960x540 vers 1920x1080" "profil=1 .*960x540 ->"
             rank "Balanced, 1280x720 vers 2560x1440" "profil=2 .*1280x720 ->"
         fi
-        best="$(grep '^RESULT' "$out" | grep -- 'profil=1 .*1280x720 ->' | awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t "\t" $2 }' | sort -n | head -1 | cut -f2)"
+        best="$(grep '^RESULT' "$out" | grep -- 'profil=1 .*1280x720 ->' | LC_ALL=C awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t "\t" $2 }' | LC_ALL=C sort -n | head -1 | cut -f2)"
         echo
         echo "== Réglage le plus rapide en 720p :$best"
         echo "   Manager > Global Settings : moteur coreml = « Core ML (ONNX Runtime) », coremlnative ="
@@ -132,8 +150,8 @@ rank() { # rank TITRE MOTIF
         echo
         echo "== Le CPU en plus du GPU et du Neural Engine (Performance 720p, ms par image)"
         for engine in coremlnative metal coreml; do
-            two="$(grep '^RESULT' "$out" | grep -E "moteur=$engine cible=GPU\+(NPU|ANE) profil=1 \|.*1280x720 ->" | head -1 | awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t }')"
-            three="$(grep '^RESULT' "$out" | grep -E "moteur=$engine cible=GPU\+(NPU|ANE)\+CPU profil=1 \|.*1280x720 ->" | head -1 | awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t }')"
+            two="$(grep '^RESULT' "$out" | grep -E "moteur=$engine cible=GPU\+(NPU|ANE) profil=1 \|.*1280x720 ->" | head -1 | LC_ALL=C awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t }')"
+            three="$(grep '^RESULT' "$out" | grep -E "moteur=$engine cible=GPU\+(NPU|ANE)\+CPU profil=1 \|.*1280x720 ->" | head -1 | LC_ALL=C awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t }')"
             printf '   %-13s GPU + NPU : %8s      GPU + NPU + CPU : %8s\n' "$engine" "${two:-absent}" "${three:-absent}"
         done
     fi
