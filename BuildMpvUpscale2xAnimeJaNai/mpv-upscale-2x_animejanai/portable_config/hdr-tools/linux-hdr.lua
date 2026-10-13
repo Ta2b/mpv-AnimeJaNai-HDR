@@ -84,6 +84,8 @@ local function report()
         'Profil : '..tostring(native('user-data/animejanai-active-slot') or 0)..' | '..tostring(native('user-data/animejanai-interpolation') or 'cadence originale'),
         'Decodage : '..tostring(native('hwdec-current') or 'logiciel')..' | images perdues : sortie='..tostring(native('frame-drop-count') or 0)..' decodage='..tostring(native('decoder-frame-drop-count') or 0),
         'RIFE : '..tostring(native('user-data/animejanai-rife-sync') or 'facteur du profil'),
+        -- The driver layer works after mpv: only the request is known here, not its effect.
+        'Smooth Motion (pilote NVIDIA) : '..(os.getenv('NVPRESENT_ENABLE_SMOOTH_MOTION')=='1' and 'demande au lancement' or 'non demande'),
     },'\n')
     mp.msg.info(text);mp.osd_message(text,12)
     local f=io.open(mp.command_native({'expand-path','~~/../animejanai/diagnostic-hdr.txt'}),'w')

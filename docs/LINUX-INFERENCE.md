@@ -517,3 +517,32 @@ OpenVINO (Intel), RTX VSR et AMD VideoSR / AMF (Windows). Une machine hybride ga
 de chacun de ses GPU. Sous Windows, le Manager ne distingue que NVIDIA du reste : AMD VideoSR et
 AMF y restent proposés sur Intel.
 
+## NVIDIA Smooth Motion sous Linux (3.8.0.17, 13 octobre 2026)
+
+Le pilote NVIDIA Linux fournit Smooth Motion comme couche Vulkan (`libnvidia-present.so`), activée
+par la variable `NVPRESENT_ENABLE_SMOOTH_MOTION=1` (constaté dans
+`/usr/share/vulkan/implicit_layer.d/nvidia_layers.json`, pilote 615.78). Elle génère une image
+entre deux images affichées, sur toute la fenêtre.
+
+- **Réglage.** `smooth_motion=yes` dans `animejanai_hdr_auto.conf` ; case *NVIDIA Smooth Motion*
+  du Manager (`37ee789`), *Global Settings* > *Playback and rendering*, visible sous Linux et
+  grisée sans GPU NVIDIA ou si le pilote n'annonce pas la fonction dans son manifeste.
+- **Lanceur.** `launch-linux.sh` lit la clé et pose la variable avant de démarrer mpv ; une valeur
+  déjà présente dans l'environnement l'emporte. Le lecteur doit être redémarré après un changement.
+- **Diagnostic.** `Ctrl+Alt+h` indique si la fonction a été demandée au lancement. Son effet réel
+  n'est pas observable depuis mpv : la couche agit après lui.
+- **Pas de placement après RIFE.** Smooth Motion ne voit que l'image finale de la fenêtre
+  (sous-titres compris, résolution de sortie) ; il ne peut pas s'insérer dans la chaîne de filtres
+  pour travailler avant la mise à l'échelle. Dans cette chaîne, c'est RIFE qui tient ce rôle.
+- **AMD et Intel.** Pas d'équivalent sous Linux : AMD Fluid Motion Frames n'existe que dans le
+  pilote Windows, Intel n'a pas de génération d'images au niveau du pilote. Sous Windows, Smooth
+  Motion et Fluid Motion Frames se règlent dans l'application du fabricant, et AMD AMF x2 reste
+  le réglage du Manager.
+- **Constats sur RTX 4070 Ti, écran 4K 165 Hz VRR, sortie 1440p à 71,93 i/s avec TrueHDR.**
+  Charge GPU moyenne 59 % avec Smooth Motion contre 43 % sans (30 s, images tenues réutilisées).
+  L'utilisateur voit des artefacts sur les sous-titres et une fréquence d'écran qui oscille entre
+  100 et 165 Hz ; cause non établie (VRR « Always » de KDE et cadence non régulière suspectés).
+  Sans réutilisation des images tenues, le même profil tourne à 82 % de GPU et perd des images
+  par rafales quand une autre application sollicite le GPU (130 en 100 s sur un passage, 0 au
+  passage suivant).
+

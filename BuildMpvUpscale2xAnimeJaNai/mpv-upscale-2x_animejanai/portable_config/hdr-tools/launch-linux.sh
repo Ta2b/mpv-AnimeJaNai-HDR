@@ -18,6 +18,13 @@ if [ -f "$ANIMEJANAI_INFERENCE_DIR/libaji_rtx.so" ] && [ -d "$vfx/lib" ]; then
     done
     export LD_LIBRARY_PATH
 fi
+# NVIDIA Smooth Motion: the driver's Vulkan layer reads this variable when the player starts.
+# A value already set in the environment wins over the setting.
+hdr_conf="$ANIMEJANAI_ROOT/portable_config/script-opts/animejanai_hdr_auto.conf"
+if [ -z "${NVPRESENT_ENABLE_SMOOTH_MOTION:-}" ] && [ -f "$hdr_conf" ] &&
+    grep -qiE '^[[:space:]]*smooth_motion[[:space:]]*=[[:space:]]*(yes|true|1)[[:space:]]*(#.*)?$' "$hdr_conf"; then
+    export NVPRESENT_ENABLE_SMOOTH_MOTION=1
+fi
 runtime="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}"
 session="$(mktemp -d "$runtime/animejanai-hdr.XXXXXXXX")"
 export ANIMEJANAI_IPC_PATH="$session/mpv.sock"

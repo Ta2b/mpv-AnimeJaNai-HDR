@@ -19,7 +19,7 @@ for _,vendor in ipairs({'amd','intel','nvidia'}) do
 end
 check('HDR conversion and grading enabled',o.hdr_conversion and o.grade)
 check('Natural defaults',o.shadows==.15 and o.highlights==.50 and o.highlights_rtx==.25 and o.vibrance==.15 and o.vibrance_rtx==.10)
-check('experimental processing off',o.frame_generation=='off' and not o.rife_display_sync and not o.grade_native_hdr)
+check('experimental processing off',o.frame_generation=='off' and not o.rife_display_sync and not o.grade_native_hdr and not o.smooth_motion)
 check('no diagnostic logging by default',not o.diagnostic)
 check('Wayland follows system by default',o.linux_hdr_output=='auto')
 
