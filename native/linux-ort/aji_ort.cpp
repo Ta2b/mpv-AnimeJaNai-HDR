@@ -773,7 +773,23 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
         const std::vector<uint8_t> &wa = work_of(c, a), &wb = work_of(c, b);
         c.between.resize((size_t)c.rife_w * c.rife_h * 3);
         const ptrdiff_t stride = (ptrdiff_t)c.rife_w * 3;
-        c.rife->run(wa.data(), stride, wb.data(), stride, t, c.between.data(), stride);
+        // The frame that follows this picture has to be upscaled anyway, and neither computation
+        // needs the other: it is upscaled while the picture is interpolated. With the two on
+        // different processors a source frame then costs the longer of the two plus one
+        // upscale, instead of their sum plus one upscale. AJI_RIFE_PARALLEL=0 for a comparison.
+        static const bool together = [] { const char *v = std::getenv("AJI_RIFE_PARALLEL"); return !(v && *v == '0'); }();
+        std::thread following;
+        std::string failure;
+        bool following_whole = false;
+        if (together && !b.has_up)
+            following = std::thread([&] {
+                try { up_of(c, b, &following_whole); } catch (const std::exception &e) { failure = e.what(); }
+            });
+        try {
+            c.rife->run(wa.data(), stride, wb.data(), stride, t, c.between.data(), stride);
+        } catch (...) { if (following.joinable()) following.join(); throw; }
+        if (following.joinable()) following.join();
+        require(failure.empty(), failure);
         c.rife_ms += now_ms() - start;
         whole = upscale(c, c.between.data(), stride, c.rife_w, c.rife_h, output, output_stride);
     } else {

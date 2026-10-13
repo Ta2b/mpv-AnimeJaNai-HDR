@@ -142,9 +142,14 @@ interpolation et deux upscales. Sur un anime animé « sur deux », une image su
 et ne coûte rien : la moyenne retombe près d'un upscale et demie par image source, et le
 tampon d'avance (lot 5) absorbe les à-coups. Sur un panoramique, tout est à calculer.
 
-Pistes non faites : un exécuteur RIFE natif (Metal ou Core ML sans ONNX Runtime), à décider
-après avoir vu ce que Core ML fait du modèle ; faire tourner RIFE et l'upscale en même temps
-sur deux processeurs (l'interpolation de l'image suivante pendant l'upscale de la courante).
+- avant l'upscale, l'image qui suit est upscalée pendant que l'image intermédiaire est
+  interpolée : les deux calculs ne dépendent pas l'un de l'autre. Une image source coûte alors
+  le plus long des deux plus un upscale, au lieu de leur somme plus un upscale, quand ils sont
+  sur deux processeurs. Sortie identique à l'octet (vérifié sur CPU, où le gain est déjà de
+  124 à 106 ms par image source en 320x180). `AJI_RIFE_PARALLEL=0` pour comparer.
+
+Piste non faite : un exécuteur RIFE natif (Metal ou Core ML sans ONNX Runtime), à décider
+après avoir vu ce que Core ML fait du modèle.
 
 ### Constat sur l'assembleur
 

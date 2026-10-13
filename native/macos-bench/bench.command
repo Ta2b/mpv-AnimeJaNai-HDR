@@ -80,6 +80,7 @@ else
     essai coremlnative GPU+NPU 3 1280 720 AJI_RIFE_DEVICE=gpu
     essai coremlnative GPU+NPU 3 1280 720 AJI_RIFE_DEVICE=npu
     essai coremlnative GPU 3 1280 720 AJI_RIFE_DEVICE=npu
+    essai coremlnative GPU 3 1280 720 AJI_RIFE_DEVICE=npu AJI_RIFE_PARALLEL=0
     essai metal GPU 3 1280 720 AJI_RIFE_DEVICE=npu
     essai coremlnative GPU+NPU 4 1280 720
     essai coremlnative GPU+NPU 3 960 540
