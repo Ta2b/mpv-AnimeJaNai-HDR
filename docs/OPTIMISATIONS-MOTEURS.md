@@ -30,8 +30,16 @@ machine ; elle ne fournit pas un facteur d'accélération ni un classement unive
 Retour utilisateur : une RTX 2070 Super arrivait à combiner AnimeJaNai ×2 et
 RIFE ×2 via SVP, contrairement à son autre configuration AnimeJaNai/RIFE.
 C'est un indice de différence de chaîne, pas encore une comparaison contrôlée :
-modèle RIFE, résolution réellement interpolée, ordre des filtres, version du
-runtime et réglages SVP de cette ancienne utilisation restent inconnus. Une
+l'utilisateur confirme **RIFE 4.26, TensorRT, source 1080p, AnimeJaNai ×2,
+écran 1080p**. La résolution réellement interpolée, l'ordre des filtres et la
+version du runtime restent inconnus. Un écran 1080p ne prouve pas que RIFE
+recevait du 1080p : le redimensionnement d'affichage peut survenir après les
+filtres. SVP pouvait recevoir la source avant upscale, une sortie 4K, ou une
+sortie déjà redimensionnée ; aucune de ces chaînes n'est confirmée.
+SVP documente effectivement `frc.frame.resize=-1` (réduire à la taille écran)
+et `1` (adapter à l'écran), ce qui rend l'hypothèse de redimensionnement plausible,
+sans établir sa position par rapport à AnimeJaNai dans l'ancienne installation.
+Source : [réglages SVP](https://www.svp-team.com/wiki/Manual:All_settings). Une
 équivalence graphique approximative avec un M4 Pro ne prédit pas les performances
 RIFE, particulièrement quand le chemin Mac emploie aussi le Neural Engine.
 
@@ -42,7 +50,7 @@ SVP documente TensorRT et ncnn/Vulkan, plusieurs threads GPU et une optimisation
 par résolution. Le plugin TensorRT référencé propose `num_streams` et
 `use_cuda_graph`. Le wrapper expose aussi la spécialisation de forme et deux
 implémentations ONNX de RIFE. Cela ne prouve pas quels réglages l'utilisateur
-avait activés dans SVP.
+avait activés dans SVP, au-delà de TensorRT confirmé.
 
 Priorités renforcées, en conservant les modèles et sans lancer de nouveaux tests :
 
