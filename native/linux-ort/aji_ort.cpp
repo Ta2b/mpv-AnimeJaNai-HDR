@@ -252,6 +252,12 @@ void load_steps(Context &c, int width, int height)
         for (const auto &device : devices) templated = templated || uses_template(c.provider, device);
         // A template cannot describe a window under 256 pixels a side: small pictures are padded.
         if (templated) { step.w = std::max(w, 256); step.h = std::max(h, 256); }
+        // Core ML through ONNX Runtime returns a scrambled picture when a row of its half-float
+        // output is not a multiple of 64 bytes (seen with windows 676 pixels wide): the widths it
+        // is given are multiples of 32 pixels, the picture being padded on the right when needed.
+        int align = c.provider == "coreml" ? 32 : 2;
+        if (const char *forced = std::getenv("AJI_ALIGN"); forced && *forced) align = std::max(2, std::atoi(forced) / 2 * 2);
+        step.w = (step.w + align - 1) / align * align;
 
         // What the model reads around a pixel: from its description when there is one.
         step.reach = 56;
@@ -261,7 +267,7 @@ void load_steps(Context &c, int width, int height)
 
         int nx = 1, ny = 1;
         grid_for(c.settings.tiles.c_str(), (int)devices.size(), c.settings.reuse == "tiles", step.w, step.h, &nx, &ny);
-        step.plan = plan_tiles(step.w, step.h, nx, ny, step.reach);
+        step.plan = plan_tiles(step.w, step.h, nx, ny, step.reach, align);
         step.refs.assign(step.plan.tiles.size(), {});
         step.known.assign(step.plan.tiles.size(), 0);
 

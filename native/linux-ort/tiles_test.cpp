@@ -34,9 +34,9 @@ int main(int argc, char **argv)
     const int sizes[][2] = {{1280, 720}, {1920, 1080}, {960, 540}, {1720, 720}, {640, 360}, {256, 256}, {3840, 2160}, {722, 404}};
     const int grids[][2] = {{1, 1}, {2, 2}, {3, 2}, {2, 1}, {4, 3}};
     bool cover = true, inside = true, margins = true, even = true;
-    for (auto &s : sizes) for (auto &g : grids) for (int reach : {0, 36, 54}) {
+    for (auto &s : sizes) for (auto &g : grids) for (int reach : {0, 36, 54}) for (int align : {2, 32}) {
         const int w = s[0], h = s[1];
-        const TilePlan plan = plan_tiles(w, h, g[0], g[1], reach);
+        const TilePlan plan = plan_tiles(w, h, g[0], g[1], reach, align);
         std::vector<char> owner((size_t)w * h, 0);
         even = even && plan.width % 2 == 0 && plan.height % 2 == 0;
         for (size_t k = 0; k < plan.tiles.size(); k++) {
@@ -60,6 +60,9 @@ int main(int argc, char **argv)
         check(one.tiles.size() == 1 && one.width == 1280 && one.height == 720, "one tile is the whole frame");
         const TilePlan four = plan_tiles(1280, 720, 2, 2, 36);
         check(four.tiles.size() == 4 && four.width == 676 && four.height == 396, "2x2 of 720p: windows of 676x396 with an overlap of 36");
+        const TilePlan aligned = plan_tiles(1280, 720, 2, 2, 36, 32);
+        check(aligned.tiles.size() == 4 && aligned.width == 704 && aligned.height == 396 && aligned.tiles[1].wx == 576,
+              "aligned windows: 704 wide, the right ones start at 576");
         const TilePlan small = plan_tiles(128, 96, 2, 2, 36);
         check(small.tiles.size() == 1, "tiles smaller than their overlap are not cut");
         int nx, ny;

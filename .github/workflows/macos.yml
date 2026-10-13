@@ -133,9 +133,14 @@ jobs:
           echo "== two devices at once: four tiles shared by the GPU and the Neural Engine"
           AJI_ORT_PROVIDER=coreml AJI_REUSE=off AJI_TEST_COMPARE=ref-720.rgb ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 5 GPU+ANE 2>&1 | tee coreml-pair.log | tail -5
           grep -q 'plan: 2560x1440 active=1' coreml-pair.log
-          grep -q 'Tiles: 2x2 of 676x396' coreml-pair.log
+          grep -q 'Tiles: 2x2 of 704x396' coreml-pair.log
           grep -q 'COMPARE | largest difference [0-3] ' coreml-pair.log
-          for f in coreml-ALL.log coreml-GPU.log coreml-ANE.log coreml-1080.log coreml-pair.log; do
+          echo "== a width that is not a multiple of 32: padded for this engine, and what it gives when it is not"
+          AJI_ORT_PROVIDER=cpu AJI_REUSE=off AJI_TILES=1 AJI_TEST_DUMP=ref-676.rgb ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 676 396 2 | tail -3
+          AJI_ORT_PROVIDER=coreml AJI_REUSE=off AJI_TEST_COMPARE=ref-676.rgb ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 676 396 3 ALL 2>&1 | tee coreml-odd.log | tail -4
+          AJI_ALIGN=2 AJI_ORT_PROVIDER=coreml AJI_REUSE=off AJI_TEST_COMPARE=ref-676.rgb ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 676 396 3 ALL 2>&1 | tee coreml-odd-unpadded.log | tail -4 || true
+          grep -q 'COMPARE | largest difference' coreml-odd.log
+          for f in coreml-ALL.log coreml-GPU.log coreml-ANE.log coreml-1080.log coreml-pair.log coreml-odd.log coreml-odd-unpadded.log; do
             grep -E '^RESULT|^COMPARE|^Devices' "$f" | cut -c1-300 > short.txt; note "onnxruntime ${f%.log}" short.txt
           done
       - name: Native Core ML

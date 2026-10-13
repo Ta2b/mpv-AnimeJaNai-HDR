@@ -8,7 +8,7 @@ namespace aji {
 namespace {
 
 // Even boundaries of n parts of `size`, and the common window length along that axis.
-void cut(int size, int n, int reach, std::vector<int> *edges, int *window)
+void cut(int size, int n, int reach, int align, std::vector<int> *edges, int *window)
 {
     // A tile must be longer than what its neighbours read from it, or the windows of the two
     // ends would be the whole frame anyway.
@@ -23,20 +23,22 @@ void cut(int size, int n, int reach, std::vector<int> *edges, int *window)
             const int own = (*edges)[(size_t)i + 1] - (*edges)[(size_t)i];
             need = std::max(need, own + (i > 0 ? reach : 0) + (i + 1 < n ? reach : 0));
         }
-        need = std::min(size, (need + 1) / 2 * 2);
+        need = (need + 1) / 2 * 2;
+        if (align > 2) need = (need + align - 1) / align * align;
+        need = std::min(size, need);
     }
     *window = need;
 }
 
 } // namespace
 
-TilePlan plan_tiles(int w, int h, int nx, int ny, int reach)
+TilePlan plan_tiles(int w, int h, int nx, int ny, int reach, int align)
 {
     reach = std::max(0, (reach + 1) / 2 * 2);
     std::vector<int> xs, ys;
     TilePlan plan;
-    cut(w, std::max(1, nx), reach, &xs, &plan.width);
-    cut(h, std::max(1, ny), reach, &ys, &plan.height);
+    cut(w, std::max(1, nx), reach, align, &xs, &plan.width);
+    cut(h, std::max(1, ny), reach, 2, &ys, &plan.height);
     plan.nx = (int)xs.size() - 1;
     plan.ny = (int)ys.size() - 1;
     for (int j = 0; j < plan.ny; j++) {
