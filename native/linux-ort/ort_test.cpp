@@ -21,7 +21,8 @@ int main(int argc, char **argv)
     std::vector<unsigned char> in((size_t)w * h * 3), out((size_t)plan.width * plan.height * 3);
     for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) for (int k = 0; k < 3; k++)
         in[((size_t)y * w + x) * 3 + k] = (unsigned char)((x * 3 + y * 2 + k * 30) % 256);
-    double total = 0;
+    double total = 0, model = 0, best = 0;
+    std::string backend, lanes;
     for (int i = 0; i < frames; i++) {
         auto t0 = std::chrono::steady_clock::now();
         if (aji_vk_process(c, nullptr, 0, in.data(), (ptrdiff_t)w * 3, 1.0, out.data(), (ptrdiff_t)plan.width * 3)) {
@@ -29,7 +30,15 @@ int main(int argc, char **argv)
         }
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
         if (i > 0) total += ms;      // the first frame includes provider compilation
+        if (i > 0 && (best == 0 || ms < best)) best = ms;
         if (i == 0) std::printf("first frame: %.1f ms\n", ms);
+        // The engine rewrites its statistics at every frame: this frame's time inside the model.
+        std::ifstream stats("ort-stats.txt");
+        for (std::string line; std::getline(stats, line);) {
+            if (line.rfind("Backend: ", 0) == 0) backend = line.substr(9);
+            if (line.rfind("Lanes:", 0) == 0) lanes = line;
+            if (i > 0 && line.rfind("Model ms: ", 0) == 0) model += std::atof(line.c_str() + 10);
+        }
     }
     auto bounds = std::minmax_element(out.begin(), out.end());
     std::printf("average after the first frame: %.1f ms | output range %d..%d | centre pixel %d %d %d\n",
@@ -37,12 +46,16 @@ int main(int argc, char **argv)
                 out[((size_t)(plan.height / 2) * plan.width + plan.width / 2) * 3],
                 out[((size_t)(plan.height / 2) * plan.width + plan.width / 2) * 3 + 1],
                 out[((size_t)(plan.height / 2) * plan.width + plan.width / 2) * 3 + 2]);
-    {
-        std::ifstream stats("ort-stats.txt");
-        for (std::string line; std::getline(stats, line);)
-            if (line.rfind("Average model ms", 0) == 0 || line.rfind("Average conversion ms", 0) == 0)
-                std::printf("%s (first frame included)\n", line.c_str());
+    if (frames > 1) {
+        const double frame = total / (frames - 1), inside = model / (frames - 1);
+        // One line per run, easy to collect: everything after the first frame.
+        std::printf("RESULT | %s | %dx%d -> %dx%d | frame %.1f ms (best %.1f) | model %.1f ms | conversions %.1f ms | %.1f fps\n",
+                    backend.c_str(), w, h, plan.width, plan.height, frame, best, inside, frame - inside, 1000.0 / frame);
     }
+    if (!lanes.empty()) std::printf("%s\n", lanes.c_str());
+    // AJI_TEST_DUMP=file: the last output frame as raw RGB24, to compare two runs.
+    if (const char *dump = std::getenv("AJI_TEST_DUMP"); dump && *dump)
+        std::ofstream(dump, std::ios::binary).write((const char *)out.data(), (std::streamsize)out.size());
     aji_vk_destroy(c);
     return *bounds.first == *bounds.second ? 1 : 0;
 }

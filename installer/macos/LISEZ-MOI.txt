@@ -30,7 +30,9 @@ Réglages
 Dossier : ~/Library/Application Support/AnimeJaNai (créé au premier lancement).
   portable_config/script-opts/animejanai_mac.conf
       default_slot  profil au démarrage (0 = désactivé)
-      device        ALL, GPU, ANE (Neural Engine) ou CPU : essayez-les, le plus rapide dépend du Mac
+      device        ALL, GPU, ANE (Neural Engine) ou CPU : essayez-les, le plus rapide dépend du Mac.
+                    GPU+ANE coupe l'image en deux bandes traitées en même temps, une par
+                    processeur (non mesuré sur un vrai Mac : le paquet de mesure le compare)
   portable_config/script-opts/animejanai_hdr_auto.conf
       linux_hdr_output  auto (défaut : la vidéo SDR reste SDR), pq (conversion SDR vers HDR), sdr
       rtx_contrast, rtx_saturation, rtx_middle_gray, display_peak, paper_white : rendu HDR,

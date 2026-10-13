@@ -120,3 +120,52 @@ non publié). Pour le publier : passer `release-version.txt` à 3.8.0.16, pousse
 
 Conversion SDR vers HDR (`linux_hdr_output=pq`, `display_peak=1600`, `display_oled=no` conseillés
 pour l'écran XDR) : aucun retour de l'utilisateur. Ouverture depuis le Finder : aucun retour non plus.
+
+## 3.8.0.18 (13 octobre 2026) : réglages Core ML et deux processeurs à la fois
+
+Écrit sans Mac : compilé et vérifié fonctionnellement ici sous Linux (fournisseur CPU) et en
+intégration continue sur la machine Apple virtuelle. **Aucun gain n'est mesuré.**
+
+### Pourquoi 46 ms n'est sans doute pas un défaut de câblage
+
+Ordre de grandeur, à prendre comme une estimation et non une mesure : le modèle Performance fait
+environ 18 convolutions 3x3 à 48 canaux sur une image interne de 640x360 pour une entrée 720p,
+soit de l'ordre de 170 milliards d'opérations flottantes par image. La RTX 4070 Ti le fait en
+4,5 ms (TensorRT). Un GPU de M4 Pro donné pour environ 8 TFLOPS, exploité à moitié par Core ML,
+donne 40 à 50 ms : c'est ce qui a été mesuré (46 à 48 ms). Le chemin par ONNX Runtime ajoute des
+copies, mais il n'explique pas un facteur 2 : sur le GPU seul, le M4 Pro est proche de sa limite
+en 720p. Les leviers sont donc ailleurs.
+
+### Ce qui change
+
+- **Options Core ML** (`aji_ort.cpp`) : `SpecializationStrategy=FastPrediction` et
+  `AllowLowPrecisionAccumulationOnGPU=1` (sommes en demi-flottants dans les convolutions du GPU,
+  la précision que les modèles utilisent déjà). Retour aux anciens réglages pour comparer :
+  `AJI_ORT_COREML="SpecializationStrategy=Default;AllowLowPrecisionAccumulationOnGPU=0"`.
+- **Deux processeurs à la fois** : `device=GPU+ANE`. L'image d'entrée du modèle est coupée en
+  bandes horizontales, une session par processeur, exécutées en parallèle ; le GPU et le Neural
+  Engine sont deux processeurs distincts. Chaque bande voit 48 lignes au-delà de ses bords
+  (`AJI_ORT_OVERLAP`), ce que couvrent les convolutions : la sortie est identique à celle de
+  l'image entière, vérifié octet pour octet avec le fournisseur CPU sur les deux modèles, en
+  640x360, 1280x720 et avec le profil qui ramène le 1080p à 720p. `AJI_ORT_SPLIT` donne la part
+  de l'image du premier processeur (50 % par défaut). Limité aux profils à un seul modèle.
+- **Statistiques** (`Ctrl+j`) : avec deux processeurs, une ligne `Lanes` donne le temps de chacun,
+  pour régler leur part.
+- **Paquet de mesure** : une ligne `RESULT` par essai (temps par image hors première image, part
+  du modèle, part des conversions) et un classement final. Il compare chaque processeur seul,
+  les anciens réglages, puis les bandes GPU+ANE à 50, 60 et 70 %, en 540p, 720p et 1080p, avec
+  les deux modèles. `bench.command rapide` se limite à Performance en 720p.
+
+### Ce qu'il faut du vrai Mac
+
+Le fichier `resultats.txt` du paquet de mesure 3.8.0.18. Il dit, en une exécution : ce que valent
+le GPU et le Neural Engine séparément, ce qu'apportent les nouveaux réglages, et si les deux
+ensemble dépassent le meilleur des deux. Selon le classement, `device` et `AJI_ORT_SPLIT` seront
+fixés par défaut dans `animejanai_mac.conf`.
+
+### Pas fait
+
+Modèle Core ML natif sans ONNX Runtime, images gardées dans le GPU (décodage VideoToolbox sans
+copie), RIFE, Manager. Le premier n'a d'intérêt que si la mesure montre que le temps part dans
+ONNX Runtime et non dans le calcul.
+

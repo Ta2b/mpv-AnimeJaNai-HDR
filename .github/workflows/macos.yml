@@ -67,20 +67,36 @@ jobs:
           echo "== 1920x1080 through profile 1 (no resize in the benchmark bank), Core ML ALL"
           AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1920 1080 6 ALL 2>&1 | tee coreml-1080.log | tail -4
           echo "== what Core ML takes from the graph (1280x720): fused model, then original"
-          rm -rf models/coreml-cache/1280x720-ALL
+          rm -rf models/coreml-cache/1280x720-*
           AJI_ORT_LOG=0 AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 3 ALL > verbose-fused.log 2>&1 || true
           grep -E 'number of partitions|average after|Average|failed|is not supported|unsupported inputs' verbose-fused.log | cut -c1-330 | sort | uniq -c | head -20
           grep -q 'number of partitions supported by CoreML: 1 ' verbose-fused.log
-          rm -rf models/coreml-cache/1280x720-ALL
+          rm -rf models/coreml-cache/1280x720-*
           echo "== original"
           AJI_ORT_ORIGINAL=1 AJI_ORT_LOG=0 AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 3 ALL > verbose-original.log 2>&1 || true
           grep -E 'number of partitions|average after|Average' verbose-original.log | cut -c1-330 | head -6
-          rm -rf models/coreml-cache/1280x720-ALL
+          rm -rf models/coreml-cache/1280x720-*
           # A second size after the first: the compiled-model cache must not be shared between sizes.
           grep -q 'plan: 3840x2160 active=1' coreml-1080.log
           grep -q 'average after the first frame' coreml-1080.log
-          ls models/coreml-cache
-          ls models/coreml-cache | head
+          ls models/coreml-cache | head -20
+          echo "== two devices at once: the frame cut in two bands (GPU and Neural Engine)"
+          AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 5 GPU+ANE 2>&1 | tee coreml-bands.log | tail -4
+          grep -q 'plan: 2560x1440 active=1' coreml-bands.log
+          grep -q 'rows 0-360 + CoreML' coreml-bands.log
+          grep -q '^Lanes:' coreml-bands.log
+          AJI_ORT_SPLIT=65 AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 5 GPU+ANE 2>&1 | tee coreml-bands65.log | tail -3
+          grep -q 'rows 0-468 + CoreML' coreml-bands65.log
+          echo "== the options of before, for the comparison the benchmark makes"
+          AJI_ORT_COREML='SpecializationStrategy=Default;AllowLowPrecisionAccumulationOnGPU=0' AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 5 ALL 2>&1 | tee coreml-old.log | tail -2
+          grep -q '^RESULT | ONNX Runtime/CoreML ALL |' coreml-old.log
+          # The figures of the virtual runner say nothing about a real Mac; they are published
+          # so that a regression in the wiring is visible without the job log.
+          for f in coreml-ALL.log coreml-GPU.log coreml-ANE.log coreml-1080.log coreml-bands.log coreml-bands65.log coreml-old.log; do
+            line="$(grep '^RESULT' "$f" | head -1 | cut -c1-240)"
+            echo "::notice title=${f%.log}::${line:-no RESULT line}"
+          done
+          grep 'centre pixel' coreml-bands.log coreml-ALL.log
       - name: Benchmark bundle
         run: |
           b=AnimeJaNai-mac-bench

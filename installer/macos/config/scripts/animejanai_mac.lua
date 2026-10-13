@@ -8,7 +8,9 @@ local options = require 'mp.options'
 
 local o = {
     default_slot = 1,   -- profile applied when a file opens; 0 = off
-    device = 'ALL',     -- Core ML compute units: ALL, GPU, ANE (Neural Engine) or CPU
+    -- Core ML compute units: ALL, GPU, ANE (Neural Engine) or CPU. Two names joined by + cut the
+    -- frame in two bands processed at the same time, one per device: GPU+ANE.
+    device = 'ALL',
 }
 options.read_options(o, 'animejanai_mac')
 

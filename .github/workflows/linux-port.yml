@@ -152,6 +152,17 @@ jobs:
           AJI_ORT_PROVIDER=cpu ort-build/animejanai-ort-test ort-ci.conf BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx 1 320 180 3 | tee ort-ci.log
           grep -q 'plan: 640x360 active=1' ort-ci.log
           grep -q 'Backend: ONNX Runtime/CPU' ort-stats.txt
+      - name: A frame cut in bands must equal the whole frame
+        # Several devices (GPU+ANE on Apple Silicon) each take a band of the frame. With the CPU
+        # provider on every band, the output must be the same bytes as the whole frame.
+        run: |
+          models=BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx
+          AJI_TEST_DUMP=whole.rgb AJI_ORT_PROVIDER=cpu ort-build/animejanai-ort-test ort-ci.conf "$models" 1 640 360 2 CPU | tail -1
+          AJI_TEST_DUMP=bands.rgb AJI_ORT_PROVIDER=cpu ort-build/animejanai-ort-test ort-ci.conf "$models" 1 640 360 2 CPU+CPU | tee bands.log | tail -2
+          grep -q 'rows 0-180 + CPU rows 180-360' bands.log
+          cmp whole.rgb bands.rgb
+          AJI_ORT_SPLIT=65 AJI_TEST_DUMP=bands65.rgb AJI_ORT_PROVIDER=cpu ort-build/animejanai-ort-test ort-ci.conf "$models" 1 640 360 2 CPU+CPU | tail -2
+          cmp whole.rgb bands65.rgb
       - name: Run the same profile through the OpenVINO provider (CPU device)
         # No Intel GPU on the runner: this proves that the provider and the OpenVINO runtime load
         # and run the model. The GPU device needs the host's Intel OpenCL driver.

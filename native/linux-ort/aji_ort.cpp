@@ -87,23 +87,6 @@ Image from_rgb24(const unsigned char *pixels, ptrdiff_t stride, int w, int h)
     return m;
 }
 
-void to_rgb24(const Image &m, unsigned char *pixels, ptrdiff_t stride)
-{
-    const float *r = m.plane(0), *g = m.plane(1), *b = m.plane(2);
-    const int w = m.w;
-    parallel((size_t)m.h, 64, [=](size_t first, size_t last) {
-        for (size_t y = first; y < last; y++) {
-            unsigned char *row = pixels + (ptrdiff_t)y * stride;
-            const size_t o = y * w;
-            for (int x = 0; x < w; x++) {
-                row[3 * x] = (unsigned char)(std::min(std::max(r[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
-                row[3 * x + 1] = (unsigned char)(std::min(std::max(g[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
-                row[3 * x + 2] = (unsigned char)(std::min(std::max(b[o + x], 0.0f), 1.0f) * 255.0f + 0.5f);
-            }
-        }
-    });
-}
-
 // Bilinear resize (half-pixel centres), as in the NCNN/Vulkan engine.
 Image resize(const Image &src, int w, int h)
 {
@@ -223,9 +206,23 @@ void merge_env(std::unordered_map<std::string, std::string> &options, const char
     }
 }
 
+// One session of a model. A model normally has one lane, the whole frame. With several devices
+// (device "GPU+ANE" on Apple Silicon) the frame is cut in horizontal bands, one lane per band,
+// and the lanes run at the same time: the GPU and the Neural Engine are separate processors.
+struct Lane {
+    std::unique_ptr<Ort::Session> session;
+    std::string label;
+    // The band of the model input this lane owns [first, last) and the window it is given,
+    // [top, top + rows): the band plus the overlap the convolutions need to see past its edges.
+    int first = 0, last = 0, top = 0, rows = 0;
+    std::vector<uint16_t> halves;
+    std::vector<float> floats;
+    double ms = 0, total_ms = 0;
+};
+
 struct Step {
     AjiModelConf conf;
-    std::unique_ptr<Ort::Session> session;
+    std::vector<Lane> lanes;
     std::string input, output;
     bool half_in = false, half_out = false;
 };
@@ -238,7 +235,6 @@ struct Context {
     bool rife_skipped = false;
     Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "aji_ort"};
     std::vector<Step> steps;
-    std::vector<uint16_t> halves;
     uint64_t count = 0;
     double total_ms = 0;
     // Where a frame's time goes: the model (ONNX Runtime, provider included) and the rest
@@ -255,8 +251,15 @@ std::string wanted_provider(const AjiConf &conf)
     throw std::runtime_error("The ONNX Runtime engine handles backend=MIGraphX, OpenVINO, CoreML or CPU, not " + conf.backend);
 }
 
-// width x height: the input size of the model the session is for.
-Ort::SessionOptions session_options(Context &c, int width, int height)
+int env_int(const char *name, int fallback, int low, int high)
+{
+    const char *value = std::getenv(name);
+    if (!value || !*value) return fallback;
+    return std::min(std::max(std::atoi(value), low), high);
+}
+
+// width x height: the input size of the model the session is for. device: this lane's device.
+Ort::SessionOptions session_options(Context &c, const std::string &lane_device, int width, int height, std::string *label)
 {
     Ort::SessionOptions options;
     // ONNX Runtime's optimisation must stay on: it folds the shape arithmetic of the models once
@@ -273,26 +276,35 @@ Ort::SessionOptions session_options(Context &c, int width, int height)
     if (c.provider == "migraphx") {
         // AMD GPUs through ROCm. FP16 as shipped; the compiled program is cached by MIGraphX.
         OrtMIGraphXProviderOptions migraphx{};
-        migraphx.device_id = c.device.empty() ? 0 : std::atoi(c.device.c_str());
+        migraphx.device_id = lane_device.empty() ? 0 : std::atoi(lane_device.c_str());
         migraphx.migraphx_fp16_enable = 1;
         options.AppendExecutionProvider_MIGraphX(migraphx);
-        c.provider_label = "MIGraphX";
+        *label = "MIGraphX";
     } else if (c.provider == "openvino") {
         // Intel GPUs. device: GPU, GPU.0, GPU.1 or CPU; empty = GPU.
         std::unordered_map<std::string, std::string> openvino{
-            {"device_type", c.device.empty() ? "GPU" : c.device}, {"precision", "FP16"}};
+            {"device_type", lane_device.empty() ? "GPU" : lane_device}, {"precision", "FP16"}};
         if (lower(openvino["device_type"]) == "cpu") openvino["precision"] = "FP32";
         merge_env(openvino, "AJI_ORT_OPENVINO");
         options.AppendExecutionProvider_OpenVINO_V2(openvino);
-        c.provider_label = "OpenVINO " + openvino["device_type"];
+        *label = "OpenVINO " + openvino["device_type"];
     } else if (c.provider == "coreml") {
         // Apple Silicon. device: ALL (default), GPU, ANE (Neural Engine) or CPU. ML Program keeps
         // the models in half floats; the compiled model is cached next to the ONNX files.
-        const std::string device = lower(c.device);
+        const std::string device = lower(lane_device);
         const std::string units = device == "gpu" ? "CPUAndGPU" : device == "ane" || device == "npu" ? "CPUAndNeuralEngine"
             : device == "cpu" ? "CPUOnly" : "ALL";
+        // FastPrediction: Core ML spends longer preparing the model to make each prediction
+        // faster. Low-precision accumulation: half-float sums in the GPU convolutions, the
+        // precision the models already use. Both can be turned off for a comparison:
+        // AJI_ORT_COREML="SpecializationStrategy=Default;AllowLowPrecisionAccumulationOnGPU=0".
         std::unordered_map<std::string, std::string> coreml{
-            {"ModelFormat", "MLProgram"}, {"MLComputeUnits", units}, {"RequireStaticInputShapes", "1"}};
+            {"ModelFormat", "MLProgram"}, {"MLComputeUnits", units}, {"RequireStaticInputShapes", "1"},
+            {"SpecializationStrategy", "FastPrediction"}, {"AllowLowPrecisionAccumulationOnGPU", "1"}};
+        // Read first: the cache folder below is named after the options really in use.
+        merge_env(coreml, "AJI_ORT_COREML");
+        const bool fast = coreml["SpecializationStrategy"] == "FastPrediction";
+        const bool low = coreml["AllowLowPrecisionAccumulationOnGPU"] == "1";
         std::error_code ignored;
         // AJI_ORT_CACHE names another folder: an application bundle is read-only once installed.
         const char *chosen = std::getenv("AJI_ORT_CACHE");
@@ -303,16 +315,31 @@ Ort::SessionOptions session_options(Context &c, int width, int height)
             cache = std::filesystem::path(home) / "Library/Caches/AnimeJaNai/coreml";
         // One folder per input size and compute units: Core ML keys its cache on the model
         // alone, and a model compiled for another size fails at the first frame.
-        cache /= std::to_string(width) + "x" + std::to_string(height) + "-" + units;
+        cache /= std::to_string(width) + "x" + std::to_string(height) + "-" + coreml["MLComputeUnits"]
+            + (fast ? "-fast" : "") + (low ? "-low" : "");
         std::filesystem::create_directories(cache, ignored);
-        if (std::filesystem::is_directory(cache, ignored)) coreml["ModelCacheDirectory"] = cache.string();
-        merge_env(coreml, "AJI_ORT_COREML");
+        if (std::filesystem::is_directory(cache, ignored) && !coreml.count("ModelCacheDirectory"))
+            coreml["ModelCacheDirectory"] = cache.string();
         options.AppendExecutionProvider("CoreML", coreml);
-        c.provider_label = "CoreML " + coreml["MLComputeUnits"];
+        *label = "CoreML " + coreml["MLComputeUnits"] + (fast ? " fast" : "") + (low ? " half-sums" : "");
     } else {
-        c.provider_label = "CPU";
+        *label = "CPU";
     }
     return options;
+}
+
+// "GPU+ANE" -> {"GPU", "ANE"}; a plain device gives one entry.
+std::vector<std::string> split_devices(const std::string &device)
+{
+    std::vector<std::string> list;
+    size_t at = 0;
+    while (true) {
+        const size_t plus = device.find('+', at);
+        list.push_back(device.substr(at, plus == std::string::npos ? std::string::npos : plus - at));
+        if (plus == std::string::npos) break;
+        at = plus + 1;
+    }
+    return list;
 }
 
 // width x height: the source frame. Every model gets its exact input size: the OpenVINO provider
@@ -321,6 +348,17 @@ Ort::SessionOptions session_options(Context &c, int width, int height)
 void load_steps(Context &c, int width, int height)
 {
     c.steps.clear();
+    c.provider_label.clear();
+    size_t models = 0;
+    for (const auto &model : c.chain.models) if (!model.name.empty()) models++;
+    std::vector<std::string> devices = split_devices(c.device);
+    // Bands need a single model: a second model would have to stitch the first one's bands.
+    if (models != 1 && devices.size() > 1) devices.resize(1);
+    // The band of the first device, in percent of the height (the others share the rest), and
+    // the rows each band sees past its own edges. 48 rows cover what the models' convolutions
+    // reach; less would leave a visible seam.
+    const int share = env_int("AJI_ORT_SPLIT", 100 / (int)devices.size(), 5, 95);
+    const int overlap = env_int("AJI_ORT_OVERLAP", 48, 0, 512) / 2 * 2;
     int w = width, h = height;
     for (const auto &model : c.chain.models) {
         if (model.name.empty()) continue;
@@ -336,53 +374,82 @@ void load_steps(Context &c, int width, int height)
         Step step;
         step.conf = model;
         resized_dims(w, h, model, &w, &h);
-        Ort::SessionOptions options = session_options(c, w, h);
-        options.AddFreeDimensionOverrideByName("height", h);
-        options.AddFreeDimensionOverrideByName("width", w);
+        // Too small to be worth cutting: one lane.
+        size_t lanes = devices.size();
+        if (h < (int)lanes * (2 * overlap + 32)) lanes = 1;
+        int row = 0;
+        for (size_t i = 0; i < lanes; i++) {
+            Lane lane;
+            lane.first = row;
+            const int rest = (int)(lanes - i);
+            const int take = i == 0 && lanes > 1 ? h * share / 100 : (h - row) / rest;
+            lane.last = i + 1 == lanes ? h : std::min(h - 2 * (rest - 1), std::max(row + 2, row + take / 2 * 2));
+            row = lane.last;
+            lane.top = std::max(0, lane.first - overlap);
+            lane.rows = std::min(h, lane.last + overlap) - lane.top;
+            Ort::SessionOptions options = session_options(c, devices[i], w, lane.rows, &lane.label);
+            options.AddFreeDimensionOverrideByName("height", lane.rows);
+            options.AddFreeDimensionOverrideByName("width", w);
+            lane.session = std::make_unique<Ort::Session>(c.env, path.c_str(), options);
+            step.lanes.push_back(std::move(lane));
+        }
         w *= 2; h *= 2; // the supported AnimeJaNai spatial models are 2x
-        step.session = std::make_unique<Ort::Session>(c.env, path.c_str(), options);
+        Ort::Session &session = *step.lanes[0].session;
         Ort::AllocatorWithDefaultOptions allocator;
-        require(step.session->GetInputCount() == 1 && step.session->GetOutputCount() >= 1,
+        require(session.GetInputCount() == 1 && session.GetOutputCount() >= 1,
                 "Unexpected model signature: " + model.name);
-        step.input = step.session->GetInputNameAllocated(0, allocator).get();
-        step.output = step.session->GetOutputNameAllocated(0, allocator).get();
+        step.input = session.GetInputNameAllocated(0, allocator).get();
+        step.output = session.GetOutputNameAllocated(0, allocator).get();
         auto kind = [](const Ort::TypeInfo &info) { return info.GetTensorTypeAndShapeInfo().GetElementType(); };
-        auto in = kind(step.session->GetInputTypeInfo(0)), out = kind(step.session->GetOutputTypeInfo(0));
+        auto in = kind(session.GetInputTypeInfo(0)), out = kind(session.GetOutputTypeInfo(0));
         auto supported = [](ONNXTensorElementDataType t) {
             return t == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT || t == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16; };
         require(supported(in) && supported(out), "Model tensors must be float or half float: " + model.name);
         step.half_in = in == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
         step.half_out = out == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
+        for (const auto &lane : step.lanes) {
+            if (!c.provider_label.empty()) c.provider_label += " + ";
+            c.provider_label += lane.label;
+            if (step.lanes.size() > 1)
+                c.provider_label += " rows " + std::to_string(lane.first) + "-" + std::to_string(lane.last);
+        }
         c.steps.push_back(std::move(step));
     }
 }
 
-// Runs one model. The input is either a float image or, for the first model of a chain that
-// takes half floats at the source size, the frame's bytes directly.
-std::vector<Ort::Value> infer(Context &c, Step &step, const Image *in, const unsigned char *pixels,
-                              ptrdiff_t stride, int w, int h)
+// 256 possible byte values as half floats: converted once, then looked up.
+const uint16_t *byte_halves()
 {
-    require(w % 2 == 0 && h % 2 == 0, "AnimeJaNai unshuffle requires even dimensions");
+    static uint16_t table[256];
+    static bool ready = false;
+    if (!ready) {
+        float values[256];
+        for (int i = 0; i < 256; i++) values[i] = i * (1.0f / 255.0f);
+        floats_to_halves_part(values, table, 256);
+        ready = true;
+    }
+    return table;
+}
+
+// Runs one lane on its window of the model input. The input is either a float image or, for the
+// first model of a chain that takes half floats at the source size, the frame's bytes directly.
+// `spread`: this lane may use the worker threads for its own conversions (single lane only).
+Ort::Value run_lane(const Step &step, Lane &lane, const Image *in, const unsigned char *pixels,
+                    ptrdiff_t stride, int w, bool spread)
+{
+    const int h = lane.rows, top = lane.top;
     const int64_t shape[4] = {1, 3, h, w};
     const size_t plane = (size_t)w * h, count = 3 * plane;
     Ort::MemoryInfo memory = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     Ort::Value input{nullptr};
     if (step.half_in) {
-        c.halves.resize(count);
+        lane.halves.resize(count);
+        uint16_t *r = lane.halves.data(), *g = r + plane, *b = g + plane;
         if (pixels) {
-            // 256 possible values: converted once, then looked up.
-            static uint16_t table[256];
-            static bool ready = false;
-            if (!ready) {
-                float values[256];
-                for (int i = 0; i < 256; i++) values[i] = i * (1.0f / 255.0f);
-                floats_to_halves_part(values, table, 256);
-                ready = true;
-            }
-            uint16_t *r = c.halves.data(), *g = r + plane, *b = g + plane;
-            parallel((size_t)h, 64, [=](size_t first, size_t last) {
+            const uint16_t *table = byte_halves();
+            auto body = [=](size_t first, size_t last) {
                 for (size_t y = first; y < last; y++) {
-                    const unsigned char *row = pixels + (ptrdiff_t)y * stride;
+                    const unsigned char *row = pixels + (ptrdiff_t)(y + top) * stride;
                     const size_t o = y * w;
                     for (int x = 0; x < w; x++) {
                         r[o + x] = table[row[3 * x]];
@@ -390,22 +457,33 @@ std::vector<Ort::Value> infer(Context &c, Step &step, const Image *in, const uns
                         b[o + x] = table[row[3 * x + 2]];
                     }
                 }
-            });
+            };
+            if (spread) parallel((size_t)h, 64, body); else body((size_t)0, (size_t)h);
         } else {
-            floats_to_halves(in->data.data(), c.halves.data(), count);
+            for (int k = 0; k < 3; k++) {
+                const float *src = in->plane(k) + (size_t)top * w;
+                if (spread) floats_to_halves(src, r + k * plane, plane);
+                else floats_to_halves_part(src, r + k * plane, plane);
+            }
         }
-        input = Ort::Value::CreateTensor(memory, c.halves.data(), count * sizeof(uint16_t), shape, 4,
+        input = Ort::Value::CreateTensor(memory, lane.halves.data(), count * sizeof(uint16_t), shape, 4,
                                          ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16);
-    } else {
+    } else if (top == 0 && h == in->h) {
         input = Ort::Value::CreateTensor<float>(memory, const_cast<float *>(in->data.data()), count, shape, 4);
+    } else {
+        lane.floats.resize(count);
+        for (int k = 0; k < 3; k++)
+            std::copy_n(in->plane(k) + (size_t)top * w, plane, lane.floats.data() + k * plane);
+        input = Ort::Value::CreateTensor<float>(memory, lane.floats.data(), count, shape, 4);
     }
     const char *input_names[1] = {step.input.c_str()}, *output_names[1] = {step.output.c_str()};
     const auto run_start = std::chrono::steady_clock::now();
-    auto outputs = step.session->Run(Ort::RunOptions{nullptr}, input_names, &input, 1, output_names, 1);
-    c.last_model_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - run_start).count();
+    auto outputs = lane.session->Run(Ort::RunOptions{nullptr}, input_names, &input, 1, output_names, 1);
+    lane.ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - run_start).count();
     auto dims = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
-    require(dims.size() == 4 && dims[1] == 3 && dims[2] > 0 && dims[3] > 0, "Model inference returned an unexpected shape");
-    return outputs;
+    require(dims.size() == 4 && dims[1] == 3 && dims[2] == 2 * (int64_t)h && dims[3] == 2 * (int64_t)w,
+            "Model inference returned an unexpected shape");
+    return std::move(outputs[0]);
 }
 
 Image to_image(const Ort::Value &value, const Step &step)
@@ -417,23 +495,26 @@ Image to_image(const Ort::Value &value, const Step &step)
     return out;
 }
 
-// Model output (planar, half or single floats) straight to RGB24.
-void to_rgb24(const Ort::Value &value, const Step &step, int w, int h, unsigned char *pixels, ptrdiff_t stride)
+// Rows [first, first + rows) of a model output (planar, half or single floats, w x h) straight to
+// RGB24 rows starting at `pixels`.
+void to_rgb24(const Ort::Value &value, const Step &step, int w, int h, int first, int rows,
+              unsigned char *pixels, ptrdiff_t stride, bool spread)
 {
     const size_t plane = (size_t)w * h;
     const bool half = step.half_out;
     const uint16_t *hs = half ? value.GetTensorData<uint16_t>() : nullptr;
     const float *fs = half ? nullptr : value.GetTensorData<float>();
-    parallel((size_t)h, 32, [=](size_t first, size_t last) {
+    auto body = [=](size_t begin, size_t end) {
         std::vector<float> line((size_t)3 * w);
-        for (size_t y = first; y < last; y++) {
+        for (size_t y = begin; y < end; y++) {
+            const size_t source = (y + first) * w;
             const float *r, *g, *b;
             if (half) {
                 for (int k = 0; k < 3; k++)
-                    halves_to_floats_part(hs + k * plane + y * w, line.data() + (size_t)k * w, (size_t)w);
+                    halves_to_floats_part(hs + k * plane + source, line.data() + (size_t)k * w, (size_t)w);
                 r = line.data(); g = r + w; b = g + w;
             } else {
-                r = fs + y * w; g = r + plane; b = g + plane;
+                r = fs + source; g = r + plane; b = g + plane;
             }
             unsigned char *row = pixels + (ptrdiff_t)y * stride;
             for (int x = 0; x < w; x++) {
@@ -442,7 +523,8 @@ void to_rgb24(const Ort::Value &value, const Step &step, int w, int h, unsigned 
                 row[3 * x + 2] = (unsigned char)(std::min(std::max(b[x], 0.0f), 1.0f) * 255.0f + 0.5f);
             }
         }
-    });
+    };
+    if (spread) parallel((size_t)rows, 32, body); else body((size_t)0, (size_t)rows);
 }
 
 // The whole chain, from the source frame's bytes to the output frame's bytes.
@@ -454,23 +536,48 @@ void upscale(Context &c, const unsigned char *pixels, ptrdiff_t stride, unsigned
         Step &step = c.steps[i];
         int mw, mh;
         resized_dims(w, h, step.conf, &mw, &mh);
-        std::vector<Ort::Value> outputs;
-        if (i == 0 && step.half_in && mw == w && mh == h) {
-            outputs = infer(c, step, nullptr, pixels, stride, w, h);
-        } else {
+        require(mw % 2 == 0 && mh % 2 == 0, "AnimeJaNai unshuffle requires even dimensions");
+        const bool direct = i == 0 && step.half_in && mw == w && mh == h;
+        Image sized;
+        if (!direct) {
             if (i == 0) m = from_rgb24(pixels, stride, w, h);
-            Image sized = resize(m, mw, mh);
-            outputs = infer(c, step, &sized, nullptr, 0, mw, mh);
+            sized = resize(m, mw, mh);
         }
-        auto dims = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
-        w = (int)dims[3]; h = (int)dims[2];
-        if (i + 1 == c.steps.size()) {
-            require(w == c.plan.width && h == c.plan.height,
-                    "Model output dimensions differ from the configured 2x profile");
-            to_rgb24(outputs[0], step, w, h, output, output_stride);
+        const Image *source = direct ? nullptr : &sized;
+        const unsigned char *bytes = direct ? pixels : nullptr;
+        const bool last = i + 1 == c.steps.size();
+        w = 2 * mw; h = 2 * mh;
+        if (last) require(w == c.plan.width && h == c.plan.height,
+                          "Model output dimensions differ from the configured 2x profile");
+        if (step.lanes.size() == 1) {
+            Lane &lane = step.lanes[0];
+            Ort::Value value = run_lane(step, lane, source, bytes, stride, mw, true);
+            c.last_model_ms += lane.ms;
+            if (last) to_rgb24(value, step, w, h, 0, h, output, output_stride, true);
+            else m = to_image(value, step);
         } else {
-            m = to_image(outputs[0], step);
+            // One thread per lane: each converts its window, runs its device and writes its own
+            // band of the output. Only the last model of a chain is cut in bands (load_steps).
+            std::vector<std::string> errors(step.lanes.size());
+            auto work = [&](size_t k) {
+                try {
+                    Lane &lane = step.lanes[k];
+                    Ort::Value value = run_lane(step, lane, source, bytes, stride, mw, false);
+                    to_rgb24(value, step, w, 2 * lane.rows, 2 * (lane.first - lane.top), 2 * (lane.last - lane.first),
+                             output + (ptrdiff_t)(2 * lane.first) * output_stride, output_stride, false);
+                } catch (const std::exception &e) { errors[k] = e.what(); }
+            };
+            std::vector<std::thread> workers;
+            for (size_t k = 1; k < step.lanes.size(); k++) workers.emplace_back(work, k);
+            work(0);
+            for (auto &t : workers) t.join();
+            for (const auto &error : errors) require(error.empty(), error);
+            // The frame waits for the slowest lane.
+            double slowest = 0;
+            for (const auto &lane : step.lanes) slowest = std::max(slowest, lane.ms);
+            c.last_model_ms += slowest;
         }
+        for (auto &lane : step.lanes) lane.total_ms += lane.ms;
     }
 }
 } // namespace
@@ -552,6 +659,15 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
               << "\nInference ms: " << ms << "\nAverage inference ms: " << c.total_ms / c.count
               << "\nModel ms: " << c.last_model_ms << "\nAverage model ms: " << c.model_ms / c.count
               << "\nAverage conversion ms: " << (c.total_ms - c.model_ms) / c.count << "\n";
+            // With several devices: each one's own time, to choose the share of the frame it gets.
+            for (const auto &step : c.steps) {
+                if (step.lanes.size() < 2) continue;
+                f << "Lanes:";
+                for (const auto &lane : step.lanes)
+                    f << " [" << lane.label << " rows " << lane.first << "-" << lane.last << ": " << lane.ms
+                      << " ms, average " << lane.total_ms / c.count << "]";
+                f << "\n";
+            }
         }
         return 0;
     } catch (const std::exception &e) { c.error = e.what(); return -1; }

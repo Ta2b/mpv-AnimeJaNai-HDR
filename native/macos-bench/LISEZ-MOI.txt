@@ -11,14 +11,28 @@ en adaptant le chemin du dossier :
     xattr -dr com.apple.quarantine ~/Downloads/AnimeJaNai-mac-bench
     ~/Downloads/AnimeJaNai-mac-bench/bench.command
 
-La mesure dure quelques minutes. La première image de chaque essai est lente : Core ML compile
-le modèle (le résultat est gardé dans models/coreml-cache).
+La mesure complète dure une dizaine de minutes la première fois : Core ML compile le modèle à
+chaque nouvel essai (le résultat est gardé dans models/coreml-cache). Pour un essai court,
+Performance en 720p seulement :
+
+    ~/Downloads/AnimeJaNai-mac-bench/bench.command rapide
+
+Ce qui est comparé
+------------------
+seul    chaque processeur seul : ALL (Core ML choisit), GPU, ANE (Neural Engine)
+ancien  les réglages Core ML d'avant la 3.8.0.18, pour chiffrer le gain des nouveaux
+bandes  l'image coupée en deux bandes traitées en même temps, une par processeur (GPU+ANE),
+        avec 50, 60 puis 70 % de l'image pour le premier
+taille  les mêmes essais en 960x540 et 1920x1080 ; balanced : le modèle Balanced
 
 Lire le résultat
 ----------------
-Le fichier resultats.txt contient, pour chaque essai, la ligne
-    average after the first frame: X ms
-C'est le temps par image, copies en mémoire comprises. Pour une vidéo à 24 images par seconde il
-faut moins de 41 ms ; pour 60 images par seconde, moins de 16 ms.
+Le fichier resultats.txt contient une ligne RESULT par essai, puis un classement du plus rapide
+au plus lent :
+    RESULT | bandes | profil 1 | ... | frame X ms (best Y) | model Z ms | conversions W ms | N fps
+frame est le temps par image, copies en mémoire comprises ; model la part passée dans Core ML.
+Pour une vidéo à 24 images par seconde il faut moins de 41,7 ms. Les essais « bandes » ajoutent une
+ligne Lanes avec le temps de chaque processeur : s'ils sont très différents, la part de l'image
+de chacun est à ajuster.
 
 Envoyer le fichier resultats.txt en entier.
