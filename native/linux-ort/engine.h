@@ -1,0 +1,80 @@
+// Shared by the engine core and its executors.
+//
+// The core (aji_ort.cpp) reads the profile, resizes, cuts the model input in tiles, decides which
+// tiles changed since they were last computed, and hands the others to executors. An executor is
+// one device running one model on windows of one fixed size: ONNX Runtime with a provider
+// (exec_ort.cpp), Core ML or Metal on Apple Silicon (native/apple), or the plain C++ reference
+// used by the tests (exec_ref.cpp).
+#pragma once
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <vector>
+
+namespace aji {
+
+inline void require(bool value, const std::string &message) { if (!value) throw std::runtime_error(message); }
+
+inline std::string lower(std::string s)
+{
+    for (auto &ch : s) ch = (char)((ch >= 'A' && ch <= 'Z') ? ch - 'A' + 'a' : ch);
+    return s;
+}
+
+// Runs body(first, last) over [0, count) on several threads. The host-side work of a frame is
+// a few passes over millions of pixels: on one core it costs more than the model itself.
+template <typename Body> void parallel(size_t count, size_t grain, Body body)
+{
+    static const unsigned cores = std::max(1u, std::min(8u, std::thread::hardware_concurrency()));
+    const size_t parts = std::min<size_t>(cores, std::max<size_t>(1, count / std::max<size_t>(1, grain)));
+    if (parts <= 1) { body((size_t)0, count); return; }
+    std::vector<std::thread> workers;
+    workers.reserve(parts - 1);
+    for (size_t k = 1; k < parts; k++)
+        workers.emplace_back([=] { body(count * k / parts, count * (k + 1) / parts); });
+    body((size_t)0, count / parts);
+    for (auto &w : workers) w.join();
+}
+
+// One window to compute. `in` is the top-left pixel of a width x height RGB24 window (the size the
+// executor was made for); the model doubles it. The executor writes the crop_w x crop_h region
+// that starts at (crop_x, crop_y) of that doubled window to `out`, RGB24.
+struct Job {
+    const uint8_t *in = nullptr;
+    ptrdiff_t in_stride = 0;
+    uint8_t *out = nullptr;
+    ptrdiff_t out_stride = 0;
+    int crop_x = 0, crop_y = 0, crop_w = 0, crop_h = 0;
+    // The executor is the only one working: it may use the helper threads for its conversions.
+    bool spread = false;
+};
+
+class Executor {
+public:
+    virtual ~Executor() = default;
+    virtual void run(const Job &job) = 0;
+    std::string label;   // "CoreML GPU", "Metal", "CPU"...
+    std::string note;    // where the model really runs, when the device can tell
+};
+
+struct ExecutorRequest {
+    std::string provider;     // cpu, openvino, migraphx, coreml, coremlnative, metal, reference
+    std::string device;       // one device name; its meaning depends on the provider
+    std::string models_dir;   // folder of NAME.onnx (and NAME.ajm, NAME.mlpackage on macOS)
+    std::string model;        // NAME
+    std::string cache_dir;    // writable folder for compiled models; may be empty
+    int width = 0, height = 0;
+};
+
+std::unique_ptr<Executor> make_ort_executor(const ExecutorRequest &request);
+std::unique_ptr<Executor> make_reference_executor(const ExecutorRequest &request);
+#if defined(__APPLE__)
+std::unique_ptr<Executor> make_coreml_executor(const ExecutorRequest &request);
+std::unique_ptr<Executor> make_metal_executor(const ExecutorRequest &request);
+#endif
+
+} // namespace aji

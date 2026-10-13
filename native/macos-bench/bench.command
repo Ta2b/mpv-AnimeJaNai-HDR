@@ -1,57 +1,93 @@
 #!/bin/bash
-# Mesure la vitesse des modèles AnimeJaNai avec Core ML sur ce Mac.
-# Résultat dans resultats.txt, à côté de ce script : une ligne RESULT par essai, puis un classement.
-#   ./bench.command          mesure complète (une dizaine de minutes la première fois)
-#   ./bench.command rapide   Performance en 720p seulement
+# Mesure la vitesse des modèles AnimeJaNai sur ce Mac avec les trois moteurs et chaque processeur.
+# Une ligne RESULT par essai, puis un classement et le réglage à choisir dans le Manager.
+#   bench.command          mesure complète (dix à quinze minutes la première fois)
+#   bench.command rapide   Performance en 720p seulement
+# Le Manager lance ce même script (Run Benchmarks) depuis l'application ; il fonctionne aussi
+# seul, dans le dossier AnimeJaNai-mac-bench.
 cd "$(dirname "$0")" || exit 1
-xattr -dr com.apple.quarantine . 2>/dev/null
-out=resultats.txt
-quick="${1:-}"
+mode="${1:-}"
+tool="${AJI_BENCH_TOOL:-./animejanai-ort-test}"
+models="${AJI_BENCH_MODELS:-models}"
+conf="${AJI_BENCH_CONF:-bench.conf}"
+out="${AJI_BENCH_OUT:-resultats.txt}"
+work="${AJI_BENCH_WORK:-.}"
+[ -x "$tool" ] || { echo "Outil de mesure introuvable : $tool"; exit 1; }
+[ "$tool" = ./animejanai-ort-test ] && xattr -dr com.apple.quarantine . 2>/dev/null
+mkdir -p "$work" && cd_work="$work"
+tool="$(cd "$(dirname "$tool")" && pwd)/$(basename "$tool")"
+models="$(cd "$models" && pwd)"
+conf="$(cd "$(dirname "$conf")" && pwd)/$(basename "$conf")"
+case "$out" in /*) ;; *) out="$(pwd)/$out" ;; esac
+cd "$cd_work" || exit 1
 {
-    echo "AnimeJaNai - mesure Core ML - $(date)"
+    echo "AnimeJaNai - mesure des moteurs - $(date)"
     sw_vers 2>/dev/null
     sysctl -n machdep.cpu.brand_string 2>/dev/null
     system_profiler SPHardwareDataType 2>/dev/null | grep -E 'Model Name|Chip|Memory|Cores'
+    echo "Aucune image n'est réutilisée ici (engine_reuse=off) : c'est le coût d'une image entièrement nouvelle."
 } | tee "$out"
 
-# essai NOM PROFIL LARGEUR HAUTEUR DEVICE [VARIABLES...]
+frames=30
+[ "$mode" = essai ] && frames=3
+# essai MOTEUR CIBLE PROFIL LARGEUR HAUTEUR
+#   MOTEUR : coreml (Core ML par ONNX Runtime), coremlnative (Core ML natif), metal
 essai() {
-    local name="$1" slot="$2" w="$3" h="$4" device="$5"; shift 5
-    local frames=40
-    [ "$device" = CPU ] && frames=6
+    local engine="$1" device="$2" slot="$3" w="$4" h="$5" n="$frames"
+    [ "$device" = CPU ] && n=4
     echo | tee -a "$out"
-    echo "== $name | profil $slot | ${w}x${h} | $device $*" | tee -a "$out"
-    env AJI_ORT_PROVIDER=coreml "$@" ./animejanai-ort-test bench.conf models "$slot" "$w" "$h" "$frames" "$device" 2>&1 \
-        | grep -E 'RESULT|Lanes|failed|error' | sed "s/^RESULT/RESULT | $name | profil $slot/" | cut -c1-400 | tee -a "$out"
+    echo "== $engine | $device | profil $slot | ${w}x${h}" | tee -a "$out"
+    AJI_ORT_PROVIDER="$engine" AJI_REUSE=off "$tool" "$conf" "$models" "$slot" "$w" "$h" "$n" "$device" 2>&1 \
+        | grep -E '^RESULT|^Tiles|^Devices|^Placement|failed|rror' \
+        | sed "s/^RESULT/RESULT | moteur=$engine cible=$device profil=$slot/" | cut -c1-420 | tee -a "$out"
 }
-ancien="AJI_ORT_COREML=SpecializationStrategy=Default;AllowLowPrecisionAccumulationOnGPU=0"
 
-# 1. Chaque processeur seul, réglages actuels. Profil 1 : Performance. Profil 2 : Balanced.
-#    ALL : Core ML choisit. GPU : carte graphique. ANE : Neural Engine.
-for device in ALL GPU ANE; do essai "seul" 1 1280 720 "$device"; done
-# 2. Les réglages d'avant la 3.8.0.18, pour chiffrer ce qu'apportent les nouveaux.
-for device in ALL GPU; do essai "ancien" 1 1280 720 "$device" "$ancien"; done
-# 3. Image coupée en deux bandes traitées en même temps, une par processeur.
-#    AJI_ORT_SPLIT : part de l'image donnée au premier (en %).
-for share in 50 60 70; do essai "bandes" 1 1280 720 "GPU+ANE" "AJI_ORT_SPLIT=$share"; done
-essai "bandes" 1 1280 720 "ANE+ANE"
-essai "bandes" 1 1280 720 "GPU+GPU"
-
-if [ "$quick" != rapide ]; then
-    # 4. Autres tailles et modèle Balanced.
-    for size in "960 540" "1920 1080"; do
-        set -- $size
-        for device in ALL GPU ANE "GPU+ANE"; do essai "taille" 1 "$1" "$2" "$device"; done
-    done
-    for device in ALL GPU ANE "GPU+ANE"; do essai "balanced" 2 1280 720 "$device"; done
-    essai "processeur" 1 1280 720 CPU
+if [ "$mode" = essai ]; then
+    # Passage court de l'intégration continue : chaque moteur une fois, petite image.
+    essai coreml ALL 1 640 360; essai coremlnative GPU 1 640 360; essai metal GPU 1 640 360
+else
+    # 1. Chaque moteur sur chaque processeur seul, Performance en 720p.
+    for device in ALL GPU ANE; do essai coreml "$device" 1 1280 720; done
+    for device in AUTO GPU NPU; do essai coremlnative "$device" 1 1280 720; done
+    essai metal GPU 1 1280 720
+    # 2. Deux processeurs sur la même image : quatre tuiles, chacun prend la suivante dès qu'il est libre.
+    essai coremlnative GPU+NPU 1 1280 720
+    essai metal GPU+NPU 1 1280 720
+    essai coreml GPU+ANE 1 1280 720
+    if [ "$mode" != rapide ]; then
+        # 3. Autres tailles, puis le modèle Balanced (profil 2).
+        for size in "960 540" "1920 1080"; do
+            set -- $size
+            essai coremlnative GPU 1 "$1" "$2"; essai coremlnative GPU+NPU 1 "$1" "$2"
+            essai metal GPU 1 "$1" "$2"; essai metal GPU+NPU 1 "$1" "$2"; essai coreml ALL 1 "$1" "$2"
+        done
+        essai coremlnative GPU 2 1280 720; essai coremlnative GPU+NPU 2 1280 720
+        essai metal GPU 2 1280 720; essai metal GPU+NPU 2 1280 720; essai coreml ALL 2 1280 720
+        essai coremlnative CPU 1 1280 720
+    fi
 fi
 
-{
+rank() { # rank TITRE MOTIF
     echo
-    echo "== Classement (temps par image, du plus rapide au plus lent ; 41,7 ms = 24 images/s)"
-    grep '^RESULT' "$out" | awk -F'|' '{ t=$6; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t "\t" $0 }' \
-        | sort -n | cut -f2- | cut -c1-260
+    echo "== $1 (temps par image, du plus rapide au plus lent ; 41,7 ms = 24 images/s)"
+    grep '^RESULT' "$out" | grep -- "$2" | awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t "\t" $2 "|" $5 }' \
+        | sort -n | awk -F'\t' '{ printf "%8.1f ms  %s\n", $1, $2 }' | cut -c1-200
+}
+{
+    if [ "$mode" = essai ]; then rank "Classement" "640x360 ->"
+    else
+        rank "Performance, 1280x720 vers 2560x1440" "profil=1 .*1280x720 ->"
+        if [ "$mode" != rapide ]; then
+            rank "Performance, 1920x1080 vers 3840x2160" "profil=1 .*1920x1080 ->"
+            rank "Performance, 960x540 vers 1920x1080" "profil=1 .*960x540 ->"
+            rank "Balanced, 1280x720 vers 2560x1440" "profil=2 .*1280x720 ->"
+        fi
+        best="$(grep '^RESULT' "$out" | grep -- 'profil=1 .*1280x720 ->' | awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t "\t" $2 }' | sort -n | head -1 | cut -f2)"
+        echo
+        echo "== Réglage le plus rapide en 720p :$best"
+        echo "   Manager > Global Settings > Apple Silicon : moteur coreml = « Core ML (ONNX Runtime) »,"
+        echo "   coremlnative = « Core ML (native) », metal = « Metal » ; cible = Compute target."
+    fi
 } | tee -a "$out"
 echo | tee -a "$out"
-echo "Terminé. Envoyer le fichier : $(pwd)/$out"
+echo "Terminé. Résultats : $out"

@@ -6,18 +6,36 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #              providers are loaded at run time from the ONNX Runtime build that is installed;
 #              a stock package only offers the CPU provider.
 # AJI_SOURCE : checkout of the-database/animejanai-inference (configuration parser).
-add_library(aji_ort SHARED aji_ort.cpp "${AJI_SOURCE}/src/aji_conf.cpp")
+#
+# One library on every platform. The core (aji_ort.cpp) and the ONNX Runtime executor are built
+# everywhere; on macOS the Core ML and Metal executors of native/apple are added.
+set(ENGINE_SOURCES aji_ort.cpp tiles.cpp ajm.cpp mlpatch.cpp exec_ort.cpp exec_ref.cpp "${AJI_SOURCE}/src/aji_conf.cpp")
+if(APPLE)
+  enable_language(OBJCXX)
+  list(APPEND ENGINE_SOURCES ../apple/exec_coreml.mm ../apple/exec_metal.mm)
+  set_source_files_properties(../apple/exec_coreml.mm ../apple/exec_metal.mm PROPERTIES
+    COMPILE_FLAGS "-fobjc-arc -Wno-deprecated-declarations")
+endif()
+add_library(aji_ort SHARED ${ENGINE_SOURCES})
 target_include_directories(aji_ort PRIVATE "${ORT_ROOT}/include" "${AJI_SOURCE}/src"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../linux-vulkan")
+  "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/../linux-vulkan")
 target_link_directories(aji_ort PRIVATE "${ORT_ROOT}/lib")
 find_package(Threads REQUIRED)
 target_link_libraries(aji_ort PRIVATE onnxruntime Threads::Threads)
+if(APPLE)
+  target_link_libraries(aji_ort PRIVATE "-framework Foundation" "-framework CoreML" "-framework CoreVideo"
+    "-framework Accelerate" "-framework Metal" "-framework MetalPerformanceShaders"
+    "-framework MetalPerformanceShadersGraph")
+endif()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
   target_compile_options(aji_ort PRIVATE -mavx -mf16c)
 endif()
 add_executable(animejanai-ort-test ort_test.cpp)
 target_include_directories(animejanai-ort-test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../linux-vulkan")
 target_link_libraries(animejanai-ort-test PRIVATE aji_ort)
+# Tile plans, "unchanged" test and Core ML size patch: no model, no GPU.
+add_executable(animejanai-tiles-test tiles_test.cpp tiles.cpp ajm.cpp mlpatch.cpp)
+target_include_directories(animejanai-tiles-test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 if(APPLE)
   # The engine, the test program and ONNX Runtime sit in one folder.
   set_target_properties(aji_ort animejanai-ort-test PROPERTIES BUILD_RPATH "@loader_path;${ORT_ROOT}/lib")

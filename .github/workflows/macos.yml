@@ -1,6 +1,7 @@
 name: macOS
-# Apple Silicon: the ONNX Runtime engine with the Core ML provider, and a benchmark bundle to run
-# on a real Mac. Experimental; never blocks a release.
+# Apple Silicon: the engine with its three ways of running a model (ONNX Runtime with Core ML,
+# Core ML alone, Metal), the player application and a benchmark bundle to run on a real Mac.
+# Experimental; never blocks a release.
 on:
   workflow_dispatch:
   # On the release branch, the application and the benchmark bundle are added to the release.
@@ -9,6 +10,7 @@ on:
     paths:
       - 'release-version.txt'
       - 'native/linux-ort/**'
+      - 'native/apple/**'
       - 'native/macos-bench/**'
       - 'native/linux-vulkan/**'
       - 'installer/macos/**'
@@ -22,12 +24,27 @@ permissions:
 jobs:
   engine:
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       ORT_VERSION: 1.31.0
       ONNX: BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx
+      PERF: 2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Helpers
+        # The job log needs an account; annotations do not. note TITLE FILE [LEVEL] publishes the
+        # last lines of a file as one annotation.
+        run: |
+          cat > "$RUNNER_TEMP/note" <<'EOF'
+          #!/bin/bash
+          body="$(tail -n "${LINES_KEPT:-30}" "$2" | cut -c1-320 | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+          echo "::${3:-notice} title=$1::${body:-empty}"
+          EOF
+          chmod +x "$RUNNER_TEMP/note"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - name: Fetch ONNX Runtime (Core ML provider included) and the configuration parser
         run: |
           uname -m; sw_vers
@@ -38,65 +55,142 @@ jobs:
           mv "$(dirname "$(dirname "$header")")" ort
           ls -la ort ort/lib
           git clone --depth 1 --branch v0.11.1 https://github.com/the-database/animejanai-inference.git aji-source
+      - name: Convert the models for the Apple engines
+        # Core ML templates with their size tables, the Metal model files, and the ONNX variants
+        # of the ONNX Runtime engine. The converter checks its own output (see its header).
+        run: |
+          pip install -q onnx==1.19.1 numpy==2.2.6 onnxruntime coremltools==9.0
+          mkdir models check
+          cp "$ONNX"/*SPANF3*.onnx models/
+          for f in "$ONNX"/*SPANF3*.onnx; do
+            python native/linux-ort/fuse_unshuffle.py "$f" "models/$(basename "${f%.onnx}").coreml.onnx"
+          done
+          if ! python native/apple/convert_models.py "$ONNX" models --keep-check check > convert.log 2>&1; then
+            note "model conversion failed" convert.log error; exit 1
+          fi
+          grep -v 'Failed to load' convert.log | cut -c1-200
+          ls models check
       - name: Build the engine
         run: |
           cmake -S native/linux-ort -B ort-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3 -DORT_ROOT="$GITHUB_WORKSPACE/ort" -DAJI_SOURCE="$GITHUB_WORKSPACE/aji-source"
-          cmake --build ort-build -j 4
+          if ! cmake --build ort-build -j 4 > build.log 2>&1; then
+            tail -40 build.log
+            grep -E 'error|Error' build.log | head -28 > errors.txt
+            LINES_KEPT=28 note "engine build failed" errors.txt error
+            # The lines around the first error, for the context a bare message lacks.
+            grep -n -m1 -E 'error' build.log | cut -d: -f1 | { read n; sed -n "$((n > 3 ? n - 3 : 1)),$((n + 14))p" build.log > first.txt; }
+            LINES_KEPT=18 note "first error in context" first.txt error
+            exit 1
+          fi
+          grep -E 'warning' build.log | grep -E 'native/(apple|linux-ort)' | sort -u | head -12 > warnings.txt || true
+          test -s warnings.txt && LINES_KEPT=12 note "engine build warnings" warnings.txt warning
           otool -L ort-build/libaji_ort.dylib
-      - name: Run a profile on the CPU provider
+      - name: Tile plans, reuse test and Core ML size patch
         run: |
-          AJI_ORT_PROVIDER=cpu ort-build/animejanai-ort-test native/macos-bench/bench.conf "$ONNX" 1 320 180 3 | tee cpu.log
+          for package in check/*.mlpackage; do
+            name="$(basename "$package" -1280x720.mlpackage)"
+            ort-build/animejanai-tiles-test models "$name" "$package" 720 1280 > tiles.log 2>&1 || { note "tiles test failed" tiles.log error; exit 1; }
+          done
+          tail -6 tiles.log
+      - name: Run a profile on the CPU provider
+        # The pictures the other engines are compared with.
+        run: |
+          AJI_ORT_PROVIDER=cpu AJI_REUSE=off AJI_TILES=1 ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 320 180 3 | tee cpu.log
           grep -q 'plan: 640x360 active=1' cpu.log
-      - name: Run the same profile through Core ML
+          AJI_ORT_PROVIDER=cpu AJI_REUSE=off AJI_TILES=1 AJI_TEST_DUMP=ref-640.rgb ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 640 360 3 | tail -3
+          AJI_ORT_PROVIDER=cpu AJI_REUSE=off AJI_TILES=1 AJI_TEST_DUMP=ref-720.rgb ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 3 | tail -3
+          AJI_ORT_PROVIDER=cpu AJI_REUSE=off AJI_TILES=1 AJI_TEST_DUMP=ref-640-balanced.rgb ort-build/animejanai-ort-test native/macos-bench/bench.conf models 2 640 360 3 | tail -3
+          # The core by itself: tiles, two devices and reuse give the same bytes as the whole frame.
+          AJI_ORT_PROVIDER=cpu AJI_REUSE=tiles AJI_TEST_MOTION=corner AJI_TEST_COMPARE=ref-640.rgb AJI_TEST_TOLERANCE=0 \
+            ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 640 360 4 CPU+CPU | tee core.log
+          grep -q 'computed 1 of 4' core.log
+          # The Metal model file in plain C++ against ONNX Runtime.
+          AJI_ORT_PROVIDER=cpu AJI_REUSE=off AJI_TEST_DUMP=ref-96.rgb ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 96 64 2 | tail -1
+          AJI_ORT_PROVIDER=reference AJI_REUSE=off AJI_TEST_COMPARE=ref-96.rgb AJI_TEST_TOLERANCE=1 \
+            ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 96 64 2 | tail -2
+      - name: ONNX Runtime with Core ML
         # The hosted runner is a virtual machine: this proves that Core ML takes the model and
         # gives the same picture, not how fast a real Mac is.
         run: |
-          mkdir models && cp "$ONNX"/*SPANF3*.onnx models/
-          # Core ML variants: pixel-unshuffle as one convolution.
-          python3 -m venv "$RUNNER_TEMP/py" && "$RUNNER_TEMP/py/bin/pip" install -q onnx numpy
-          for f in "$ONNX"/*SPANF3*.onnx; do
-            "$RUNNER_TEMP/py/bin/python" native/linux-ort/fuse_unshuffle.py "$f" "models/$(basename "${f%.onnx}").coreml.onnx"
-          done
           for device in CPU ALL GPU ANE; do
             echo "== $device"
-            AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 320 180 5 $device 2>&1 | tee "coreml-$device.log" | tail -5 || true
+            AJI_ORT_PROVIDER=coreml AJI_REUSE=off ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 320 180 5 $device 2>&1 | tee "coreml-$device.log" | tail -5 || true
           done
           grep -q 'plan: 640x360 active=1' coreml-CPU.log
           grep 'centre pixel' cpu.log coreml-*.log
           echo "== 1920x1080 through profile 1 (no resize in the benchmark bank), Core ML ALL"
-          AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1920 1080 6 ALL 2>&1 | tee coreml-1080.log | tail -4
+          AJI_ORT_PROVIDER=coreml AJI_REUSE=off ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1920 1080 6 ALL 2>&1 | tee coreml-1080.log | tail -4
           echo "== what Core ML takes from the graph (1280x720): fused model, then original"
           rm -rf models/coreml-cache/1280x720-*
-          AJI_ORT_LOG=0 AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 3 ALL > verbose-fused.log 2>&1 || true
+          AJI_ORT_LOG=0 AJI_ORT_PROVIDER=coreml AJI_REUSE=off ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 3 ALL > verbose-fused.log 2>&1 || true
           grep -E 'number of partitions|average after|Average|failed|is not supported|unsupported inputs' verbose-fused.log | cut -c1-330 | sort | uniq -c | head -20
           grep -q 'number of partitions supported by CoreML: 1 ' verbose-fused.log
-          rm -rf models/coreml-cache/1280x720-*
-          echo "== original"
-          AJI_ORT_ORIGINAL=1 AJI_ORT_LOG=0 AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 3 ALL > verbose-original.log 2>&1 || true
-          grep -E 'number of partitions|average after|Average' verbose-original.log | cut -c1-330 | head -6
           rm -rf models/coreml-cache/1280x720-*
           # A second size after the first: the compiled-model cache must not be shared between sizes.
           grep -q 'plan: 3840x2160 active=1' coreml-1080.log
           grep -q 'average after the first frame' coreml-1080.log
-          ls models/coreml-cache | head -20
-          echo "== two devices at once: the frame cut in two bands (GPU and Neural Engine)"
-          AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 5 GPU+ANE 2>&1 | tee coreml-bands.log | tail -4
-          grep -q 'plan: 2560x1440 active=1' coreml-bands.log
-          grep -q 'rows 0-360 + CoreML' coreml-bands.log
-          grep -q '^Lanes:' coreml-bands.log
-          AJI_ORT_SPLIT=65 AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 5 GPU+ANE 2>&1 | tee coreml-bands65.log | tail -3
-          grep -q 'rows 0-468 + CoreML' coreml-bands65.log
-          echo "== the options of before, for the comparison the benchmark makes"
-          AJI_ORT_COREML='SpecializationStrategy=Default;AllowLowPrecisionAccumulationOnGPU=0' AJI_ORT_PROVIDER=coreml ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 5 ALL 2>&1 | tee coreml-old.log | tail -2
-          grep -q '^RESULT | ONNX Runtime/CoreML ALL |' coreml-old.log
-          # The figures of the virtual runner say nothing about a real Mac; they are published
-          # so that a regression in the wiring is visible without the job log.
-          for f in coreml-ALL.log coreml-GPU.log coreml-ANE.log coreml-1080.log coreml-bands.log coreml-bands65.log coreml-old.log; do
-            line="$(grep '^RESULT' "$f" | head -1 | cut -c1-240)"
-            echo "::notice title=${f%.log}::${line:-no RESULT line}"
+          echo "== two devices at once: four tiles shared by the GPU and the Neural Engine"
+          AJI_ORT_PROVIDER=coreml AJI_REUSE=off AJI_TEST_COMPARE=ref-720.rgb ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 5 GPU+ANE 2>&1 | tee coreml-pair.log | tail -5
+          grep -q 'plan: 2560x1440 active=1' coreml-pair.log
+          grep -q 'Tiles: 2x2 of 676x396' coreml-pair.log
+          grep -q 'COMPARE | largest difference [0-3] ' coreml-pair.log
+          for f in coreml-ALL.log coreml-GPU.log coreml-ANE.log coreml-1080.log coreml-pair.log; do
+            grep -E '^RESULT|^COMPARE|^Devices' "$f" | cut -c1-300 > short.txt; note "onnxruntime ${f%.log}" short.txt
           done
-          grep 'centre pixel' coreml-bands.log coreml-ALL.log
+      - name: Native Core ML
+        # Every compute target, compared with the CPU picture. On the virtual machine Core ML may
+        # run any of them on the CPU: what is proven is the model, the size patch and the wiring.
+        run: |
+          status=0
+          for device in CPU GPU NPU AUTO; do
+            AJI_ORT_PROVIDER=coremlnative AJI_REUSE=off AJI_TEST_COMPARE=ref-640.rgb \
+              ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 640 360 4 $device > "native-$device.log" 2>&1 || echo "exit code $?" >> "native-$device.log"
+            grep -E '^RESULT|^COMPARE|^Placement|failed|exit code' "native-$device.log" | cut -c1-300 > short.txt
+            cat short.txt
+            if grep -q 'COMPARE | largest difference [0-3] ' "native-$device.log"; then note "core ml native $device" short.txt
+            else tail -12 "native-$device.log" | cut -c1-300 >> short.txt; note "core ml native $device FAILED" short.txt error; status=1; fi
+          done
+          echo "== Balanced, the pair GPU + Neural Engine on tiles with reuse, and a picture under 256 pixels"
+          AJI_ORT_PROVIDER=coremlnative AJI_REUSE=off AJI_TEST_COMPARE=ref-640-balanced.rgb \
+            ort-build/animejanai-ort-test native/macos-bench/bench.conf models 2 640 360 3 GPU > native-balanced.log 2>&1 || echo "exit code $?" >> native-balanced.log
+          AJI_ORT_PROVIDER=coremlnative AJI_REUSE=tiles AJI_TEST_MOTION=corner AJI_TEST_COMPARE=ref-720.rgb \
+            ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 5 GPU+NPU > native-pair.log 2>&1 || echo "exit code $?" >> native-pair.log
+          AJI_ORT_PROVIDER=coremlnative AJI_REUSE=off \
+            ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 320 180 3 GPU > native-small.log 2>&1 || echo "exit code $?" >> native-small.log
+          for f in native-balanced native-pair native-small; do
+            grep -E '^RESULT|^COMPARE|^Tiles|^Devices|centre pixel|failed|exit code' "$f.log" | cut -c1-300 > short.txt
+            cat short.txt
+            if grep -q 'exit code\|failed' "$f.log"; then tail -12 "$f.log" | cut -c1-300 >> short.txt; note "core ml $f FAILED" short.txt error; status=1
+            else note "core ml $f" short.txt; fi
+          done
+          grep -q 'COMPARE | largest difference [0-3] ' native-balanced.log || status=1
+          grep -q 'COMPARE | largest difference [0-3] ' native-pair.log || status=1
+          grep -q 'computed 1 of 4' native-pair.log || status=1
+          grep 'centre pixel' cpu.log native-small.log
+          ls models/coreml-cache/native | head
+          exit $status
+      - name: Metal
+        run: |
+          status=0
+          AJI_ORT_PROVIDER=metal AJI_REUSE=off AJI_TEST_COMPARE=ref-640.rgb \
+            ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 640 360 4 GPU > metal-gpu.log 2>&1 || echo "exit code $?" >> metal-gpu.log
+          AJI_ORT_PROVIDER=metal AJI_REUSE=off AJI_TEST_COMPARE=ref-640-balanced.rgb \
+            ort-build/animejanai-ort-test native/macos-bench/bench.conf models 2 640 360 3 GPU > metal-balanced.log 2>&1 || echo "exit code $?" >> metal-balanced.log
+          # Metal on the GPU and Core ML on the Neural Engine, sharing the tiles of one frame.
+          AJI_ORT_PROVIDER=metal AJI_REUSE=tiles AJI_TEST_MOTION=corner AJI_TEST_COMPARE=ref-720.rgb \
+            ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 1280 720 5 GPU+NPU > metal-pair.log 2>&1 || echo "exit code $?" >> metal-pair.log
+          AJI_ORT_PROVIDER=metal AJI_REUSE=off \
+            ort-build/animejanai-ort-test native/macos-bench/bench.conf models 1 320 180 3 GPU > metal-small.log 2>&1 || echo "exit code $?" >> metal-small.log
+          for f in metal-gpu metal-balanced metal-pair metal-small; do
+            grep -E '^RESULT|^COMPARE|^Tiles|^Devices|^Placement|centre pixel|failed|exit code' "$f.log" | cut -c1-300 > short.txt
+            cat short.txt
+            if grep -q 'exit code\|failed' "$f.log"; then tail -14 "$f.log" | cut -c1-300 >> short.txt; note "$f FAILED" short.txt error; status=1
+            else note "$f" short.txt; fi
+          done
+          for f in metal-gpu metal-balanced metal-pair; do grep -q 'COMPARE | largest difference [0-3] ' "$f.log" || status=1; done
+          grep 'centre pixel' cpu.log metal-small.log
+          exit $status
       - name: Benchmark bundle
         run: |
           b=AnimeJaNai-mac-bench
@@ -104,14 +198,15 @@ jobs:
           cp ort-build/libaji_ort.dylib ort-build/animejanai-ort-test "$b/"
           cp -a ort/lib/libonnxruntime*.dylib "$b/"
           cp native/macos-bench/bench.command native/macos-bench/bench.conf native/macos-bench/LISEZ-MOI.txt "$b/"
-          cp models/2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16*.onnx models/2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16*.onnx "$b/models/"
+          for kind in Sharp1_Performance Sharp1_Balanced; do cp -R models/*"$kind"* "$b/models/"; done
           chmod +x "$b/bench.command" "$b/animejanai-ort-test"
           # The test program finds the engine and ONNX Runtime next to itself.
           install_name_tool -add_rpath @loader_path "$b/animejanai-ort-test" 2>/dev/null || true
           install_name_tool -add_rpath @loader_path "$b/libaji_ort.dylib" 2>/dev/null || true
           codesign --force -s - "$b"/*.dylib "$b/animejanai-ort-test"
-          ( cd "$b" && AJI_ORT_PROVIDER=cpu ./animejanai-ort-test bench.conf models 1 320 180 2 | tail -2 )
-          rm -rf "$b/models/coreml-cache" "$b/ort-stats.txt"
+          ( cd "$b" && AJI_ORT_PROVIDER=cpu AJI_REUSE=off ./animejanai-ort-test bench.conf models 1 320 180 2 | tail -2 )
+          ( cd "$b" && bash bench.command essai > bench-try.log 2>&1; tail -14 bench-try.log | cut -c1-300 > short.txt; note "benchmark script, short run" short.txt; grep -q '^RESULT' resultats.txt )
+          rm -rf "$b/models/coreml-cache" "$b/ort-stats.txt" "$b/resultats.txt" "$b/bench-try.log" "$b/short.txt"
           ditto -c -k --keepParent "$b" "$b.zip"
           ls -la "$b.zip"
       - uses: actions/upload-artifact@v4
@@ -121,10 +216,14 @@ jobs:
           if-no-files-found: error
       - name: Engine files for the player
         run: |
-          mkdir mac-engine
-          cp ort-build/libaji_ort.dylib mac-engine/
+          mkdir -p mac-engine/onnx
+          cp ort-build/libaji_ort.dylib ort-build/animejanai-ort-test mac-engine/
           cp -L ort/lib/libonnxruntime.1.dylib mac-engine/libonnxruntime.1.dylib
-          mkdir mac-engine/onnx && cp models/*.coreml.onnx mac-engine/onnx/
+          # Everything the three engines read besides the ONNX files of the repository.
+          cp models/*.coreml.onnx models/*.ajm models/*.ajw models/*.mlpatch mac-engine/onnx/
+          cp -R models/*.mlpackage mac-engine/onnx/
+          cp native/macos-bench/bench.command native/macos-bench/bench.conf mac-engine/
+          ls -la mac-engine mac-engine/onnx
       - uses: actions/upload-artifact@v4
         with:
           name: mac-engine
