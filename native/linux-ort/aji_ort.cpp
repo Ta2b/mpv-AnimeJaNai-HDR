@@ -327,6 +327,12 @@ void load_steps(Context &c, int width, int height)
         require(model.frames <= 1, "Temporal AnimeJaNai models are not supported by the ONNX Runtime engine");
         std::filesystem::path path = std::filesystem::path(c.models) / (model.name + ".onnx");
         require(std::filesystem::is_regular_file(path), "Model not found: " + model.name + ".onnx");
+        // Core ML: the variant whose pixel-unshuffle is one convolution (fuse_unshuffle.py), so
+        // that the whole graph stays in Core ML. AJI_ORT_ORIGINAL=1 keeps the original model.
+        if (c.provider == "coreml" && !std::getenv("AJI_ORT_ORIGINAL")) {
+            std::filesystem::path fused = std::filesystem::path(c.models) / (model.name + ".coreml.onnx");
+            if (std::filesystem::is_regular_file(fused)) path = fused;
+        }
         Step step;
         step.conf = model;
         resized_dims(w, h, model, &w, &h);
