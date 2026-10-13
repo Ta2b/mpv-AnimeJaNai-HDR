@@ -36,6 +36,7 @@ with tempfile.TemporaryDirectory(prefix='ajn-package-') as tmp:
     }.items(): write(path, value)
     write('mpv/mpv', '''#!/bin/sh
 printf '%s\n' "$ANIMEJANAI_ROOT" "$ANIMEJANAI_IPC_PATH" "$ANIMEJANAI_INFERENCE_DIR" > "$AJ_CAPTURE"
+printf '%s\n' "$@" > "$AJ_CAPTURE.args"
 stat -c '%a' "$(dirname "$ANIMEJANAI_IPC_PATH")" >> "$AJ_CAPTURE"
 ''')
     (image / 'mpv/mpv').chmod(0o755)
@@ -84,4 +85,20 @@ stat -c '%a' "$(dirname "$ANIMEJANAI_IPC_PATH")" >> "$AJ_CAPTURE"
     check('Vulkan library relinked even while old image remains mounted', (data / 'animejanai/inference/libaji_vulkan.so').resolve() == image / 'animejanai/inference/libaji_vulkan.so')
     write('portable_config/hdr-tools/managed', 'v3-same-version'); launch()
     check('HDR tools refreshed even for reused version', (data / 'portable_config/hdr-tools/managed').read_text() == 'v3-same-version')
+    # Desktop integration: only a real AppImage registers itself, the entry follows the file.
+    apps = data_home / 'applications/mpv-animejanai-hdr.desktop'
+    def player_args(): return [l for l in (base / 'capture.args').read_text().splitlines() if not l.startswith(('--config-dir=', '--input-ipc-server='))]
+    check('no menu entry without an AppImage path', not apps.exists())
+    check('no file given opens the player window', player_args() == ['--player-operation-mode=pseudo-gui'])
+    env['APPIMAGE'] = str(base / 'player v1.AppImage'); launch()
+    entry = apps.read_text()
+    check('menu entry registered on launch', f'TryExec={env["APPIMAGE"]}' in entry and f'Exec="{env["APPIMAGE"]}" %U' in entry and 'video/x-matroska' in entry)
+    subprocess.run([str(image / 'AppRun'), str(base / 'a b.mkv')], env=env, check=True, capture_output=True)
+    check('file from Open With reaches the player', player_args() == [str(base / 'a b.mkv')])
+    env['APPIMAGE'] = str(base / 'player v2.AppImage'); launch()
+    check('menu entry follows a renamed AppImage', f'TryExec={env["APPIMAGE"]}' in apps.read_text())
+    subprocess.run([str(image / 'AppRun'), '--uninstall'], env=env, check=True, capture_output=True); launch()
+    check('uninstall is respected on later launches', not apps.exists())
+    subprocess.run([str(image / 'AppRun'), '--install'], env=env, check=True, capture_output=True)
+    check('install registers again', apps.exists())
     print(f'{passed} offline package regressions passed')

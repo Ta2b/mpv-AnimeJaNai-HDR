@@ -12,27 +12,20 @@ set -eu
 
 HERE="$(dirname "$(readlink -f "$0")")"
 
-# Desktop integration:
-#   <AppImage> --install            register a menu entry + MIME associations
-#   <AppImage> --install --default  ...and set it as the default video player
-#   <AppImage> --uninstall          remove them
-# Pointed at this AppImage's own path ($APPIMAGE, set by the runtime), so it
-# keeps working as long as you don't move/rename the file.
-case "${1:-}" in
-  --install|--uninstall)
-    APPS="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
-    ICONS="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/256x256/apps"
-    desktop="$APPS/mpv-animejanai-hdr.desktop"
-    MIMES="video/x-matroska;video/mp4;video/webm;video/x-msvideo;video/quicktime;video/mpeg;video/x-flv;video/3gpp;"
-    if [ "$1" = "--uninstall" ]; then
-        rm -f "$desktop" "$ICONS/mpv-animejanai-hdr.png"
-        update-desktop-database "$APPS" 2>/dev/null || true
-        echo "Removed the AnimeJaNai menu entry + file associations."
-        echo "(cached engines/config in ${XDG_DATA_HOME:-$HOME/.local/share}/AnimeJaNai-HDR-linux are kept; delete that folder to clear them)"
-        exit 0
-    fi
-    target="${APPIMAGE:-$HERE}"
-    [ -z "${APPIMAGE:-}" ] && echo "warning: \$APPIMAGE unset (run the .AppImage directly, not extracted); using $HERE" >&2
+# Desktop integration. The menu entry and the "Open with" associations are registered
+# automatically on a normal launch, and re-pointed when the AppImage was moved, renamed or
+# replaced by a newer download. Nothing becomes the default player without being asked.
+#   <AppImage> --install            register now (also undoes --uninstall)
+#   <AppImage> --install --default  ...and make it the default video player
+#   <AppImage> --uninstall          remove the entry and stop registering it
+DATA="${XDG_DATA_HOME:-$HOME/.local/share}/AnimeJaNai-HDR-linux"
+APPS="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+ICONS="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/256x256/apps"
+desktop="$APPS/mpv-animejanai-hdr.desktop"
+no_entry="$DATA/.no-desktop-entry"
+MIMES="video/x-matroska;video/mp4;video/webm;video/x-msvideo;video/vnd.avi;video/avi;video/quicktime;video/mpeg;video/mp2t;video/x-flv;video/3gpp;video/ogg;video/x-ms-wmv;video/x-m4v;video/x-ogm+ogg;application/x-matroska;"
+
+register_desktop() { # $1 = path the entry launches
     mkdir -p "$APPS" "$ICONS"
     [ -f "$HERE/mpv-animejanai.png" ] && cp -f "$HERE/mpv-animejanai.png" "$ICONS/mpv-animejanai-hdr.png"
     cat > "$desktop" <<EOF
@@ -41,8 +34,8 @@ Type=Application
 Name=mpv AnimeJaNai HDR
 GenericName=Media Player
 Comment=Real-time anime upscaling video player (mpv + TensorRT)
-Exec="$target" %U
-TryExec=$target
+Exec="$1" %U
+TryExec=$1
 Icon=mpv-animejanai-hdr
 Terminal=false
 Categories=AudioVideo;Player;Video;
@@ -50,13 +43,30 @@ MimeType=$MIMES
 StartupNotify=true
 EOF
     update-desktop-database "$APPS" 2>/dev/null || true
+}
+
+case "${1:-}" in
+  --install|--uninstall)
+    mkdir -p "$DATA"
+    if [ "$1" = "--uninstall" ]; then
+        rm -f "$desktop" "$ICONS/mpv-animejanai-hdr.png"
+        : > "$no_entry"
+        update-desktop-database "$APPS" 2>/dev/null || true
+        echo "Removed the AnimeJaNai menu entry + file associations."
+        echo "(cached engines/config in $DATA are kept; delete that folder to clear them)"
+        exit 0
+    fi
+    target="${APPIMAGE:-$HERE}"
+    [ -z "${APPIMAGE:-}" ] && echo "warning: \$APPIMAGE unset (run the .AppImage directly, not extracted); using $HERE" >&2
+    rm -f "$no_entry"
+    register_desktop "$target"
     if [ "${2:-}" = "--default" ]; then
         for m in $(echo "$MIMES" | tr ';' ' '); do
             [ -n "$m" ] && xdg-mime default mpv-animejanai-hdr.desktop "$m" 2>/dev/null || true
         done
         echo "Installed and set as the default video player."
     else
-        echo "Installed: 'mpv AnimeJaNai' now appears in your app menu and right-click > Open With."
+        echo "Installed: 'mpv AnimeJaNai HDR' now appears in your app menu and right-click > Open With."
         echo "(re-run with: --install --default  to also make it your default video player)"
     fi
     echo "  entry:    $desktop"
@@ -65,8 +75,14 @@ EOF
     ;;
 esac
 
+# Only a real AppImage registers itself ($APPIMAGE is set by its runtime), and only when the
+# entry is missing or launches another file. A failure here must never prevent playback.
+if [ -n "${APPIMAGE:-}" ] && [ ! -e "$no_entry" ] &&
+   ! grep -qxF "TryExec=$APPIMAGE" "$desktop" 2>/dev/null; then
+    register_desktop "$APPIMAGE" 2>/dev/null || true
+fi
+
 export ANIMEJANAI_APPIMAGE=1   # animejanai_update.lua => "download the new AppImage"
-DATA="${XDG_DATA_HOME:-$HOME/.local/share}/AnimeJaNai-HDR-linux"
 mkdir -p "$DATA/portable_config" "$DATA/animejanai/onnx" "$DATA/animejanai/rife"
 
 # Seed / refresh writable data. Managed files are overwritten on version change;

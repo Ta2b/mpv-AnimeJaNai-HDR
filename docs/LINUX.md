@@ -120,6 +120,14 @@ Manager, le helper, le lanceur et les banques manquantes figurent dans l'overlay
 
 ## Paquets, mises à jour et releases
 
+**Intégration au bureau (AppImage, depuis la 3.8.0.17).** Lancée sans fichier, l'AppImage ouvre la
+fenêtre du lecteur et attend un fichier (glisser-déposer). À chaque lancement normal, elle
+enregistre son entrée de menu et ses associations vidéo (`mpv-animejanai-hdr.desktop`), et les
+repointe si le fichier a été déplacé, renommé ou remplacé par une version plus récente : « Ouvrir
+avec » fonctionne sans passer par le terminal. Elle ne devient jamais le lecteur par défaut d'elle-même :
+ce choix se fait dans le bureau, ou par `--install --default`. `--uninstall` retire l'entrée et
+arrête cet enregistrement automatique ; `--install` le rétablit. L'archive portable garde `install.sh`.
+
 `installer/linux/package-tarball.sh` produit le portable ;
 `installer/linux/build-appimage.sh` produit ensuite l'AppImage.
 L'AppImage utilise `$XDG_DATA_HOME/AnimeJaNai-HDR-linux`, séparé du projet amont.

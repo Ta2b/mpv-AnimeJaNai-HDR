@@ -25,6 +25,9 @@ if [ -z "${NVPRESENT_ENABLE_SMOOTH_MOTION:-}" ] && [ -f "$hdr_conf" ] &&
     grep -qiE '^[[:space:]]*smooth_motion[[:space:]]*=[[:space:]]*(yes|true|1)[[:space:]]*(#.*)?$' "$hdr_conf"; then
     export NVPRESENT_ENABLE_SMOOTH_MOTION=1
 fi
+# Started without a file (menu entry, double click): open the player window and wait for a
+# file to be dropped or opened, instead of exiting at once as the command-line player does.
+[ "$#" -gt 0 ] || set -- --player-operation-mode=pseudo-gui
 runtime="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}"
 session="$(mktemp -d "$runtime/animejanai-hdr.XXXXXXXX")"
 export ANIMEJANAI_IPC_PATH="$session/mpv.sock"
