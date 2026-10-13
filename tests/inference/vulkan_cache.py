@@ -313,6 +313,8 @@ def main():
                         if not threshold:
                             assert rgb_preparations == 9 * multiplier, (
                                 f'{name}: RGB inputs must be packed exactly once per source')
+                        assert int(candidate_stats['RIFE direct RGB outputs']) == (0 if before else calls), (
+                            f'{name}: wrong final RIFE output path')
                         for variant in ('candidate-off', 'candidate-gpu-off'):
                             assert int(results[variant]['stats']['RIFE cached uploads']) == 0
                             assert int(results[variant]['stats']['RIFE GPU input hits']) == 0

@@ -48,7 +48,7 @@ struct Context {
     uint64_t clock=0, identity=0, cache_hits=0, source_preparations=0;
     uint64_t span_inferences=0, rife_inferences=0, pair_preparations=0;
     uint64_t rife_uploads=0, rife_gpu_hits=0;
-    uint64_t rife_rgb_preparations=0;
+    uint64_t rife_rgb_preparations=0, rife_packed_outputs=0;
     Context() { std::lock_guard<std::mutex> lock(gpu_mutex); if (!contexts++) ncnn::create_gpu_instance(); }
     ~Context() {
         rife.reset(); steps.clear();
@@ -114,7 +114,7 @@ bool scene_changed(Context &c, const ncnn::Mat &a, const ncnn::Mat &b) {
 }
 ncnn::Mat interpolate_pixels(Context &c, const ncnn::Mat &a,
     const std::vector<unsigned char> &pa, const std::vector<unsigned char> &pb, float t,
-    uint64_t aid=0, uint64_t bid=0) {
+    uint64_t aid=0, uint64_t bid=0, bool packed_output=false) {
     // ncnn's external-storage constructor predates const input views; RIFE::process takes
     // const Mat references and only reads these packed input bytes.
     ncnn::Mat ia(a.w,a.h,const_cast<unsigned char *>(pa.data()),(size_t)3,3);
@@ -129,6 +129,10 @@ ncnn::Mat interpolate_pixels(Context &c, const ncnn::Mat &a,
         c.rife_gpu_hits+=hits_after-hits_before;
     } else require(c.rife->process(ia,ib,t,out)==0,"RIFE Vulkan inference failed");
     ++c.rife_inferences;
+    // RIFE's postprocessing already produced RGB24. If it ends the chain, these
+    // exact integer pixels can be copied straight to the caller. The cached
+    // sources also own the endpoint views returned by RIFE at timestep 0 or 1.
+    if (packed_output) { ++c.rife_packed_outputs; return out; }
     return rgb((unsigned char *)out.data,a.w*3,a.w,a.h);
 }
 ncnn::Mat interpolate(Context &c, const ncnn::Mat &a, const ncnn::Mat &b, float t) {
@@ -181,7 +185,7 @@ const std::vector<unsigned char> &rife_pixels(Context &c, CachedFrame &frame) {
     }
     return frame.rife_pixels;
 }
-ncnn::Mat interpolate_pair(Context &c, CachedFrame &a, CachedFrame &b, float t) {
+ncnn::Mat interpolate_pair(Context &c, CachedFrame &a, CachedFrame &b, float t, bool &packed_output) {
     if (c.pair.a!=a.identity || c.pair.b!=b.identity) {
         c.pair.a=c.pair.b=0;
         c.pair.scene=scene_changed(c,a.prepared,b.prepared);
@@ -191,7 +195,8 @@ ncnn::Mat interpolate_pair(Context &c, CachedFrame &a, CachedFrame &b, float t) 
     // The caller handles a scene cut as the previous endpoint. It never normalizes this view.
     if (c.pair.scene) return a.prepared;
     const auto &pa=rife_pixels(c,a), &pb=rife_pixels(c,b);
-    return interpolate_pixels(c,a.prepared,pa,pb,t,a.identity,b.identity);
+    packed_output=!c.chain.rife_before_upscale;
+    return interpolate_pixels(c,a.prepared,pa,pb,t,a.identity,b.identity,packed_output);
 }
 void write_endpoint(CachedFrame &frame, const ncnn::Mat &result, unsigned char *output, ptrdiff_t stride) {
     const size_t row=(size_t)result.w*3;
@@ -303,6 +308,7 @@ extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previ
         auto start=std::chrono::steady_clock::now();
         require(current && output && timestep>=0 && timestep<=1,"Invalid frame arguments");
         ncnn::Mat result;
+        bool packed_output=false;
         CachedFrame *output_frame=nullptr;
         if (!c.plan.active) result=rgb(current,current_stride,c.width,c.height);
         else if (c.cache) {
@@ -313,7 +319,7 @@ extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previ
             else {
                 auto &a=prepare_frame(c,previous,previous_stride);
                 auto &b=prepare_frame(c,current,current_stride);
-                result=interpolate_pair(c,a,b,(float)timestep);
+                result=interpolate_pair(c,a,b,(float)timestep,packed_output);
                 if (c.pair.scene) { result=endpoint(c,a); output_frame=&a; }
                 else if (c.chain.rife_before_upscale) result=upscale(c,result,true);
             }
@@ -329,7 +335,12 @@ extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previ
             }
         }
         require(result.w==c.plan.width && result.h==c.plan.height,"Model output dimensions differ from the configured 2x profile");
-        if (output_frame) write_endpoint(*output_frame,result,output,output_stride);
+        if (packed_output) {
+            const size_t row=(size_t)result.w*3;
+            for (int y=0;y<result.h;++y)
+                std::memcpy(output+(ptrdiff_t)y*output_stride,(unsigned char *)result.data+(size_t)y*row,row);
+        }
+        else if (output_frame) write_endpoint(*output_frame,result,output,output_stride);
         else result.to_pixels(output,ncnn::Mat::PIXEL_RGB,(int)output_stride);
         double ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
         c.total_ms+=ms;++c.count;
@@ -348,7 +359,8 @@ extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previ
              <<"\nRIFE GPU input cache: "<<(c.cache && c.rife_gpu_cache?"on":"off")
              <<"\nRIFE cached uploads: "<<c.rife_uploads<<"\nRIFE GPU input hits: "<<c.rife_gpu_hits
              <<"\nRIFE cached tensor bytes: "<<bytes<<"\n";
-            f<<"RIFE RGB preparations: "<<c.rife_rgb_preparations<<"\n";
+            f<<"RIFE RGB preparations: "<<c.rife_rgb_preparations
+             <<"\nRIFE direct RGB outputs: "<<c.rife_packed_outputs<<"\n";
         }
         return 0;
     }catch(const std::exception &e){c.error=e.what();return -1;}
