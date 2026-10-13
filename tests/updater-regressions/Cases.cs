@@ -240,9 +240,12 @@ try
             new("mpv-AnimeJaNai-HDR-v3.9.0-linux-x64.AppImage", "image"), new("mpv-AnimeJaNai-HDR-v3.9.0-macos-arm64.zip", "mac") });
         Check(Production.AppImage(release, "linux-x64")?.Url == "image", "Wrong AppImage asset");
         Check(Production.AppImage(new Release("3.9.1", release.Assets), "linux-x64") == null, "Took another version's AppImage");
-        Check(Production.Target("/home/a/Apps/mpv-AnimeJaNai-HDR-v3.8.0.20-linux-x64.AppImage", "3.8.0.20", "3.9.0") == "/home/a/Apps/mpv-AnimeJaNai-HDR-v3.9.0-linux-x64.AppImage",
+        // The production method uses Path.Combine. These regressions also run on Windows:
+        // construct both sides with native separators rather than hardcoding a Linux path.
+        string apps = Path.Combine(root, "Apps");
+        Check(Production.Target(Path.Combine(apps, "mpv-AnimeJaNai-HDR-v3.8.0.20-linux-x64.AppImage"), "3.8.0.20", "3.9.0") == Path.Combine(apps, "mpv-AnimeJaNai-HDR-v3.9.0-linux-x64.AppImage"),
             "A name that carries its version must follow the new one");
-        Check(Production.Target("/home/a/Apps/mpv.AppImage", "3.8.0.20", "3.9.0") == "/home/a/Apps/mpv.AppImage", "A name without version must be kept");
+        Check(Production.Target(Path.Combine(apps, "mpv.AppImage"), "3.8.0.20", "3.9.0") == Path.Combine(apps, "mpv.AppImage"), "A name without version must be kept");
         const string listing = "aaaa  manifest.json\n51678e8a2f74a2db2092c5f0e387a72fa31e531e513036898366adcf07998dca  mpv-AnimeJaNai-HDR-v3.9.0-linux-x64.AppImage\nbbbb *other.bin\n";
         Check(Production.Listed(listing, "mpv-AnimeJaNai-HDR-v3.9.0-linux-x64.AppImage") == "51678e8a2f74a2db2092c5f0e387a72fa31e531e513036898366adcf07998dca"
             && Production.Listed(listing, "other.bin") == "bbbb" && Production.Listed(listing, "absent") == null, "Checksum listing misread");

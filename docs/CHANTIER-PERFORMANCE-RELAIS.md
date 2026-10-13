@@ -10,9 +10,11 @@ GitHub restent actifs. Les poids, modèles, précision et profils sont conservé
 Base du lot : `894c94fa09bdc4169ca832634416d34bb4fb8d98` (3.8.0.22),
 branche `hdr-3.8`. Version de livraison : **3.8.0.23**. Le push sur `release`
 déclenche Deploy (Windows/Linux) et macOS ; seul un fichier effectivement joint
-à la release prouve sa publication. Au moment de ce checkpoint, code terminé,
-commit/push et builds de publication à suivre. Les références locales finales,
-le SHA du commit et le suivi des workflows seront consignés dans
+à la release prouve sa publication. Commit moteur **`089b6b50696765f1af54e70f5a56217533300177`**, poussé sur les
+deux branches. Builds lancés : [macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479119500)
+et [Deploy initial](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479119497).
+Au moment de ce checkpoint, archives non encore publiées. Les références
+locales finales et le suivi des workflows sont consignés dans
 `artifacts/performance/rife-cpu-prep/publication.json`.
 
 Le lot NCNN précédent est inclus dans cette livraison ; ses snapshots et
@@ -90,6 +92,18 @@ ni benchmark de bout en bout lancé. Ne pas convertir les timings du contrôle
 CPU en promesse de performances, ni attribuer un effet de pool à la suppression
 des copies du programme de mesure. La parité exacte CPU ne prouve pas la parité
 sur les providers GPU/NPU ou les autres pilotes.
+
+### Correctif nécessaire à la publication
+
+Le contrôle Windows de Deploy échoue dans `tests/updater-regressions/Cases.cs`,
+ligne 243 : l'assertion attend un chemin contenant seulement `/`, mais la méthode
+inchangée `AppImageTarget` utilise les séparateurs natifs de `Path.Combine`.
+Même échec observé dans la CI précédant ce lot (run `38468269139`). Correction :
+construire les chemins d'entrée **et** attendus avec `Path.Combine(root, "Apps", …)`.
+Pas de suppression de contrôle ni de modification du produit. Aucun lancement
+local de test ; la CI de publication exécutera le contrôle corrigé. Ce correctif
+est poussé sur les deux branches avec la même version 3.8.0.23 ; le build macOS
+initial, dont les sources moteur sont identiques, peut continuer.
 
 ### Mesures Mac et suite du chantier
 
