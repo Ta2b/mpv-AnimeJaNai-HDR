@@ -12,6 +12,7 @@
 #include "engine.h"
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 namespace aji {
 namespace {
@@ -23,6 +24,11 @@ public:
     explicit MetalExecutor(const ExecutorRequest &r) : w_(r.width), h_(r.height)
     {
         @autoreleasepool {
+            // Rows of pixels (NHWC) are what the pictures already are and what Metal's kernels
+            // work on: the graph then needs no layout change. AJI_METAL_LAYOUT=nchw keeps the
+            // layout of the model file, with a change of layout at each end (for a comparison).
+            const char *layout = std::getenv("AJI_METAL_LAYOUT");
+            nhwc_ = !(layout && std::string(layout) == "nchw");
             model_ = load_ajm(r.models_dir + "/" + r.model + ".ajm");
             device_ = MTLCreateSystemDefaultDevice();
             require(device_ != nil, "Metal: no GPU available");
@@ -33,7 +39,8 @@ public:
             in_.resize((size_t)w_ * h_ * 3);
             out_.resize((size_t)4 * w_ * h_ * 3);
             label = "Metal/GPU";
-            note = std::string("whole network on ") + [[device_ name] UTF8String] + ", half floats";
+            note = std::string("whole network on ") + [[device_ name] UTF8String] + ", half floats, "
+                + (nhwc_ ? "rows of pixels (NHWC)" : "planes (NCHW)");
         }
     }
 
@@ -74,13 +81,28 @@ private:
         return [graph_ constantWithData:data shape:shape dataType:MPSDataTypeFloat16];
     }
 
+    // Convolution weights of the model file (out, in, rows, columns) in the graph's layout.
+    MPSGraphTensor *kernel(const uint16_t *oihw, int o, int i, int k)
+    {
+        const size_t count = (size_t)o * i * k * k;
+        if (!nhwc_) return constant(oihw, @[@(o), @(i), @(k), @(k)], count);
+        std::vector<uint16_t> hwio(count);
+        for (int a = 0; a < o; a++)
+            for (int b = 0; b < i; b++)
+                for (int y = 0; y < k; y++)
+                    for (int x = 0; x < k; x++)
+                        hwio[(((size_t)y * k + x) * i + b) * o + a] = oihw[(((size_t)a * i + b) * k + y) * k + x];
+        return constant(hwio.data(), @[@(k), @(k), @(i), @(o)], count);
+    }
+
     MPSGraphTensor *convolution(MPSGraphTensor *x, MPSGraphTensor *weights, int stride, int pad)
     {
         MPSGraphConvolution2DOpDescriptor *d = [MPSGraphConvolution2DOpDescriptor
             descriptorWithStrideInX:(NSUInteger)stride strideInY:(NSUInteger)stride dilationRateInX:1 dilationRateInY:1 groups:1
                         paddingLeft:(NSUInteger)pad paddingRight:(NSUInteger)pad paddingTop:(NSUInteger)pad paddingBottom:(NSUInteger)pad
                        paddingStyle:MPSGraphPaddingStyleExplicit
-                         dataLayout:MPSGraphTensorNamedDataLayoutNCHW weightsLayout:MPSGraphTensorNamedDataLayoutOIHW];
+                         dataLayout:nhwc_ ? MPSGraphTensorNamedDataLayoutNHWC : MPSGraphTensorNamedDataLayoutNCHW
+                      weightsLayout:nhwc_ ? MPSGraphTensorNamedDataLayoutHWIO : MPSGraphTensorNamedDataLayoutOIHW];
         require(d != nil, "Metal: could not describe a convolution");
         return [graph_ convolution2DWithSourceTensor:x weightsTensor:weights descriptor:d name:nil];
     }
@@ -94,8 +116,11 @@ private:
         MPSGraphTensor *x = [graph_ castTensor:input_ toType:MPSDataTypeFloat16 name:nil];
         x = [graph_ multiplicationWithPrimaryTensor:x
                                     secondaryTensor:[graph_ constantWithScalar:1.0 / 255.0 dataType:MPSDataTypeFloat16] name:nil];
-        x = [graph_ transposeTensor:x dimension:1 withDimension:3 name:nil];   // N C W H
-        x = [graph_ transposeTensor:x dimension:2 withDimension:3 name:nil];   // N C H W
+        if (!nhwc_) {
+            x = [graph_ transposeTensor:x dimension:1 withDimension:3 name:nil];   // N C W H
+            x = [graph_ transposeTensor:x dimension:2 withDimension:3 name:nil];   // N C H W
+        }
+        const NSUInteger channels = nhwc_ ? 3 : 1, rows = nhwc_ ? 1 : 2, columns = nhwc_ ? 2 : 3;
 
         std::vector<MPSGraphTensor *> t((size_t)model_.tensors, nil);
         t[0] = x;
@@ -111,13 +136,13 @@ private:
                     for (int dy = 0; dy < 2; dy++)
                         for (int dx = 0; dx < 2; dx++)
                             k[(size_t)(((c * 4 + dy * 2 + dx) * 3 + c) * 2 + dy) * 2 + dx] = kHalfOne;
-                result = convolution(a, constant(k.data(), @[@12, @3, @2, @2], k.size()), 2, 0);
+                result = convolution(a, kernel(k.data(), 12, 3, 2), 2, 0);
                 break;
             }
             case AjmOp::Conv: {
-                const size_t count = (size_t)op.o * op.i * op.k * op.k;
-                MPSGraphTensor *weights = constant(model_.weights.data() + op.weight, @[@(op.o), @(op.i), @(op.k), @(op.k)], count);
-                MPSGraphTensor *bias = constant(model_.weights.data() + op.bias, @[@1, @(op.o), @1, @1], (size_t)op.o);
+                MPSGraphTensor *weights = kernel(model_.weights.data() + op.weight, op.o, op.i, op.k);
+                MPSGraphTensor *bias = constant(model_.weights.data() + op.bias,
+                                                nhwc_ ? @[@1, @1, @1, @(op.o)] : @[@1, @(op.o), @1, @1], (size_t)op.o);
                 result = [graph_ additionWithPrimaryTensor:convolution(a, weights, op.stride, op.pad) secondaryTensor:bias name:nil];
                 break;
             }
@@ -129,12 +154,12 @@ private:
             case AjmOp::Concat: {
                 NSMutableArray<MPSGraphTensor *> *parts = [NSMutableArray array];
                 for (int s : op.in) [parts addObject:t[(size_t)s]];
-                result = [graph_ concatTensors:parts dimension:1 name:nil];
+                result = [graph_ concatTensors:parts dimension:(NSInteger)channels name:nil];
                 break;
             }
             case AjmOp::Shuffle:
                 // out[c, y*r + dy, x*r + dx] = in[c*r*r + dy*r + dx, y, x]: the pixel-shuffle order.
-                result = [graph_ depthToSpace2DTensor:a widthAxis:3 heightAxis:2 depthAxis:1 blockSize:(NSUInteger)op.factor
+                result = [graph_ depthToSpace2DTensor:a widthAxis:columns heightAxis:rows depthAxis:channels blockSize:(NSUInteger)op.factor
                                  usePixelShuffleOrder:YES name:nil];
                 break;
             }
@@ -148,8 +173,10 @@ private:
         y = [graph_ multiplicationWithPrimaryTensor:y
                                     secondaryTensor:[graph_ constantWithScalar:255.0 dataType:MPSDataTypeFloat16] name:nil];
         y = [graph_ roundWithTensor:y name:nil];
-        y = [graph_ transposeTensor:y dimension:1 withDimension:2 name:nil];   // N H C W
-        y = [graph_ transposeTensor:y dimension:2 withDimension:3 name:nil];   // N H W C
+        if (!nhwc_) {
+            y = [graph_ transposeTensor:y dimension:1 withDimension:2 name:nil];   // N H C W
+            y = [graph_ transposeTensor:y dimension:2 withDimension:3 name:nil];   // N H W C
+        }
         output_ = [graph_ castTensor:y toType:MPSDataTypeUInt8 name:@"output"];
 
         // Compiled once for this size. Level 0 keeps every operation on the GPU; AJI_METAL_OPT=1
@@ -163,6 +190,7 @@ private:
     }
 
     int w_, h_;
+    bool nhwc_ = true;
     AjmModel model_;
     id<MTLDevice> device_ = nil;
     id<MTLCommandQueue> queue_ = nil;

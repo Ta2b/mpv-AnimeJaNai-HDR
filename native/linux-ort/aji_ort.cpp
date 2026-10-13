@@ -91,8 +91,9 @@ Settings read_settings(const std::string &conf)
 struct Worker {
     std::unique_ptr<Executor> executor;
     double pace_ms = 0;        // recent time for one tile, 0 = not known yet
-    double total_ms = 0;
+    double total_ms = 0;       // tiles after the first one (the first includes compilation)
     uint64_t tiles = 0;
+    uint64_t idle = 0;         // frames in a row this device declined every tile
 };
 
 struct Step {
@@ -295,6 +296,9 @@ bool worth_taking(const Step &step, size_t me, size_t queued)
 {
     const double mine = step.workers[me].pace_ms;
     if (mine <= 0) return true;
+    // A device that keeps declining would never be timed again: it takes one tile from time to
+    // time, in case it got faster (another program left it) or was misjudged.
+    if (step.workers[me].idle >= 96) return true;
     double rate = 0, fastest = 0;
     for (size_t i = 0; i < step.workers.size(); i++) {
         const double pace = step.workers[i].pace_ms;
@@ -332,22 +336,29 @@ double run_tiles(Step &step, const std::vector<int> &todo, const uint8_t *src, p
     const bool alone = step.workers.size() == 1;
     auto work = [&](size_t me) {
         Worker &worker = step.workers[me];
+        bool took_one = false;
         try {
             while (true) {
                 int index;
                 {
                     std::lock_guard<std::mutex> guard(lock);
-                    if (next >= todo.size() || !worth_taking(step, me, todo.size() - next)) return;
+                    if (next >= todo.size() || !worth_taking(step, me, todo.size() - next)) break;
                     index = todo[next++];
+                    worker.idle = 0;
+                    took_one = true;
                 }
                 const double began = now_ms();
                 worker.executor->run(job_for(step.plan.tiles[(size_t)index], src, stride, dst, dst_stride, alone));
                 const double took = now_ms() - began;
                 std::lock_guard<std::mutex> guard(lock);
-                worker.pace_ms = worker.pace_ms <= 0 ? took : 0.7 * worker.pace_ms + 0.3 * took;
-                worker.total_ms += took;
+                // The first tile of a device includes the compilation of its model: not a pace.
+                if (worker.tiles > 0) {
+                    worker.pace_ms = worker.pace_ms <= 0 ? took : 0.7 * worker.pace_ms + 0.3 * took;
+                    worker.total_ms += took;
+                }
                 worker.tiles++;
             }
+            if (!took_one) { std::lock_guard<std::mutex> guard(lock); worker.idle++; }
         } catch (const std::exception &e) { errors[me] = e.what(); }
     };
     std::vector<std::thread> threads;
@@ -467,7 +478,7 @@ void write_stats(const Context &c, double ms)
         uint64_t tiles = 0;
         for (const auto &w : step.workers) tiles += w.tiles;
         for (const auto &w : step.workers)
-            f << " [" << w.executor->label << ": " << (w.tiles ? w.total_ms / w.tiles : 0) << " ms a tile, "
+            f << " [" << w.executor->label << ": " << (w.tiles > 1 ? w.total_ms / (w.tiles - 1) : 0) << " ms a tile, "
               << (tiles ? 100 * w.tiles / tiles : 0) << " % of the tiles]";
         f << "\n";
         for (const auto &w : step.workers)

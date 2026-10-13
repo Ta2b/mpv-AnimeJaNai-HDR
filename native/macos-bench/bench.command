@@ -30,21 +30,25 @@ cd "$cd_work" || exit 1
 
 frames=30
 [ "$mode" = essai ] && frames=3
-# essai MOTEUR CIBLE PROFIL LARGEUR HAUTEUR
+# essai MOTEUR CIBLE PROFIL LARGEUR HAUTEUR [VARIABLE=VALEUR...]
 #   MOTEUR : coreml (Core ML par ONNX Runtime), coremlnative (Core ML natif), metal
+#   Variables d'essai : AJI_TILES=2x2 (découpe en tuiles), AJI_METAL_LAYOUT=nchw, AJI_METAL_OPT=1
 essai() {
     local engine="$1" device="$2" slot="$3" w="$4" h="$5" n="$frames"
+    shift 5
     [ "$device" = CPU ] && n=4
+    local extra="${*:+ $*}"
     echo | tee -a "$out"
-    echo "== $engine | $device | profil $slot | ${w}x${h}" | tee -a "$out"
-    AJI_ORT_PROVIDER="$engine" AJI_REUSE=off "$tool" "$conf" "$models" "$slot" "$w" "$h" "$n" "$device" 2>&1 \
+    echo "== $engine | $device | profil $slot | ${w}x${h}$extra" | tee -a "$out"
+    env AJI_ORT_PROVIDER="$engine" AJI_REUSE=off "$@" "$tool" "$conf" "$models" "$slot" "$w" "$h" "$n" "$device" 2>&1 \
         | grep -E '^RESULT|^Tiles|^Devices|^Placement|failed|rror' \
-        | sed "s/^RESULT/RESULT | moteur=$engine cible=$device profil=$slot/" | cut -c1-420 | tee -a "$out"
+        | sed "s/^RESULT/RESULT | moteur=$engine cible=$device profil=$slot$extra/" | cut -c1-420 | tee -a "$out"
 }
 
 if [ "$mode" = essai ]; then
     # Passage court de l'intégration continue : chaque moteur une fois, petite image.
     essai coreml ALL 1 640 360; essai coremlnative GPU 1 640 360; essai metal GPU 1 640 360
+    essai metal GPU 1 640 360 AJI_METAL_LAYOUT=nchw; essai coremlnative NPU 1 640 360 AJI_TILES=2x2
 else
     # 1. Chaque moteur sur chaque processeur seul, Performance en 720p.
     for device in ALL GPU ANE; do essai coreml "$device" 1 1280 720; done
@@ -54,8 +58,15 @@ else
     essai coremlnative GPU+NPU 1 1280 720
     essai metal GPU+NPU 1 1280 720
     essai coreml GPU+ANE 1 1280 720
+    # 3. Le Neural Engine préfère les petites images : la même image en 4, 6 puis 12 tuiles.
+    for grid in 2x2 3x2 4x3; do essai coremlnative NPU 1 1280 720 "AJI_TILES=$grid"; done
+    essai coremlnative GPU+NPU 1 1280 720 AJI_TILES=4x3
+    essai metal GPU+NPU 1 1280 720 AJI_TILES=4x3
+    # 4. Variantes du moteur Metal : disposition des données, placement par le graphe.
+    essai metal GPU 1 1280 720 AJI_METAL_LAYOUT=nchw
+    essai metal GPU 1 1280 720 AJI_METAL_OPT=1
     if [ "$mode" != rapide ]; then
-        # 3. Autres tailles, puis le modèle Balanced (profil 2).
+        # 5. Autres tailles, puis le modèle Balanced (profil 2).
         for size in "960 540" "1920 1080"; do
             set -- $size
             essai coremlnative GPU 1 "$1" "$2"; essai coremlnative GPU+NPU 1 "$1" "$2"
@@ -85,8 +96,9 @@ rank() { # rank TITRE MOTIF
         best="$(grep '^RESULT' "$out" | grep -- 'profil=1 .*1280x720 ->' | awk -F'|' '{ t=$5; sub(/.*frame /,"",t); sub(/ ms.*/,"",t); print t "\t" $2 }' | sort -n | head -1 | cut -f2)"
         echo
         echo "== Réglage le plus rapide en 720p :$best"
-        echo "   Manager > Global Settings > Apple Silicon : moteur coreml = « Core ML (ONNX Runtime) »,"
-        echo "   coremlnative = « Core ML (native) », metal = « Metal » ; cible = Compute target."
+        echo "   Manager > Global Settings : moteur coreml = « Core ML (ONNX Runtime) », coremlnative ="
+        echo "   « Core ML (native) », metal = « Metal » ; cible = Compute target. Une variable AJI_TILES se"
+        echo "   règle par engine_tiles=... dans la section [global] de animejanai.conf."
     fi
 } | tee -a "$out"
 echo | tee -a "$out"
