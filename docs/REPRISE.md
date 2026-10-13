@@ -206,3 +206,19 @@ La publication autorisée passe par le workflow et son `GITHUB_TOKEN`.
 Pour le détail pérenne, lire [RELEASE.md](RELEASE.md), [LINUX.md](LINUX.md),
 [LINUX-INFERENCE.md](LINUX-INFERENCE.md), [SETTINGS.md](SETTINGS.md) et
 [DEVELOPMENT.md](DEVELOPMENT.md), ainsi que les documents du Manager.
+
+## Reprise après la pause du 13 octobre 2026
+
+Dernière release : 3.8.0.15. Essais attendus de l'utilisateur, aucun n'est revenu complet :
+
+- **macOS** (MacBook Pro M4 Pro) : état, mesure et suite dans `docs/MACOS.md`, dernière section. Un
+  correctif de vitesse est sur `hdr-3.8`, non publié.
+- **TrueHDR sous Linux** (NVIDIA Maxine) : tout est écrit, rien n'a tourné. L'utilisateur doit
+  installer la fonction `nvvfxtruehdr` avec sa clé NGC, compiler `libaji_rtx.so` et copier deux
+  fichiers ; mode d'emploi dans le dépôt privé `Ta2b/animejanai-inference-rtx`, dossier
+  `aji-rtx-linux`. Détail dans `docs/LINUX-INFERENCE.md`.
+- **OpenVINO** (ami de l'utilisateur, Fedora, Intel Arc) : fourni dans le paquet depuis la
+  3.8.0.13, vérifié sur processeur seulement. Sur GPU il faut `intel-compute-runtime`. Aucun retour
+  depuis.
+- **AppImage** : le plantage du chargeur Vulkan est corrigé depuis la 3.8.0.11 (confirmé par le
+  journal de la machine Fedora).

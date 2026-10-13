@@ -75,3 +75,48 @@ léger prend **54 ms par image**, trop pour 24 images par seconde (41 ms). Corre
 Écran Liquid Retina XDR : la sortie PQ / BT.2020 de mpv passe par l'EDR de macOS. Réglages conseillés,
 non vérifiés : `display_peak=1600`, `display_oled=no` (mini-LED). `Ctrl+i` affiche ce que l'écran a
 négocié.
+
+## État à la pause du 13 octobre 2026 : à lire pour reprendre
+
+**Dernière release : 3.8.0.15.** La branche `hdr-3.8` est en avance sur elle (correctif ci-dessous,
+non publié). Pour le publier : passer `release-version.txt` à 3.8.0.16, pousser `hdr-3.8` puis
+`hdr-3.8:release` ; le workflow `macOS` joint seul ses fichiers à la release.
+
+### Mesure sur le MacBook Pro M4 Pro de l'utilisateur (3.8.0.15, profil 1)
+
+- Temps par image 47 à 49 ms, dont **modèle 46 à 48 ms** et conversions 2,5 ms. Il faut moins de
+  41 ms pour 24 images par seconde. Résolution de la vidéo et valeur de `device` non précisées
+  (probablement 1080p et `ALL`).
+- Les conversions ne sont donc plus le problème ; tout se joue dans le modèle.
+
+### Cause trouvée, correctif écrit, non publié, gain non mesuré
+
+- Avec `AJI_ORT_LOG=0`, ONNX Runtime montre que Core ML ne prend pas le graphe en entier : le
+  « pixel unshuffle » des modèles (Reshape en rang 6, Transpose, Reshape) est refusé, Core ML
+  n'acceptant pas les tenseurs de rang supérieur à 5. Le graphe est coupé en **deux parties Core ML**
+  avec ces nœuds sur le processeur entre les deux.
+- `native/linux-ort/fuse_unshuffle.py` remplace ces trois nœuds par une convolution 2x2 de pas 2 à
+  poids unitaires, strictement équivalente. Le workflow produit des variantes `*.coreml.onnx` ; le
+  moteur les préfère quand `backend=CoreML` (`AJI_ORT_ORIGINAL=1` revient au modèle d'origine).
+- Vérifié en intégration continue : **une seule partie Core ML**, même pixel de contrôle que le
+  fournisseur CPU, application et paquet de mesure contenant les variantes.
+- **Non vérifié : le gain.** La machine de test est virtuelle, sans vrai GPU ; ses temps ne disent
+  rien (le modèle fusionné y est même un peu plus lent, dans le bruit).
+
+### Suite proposée, dans l'ordre
+
+1. Publier la 3.8.0.16 et demander à l'utilisateur `Model ms` (Ctrl+j) avec `device=ALL`, `GPU` puis
+   `ANE`, profil 1, vidéo 1080p. Le paquet `AnimeJaNai-mac-bench.zip` donne les mêmes chiffres sans
+   lecteur.
+2. Si le modèle reste au-dessus de 35 ms : regarder ce que Core ML fait encore hors GPU (journal
+   `AJI_ORT_LOG=0`), puis comparer avec MLX (il faudra réécrire le modèle SPAN, MLX ne lisant pas
+   l'ONNX) ou un appel direct à Core ML sans ONNX Runtime.
+3. Manager pour macOS : non commencé. Le Manager distingue Windows et Linux à 21 endroits et ne
+   connaît pas Core ML ; l'arborescence `~/Library/Application Support/AnimeJaNai` est déjà celle
+   de Linux (`ANIMEJANAI_ROOT`, `ANIMEJANAI_DATA_DIR`).
+4. RIFE dans le moteur ONNX Runtime, mise à jour automatique sur Mac.
+
+### Jamais vérifié sur le Mac
+
+Conversion SDR vers HDR (`linux_hdr_output=pq`, `display_peak=1600`, `display_oled=no` conseillés
+pour l'écran XDR) : aucun retour de l'utilisateur. Ouverture depuis le Finder : aucun retour non plus.
