@@ -71,12 +71,13 @@ local function report()
     local truehdr=native('user-data/animejanai-truehdr')==true
     local filter='aucun'
     for _,f in ipairs(native('vf') or {}) do if f.label=='aji' then filter=f.enabled and 'AnimeJaNai' or 'AnimeJaNai (desactive)' end end
-    local text=table.concat({
-        'Linux / Wayland | GPU inference : '..h.name,
+    local lines={
+        (h.platform=='macos' and 'macOS' or 'Linux / Wayland')..' | GPU inference : '..h.name,
         'GPU ecran (connecteurs PCI) : '..table.concat(h.display_pci or {},', '),
         'Rendu Vulkan : '..tostring(h.vulkan_device or native('vulkan-device') or 'selection automatique'),
         'Sortie demandee : '..options.linux_hdr_output..' | negociee : '..tostring(native('video-target-params/gamma') or 'inconnue'),
-        'Ecran HDR : verification physique requise ; activer HDR dans le bureau (GNOME, KDE) avant de choisir PQ.',
+        h.platform=='macos' and 'Ecran HDR : verification physique requise ; un ecran XDR recoit le HDR par macOS (EDR).'
+            or 'Ecran HDR : verification physique requise ; activer HDR dans le bureau (GNOME, KDE) avant de choisir PQ.',
         'Sortie video (apres filtres) : '..tostring(out.w or '?')..'x'..tostring(out.h or '?')..' | '..rate('estimated-vf-fps','images/s')..' (estime)',
         'Source : '..rate('container-fps','images/s')..' | ecran : '..rate('display-fps','Hz'),
         'Grading : '..state.mode..' | comparaison : '..choice,
@@ -85,8 +86,11 @@ local function report()
         'Decodage : '..tostring(native('hwdec-current') or 'logiciel')..' | images perdues : sortie='..tostring(native('frame-drop-count') or 0)..' decodage='..tostring(native('decoder-frame-drop-count') or 0),
         'RIFE : '..tostring(native('user-data/animejanai-rife-sync') or 'facteur du profil'),
         -- The driver layer works after mpv: only the request is known here, not its effect.
-        'Smooth Motion (pilote NVIDIA) : '..(os.getenv('NVPRESENT_ENABLE_SMOOTH_MOTION')=='1' and 'demande au lancement' or 'non demande'),
-    },'\n')
+    }
+    if h.platform~='macos' then
+        lines[#lines+1]='Smooth Motion (pilote NVIDIA) : '..(os.getenv('NVPRESENT_ENABLE_SMOOTH_MOTION')=='1' and 'demande au lancement' or 'non demande')
+    end
+    local text=table.concat(lines,'\n')
     mp.msg.info(text);mp.osd_message(text,12)
     local f=io.open(mp.command_native({'expand-path','~~/../animejanai/diagnostic-hdr.txt'}),'w')
     if f then f:write(text,'\n');f:close() end

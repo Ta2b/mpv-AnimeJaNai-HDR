@@ -172,6 +172,11 @@ jobs:
           ! grep -E 'Lua error|stack traceback' run.log
           ls -R "$HOME/Library/Application Support/AnimeJaNai" | head -30
           test -f "$HOME/Library/Application Support/AnimeJaNai/animejanai/animejanai.conf"
+          # The display defaults were decided once (no XDR display on the runner: nothing changed).
+          cat "$HOME/Library/Application Support/AnimeJaNai/.display-defaults"
+          grep -q '^linux_hdr_output=' "$HOME/Library/Application Support/AnimeJaNai/portable_config/script-opts/animejanai_hdr_auto.conf"
+          # The lighter profiles of the automatic choice exist in the application's bank.
+          grep -q '^\[slot_6\]' "mac-out/mpv AnimeJaNai.app/Contents/Resources/animejanai/animejanai.conf"
           grep -q 'Backend: ONNX Runtime/CoreML' "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
           grep -q 'Output: 1280x720' "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
       - name: Archive

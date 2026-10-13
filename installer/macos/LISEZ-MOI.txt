@@ -17,10 +17,25 @@ Ctrl+1  Performance, 1080p ramené à 720p puis doublé (le plus léger)
 Ctrl+2  Performance, résolution d'origine doublée
 Ctrl+3  Balanced, 1080p ramené à 720p puis doublé
 Ctrl+4  Balanced, résolution d'origine doublée
+Ctrl+5  Performance léger, ramené à 540p puis doublé
+Ctrl+6  Performance très léger, ramené à 360p puis doublé
 Ctrl+0  désactiver
+Ctrl+r  oublier le profil retenu pour ce Mac et mesurer à nouveau
+Ctrl+h  conversion SDR vers HDR : activer / désactiver
 Ctrl+j  état et temps par image : total, modèle (Core ML) et conversions
 Ctrl+g  rendu HDR : personnalisé / naturel / désactivé
 Ctrl+i  état de la sortie HDR
+
+Choix automatique du profil
+---------------------------
+Il n'y a pas de Manager sur Mac : le lecteur règle lui-même ce qui dépend de la machine.
+- Il mesure le temps passé sur chaque image. Si le profil est plus lent que la vidéo, il passe
+  au profil plus léger suivant (1, puis 5, puis 6, puis désactivé), l'affiche et s'en souvient
+  pour les lancements suivants. Ctrl+r efface ce choix. Un profil choisi au clavier est gardé
+  pour la séance. Pour tout régler à la main : auto_profile=no dans animejanai_mac.conf.
+- Au premier lancement sur un Mac à écran XDR (MacBook Pro, Pro Display XDR), la conversion
+  SDR vers HDR est activée et l'écran décrit (pic 1600 nits). Ctrl+h la coupe ou la remet.
+  Sur un autre écran, la vidéo garde son format ; Ctrl+h active la conversion.
 
 La première image d'un profil est lente : Core ML compile le modèle, puis le garde dans
 ~/Library/Caches/AnimeJaNai (un dossier par taille d'image).
@@ -30,11 +45,13 @@ Réglages
 Dossier : ~/Library/Application Support/AnimeJaNai (créé au premier lancement).
   portable_config/script-opts/animejanai_mac.conf
       default_slot  profil au démarrage (0 = désactivé)
+      auto_profile  yes : profil plus léger quand le Mac ne suit pas (voir plus haut)
       device        ALL, GPU, ANE (Neural Engine) ou CPU : essayez-les, le plus rapide dépend du Mac.
                     GPU+ANE coupe l'image en deux bandes traitées en même temps, une par
                     processeur (non mesuré sur un vrai Mac : le paquet de mesure le compare)
   portable_config/script-opts/animejanai_hdr_auto.conf
-      linux_hdr_output  auto (défaut : la vidéo SDR reste SDR), pq (conversion SDR vers HDR), sdr
+      linux_hdr_output  auto (la vidéo SDR reste SDR), pq (conversion SDR vers HDR), sdr ;
+                        pq est choisi au premier lancement sur un écran XDR
       rtx_contrast, rtx_saturation, rtx_middle_gray, display_peak, paper_white : rendu HDR,
       mêmes réglages que sous Windows et Linux
   portable_config/mpv.conf       réglages de mpv (sortie vidéo, décodage)
@@ -42,8 +59,9 @@ Dossier : ~/Library/Application Support/AnimeJaNai (créé au premier lancement)
 
 Conversion SDR vers HDR
 -----------------------
-Sur un écran HDR (écran XDR du MacBook Pro, par exemple), mettre linux_hdr_output=pq dans
-animejanai_hdr_auto.conf. Laisser auto sur un écran qui n'est pas HDR.
+Activée d'office sur un écran XDR ; ailleurs, Ctrl+h (ou linux_hdr_output=pq dans
+animejanai_hdr_auto.conf). Sur un écran qui n'est pas HDR, la laisser désactivée.
+Jamais vérifiée à l'écran par le développement : si l'image paraît fausse, Ctrl+h et signalez-le.
 
 Ce que cette version ne fait pas encore
 ---------------------------------------

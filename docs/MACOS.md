@@ -169,3 +169,25 @@ Modèle Core ML natif sans ONNX Runtime, images gardées dans le GPU (décodage 
 copie), RIFE, Manager. Le premier n'a d'intérêt que si la mesure montre que le temps part dans
 ONNX Runtime et non dans le calcul.
 
+### Réglages par défaut sans Manager (3.8.0.19)
+
+Il n'y a pas de Manager sur Mac : ce qui dépend de la machine se règle seul.
+
+- **Profil.** `animejanai_mac.lua` lit le temps par image du moteur (16 mesures après les 12
+  premières images) et le compare au temps entre deux images de la vidéo (85 % de ce temps,
+  `auto_budget`). Trop lent : profil plus léger suivant, 1 puis 5 (540p) puis 6 (360p) puis
+  désactivé, avec un message, et mémorisation dans `animejanai/auto-profile.txt` (« désactivé »
+  n'est pas mémorisé). `Ctrl+r` oublie ce choix ; un profil choisi au clavier suspend le
+  mécanisme pour la séance ; `auto_profile=no` le coupe. Les profils 5 et 6 sont lus dans la
+  banque de l'application quand celle de l'utilisateur, plus ancienne, ne les a pas.
+  Vérifié sous Linux avec le fournisseur CPU dans le mpv du paquet : descente 1, 5, 6, arrêt ;
+  profil mémorisé repris au lancement suivant.
+- **HDR.** Au premier lancement, `launcher.sh` cherche un écran XDR (`system_profiler`). S'il y
+  en a un et que les réglages sont encore ceux d'origine : `linux_hdr_output=pq` et
+  `display_peak=1600` (`display_oled=no` est déjà la valeur d'origine). Une seule fois
+  (`.display-defaults`). `Ctrl+h` bascule la conversion et réécrit le réglage. Vérifié : la
+  logique du lanceur avec une fausse détection, la bascule dans le lecteur. **Jamais vu à
+  l'écran : la conversion SDR vers HDR sur macOS reste sans retour de l'utilisateur.**
+- **Processeur.** `device=ALL` reste la valeur d'origine tant que le paquet de mesure n'a pas dit
+  si `GPU+ANE` fait mieux.
+

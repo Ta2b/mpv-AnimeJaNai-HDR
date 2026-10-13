@@ -19,6 +19,23 @@ for file in mpv.conf script-opts/animejanai_mac.conf script-opts/animejanai_hdr_
     [ -f "$CONF/$file" ] || cp "$SRC/$file" "$CONF/$file"
 done
 [ -f "$DATA/animejanai/animejanai.conf" ] || cp "$RES/animejanai/animejanai.conf" "$DATA/animejanai/animejanai.conf"
+# Once per Mac: with an XDR display (MacBook Pro, Pro Display XDR), SDR video is converted to HDR
+# and the display is described (1600 nits peak, not OLED), as the other platforms do when HDR
+# output is available. Only settings still at their shipped value are changed; afterwards the
+# file is the user's. Ctrl+h in the player turns the conversion off and on.
+hdr="$CONF/script-opts/animejanai_hdr_auto.conf"
+if [ ! -f "$DATA/.display-defaults" ] && [ -f "$hdr" ]; then
+    kind=other
+    if "${ANIMEJANAI_DISPLAY_PROBE:-system_profiler}" SPDisplaysDataType 2>/dev/null | grep -q 'XDR'; then
+        kind=xdr
+        if grep -q '^linux_hdr_output=auto' "$hdr" && grep -q '^display_peak=auto' "$hdr"; then
+            sed -e 's/^linux_hdr_output=auto/linux_hdr_output=pq/' -e 's/^display_peak=auto/display_peak=1600/' \
+                "$hdr" > "$hdr.new" && mv "$hdr.new" "$hdr"
+            kind=xdr-hdr
+        fi
+    fi
+    echo "$kind" > "$DATA/.display-defaults"
+fi
 export MPV_HOME="$CONF"
 export ANIMEJANAI_BUNDLE="$RES"
 export ANIMEJANAI_ROOT="$DATA"
