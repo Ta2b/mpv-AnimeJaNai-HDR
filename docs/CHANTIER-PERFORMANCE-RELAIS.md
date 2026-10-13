@@ -105,6 +105,13 @@ local de test ; la CI de publication exécutera le contrôle corrigé. Ce correc
 est poussé sur les deux branches avec la même version 3.8.0.23 ; le build macOS
 initial, dont les sources moteur sont identiques, peut continuer.
 
+Le premier build macOS (`38479119500`) compile le moteur et passe les contrôles
+du pool, mais s'arrête sur un `grep` attendant l'ancien libellé
+`average after the first frame`. L'outil écrit désormais
+`average after warmup (1 source frames):`. Le contrôle est adapté à ce nouveau
+format, sans supprimer l'assertion ; un nouveau push de ce workflow relance la
+construction et la publication Mac. Ce premier run n'a publié aucun fichier.
+
 ### Mesures Mac et suite du chantier
 
 La session du Mac s'est verrouillée pendant le benchmark 3.8.0.21. Les
