@@ -22,6 +22,26 @@ rapports restent intacts dans `resume-ncnn/`. Les sections suivantes décrivent
 leur état historique, notamment les mentions « non commité ». Pour reprendre,
 utiliser cette section et le commit de livraison, pas ces anciens statuts.
 
+### Suivi après les correctifs et piste SVP
+
+Commit de publication corrigé : `aab89ba7ded15d81dc279a83cea2cb39440f6e90`.
+Runs à suivre : [Deploy](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479416318)
+et [macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479416046).
+Dernier état observé : build Windows réussi ; contrôles plateforme Windows/Linux,
+ORT et HDR réussis ; étape Vulkan encore en cours. Moteur Mac réussi, application
+Mac encore en construction. **Publication des assets non encore confirmée.**
+Aucun nouveau test local lancé. Les premières tentatives restent dans l'historique
+ci-dessus ; utiliser ces nouveaux runs pour le suivi courant.
+
+L'utilisateur confirme son ancien cas SVP : **RIFE 4.26, TensorRT, source 1080p,
+AnimeJaNai ×2, écran 1080p**. La résolution réellement reçue par RIFE reste inconnue.
+Analyse, sources et priorités consignées dans `OPTIMISATIONS-MOTEURS.md`, section
+« Piste SVP ». Commits documentaires `ed11c53` / `13b9828` sur `hdr-3.8` seulement :
+ils ne relancent pas la release et n'ajoutent aucune optimisation non construite
+à ses binaires. Les pistes renforcées sont concurrence GPU bornée, CUDA Graphs
+RIFE, réduction des attentes CPU et RIFE natif/résident sur Apple. Ni changement
+de modèle ni interpolation à résolution réduite activés.
+
 ### Code livré dans le moteur partagé
 
 - `pixel_workers.{h,cpp}` et `engine.h` : pool permanent de sept helpers au
