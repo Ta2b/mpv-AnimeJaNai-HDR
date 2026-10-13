@@ -1,5 +1,10 @@
 # Reprise du travail — 12 octobre 2026
 
+**Chantier performances commencé le 13 octobre 2026 :** lire d'abord
+[l'état exact et les commandes de relais](CHANTIER-PERFORMANCE-RELAIS.md).
+Les changements de ce chantier conservent les modèles et sont encore locaux ;
+ne pas déduire leur publication des anciennes notes de release ci-dessous.
+
 ## Mise à jour du 12 octobre, 20 h (heure de Paris) : 3.8.0.9 publiée
 
 **La release 3.8.0.9 est publiée avec Windows et Linux**

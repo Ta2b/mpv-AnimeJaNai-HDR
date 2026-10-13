@@ -1,4 +1,7 @@
 /* Host RGB24 bridge, ABI 1. Independent of CUDA/D3D11 aji ABI 9. */
+/* Sources are compared byte for byte before reuse; row padding is ignored. Configure clears
+ * every derived picture. AJI_VK_CACHE=0 keeps the uncached path for comparison/diagnosis.
+ * AJI_VK_RIFE_GPU_CACHE=0 disables only resident RIFE inputs, retaining source reuse. */
 #pragma once
 #include <stddef.h>
 #include <stdint.h>

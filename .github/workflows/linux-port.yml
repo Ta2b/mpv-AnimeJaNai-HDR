@@ -194,13 +194,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install native build and software Vulkan driver
-        run: sudo apt-get update && sudo apt-get install -y cmake g++ git libvulkan-dev mesa-vulkan-drivers vulkan-tools python3-venv
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ git patch libvulkan-dev mesa-vulkan-drivers vulkan-tools python3-venv
       - name: Restore pinned Vulkan bundle
         id: vulkan-cache
         uses: actions/cache@v4
         with:
           path: vulkan-bundle
-          key: vulkan-ubuntu24-${{ runner.arch }}-${{ hashFiles('native/linux-vulkan/CMakeLists.txt', 'native/linux-vulkan/aji_vulkan.cpp', 'native/linux-vulkan/aji_vulkan.h', 'native/linux-vulkan/convert_span.py', 'native/linux-vulkan/smoke.cpp', 'installer/linux/build-inference.sh', 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx/*SPANF3*') }}
+          key: vulkan-ubuntu24-${{ runner.arch }}-${{ hashFiles('native/linux-vulkan/CMakeLists.txt', 'native/linux-vulkan/aji_vulkan.cpp', 'native/linux-vulkan/aji_vulkan.h', 'native/linux-vulkan/rife_frame_cache.h', 'native/linux-vulkan/rife-v4-cache.patch', 'native/linux-vulkan/convert_span.py', 'native/linux-vulkan/smoke.cpp', 'installer/linux/build-inference.sh', 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx/*SPANF3*') }}
       - name: Install model validation dependencies
         run: |
           python3 -m venv "$RUNNER_TEMP/model-python"
@@ -217,6 +217,19 @@ jobs:
           device="$(vulkaninfo --summary 2>/dev/null | sed -n 's/^[[:space:]]*deviceName[[:space:]]*=[[:space:]]*//p' | head -1)"
           test -n "$device"
           "$RUNNER_TEMP/model-python/bin/python" tests/inference/model_parity.py vulkan-bundle BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx --device "$device" --report artifacts/vulkan-model-parity-ci.json
+      - name: Exact source and resident RIFE caches through software Vulkan
+        run: |
+          export VK_ICD_FILENAMES="$(find /usr/share/vulkan/icd.d -name '*lvp*json' -print -quit)"
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/vulkan-runtime"
+          device="$(vulkaninfo --summary 2>/dev/null | sed -n 's/^[[:space:]]*deviceName[[:space:]]*=[[:space:]]*//p' | head -1)"
+          test -n "$device"
+          # Disable the cache in the reference mode, with identical kernels and model weights.
+          # Development also compares with an immutable pre-change library on a physical GPU.
+          "$RUNNER_TEMP/model-python/bin/python" tests/inference/vulkan_cache.py \
+            --reference vulkan-bundle/inference/libaji_vulkan.so \
+            --candidate vulkan-bundle/inference/libaji_vulkan.so \
+            --models vulkan-bundle/onnx --rife vulkan-bundle/rife-vulkan \
+            --device "$device" --report artifacts/vulkan-cache-parity-ci.json
       - uses: actions/upload-artifact@v4
         with:
           name: vulkan-backend-linux-x64
@@ -230,3 +243,4 @@ jobs:
           path: |
             vulkan-bundle/inference/vulkan-build-info.txt
             artifacts/vulkan-model-parity-ci.json
+            artifacts/vulkan-cache-parity-ci.json

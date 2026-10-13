@@ -142,6 +142,9 @@ try
         Pass("normal-version-validation");
     }
     // ---- macOS: the application is replaced as a whole ----
+    // POSIX paths: these cases run where the application can exist.
+    if (!OperatingSystem.IsWindows())
+    {
     {
         Check(Production.Bundle("/Applications/mpv AnimeJaNai.app/Contents/Resources/") == "/Applications/mpv AnimeJaNai.app", "Did not find the application of its Resources folder");
         Check(Production.Bundle("/Users/a/Apps/X.app/Contents/Resources/Manager.app/Contents/MacOS") == "/Users/a/Apps/X.app/Contents/Resources/Manager.app", "Did not pick the innermost application");
@@ -213,6 +216,7 @@ try
         try { Production.Replace(Path.Combine(staging, "missing.app"), app); } catch (Exception) { failed = true; }
         Check(failed && Version() == "2" && !Directory.Exists(Path.Combine(dir, ".mpv AnimeJaNai.app.previous")), "A failed replacement lost the installed application");
         Pass("mac-application-replaced-or-kept");
+    }
     }
     Console.WriteLine($"Completed {passed} updater regression cases.");
     return 0;
