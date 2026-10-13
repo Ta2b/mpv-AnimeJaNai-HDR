@@ -23,7 +23,9 @@ struct TilePlan {
 // model gives the tile the pixels it would give it in the whole frame. The grid is reduced when
 // the tiles would be smaller than their overlap. `align`: the window width is rounded up to a
 // multiple of it when the frame is wide enough (an executor may need it, see the core).
-TilePlan plan_tiles(int w, int h, int nx, int ny, int reach, int align = 2);
+// `min_window`: the smallest window side an executor takes (a Core ML template: 256); the grid
+// is reduced along an axis until its windows reach it. The frame itself is at least that large.
+TilePlan plan_tiles(int w, int h, int nx, int ny, int reach, int align = 2, int min_window = 0);
 
 // "auto", "1", "off", "2x2", "3x2"...: the grid for `executors` devices. Auto keeps one tile for
 // one device unless tiles are wanted for partial reuse.

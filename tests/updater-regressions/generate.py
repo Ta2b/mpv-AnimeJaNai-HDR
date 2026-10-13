@@ -18,10 +18,15 @@ def method(signature):
 methods=[method(s) for s in ('void SyncInputConf()', 'string ReadLocalVersion()',
     'static string ReadManifestString(', 'string? PackVersionMismatch(',
     'Task<Release> GetInstalledReleaseAsync()', 'async Task<Release> GetReleaseAsync(string url)',
-    'async Task<PackIndex> GetPackIndexAsync()', 'void CopyTree(', 'static bool IsPreserved(', 'static void TryDelete(')]
+    'async Task<PackIndex> GetPackIndexAsync()', 'void CopyTree(', 'static bool IsPreserved(', 'static void TryDelete(',
+    # macOS: the application is replaced as a whole.
+    'static string? BundleOf(', 'static string? MacBlocked(', 'static bool ChecksumMatches(',
+    'static string StagedApp(', 'static void ReplaceBundle(')]
 start=source.index('string ReadComponentVersion() =>')
 methods.append(source[start:source.index(';',start)+1])
 start=source.index('static string NormalizeRel(')
+methods.append(source[start:source.index(';',start)+1])
+start=source.index('static Asset? MacAsset(')
 methods.append(source[start:source.index(';',start)+1])
 latest=next(s for s in source.splitlines() if s.startswith('Task<Release> GetLatestReleaseAsync()'))
 repo=next(s for s in source.splitlines() if s.startswith('const string Repo ='))
@@ -43,6 +48,12 @@ class Production
     public Task<PackIndex> Packs() => GetPackIndexAsync();
     public Task<Release> Latest() => GetLatestReleaseAsync();
     public string? Mismatch(PackIndex index) => PackVersionMismatch(index);
+    public static string? Bundle(string path) => BundleOf(path);
+    public static Asset? MacApplication(Release release, string suffix) => MacAsset(release, suffix);
+    public static string? Blocked(string app) => MacBlocked(app);
+    public static bool Checksum(string file, string published) => ChecksumMatches(file, published);
+    public static string Staged(string staging, string launcher) => StagedApp(staging, launcher);
+    public static void Replace(string staged, string app) => ReplaceBundle(staged, app);
 '''.replace('REPO',repo)
 (out/'Production.cs').write_text(wrapper+'\n'.join(methods)+'\n'+latest+'\n}\n'+
     source[source.index('record Release('):],encoding='utf-8')

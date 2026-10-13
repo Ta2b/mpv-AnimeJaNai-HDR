@@ -4,6 +4,8 @@
 //
 //   AnimeJaNaiUpdater.exe --check        prints UPDATE_AVAILABLE <ver> | UP_TO_DATE <ver> (for the lua)
 //   AnimeJaNaiUpdater.exe --apply        waits for mpv to close, downloads + applies, relaunches mpv
+//   macOS (the install is an application, replaced as a whole; see "macOS" below):
+//   AnimeJaNaiUpdater --apply [--wait-pid PID] [--status FILE] [--reopen PATH] [--no-relaunch]
 //   AnimeJaNaiUpdater.exe --components   detect GPU, list installed/available packs + recommendation
 //   AnimeJaNaiUpdater.exe --install X    download + install component pack X
 //   AnimeJaNaiUpdater.exe --remove X     delete component pack X's files
@@ -29,8 +31,14 @@ using static Downloader;
 const string Repo = "Ta2b/mpv-AnimeJaNai-HDR";
 string apiLatest = $"https://api.github.com/repos/{Repo}/releases/latest";
 
+// macOS: the install is an application ("mpv AnimeJaNai.app") and the updater sits in its
+// Contents/Resources, next to manifest.json. ANIMEJANAI_ROOT is the user's folder there, not
+// the install.
+string? macApp = OperatingSystem.IsMacOS() ? BundleOf(AppContext.BaseDirectory) : null;
+
 // Single-file exe: BaseDirectory is the folder the exe runs from = the install root.
-string installDir = Path.GetFullPath(Environment.GetEnvironmentVariable("ANIMEJANAI_ROOT") ?? AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar, '/');
+string installDir = macApp is not null ? Path.Combine(macApp, "Contents", "Resources")
+    : Path.GetFullPath(Environment.GetEnvironmentVariable("ANIMEJANAI_ROOT") ?? AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar, '/');
 
 // Platform-specific names come from the install's manifest.json so this same code works on Windows
 // and (later) Linux. Fallbacks keep older installs (no manifest fields) working on Windows.
@@ -69,15 +77,27 @@ try
     switch (mode)
     {
         case "--check":
+            if (macApp is not null)
+            {
+                await MacCheckAsync();
+                return 0;
+            }
             await CheckAsync();
             return 0;
         case "--apply":
+            if (macApp is not null)
+            {
+                return await MacApplyAsync();
+            }
             if (Environment.GetEnvironmentVariable("ANIMEJANAI_APPIMAGE") == "1")
             {
                 Console.WriteLine($"Download the new AppImage from https://github.com/{Repo}/releases ; writable user data is preserved.");
                 return 0;
             }
             return await ApplyAsync();
+        case "--components" or "--install" or "--remove" or "--auto" or "--recommend" when macApp is not null:
+            Console.WriteLine("No component packs on macOS: everything is in the application.");
+            return 2;
         case "--components":
             await ComponentsAsync(null, args.Contains("--json"));
             return 0;
@@ -462,6 +482,285 @@ void MigrateAnimeJaNaiConf()
     catch { /* cleanup must never break --check */ }
 }
 
+// ---- macOS -----------------------------------------------------------------------------------
+// The install is one application. Its files cannot be updated one by one (the signature of the
+// application covers them), so the release's application replaces it as a whole. Nothing of the
+// user's is inside: profiles and settings are in ~/Library/Application Support/AnimeJaNai.
+// The new application is downloaded, unpacked and verified next to the old one while the player
+// keeps playing; the swap itself is two renames once the player has closed.
+
+string? Option(string name)
+{
+    int i = Array.IndexOf(args, name);
+    return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
+}
+
+async Task MacCheckAsync()
+{
+    var release = await GetLatestReleaseAsync();
+    string local = ReadLocalVersion();
+    // The macOS application is added to a release some time after the release is created: a
+    // release without it is not an update yet.
+    if (!IsNewer(release.Tag, local) || MacAsset(release, MacAssetSuffix()) is null)
+    {
+        Console.WriteLine($"UP_TO_DATE {local}");
+        return;
+    }
+    Console.WriteLine($"UPDATE_AVAILABLE {release.Tag}");
+    if (MacBlocked(macApp!) is string reason)
+    {
+        Console.WriteLine($"UPDATE_BLOCKED {reason}");
+    }
+}
+
+string MacAssetSuffix() => ReadManifestString(localManifest, "update_asset_suffix", "-macos-arm64.zip");
+
+async Task<int> MacApplyAsync()
+{
+    string app = macApp!;
+    string? statusPath = Option("--status");
+    string? reopen = Option("--reopen");
+    int playerPid = int.TryParse(Option("--wait-pid"), out int parsed) ? parsed : 0;
+    // One line: the state the player's script shows (CHECK, DOWNLOAD n, EXTRACT, READY v,
+    // DONE v, UP_TO_DATE v, FAILED text).
+    void Status(string line)
+    {
+        Console.WriteLine(line);
+        if (statusPath is not null)
+        {
+            TryDelete(() => File.WriteAllText(statusPath, line + "\n"));
+        }
+    }
+
+    string staging = Path.Combine(Path.GetDirectoryName(app)!, ".AnimeJaNai-update");
+    string work = Path.Combine(Path.GetTempPath(), $"animejanai-update-{Environment.ProcessId}");
+    try
+    {
+        Status("CHECK");
+        if (MacBlocked(app) is string reason)
+        {
+            Status("FAILED " + MacBlockedText(reason));
+            return 3;
+        }
+        var release = await GetLatestReleaseAsync();
+        string local = ReadLocalVersion();
+        var asset = MacAsset(release, MacAssetSuffix());
+        if (!IsNewer(release.Tag, local) || asset is null)
+        {
+            Status($"UP_TO_DATE {local}");
+            return 0;
+        }
+
+        Directory.CreateDirectory(work);
+        string zip = Path.Combine(work, asset.Name);
+        double shown = -1;
+        Status("DOWNLOAD 0");
+        await DownloadFileAsync(asset.Url, zip, p =>
+        {
+            if (p != shown)
+            {
+                shown = p;
+                Status($"DOWNLOAD {p:0}");
+            }
+        });
+        // The checksum published next to the application, when the release has one.
+        var sum = release.Assets.FirstOrDefault(a => a.Name == asset.Name + ".sha256");
+        if (sum is not null)
+        {
+            string sumPath = zip + ".sha256";
+            await DownloadFileAsync(sum.Url, sumPath, _ => { });
+            if (!ChecksumMatches(zip, File.ReadAllText(sumPath)))
+            {
+                throw new IOException("The download is damaged (checksum mismatch). Nothing was changed.");
+            }
+        }
+
+        Status("EXTRACT");
+        TryDelete(() => Directory.Delete(staging, true));
+        Directory.CreateDirectory(staging);
+        // ditto keeps what an application needs: links, permissions, signatures.
+        RunTool("/usr/bin/ditto", "-x", "-k", zip, staging);
+        string staged = StagedApp(staging, ReadManifestString(localManifest, "player_launcher", "mpv-animejanai"));
+        RunTool("/usr/bin/codesign", "--verify", "--deep", staged);
+        // Downloaded by this program, not by a browser: no quarantine expected; removed if any.
+        TryDelete(() => RunTool("/usr/bin/xattr", "-dr", "com.apple.quarantine", staged));
+
+        bool playerOpen = playerPid > 0 && IsRunning(playerPid);
+        Status($"READY {release.Tag}");
+        if (playerPid > 0 && !WaitForPid(playerPid, TimeSpan.FromSeconds(90)))
+        {
+            Status("FAILED The player did not close. Nothing was changed.");
+            return 1;
+        }
+        // The file the player was on when it closed, left by its script next to the status.
+        if (statusPath is not null && File.Exists(statusPath + ".reopen"))
+        {
+            reopen = File.ReadAllText(statusPath + ".reopen").Trim();
+        }
+        ReplaceBundle(staged, app);
+        Status($"DONE {release.Tag}");
+        // A player closed by the user during the download is not opened again.
+        if (!args.Contains("--no-relaunch") && (playerOpen || playerPid == 0))
+        {
+            var open = new ProcessStartInfo { FileName = "/usr/bin/open", UseShellExecute = false };
+            open.ArgumentList.Add("-n");
+            open.ArgumentList.Add(app);
+            if (!string.IsNullOrEmpty(reopen))
+            {
+                open.ArgumentList.Add("--args");
+                open.ArgumentList.Add(reopen);
+            }
+            try { Process.Start(open)?.Dispose(); }
+            catch (Exception e) { Console.WriteLine($"Could not relaunch the player: {e.Message}"); }
+        }
+        return 0;
+    }
+    catch (Exception e)
+    {
+        Status("FAILED " + e.Message.Replace('\n', ' '));
+        return 1;
+    }
+    finally
+    {
+        TryDelete(() => Directory.Delete(work, true));
+        TryDelete(() => Directory.Delete(staging, true));
+        if (statusPath is not null)
+        {
+            TryDelete(() => File.Delete(statusPath + ".reopen"));
+        }
+    }
+}
+
+static void RunTool(string tool, params string[] arguments)
+{
+    var psi = new ProcessStartInfo
+    {
+        FileName = tool,
+        UseShellExecute = false,
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+    };
+    foreach (var a in arguments)
+    {
+        psi.ArgumentList.Add(a);
+    }
+    using var p = Process.Start(psi) ?? throw new InvalidOperationException($"Failed to start {tool}");
+    var output = p.StandardOutput.ReadToEndAsync();
+    string err = p.StandardError.ReadToEnd();
+    output.Wait();
+    p.WaitForExit();
+    if (p.ExitCode != 0)
+    {
+        throw new InvalidOperationException($"{Path.GetFileName(tool)} failed (exit {p.ExitCode}): {err.Trim()}");
+    }
+}
+
+static bool IsRunning(int pid)
+{
+    try
+    {
+        using var p = Process.GetProcessById(pid);
+        return !p.HasExited;
+    }
+    catch (ArgumentException) { return false; }
+    catch (InvalidOperationException) { return false; }
+}
+
+static bool WaitForPid(int pid, TimeSpan timeout)
+{
+    var sw = Stopwatch.StartNew();
+    while (IsRunning(pid))
+    {
+        if (sw.Elapsed > timeout) return false;
+        Thread.Sleep(200);
+    }
+    return true;
+}
+
+// The application a path is inside ("…/X.app/Contents/…"), or null.
+static string? BundleOf(string path)
+{
+    string full = Path.GetFullPath(path).TrimEnd('/');
+    int at = full.LastIndexOf(".app/Contents", StringComparison.Ordinal);
+    if (at < 0) return null;
+    string rest = full[(at + ".app/Contents".Length)..];
+    return rest.Length == 0 || rest[0] == '/' ? full[..(at + ".app".Length)] : null;
+}
+
+// The release's application for this platform, or null when it is not published (yet).
+static Asset? MacAsset(Release release, string suffix) =>
+    release.Assets.FirstOrDefault(a => a.Name.EndsWith(suffix, StringComparison.Ordinal) &&
+                                       a.Name.Contains(release.Tag, StringComparison.Ordinal));
+
+// Why the application cannot be replaced where it is, or null.
+//   translocated: opened from the downloads folder before being moved, macOS runs a read-only
+//                 copy from a temporary place; the real application is somewhere else.
+//   readonly:     the folder that holds the application cannot be written to.
+static string? MacBlocked(string app)
+{
+    if (app.Contains("/AppTranslocation/", StringComparison.Ordinal)) return "translocated";
+    string probe = Path.Combine(Path.GetDirectoryName(app)!, ".AnimeJaNai-write-" + Guid.NewGuid().ToString("N"));
+    try
+    {
+        Directory.CreateDirectory(probe);
+        Directory.Delete(probe);
+        return null;
+    }
+    catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return "readonly"; }
+}
+
+static string MacBlockedText(string reason) => reason == "translocated"
+    ? "macOS is running a temporary copy of the application. Move it to the Applications folder with the Finder, open it from there, then update."
+    : "The folder that holds the application cannot be written to. Move the application to the Applications folder, then update.";
+
+// "<hex>  name" or "<hex>": the first word is the SHA-256 of the file.
+static bool ChecksumMatches(string file, string published)
+{
+    string expected = published.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+    using var input = File.OpenRead(file);
+    string actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(input));
+    return expected.Length == 64 && actual.Equals(expected, StringComparison.OrdinalIgnoreCase);
+}
+
+// The application an archive unpacked into `staging`: exactly one, with its launcher.
+static string StagedApp(string staging, string launcher)
+{
+    var apps = Directory.GetDirectories(staging, "*.app");
+    if (apps.Length != 1)
+    {
+        throw new InvalidOperationException("The downloaded archive does not hold one application. Nothing was changed.");
+    }
+    if (!File.Exists(Path.Combine(apps[0], "Contents", "MacOS", launcher)))
+    {
+        throw new InvalidOperationException("The downloaded application is incomplete. Nothing was changed.");
+    }
+    return apps[0];
+}
+
+// Puts `staged` in the place of `app` (same folder, so two renames). The old application is
+// only removed once the new one is in place; if the new one cannot be moved in, the old one
+// is put back.
+static void ReplaceBundle(string staged, string app)
+{
+    string previous = Path.Combine(Path.GetDirectoryName(app)!, "." + Path.GetFileName(app) + ".previous");
+    if (Directory.Exists(previous))
+    {
+        Directory.Delete(previous, true);
+    }
+    Directory.Move(app, previous);
+    try
+    {
+        Directory.Move(staged, app);
+    }
+    catch
+    {
+        Directory.Move(previous, app);
+        throw;
+    }
+    // This program is inside the old application: removed while it runs, which macOS allows.
+    TryDelete(() => Directory.Delete(previous, true));
+}
+
 async Task<int> ApplyAsync()
 {
     // The launching lua quits mpv right after starting us; wait for it to release file locks.
@@ -806,7 +1105,17 @@ Task<Release> GetInstalledReleaseAsync()
 async Task<Release> GetReleaseAsync(string url)
 {
     using var client = NewClient();
-    string json = await client.GetStringAsync(url);
+    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+    // Unauthenticated requests are limited per address; a test machine that shares its address
+    // (continuous integration) gives a token. Sent to the GitHub API only, never with a download.
+    if (Environment.GetEnvironmentVariable("ANIMEJANAI_GITHUB_TOKEN") is { Length: > 0 } token &&
+        url.StartsWith("https://api.github.com/", StringComparison.Ordinal))
+    {
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+    }
+    using var response = await client.SendAsync(request);
+    response.EnsureSuccessStatusCode();
+    string json = await response.Content.ReadAsStringAsync();
     using var doc = JsonDocument.Parse(json);
     var root = doc.RootElement;
     string tag = root.GetProperty("tag_name").GetString() ?? "";

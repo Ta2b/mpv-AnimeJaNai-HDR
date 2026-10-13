@@ -141,6 +141,79 @@ try
             "Normal package accepted a different release");
         Pass("normal-version-validation");
     }
+    // ---- macOS: the application is replaced as a whole ----
+    {
+        Check(Production.Bundle("/Applications/mpv AnimeJaNai.app/Contents/Resources/") == "/Applications/mpv AnimeJaNai.app", "Did not find the application of its Resources folder");
+        Check(Production.Bundle("/Users/a/Apps/X.app/Contents/Resources/Manager.app/Contents/MacOS") == "/Users/a/Apps/X.app/Contents/Resources/Manager.app", "Did not pick the innermost application");
+        Check(Production.Bundle("/opt/animejanai") == null && Production.Bundle("/tmp/X.app/ContentsOther") == null, "Took a plain folder for an application");
+        Pass("mac-bundle-of-a-path");
+    }
+    {
+        var release = new Release("3.8.0.20", new List<Asset> {
+            new("AnimeJaNai-mac-bench.zip", "bench"), new("mpv-AnimeJaNai-HDR-v3.8.0.20-linux-x64.AppImage", "linux"),
+            new("mpv-AnimeJaNai-HDR-v3.8.0.20-macos-arm64.zip.sha256", "sum"),
+            new("mpv-AnimeJaNai-HDR-v3.8.0.20-macos-arm64.zip", "mac") });
+        Check(Production.MacApplication(release, "-macos-arm64.zip")?.Url == "mac", "Wrong macOS asset");
+        // A release that Deploy just created: the macOS workflow has not added its application yet.
+        var early = new Release("3.8.0.21", release.Assets.Where(a => !a.Name.Contains("macos")).ToList());
+        Check(Production.MacApplication(early, "-macos-arm64.zip") == null, "Offered a release without a macOS application");
+        // An application of another version left on a release is not this release's.
+        Check(Production.MacApplication(new Release("3.8.0.21", release.Assets), "-macos-arm64.zip") == null, "Took another version's application");
+        Pass("mac-release-asset");
+    }
+    {
+        string dir = Path.Combine(root, "mac-sum"); Directory.CreateDirectory(dir);
+        string file = Path.Combine(dir, "a.zip"); File.WriteAllText(file, "abc");
+        const string sum = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+        Check(Production.Checksum(file, sum + "  a.zip\n") && Production.Checksum(file, sum.ToUpperInvariant()), "Rejected the right checksum");
+        Check(!Production.Checksum(file, sum.Replace('b', 'c')) && !Production.Checksum(file, "") && !Production.Checksum(file, "a.zip"), "Accepted a wrong checksum");
+        Pass("mac-checksum");
+    }
+    {
+        string dir = Path.Combine(root, "mac-swap"), app = Path.Combine(dir, "mpv AnimeJaNai.app");
+        string staging = Path.Combine(dir, ".AnimeJaNai-update");
+        void Make(string at, string version)
+        {
+            Directory.CreateDirectory(Path.Combine(at, "Contents", "MacOS"));
+            Directory.CreateDirectory(Path.Combine(at, "Contents", "Resources"));
+            File.WriteAllText(Path.Combine(at, "Contents", "MacOS", "mpv-animejanai"), "#!/bin/sh\n");
+            File.WriteAllText(Path.Combine(at, "Contents", "Resources", "version.txt"), version);
+        }
+        string Version() => File.ReadAllText(Path.Combine(app, "Contents", "Resources", "version.txt"));
+        Make(app, "1"); File.WriteAllText(Path.Combine(app, "Contents", "Resources", "only-in-old"), "x");
+        Check(Production.Blocked(app) == null, "A writable folder was reported read-only");
+        Check(Production.Blocked("/private/var/folders/x/T/AppTranslocation/ABCD/d/mpv AnimeJaNai.app") == "translocated", "Did not see a translocated application");
+        Check(!Directory.EnumerateFileSystemEntries(dir).Any(e => Path.GetFileName(e).StartsWith(".AnimeJaNai-write")), "The write test left a folder");
+
+        // An archive without an application, then one whose application has no launcher.
+        Directory.CreateDirectory(staging);
+        bool refused = false;
+        try { Production.Staged(staging, "mpv-animejanai"); } catch (InvalidOperationException) { refused = true; }
+        Check(refused, "Accepted an archive without an application");
+        Directory.CreateDirectory(Path.Combine(staging, "mpv AnimeJaNai.app", "Contents", "MacOS"));
+        refused = false;
+        try { Production.Staged(staging, "mpv-animejanai"); } catch (InvalidOperationException) { refused = true; }
+        Check(refused && Version() == "1", "Accepted an application without its launcher");
+        Directory.Delete(staging, true);
+
+        // A complete one replaces the installed application; nothing of the old one remains.
+        Make(Path.Combine(staging, "mpv AnimeJaNai.app"), "2");
+        string staged = Production.Staged(staging, "mpv-animejanai");
+        // A leftover of an interrupted update does not stop the next one.
+        Directory.CreateDirectory(Path.Combine(dir, ".mpv AnimeJaNai.app.previous", "junk"));
+        Production.Replace(staged, app);
+        Check(Version() == "2", "The application was not replaced");
+        Check(!File.Exists(Path.Combine(app, "Contents", "Resources", "only-in-old")), "Files of the old application remain");
+        Check(Directory.GetFileSystemEntries(dir).Select(Path.GetFileName).OrderBy(n => n).SequenceEqual(new[] { ".AnimeJaNai-update", "mpv AnimeJaNai.app" }),
+            "The update left something next to the application");
+        Check(!Directory.EnumerateFileSystemEntries(staging).Any(), "The staged application was copied, not moved");
+
+        // The new application cannot be moved in: the installed one is put back untouched.
+        bool failed = false;
+        try { Production.Replace(Path.Combine(staging, "missing.app"), app); } catch (Exception) { failed = true; }
+        Check(failed && Version() == "2" && !Directory.Exists(Path.Combine(dir, ".mpv AnimeJaNai.app.previous")), "A failed replacement lost the installed application");
+        Pass("mac-application-replaced-or-kept");
+    }
     Console.WriteLine($"Completed {passed} updater regression cases.");
     return 0;
 }

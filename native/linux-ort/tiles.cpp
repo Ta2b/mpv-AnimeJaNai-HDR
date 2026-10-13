@@ -8,16 +8,18 @@ namespace aji {
 namespace {
 
 // Even boundaries of n parts of `size`, and the common window length along that axis.
-void cut(int size, int n, int reach, int align, std::vector<int> *edges, int *window)
+void cut(int size, int n, int reach, int align, int min_window, std::vector<int> *edges, int *window)
 {
     // A tile must be longer than what its neighbours read from it, or the windows of the two
     // ends would be the whole frame anyway.
     while (n > 1 && size / n < std::max(2 * reach, 32)) n--;
-    edges->assign((size_t)n + 1, 0);
-    for (int i = 1; i < n; i++) (*edges)[(size_t)i] = (int)((long long)size * i / n) / 2 * 2;
-    (*edges)[(size_t)n] = size;
     int need = size;
-    if (n > 1) {
+    for (;; n--) {
+        edges->assign((size_t)n + 1, 0);
+        for (int i = 1; i < n; i++) (*edges)[(size_t)i] = (int)((long long)size * i / n) / 2 * 2;
+        (*edges)[(size_t)n] = size;
+        need = size;
+        if (n == 1) break;
         need = 0;
         for (int i = 0; i < n; i++) {
             const int own = (*edges)[(size_t)i + 1] - (*edges)[(size_t)i];
@@ -26,19 +28,22 @@ void cut(int size, int n, int reach, int align, std::vector<int> *edges, int *wi
         need = (need + 1) / 2 * 2;
         if (align > 2) need = (need + align - 1) / align * align;
         need = std::min(size, need);
+        // Windows that would have to be enlarged to the executor's minimum compute the same
+        // pixels several times: fewer, larger tiles instead.
+        if (need >= min_window) break;
     }
     *window = need;
 }
 
 } // namespace
 
-TilePlan plan_tiles(int w, int h, int nx, int ny, int reach, int align)
+TilePlan plan_tiles(int w, int h, int nx, int ny, int reach, int align, int min_window)
 {
     reach = std::max(0, (reach + 1) / 2 * 2);
     std::vector<int> xs, ys;
     TilePlan plan;
-    cut(w, std::max(1, nx), reach, align, &xs, &plan.width);
-    cut(h, std::max(1, ny), reach, 2, &ys, &plan.height);
+    cut(w, std::max(1, nx), reach, align, min_window, &xs, &plan.width);
+    cut(h, std::max(1, ny), reach, 2, min_window, &ys, &plan.height);
     plan.nx = (int)xs.size() - 1;
     plan.ny = (int)ys.size() - 1;
     for (int j = 0; j < plan.ny; j++) {

@@ -11,7 +11,7 @@ fi
 [ ${#interps[@]} -gt 0 ] || { echo "no Lua interpreter found" >&2; exit 2; }
 status=0
 for lua in "${interps[@]}"; do
-  for t in run_tests run_slot_tests run_startup_tests run_rife_tests run_vulkan_tests run_linux_tests run_settings_tests; do
+  for t in run_tests run_slot_tests run_startup_tests run_rife_tests run_vulkan_tests run_linux_tests run_settings_tests run_update_tests; do
     scratch="$(mktemp -d)"
     mkdir -p "$scratch/portable_config/cache" "$scratch/animejanai"
     cp -r "$overlay"/{hdr-tools,user-scripts,user-shaders,script-opts,profiles} "$scratch/portable_config/"

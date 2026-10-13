@@ -5,6 +5,7 @@ local mp = require 'mp'
 dofile(mp.command_native({'expand-path', '~~/hdr-tools/linux-hdr.lua'}))
 mp.add_key_binding('Ctrl+g', 'animejanai-grade', function() mp.commandv('script-message', 'animejanai-grade-toggle') end)
 mp.add_key_binding('Ctrl+i', 'animejanai-hdr-info', function() mp.commandv('script-message', 'animejanai-hdr-status') end)
+mp.add_key_binding('Ctrl+Alt+p', 'animejanai-hdr-pattern', function() mp.commandv('script-message', 'animejanai-calibration') end)
 
 -- Ctrl+h: SDR -> HDR conversion on / off. There is no Manager on macOS: the setting is written
 -- to script-opts/animejanai_hdr_auto.conf (pq = convert, auto = the video's own format) and

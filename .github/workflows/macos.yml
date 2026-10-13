@@ -14,6 +14,9 @@ on:
       - 'native/macos-bench/**'
       - 'native/linux-vulkan/**'
       - 'installer/macos/**'
+      - 'AnimeJaNaiUpdater/**'
+      - 'manager-source-ref.txt'
+      - 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_update.lua'
       - 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/**'
       - 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-shaders/**'
       - '.github/workflows/macos.yml'
@@ -228,7 +231,7 @@ jobs:
           install_name_tool -add_rpath @loader_path "$b/libaji_ort.dylib" 2>/dev/null || true
           codesign --force -s - "$b"/*.dylib "$b/animejanai-ort-test"
           ( cd "$b" && AJI_ORT_PROVIDER=cpu AJI_REUSE=off ./animejanai-ort-test bench.conf models 1 320 180 2 | tail -2 )
-          ( cd "$b" && bash bench.command essai > bench-try.log 2>&1; tail -14 bench-try.log | cut -c1-300 > short.txt; note "benchmark script, short run" short.txt; grep -q '^RESULT' resultats.txt )
+          ( cd "$b" && bash bench.command essai > bench-try.log 2>&1; tail -14 bench-try.log | cut -c1-300 > short.txt; note "benchmark script, short run" short.txt; grep -q '^RESULT' resultats.txt; ! grep -q 'failed' resultats.txt )
           rm -rf "$b/models/coreml-cache" "$b/ort-stats.txt" "$b/resultats.txt" "$b/bench-try.log" "$b/short.txt"
           ditto -c -k --keepParent "$b" "$b.zip"
           ls -la "$b.zip"
@@ -254,12 +257,22 @@ jobs:
           if-no-files-found: error
 
   player:
-    # mpv with the host-frame filter, bundled as an application with the engine and the models.
+    # mpv with the host-frame filter, bundled as an application with the engine, the models, the
+    # Manager and the updater.
     needs: engine
     runs-on: macos-15
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Helpers
+        run: |
+          cat > "$RUNNER_TEMP/note" <<'EOF'
+          #!/bin/bash
+          body="$(tail -n "${LINES_KEPT:-30}" "$2" | cut -c1-320 | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+          echo "::${3:-notice} title=$1::${body:-empty}"
+          EOF
+          chmod +x "$RUNNER_TEMP/note"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - name: Install build dependencies
         run: |
           brew update >/dev/null
@@ -271,11 +284,36 @@ jobs:
         with:
           name: mac-engine
           path: mac-engine
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+      - name: Updater and Manager for the application
+        # The updater is the program of the other platforms, published for Apple Silicon and
+        # trimmed (the component packs it also manages do not exist on macOS). The Manager is the
+        # build pinned by manager-source-ref.txt, as on the other platforms.
+        run: |
+          if ! dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release -r osx-arm64 --self-contained true \
+              -p:PublishSingleFile=true -p:PublishTrimmed=true -o updater-publish > updater-build.log 2>&1; then
+            grep -E 'error' updater-build.log | head -20 > errors.txt; note "updater build failed" errors.txt error; exit 1
+          fi
+          ls -la updater-publish
+          ref="$(tr -d '[:space:]' < manager-source-ref.txt)"
+          if ! curl -fsSL --retry 3 -o manager.zip "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-$ref/AnimeJaNaiManager-HDR-macos-arm64.zip"; then
+            echo "::error title=manager not found::no macOS Manager in release hdr-$ref of Ta2b/AnimeJaNaiManager-HDR"; exit 1
+          fi
+          mkdir manager-app && ditto -x -k manager.zip manager-app
+          test -x "manager-app/AnimeJaNai Manager.app/Contents/MacOS/AnimeJaNaiManager-HDR"
+          codesign --verify --deep "manager-app/AnimeJaNai Manager.app"
       - name: Assemble the application
         run: |
           VER="$(tr -d '[:space:]' < release-version.txt)"
           echo "VER=$VER" >> "$GITHUB_ENV"
-          bash installer/macos/package.sh mac-mpv/mpv.app mac-engine BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx "$VER" mac-out
+          echo "APP=mac-out/mpv AnimeJaNai.app" >> "$GITHUB_ENV"
+          if ! bash installer/macos/package.sh mac-mpv/mpv.app mac-engine BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx "$VER" mac-out \
+              "manager-app/AnimeJaNai Manager.app" updater-publish/AnimeJaNaiUpdater > package.log 2>&1; then
+            note "assembling the application failed" package.log error; exit 1
+          fi
+          tail -3 package.log
           du -sh "mac-out/mpv AnimeJaNai.app"
       - name: Play a synthetic clip through the filter
         # No display on the runner: null output. Proves that the bundled settings and script are
@@ -301,16 +339,135 @@ jobs:
           grep -q '^\[slot_6\]' "mac-out/mpv AnimeJaNai.app/Contents/Resources/animejanai/animejanai.conf"
           grep -q 'Backend: ONNX Runtime/CoreML' "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
           grep -q 'Output: 1280x720' "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
+      - name: What the application holds and what its launcher prepares
+        run: |
+          RES="$APP/Contents/Resources"; DATA="$HOME/Library/Application Support/AnimeJaNai"
+          # Signatures: the application as a whole, then each program that is run from Resources.
+          codesign --verify --deep --strict "$APP"
+          for code in "$RES/AnimeJaNaiUpdater" "$RES/animejanai/inference/animejanai-ort-test" \
+              "$RES/animejanai/inference/libaji_ort.dylib" "$RES/animejanai/inference/libonnxruntime.1.dylib" "$RES/AnimeJaNai Manager.app"; do
+            codesign --verify "$code" || { echo "::error title=not signed::$code"; exit 1; }
+          done
+          cat "$RES/manifest.json"
+          python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m["platform"]=="osx-arm64" and m["version"]==sys.argv[2] and m["player_launcher"]=="mpv-animejanai", m' "$RES/manifest.json" "$VER"
+          test "$(cat "$RES/version.txt")" = "$VER"
+          # The first launch above left: links to every model file, the benchmark, the scripts.
+          ls -la "$DATA/animejanai" "$DATA/animejanai/onnx" | cut -c1-200 | head -40
+          for kind in onnx coreml.onnx ajm ajw mlpatch mlpackage; do
+            ls "$DATA/animejanai/onnx"/*Sharp1_Performance*."$kind" >/dev/null || { echo "::error title=model link missing::$kind"; exit 1; }
+          done
+          test -L "$DATA/animejanai/benchmarks" && test -x "$DATA/animejanai/benchmarks/animejanai_benchmark_all.sh"
+          for script in animejanai_mac.lua animejanai_hdr_mac.lua animejanai_update.lua; do test -f "$DATA/portable_config/scripts/$script"; done
+          grep -q 'animejanai_update' run.log
+          # The player was given a socket of its own for the Manager.
+          grep -Eq 'input-ipc-server|animejanai-mpv-' run.log
+      - name: The two native engines through the player
+        # The same synthetic clip with the bank set as the Manager writes it. On this virtual
+        # machine Core ML computes on the CPU and Metal on the host's GPU: what is proven is the
+        # whole path, bank -> script -> filter -> engine, for each choice.
+        run: |
+          conf="$HOME/Library/Application Support/AnimeJaNai/animejanai/animejanai.conf"
+          log="$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
+          cp "$conf" conf.saved
+          status=0
+          for choice in "CoreMLNative GPU Core.ML/GPU" "CoreMLNative NPU Core.ML/NPU" "CoreMLNative AUTO Core.ML/AUTO" \
+              "CoreMLNative CPU Core.ML/CPU" "Metal GPU Metal/GPU" "Metal GPU+NPU Metal/GPU...Core.ML/NPU" "CoreMLNative GPU+NPU Core.ML/GPU...Core.ML/NPU"; do
+            set -- $choice
+            sed -i '' -e "s/^backend=.*/backend=$1/" -e "s/^apple_device=.*/apple_device=$2/" "$conf"
+            rm -f "$log"
+            perl -e 'alarm 240; exec @ARGV' "$APP/Contents/MacOS/mpv-animejanai" av://lavfi:testsrc2=size=640x360:rate=24 \
+              --vo=null --ao=null --frames=8 --keep-open=no --log-file="run-engine.log" > console.log 2>&1 || echo "mpv exit code $?" >> console.log
+            { grep -E '^Backend|^Output|^Tiles|^Devices|^Placement|^Frames|^Recent' "$log" 2>/dev/null; grep -E 'exit code' console.log; } | cut -c1-300 > short.txt
+            if grep -Eq "^Backend: $3\$" "$log" 2>/dev/null && grep -q 'Output: 1280x720' "$log" && ! grep -q 'exit code' console.log; then
+              note "player: $1 on $2" short.txt
+            else
+              grep -iE 'aji|animejanai|error|fail' run-engine.log | tail -14 | cut -c1-300 >> short.txt
+              note "player: $1 on $2 FAILED" short.txt error; status=1
+            fi
+          done
+          cp conf.saved "$conf"
+          exit $status
+      - name: Run Benchmarks from the application
+        # What the Manager's button starts, in its short form: every engine once.
+        run: |
+          DATA="$HOME/Library/Application Support/AnimeJaNai"
+          sh "$DATA/animejanai/benchmarks/animejanai_benchmark_all.sh" essai > bench-app.log 2>&1 || echo "exit code $?" >> bench-app.log
+          tail -14 bench-app.log | cut -c1-300 > short.txt
+          if grep -q '^RESULT' "$DATA/animejanai/benchmark-mac.txt" && ! grep -q 'failed\|exit code' bench-app.log; then note "benchmark from the application" short.txt
+          else note "benchmark from the application FAILED" short.txt error; exit 1; fi
+          test "$(grep -c '^RESULT' "$DATA/animejanai/benchmark-mac.txt")" -ge 5
+      - name: Updater
+        # --check on the assembled application, then a real update: a copy that believes it is an
+        # old version downloads the application of the latest release, verifies it and takes its
+        # place. Also the two cases where the application cannot be replaced where it is.
+        env:
+          ANIMEJANAI_GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          "$APP/Contents/Resources/AnimeJaNaiUpdater" --check > updater-check.log 2>&1 || echo "exit code $?" >> updater-check.log
+          cat updater-check.log
+          if ! grep -Eq '^(UP_TO_DATE|UPDATE_AVAILABLE) ' updater-check.log; then note "updater --check FAILED" updater-check.log error; exit 1; fi
+          # What the latest release offers for macOS (a release gets it some time after its creation).
+          set -- $(gh release view --repo "$GITHUB_REPOSITORY" --json tagName,assets \
+            --jq '.tagName + " " + ([.assets[].name | select(endswith("-macos-arm64.zip"))] | length | tostring)')
+          tag="$1"; offered="$2"
+          old="$RUNNER_TEMP/old copy/mpv AnimeJaNai.app"
+          mkdir -p "$RUNNER_TEMP/old copy" && cp -R "$APP" "$old"
+          echo 0.0.1 > "$old/Contents/Resources/version.txt"
+          "$old/Contents/Resources/AnimeJaNaiUpdater" --check > old-check.log 2>&1 || echo "exit code $?" >> old-check.log
+          cat old-check.log
+          if [ "$offered" = 0 ]; then
+            grep -q '^UP_TO_DATE 0.0.1' old-check.log
+            echo "::warning title=updater::release $tag has no macOS application yet: the replacement was not exercised"
+            exit 0
+          fi
+          grep -q "^UPDATE_AVAILABLE $tag" old-check.log && ! grep -q 'UPDATE_BLOCKED' old-check.log
+          # Not replaceable where it is: a folder without write access, a translocated copy.
+          mkdir -p "$RUNNER_TEMP/locked" "$RUNNER_TEMP/AppTranslocation/0000/d"
+          cp -R "$old" "$RUNNER_TEMP/locked/" && cp -R "$old" "$RUNNER_TEMP/AppTranslocation/0000/d/"
+          chmod a-w "$RUNNER_TEMP/locked"
+          "$RUNNER_TEMP/locked/mpv AnimeJaNai.app/Contents/Resources/AnimeJaNaiUpdater" --check | tee locked.log
+          "$RUNNER_TEMP/locked/mpv AnimeJaNai.app/Contents/Resources/AnimeJaNaiUpdater" --apply --no-relaunch | tee locked-apply.log || true
+          chmod u+w "$RUNNER_TEMP/locked"
+          "$RUNNER_TEMP/AppTranslocation/0000/d/mpv AnimeJaNai.app/Contents/Resources/AnimeJaNaiUpdater" --check | tee moved.log
+          grep -q '^UPDATE_BLOCKED readonly' locked.log && grep -q '^FAILED The folder' locked-apply.log
+          test "$(cat "$RUNNER_TEMP/locked/mpv AnimeJaNai.app/Contents/Resources/version.txt")" = 0.0.1
+          grep -q '^UPDATE_BLOCKED translocated' moved.log
+          # The replacement, with a process standing for the player: the application is ready
+          # before that process ends, and takes its place after.
+          sleep 25 & player=$!
+          "$old/Contents/Resources/AnimeJaNaiUpdater" --apply --wait-pid "$player" --status "$RUNNER_TEMP/update.status" --no-relaunch > apply.log 2>&1 || echo "exit code $?" >> apply.log
+          grep -vE '^DOWNLOAD ([0-9]|[1-8][0-9]|9[0-8])$' apply.log | cut -c1-300 > short.txt
+          ls -la "$RUNNER_TEMP/old copy" >> short.txt
+          if grep -q "^READY $tag" apply.log && grep -q "^DONE $tag" apply.log \
+              && [ "$(cat "$old/Contents/Resources/animejanai/version.txt")" = "$tag" ] && codesign --verify --deep "$old" \
+              && [ "$(ls -A "$RUNNER_TEMP/old copy" | wc -l | tr -d ' ')" = 1 ] && [ "$(cat "$RUNNER_TEMP/update.status")" = "DONE $tag" ]; then
+            note "updater: 0.0.1 replaced by $tag" short.txt
+          else
+            note "updater replacement FAILED" short.txt error; exit 1
+          fi
+          # The replaced application is the released one, complete: it plays.
+          rm -f "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
+          perl -e 'alarm 120; exec @ARGV' "$old/Contents/MacOS/mpv-animejanai" av://lavfi:testsrc2=size=640x360:rate=24 \
+            --vo=null --ao=null --frames=6 --keep-open=no > console.log 2>&1 || echo "mpv exit code $?"
+          grep -q 'Output: 1280x720' "$HOME/Library/Caches/AnimeJaNai/currentanimejanai.log"
       - name: Archive
         run: |
           cp installer/macos/LISEZ-MOI.txt mac-out/
           ( cd mac-out && ditto -c -k --keepParent "mpv AnimeJaNai.app" "../mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip" )
-          ls -la *.zip
+          # Read by the updater before it unpacks a download.
+          shasum -a 256 "mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip" > "mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip.sha256"
+          ls -la *.zip *.sha256
+          # The archive is what users and the updater get: unpacked, it is one valid application.
+          mkdir unpacked && ditto -x -k "mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip" unpacked
+          test "$(ls unpacked)" = "mpv AnimeJaNai.app" && codesign --verify --deep --strict "unpacked/mpv AnimeJaNai.app"
+          rm -rf unpacked
       - uses: actions/upload-artifact@v4
         with:
           name: mac-player
           path: |
             mpv-AnimeJaNai-HDR-v*-macos-arm64.zip
+            mpv-AnimeJaNai-HDR-v*-macos-arm64.zip.sha256
             installer/macos/LISEZ-MOI.txt
             run.log
           if-no-files-found: error
@@ -327,4 +484,8 @@ jobs:
           gh release view "$VER" --repo "$GITHUB_REPOSITORY" >/dev/null
           cp installer/macos/LISEZ-MOI.txt "LISEZ-MOI-macOS.txt"
           gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" -n mac-bench -D bench
-          gh release upload "$VER" --repo "$GITHUB_REPOSITORY" --clobber             "mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip" "LISEZ-MOI-macOS.txt" bench/AnimeJaNai-mac-bench.zip
+          # The application last: installed copies take a release as an update once it is there,
+          # and its checksum must already be.
+          gh release upload "$VER" --repo "$GITHUB_REPOSITORY" --clobber \
+            "mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip.sha256" "LISEZ-MOI-macOS.txt" bench/AnimeJaNai-mac-bench.zip
+          gh release upload "$VER" --repo "$GITHUB_REPOSITORY" --clobber "mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip"

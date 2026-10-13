@@ -63,6 +63,16 @@ int main(int argc, char **argv)
         const TilePlan aligned = plan_tiles(1280, 720, 2, 2, 36, 32);
         check(aligned.tiles.size() == 4 && aligned.width == 704 && aligned.height == 396 && aligned.tiles[1].wx == 576,
               "aligned windows: 704 wide, the right ones start at 576");
+        // A Core ML template takes no window under 256 pixels a side: 640x360 in 2x2 would have
+        // windows 216 pixels high, so the rows are merged; 1280x720 keeps its four tiles.
+        const TilePlan low = plan_tiles(640, 360, 2, 2, 36, 2, 256);
+        check(low.nx == 2 && low.ny == 1 && low.width == 356 && low.height == 360, "a grid is reduced until its windows reach the executor's minimum");
+        const TilePlan tiny = plan_tiles(256, 256, 3, 2, 36, 2, 256);
+        check(tiny.tiles.size() == 1 && tiny.width == 256 && tiny.height == 256, "a frame of the minimum size is one tile");
+        const TilePlan kept = plan_tiles(1280, 720, 2, 2, 36, 2, 256);
+        check(kept.tiles.size() == 4 && kept.width == four.width && kept.height == four.height, "the minimum changes nothing when windows are larger");
+        const TilePlan twelve = plan_tiles(1280, 720, 4, 3, 36, 2, 256);
+        check(twelve.nx == 4 && twelve.ny == 3 && twelve.width == 392 && twelve.height == 312, "4x3 of 720p stays: with their overlap the windows are 392x312");
         const TilePlan small = plan_tiles(128, 96, 2, 2, 36);
         check(small.tiles.size() == 1, "tiles smaller than their overlap are not cut");
         int nx, ny;
