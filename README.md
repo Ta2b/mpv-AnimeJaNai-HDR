@@ -9,7 +9,8 @@ une option NVIDIA distincte. Les essais physiques HDR et RTX
 
 **Chantier GPU en cours :** MIGraphX + HIP natif pour RX 9070 XT sur
 Windows/Linux, TensorRT + CUDA spécialisé, modèles conservés. Les bibliothèques
-Linux sont compilées et liées ; la construction complète Windows est à confirmer.
+Linux et les DLL Windows AMD/NVIDIA sont compilées et liées ; le dernier build
+des protections RIFE et la publication 3.8.0.30 sont en cours.
 Voir [le checkpoint et les limites exactes](docs/CHANTIER-GPU-SPECIALISE.md).
 Ces modifications ne sont pas encore une nouvelle release validée.
 

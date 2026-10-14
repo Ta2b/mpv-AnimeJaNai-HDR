@@ -3,8 +3,9 @@
 ## Chantier actif — 14 octobre, suite à la 3.8.0.29
 
 **MIGraphX + HIP Windows/Linux et TensorRT + CUDA spécialisé sont en cours
-d’intégration.** Les bibliothèques Linux compilent et se lient ; le portage
-Windows compile en objets, sa liaison complète reste à terminer. Les modèles
+d’intégration.** Les bibliothèques Linux et les DLL Windows AMD/NVIDIA compilent et se lient.
+Le dernier build Windows des protections RIFE est lancé ; le packaging de la
+3.8.0.30 attend ses binaires immuables. Les modèles
 sont conservés ; aucun nouveau test ni benchmark n’est lancé. La préparation
 anticipée des moteurs est **abandonnée à la demande de l’utilisateur**.
 Lire [le checkpoint exact et les étapes de reprise](CHANTIER-GPU-SPECIALISE.md).

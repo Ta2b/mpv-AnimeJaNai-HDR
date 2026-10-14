@@ -1,37 +1,43 @@
 # Intégration GPU spécialisée AMD / NVIDIA
 
-## Checkpoint de livraison en cours
+## Livraison 3.8.0.30 — checkpoint exact
 
-**Les builds Windows complets ont réussi** pour AMD et NVIDIA : source backend
-`1f3e8f204cdabfd22b6673116c0e5b341adb43d3`, source lecteur `6a53c39`, run privé
-`38639699749`. Résultat et logs récupérés via la référence Git privée
-`build-status/specialized-1f3e8f204cdabfd22b6673116c0e5b341adb43d3-1`.
-Ce sont des compilations/liaisons MSVC et HIP/CUDA réelles, sans lecture GPU.
-Les anciennes mentions « DLL Windows non liée » ci-dessous sont dépassées.
+La livraison est déclenchée par le push de la branche `release`. Les résultats
+finaux des trois workflows restent à confirmer ; ne pas confondre compilation
+réussie des moteurs et publication des paquets.
 
-Depuis ce résultat, protections ajoutées pour RIFE ensemble (graphe RGB complet)
-et RIFE seul (pas de placeholder différé sans chaîne d’upscale), parsing MIGraphX
-des poids inline en mémoire et repli sur le graphe RGB si extraction impossible.
-Leurs compilations Linux passent ; leur dernier build Windows reste à obtenir.
-Le runtime AMD attend son scalaire par événement, sans drainer les upscales.
-La capture CUDA complète évite les captures de réseaux redondantes.
+- Backend : `c7bdb1af7d452877fdf87516bb4deaae373276dc`.
+- Sources natives AMD / packaging : `33d1dd35961f9d85cbddda3c8be755dadc593ba5`.
+- Binaires immuables : `7377cd6f01a947423c5d5dac1c00c42bea1a5efe`, pin
+  `gpu-binaries-source-ref.txt`, branche `gpu-binaries/specialized-c7bdb1af7d452877fdf87516bb4deaae373276dc`.
+- Build Windows complet : run privé `38643422201`, AMD et NVIDIA **success**,
+  logs et DLL dans la ref privée
+  `build-status/specialized-c7bdb1af7d452877fdf87516bb4deaae373276dc-1`.
+- Build Linux AMD CI : `38643397653`, **success**. CUDA Linux compilé localement
+  avec CUDA 13.4 / TensorRT 11.3, RUNPATH `$ORIGIN`.
+- Manager : `fade3c7a77a68da8f529574a0be9a44f3fb4d841`, quatre assets publiés.
 
-Packaging en cours : `AJI_SPECIALIZED_LOCAL` remplace seulement les bibliothèques
-après la base amont, exige provenance ABI 9 / TRT 11.3, et conserve les outils.
-`gpu-binaries-source-ref.txt` devra pointer un commit immuable de petits binaires
-du projet, sans runtime vendor ni modèles. Le script de staging est écrit.
-Windows : runtime AMD séparé en composant, DLLs dans l’overlay ; le Manager
-exige module + runtime avant de proposer MIGraphX. `AJI_AMD_CONSUME_LOCAL=1`
-consomme le SDK temporaire CI pour éviter sa duplication. Les packs utilisent
-un listfile UTF-8 et drainent les sorties 7z, pour les milliers de fichiers.
+Les protections RIFE ensemble et RIFE seul gardent le graphe RGB complet.
+MIGraphX parse les poids inline en mémoire ; extraction motion impossible :
+repli RGB. Attente HIP limitée au scalaire de décision ; captures CUDA redondantes
+évitées. Modèles et paramètres de qualité conservés. Pas de gain mesuré annoncé.
 
-**Étapes restantes pour la livraison** : committer/pousser les protections et
-hooks de packaging, obtenir leur résultat Windows, récupérer leurs DLLs via
-la ref de build, y joindre les bibliothèques Linux compilées avec RPATH portable,
-créer la référence binaire immuable et son pin, puis construire la release et
-actualiser ici chaque SHA/statut. La préparation anticipée reste abandonnée.
-Aucun test, benchmark ni inférence locale n’est autorisé par l’instruction actuelle.
-Les modèles, GPU de référence et worktrees utilisateur restent à conserver.
+Packaging : `AJI_SPECIALIZED_LOCAL` contrôle ABI 9 / TensorRT 11.3 puis remplace
+les bibliothèques du projet ; les runtimes vendor restent séparés. Windows
+embarque le runtime AMD optionnel ; le Manager exige module + runtime pour le
+proposer. Linux exige un ROCm 7.2 compatible installé, et conserve les transferts
+d’images hôte du moteur partagé. Windows MIGraphX utilise un port communautaire,
+identifié dans les notices. Dessins/timeline Windows AMD et tenseurs rang 5 ne
+sont pas portés. Aucune validation d’inférence sur RX 9070 XT n’a été effectuée.
+
+Aucun test ni benchmark exécuté : compilations, liaisons et contrôles statiques
+uniquement, conformément à la demande. Préparation anticipée abandonnée.
+
+**Reprise immédiate** : contrôler les workflows `Release Windows`, `Release Linux`
+et `Release macOS` du commit de livraison ; corriger les éventuels échecs de
+packaging, vérifier les assets `uploaded` de la 3.8.0.30 et consigner leurs runs.
+Ne pas toucher aux fichiers utilisateur non suivis ni à son autre worktree RTX.
+Les anciens checkpoints ci-dessous décrivent les étapes précédentes.
 
 ## Mandat et statut — 14 octobre 2026, 23 h 08 (Paris)
 
