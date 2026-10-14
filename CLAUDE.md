@@ -207,7 +207,13 @@ The `aji` engine parses `animejanai.conf` (the old Python `animejanai_config.rea
   writes this file.
 - **Player-only `[global]` keys.** `default_slot` and `sub_render_mode` are written by the Manager
   and read by the Lua scripts, not by the engine (`aji_conf.cpp` looks up only the keys it knows, so
-  unknown ones are ignored). This is the pattern for any future "Manager configures mpv" setting:
+  unknown ones are ignored). `rife_engine=new|old` is written by the Manager too (playback
+  settings, "RIFE interpolation engine") and read by the engines that have both chains: with
+  `new`, a profile that interpolates before the upscale runs the upscaler once per source frame
+  and makes the frames in between by warping the two upscaled pictures with RIFE's motion. Today
+  only the private NVIDIA engine (`libaji_trt_rtx.so`, branch `warp-chain` of
+  `Ta2b/animejanai-inference-rtx`) has it; every other engine ignores the key and keeps the
+  original chain. This is the pattern for any future "Manager configures mpv" setting:
   a `[global]` key here, the actual mpv options in a managed profile.
 
 ### Stats overlay
