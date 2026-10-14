@@ -1378,7 +1378,7 @@ string[] OnnxRuntimeFiles()
         {
             var n = Path.GetFileName(f);
             return n.StartsWith("libaji_ort") || n.StartsWith("libaji_migraphx_rgb") || n.StartsWith("libonnxruntime") || n.StartsWith("libopenvino") ||
-                   n.StartsWith("libtbb") || n == "animejanai-ort-test" || n == "AMD-README.md" ||
+                   n.StartsWith("libtbb") || n == "animejanai-ort-test" ||
                    n == "AMD-SDK-PROVENANCE.json" || n.Contains("ThirdPartyNotices");
         })
         .Select(f => Path.GetRelativePath(installDirectory, f)).ToArray();
