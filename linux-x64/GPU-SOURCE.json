@@ -1,0 +1,20 @@
+{
+  "api_version": 9,
+  "tensorrt_version": "11.3.0.99",
+  "backend_source": "c7bdb1af7d452877fdf87516bb4deaae373276dc",
+  "player_source": "33d1dd35961f9d85cbddda3c8be755dadc593ba5",
+  "windows_build": {
+    "AMD_RESULT": "success",
+    "NVIDIA_RESULT": "success",
+    "GITHUB_SHA": "c7bdb1af7d452877fdf87516bb4deaae373276dc",
+    "GITHUB_RUN_ID": "38643422201",
+    "GITHUB_RUN_ATTEMPT": "1",
+    "validation": "compilation/linking only; no inference/test/benchmark"
+  },
+  "validation": "Compilation and linking only; no inference, tests or benchmarks",
+  "sha256": {
+    "libaji.so": "4b77f0083f9eea48aea3fc87abae310d624bb4ea352298c4b0a53ffb321fa1a8",
+    "libaji_trt.so": "d1f5325e736d76d2096f574be8e067a91ab7c55a713649f1c74e7a8ba38c5be1",
+    "libaji_trt_rtx.so": "d1f5325e736d76d2096f574be8e067a91ab7c55a713649f1c74e7a8ba38c5be1"
+  }
+}

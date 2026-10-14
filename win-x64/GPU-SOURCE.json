@@ -1,0 +1,22 @@
+{
+  "api_version": 9,
+  "tensorrt_version": "11.3.0.99",
+  "backend_source": "c7bdb1af7d452877fdf87516bb4deaae373276dc",
+  "player_source": "33d1dd35961f9d85cbddda3c8be755dadc593ba5",
+  "windows_build": {
+    "AMD_RESULT": "success",
+    "NVIDIA_RESULT": "success",
+    "GITHUB_SHA": "c7bdb1af7d452877fdf87516bb4deaae373276dc",
+    "GITHUB_RUN_ID": "38643422201",
+    "GITHUB_RUN_ATTEMPT": "1",
+    "validation": "compilation/linking only; no inference/test/benchmark"
+  },
+  "validation": "Compilation and linking only; no inference, tests or benchmarks",
+  "sha256": {
+    "aji.dll": "707ecd6f84e22623f3d776492bd02bb355e8f8236a650fc6af19f86b108e6247",
+    "aji_migraphx.dll": "32631dc734537af8ca0d30e78b847d285b80801421258fcda14088d6d23ffcc1",
+    "aji_trt.dll": "67110d2c934288981321a88ffc5ac2829d7fc2e79aeb2a363b7863ec53c95a81",
+    "aji_trt_rtx.dll": "67110d2c934288981321a88ffc5ac2829d7fc2e79aeb2a363b7863ec53c95a81",
+    "aji_dml.dll": "262dc0dbd607ffdf749953d48d02489c6691660e1ed50064c523e744b7c7ccd3"
+  }
+}
