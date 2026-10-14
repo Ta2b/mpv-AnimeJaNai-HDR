@@ -2,14 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Active GPU work — 14 October 2026
+## Specialized GPU release — 15 October 2026
 
-Read [`docs/CHANTIER-GPU-SPECIALISE.md`](docs/CHANTIER-GPU-SPECIALISE.md) first:
-native MIGraphX/HIP Windows+Linux and TensorRT/CUDA integration. Linux libraries
-link; Windows C++ objects compile, full DLL build still pending. Existing models,
-no new tests/benchmarks. Background engine preparation explicitly abandoned.
-Keep released 3.8.0.29 separate from this unfinished work and preserve the dirty
-user backend checkout and untracked PDF/Core ML cache.
+Read [`docs/CHANTIER-GPU-SPECIALISE.md`](docs/CHANTIER-GPU-SPECIALISE.md) first.
+3.8.0.30 is published on Windows/Linux/macOS from `1c695d5`, all three workflows
+successful, 19 uploaded assets. MIGraphX/HIP and specialized TensorRT/CUDA ship
+with existing models. Linux AMD needs compatible ROCm 7.2; Windows MIGraphX
+uses the documented community port. No GPU inference validation or measured
+gains: no tests/benchmarks authorized. Background preparation remains abandoned.
+Preserve the user's dirty backend checkout and untracked files.
 
 ## Documentation map
 

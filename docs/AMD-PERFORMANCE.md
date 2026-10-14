@@ -1,12 +1,13 @@
 # Pistes AMD / Windows — 14 octobre 2026
 
-## Mise en œuvre en cours
+## Mise en œuvre publiée dans la 3.8.0.30
 
 L’étude ci-dessous est antérieure à la décision d’intégrer MIGraphX + HIP natif
 sur Windows/Linux et TensorRT + CUDA spécialisé. La cible est RX 9070 XT.
 La préparation anticipée des moteurs est abandonnée. Lire
 [le relais précis du chantier](CHANTIER-GPU-SPECIALISE.md) pour le code, les
-builds et les limites actuelles ; cette étude ne décrit pas une release livrée.
+builds, la publication Windows/Linux/macOS et les limites actuelles. Le reste
+de cette étude décrit la recherche antérieure à l’implémentation.
 
 ## Statut et contraintes
 

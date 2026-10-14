@@ -1,16 +1,17 @@
 # Optimisation des moteurs et de RIFE — analyse du 13 octobre 2026
 
-## Chantier actif — 14 octobre, suite à la 3.8.0.29
+## Livraison GPU — 15 octobre 2026
 
-**MIGraphX + HIP Windows/Linux et TensorRT + CUDA spécialisé sont en cours
-d’intégration.** Les bibliothèques Linux et les DLL Windows AMD/NVIDIA compilent et se lient.
-Le dernier build Windows des protections RIFE est lancé ; le packaging de la
-3.8.0.30 attend ses binaires immuables. Les modèles
-sont conservés ; aucun nouveau test ni benchmark n’est lancé. La préparation
-anticipée des moteurs est **abandonnée à la demande de l’utilisateur**.
-Lire [le checkpoint exact et les étapes de reprise](CHANTIER-GPU-SPECIALISE.md).
-Les sections datées 20 h 45 et antérieures décrivent la release publiée,
-pas ces modifications encore non livrées.
+**[3.8.0.30 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.30)**,
+source `1c695d5214bc5ea39fdbe85d783260413cecbe23`, **19 assets `uploaded`**.
+Les trois workflows ont terminé avec succès. MIGraphX + HIP natif pour RX 9070 XT
+et TensorRT + CUDA spécialisé sont embarqués, avec les modèles actuels.
+Linux AMD nécessite encore un runtime ROCm 7.2 compatible ; Windows MIGraphX
+utilise le port communautaire identifié dans les notices. La validation GPU et
+les gains de performances restent à mesurer : aucun test ni benchmark exécuté.
+La préparation anticipée des moteurs reste abandonnée.
+Lire [le checkpoint exact, les SHA et les limites](CHANTIER-GPU-SPECIALISE.md).
+Les états de la 3.8.0.29 ci-dessous sont historiques.
 
 Complément AMD / Windows du 14 octobre :
 [options, compatibilité MIGraphX Windows et plan de portage](AMD-PERFORMANCE.md).

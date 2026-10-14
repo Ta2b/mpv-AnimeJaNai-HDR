@@ -2,9 +2,19 @@
 
 ## Livraison 3.8.0.30 — checkpoint exact
 
-La livraison est déclenchée par le push de la branche `release`. Les résultats
-finaux des trois workflows restent à confirmer ; ne pas confondre compilation
-réussie des moteurs et publication des paquets.
+La livraison est déclenchée sur `release`, commit `1c695d5` (chemins Windows
+Git Bash / tar corrigés et notice AMD conservée dans le slim core). Premier essai `2b96ad9` : Windows a échoué avant
+assemblage sur un chemin de lecteur Windows passé à tar ; corrigé sans changer
+les binaires. Deuxième essai `a018b80` : overlay Linux en échec car la notice
+AMD était retirée du slim core par le composant ORT ; corrigé dans `1c695d5`.
+**Résultats finaux : les trois workflows ont terminé avec succès.**
+La release compte 19 assets `uploaded`, confirmés le 15 octobre 2026 :
+
+- [Windows 38645522377](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38645522377).
+- [Linux 38645522550](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38645522550).
+- [macOS 38645522392](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38645522392).
+
+Publication des paquets confirmée sur Windows, Linux et macOS.
 
 - Backend : `c7bdb1af7d452877fdf87516bb4deaae373276dc`.
 - Sources natives AMD / packaging : `33d1dd35961f9d85cbddda3c8be755dadc593ba5`.
@@ -33,9 +43,10 @@ sont pas portés. Aucune validation d’inférence sur RX 9070 XT n’a été ef
 Aucun test ni benchmark exécuté : compilations, liaisons et contrôles statiques
 uniquement, conformément à la demande. Préparation anticipée abandonnée.
 
-**Reprise immédiate** : contrôler les workflows `Release Windows`, `Release Linux`
-et `Release macOS` du commit de livraison ; corriger les éventuels échecs de
-packaging, vérifier les assets `uploaded` de la 3.8.0.30 et consigner leurs runs.
+**Reprise immédiate** : livraison terminée. Recueillir les retours utilisateur
+sur RX 9070 XT / NVIDIA ; la compilation et la publication ne prouvent pas
+le fonctionnement ni le gain sur GPU. Ne reprendre tests/benchmarks que si
+l’utilisateur modifie explicitement son instruction.
 Ne pas toucher aux fichiers utilisateur non suivis ni à son autre worktree RTX.
 Les anciens checkpoints ci-dessous décrivent les étapes précédentes.
 

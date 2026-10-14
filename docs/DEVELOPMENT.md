@@ -1,7 +1,9 @@
 # Local development
 
-## Native GPU integration (14 October 2026, in progress)
+## Native GPU integration (3.8.0.30 published, 15 October 2026)
 
+Release source `1c695d5`; Windows/Linux/macOS workflows succeeded, 19 uploaded assets.
+Compilation/publication only: hardware inference validation remains pending.
 See [the exact handoff](CHANTIER-GPU-SPECIALISE.md) and
 [AMD build/deployment commands](../native/amd/README.md). `AJI_NATIVE_AMD=ON`
 builds a separate Linux library; `native/amd` builds the Windows D3D/HIP module
@@ -12,7 +14,7 @@ its overlay. Native AMD files use the optional GPU engines component.
 Original models and reference modes remain. Background engine preparation is
 abandoned. Do not run tests or benchmarks unless the user changes that instruction.
 
-## Situation actuelle — 3.8.0.29 (14/10/2026 à 20 h 45 (Paris))
+## Historical checkpoint — 3.8.0.29 (14/10/2026 à 20 h 45 (Paris))
 
 La **3.8.0.29 est publiée sur les trois plateformes**, depuis `6fa85bb`.
 Les releases Windows/Linux/macOS sont indépendantes et n'ont plus de jobs de

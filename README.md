@@ -7,18 +7,17 @@ une option NVIDIA distincte. Les essais physiques HDR et RTX
 4050 restent nécessaires ; Linux demeure expérimental dans les releases communes. Voir
 [la documentation Linux](docs/LINUX.md) pour la construction, les tests et les limites.
 
-**Chantier GPU en cours :** MIGraphX + HIP natif pour RX 9070 XT sur
-Windows/Linux, TensorRT + CUDA spécialisé, modèles conservés. Les bibliothèques
-Linux et les DLL Windows AMD/NVIDIA sont compilées et liées ; le dernier build
-des protections RIFE et la publication 3.8.0.30 sont en cours.
-Voir [le checkpoint et les limites exactes](docs/CHANTIER-GPU-SPECIALISE.md).
-Ces modifications ne sont pas encore une nouvelle release validée.
+**[3.8.0.30 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.30).**
+MIGraphX + HIP natif pour RX 9070 XT et TensorRT + CUDA spécialisé sont embarqués,
+avec les modèles actuels. Linux AMD nécessite un runtime ROCm 7.2 compatible.
+Les builds et la publication ont réussi ; le fonctionnement et les gains GPU
+restent à vérifier sur matériel. Voir [le checkpoint et les limites](docs/CHANTIER-GPU-SPECIALISE.md).
 
-**État au 14 octobre 2026 :** [3.8.0.29 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.29).
+**Historique :** **État au 14 octobre 2026 :** [3.8.0.29 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.29).
 Le moteur partagé dispose de la nouvelle chaîne RIFE : upscale des sources une
 seule fois, mouvement réutilisé par paire et lissage de la chronologie des dessins.
-La chaîne CUDA existe dans un backend privé installé séparément ; NCNN/Vulkan et
-les binaires Windows amont gardent la chaîne classique. Les paquets et mises à
+Dans cette ancienne version, la chaîne CUDA était installée séparément ;
+la 3.8.0.30 embarque désormais les binaires spécialisés. Les paquets et mises à
 jour sont allégés. Voir [l'état du projet](docs/ETAT-PROJET.md),
 [le chantier 165 Hz](docs/CHANTIER-RIFE-165HZ.md) et
 [le relais des premiers lots](docs/CHANTIER-PERFORMANCE-RELAIS.md).

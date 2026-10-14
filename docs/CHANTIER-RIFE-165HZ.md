@@ -1,5 +1,9 @@
 # Chantier RIFE fluide à 165 Hz, paquets allégés — 3.8.0.24 à 3.8.0.29
 
+Suite publiée le 15 octobre : **3.8.0.30**, moteurs AMD/NVIDIA spécialisés,
+19 assets sur Windows/Linux/macOS. Voir [le relais GPU](CHANTIER-GPU-SPECIALISE.md).
+Le bilan 3.8.0.29 ci-dessous reste historique.
+
 État au **14 octobre 2026**. Ce document prend la suite de
 [ETAT-PROJET.md](ETAT-PROJET.md) (désormais consolidé jusqu’à la 3.8.0.29) : ce qui a été livré
 depuis, les mesures, ce qui reste, les recommandations et une critique honnête
