@@ -63,9 +63,9 @@ Ce fichier est le point de reprise du chantier, distinct des anciens résultats.
 
 | Dépôt | Chemin de travail | Branche / base |
 |---|---|---|
-| Lecteur | `/home/ta2b/Documents/mpv-AnimeJaNai-HDR` | `perf/specialized-gpu-20261014`, base `9a00a41`, premier commit du chantier en cours |
-| Backend privé | `/home/ta2b/.animejanai-tools/work/gpu-specialized` | `perf-specialized-gpu-20261014`, base `warp-chain` / `3e30998`, cherry-pick `f4fcd17` résolu en `e5ec2b8` puis modifications non committées |
-| Manager | `/home/ta2b/.animejanai-tools/work/manager-specialized` | `perf-specialized-gpu-20261014`, commit `5abbc367f9584cd026ef04ada8ea3524fb3c76f6`, poussé ; build/release immuable Manager en cours |
+| Lecteur | `/home/ta2b/Documents/mpv-AnimeJaNai-HDR` | `perf/specialized-gpu-20261014`, base `9a00a41`, code `b0a44ff261a7d385d8dedb284dd5cb50acf07c00`, poussé ; correction de liaison MSVC dans le commit suivant |
+| Backend privé | `/home/ta2b/.animejanai-tools/work/gpu-specialized` | `perf-specialized-gpu-20261014`, base `warp-chain` / `3e30998`, cherry-pick `f4fcd17` résolu en `e5ec2b8`, intégration `94ee9a0c9ba10d6ccb3d32088bf0f58613376c1a` poussée ; suivi de builds Windows en cours |
+| Manager | `/home/ta2b/.animejanai-tools/work/manager-specialized` | `perf-specialized-gpu-20261014`, commit `5abbc367f9584cd026ef04ada8ea3524fb3c76f6`, poussé ; builds Windows/Linux/macOS et release immuable réussis |
 
 Ne pas toucher au worktree utilisateur voisin `Documents/animejanai-inference-rtx`
 (fichiers RTX modifiés), ni à ses autres worktrees. Dans le lecteur, le PDF
@@ -107,6 +107,18 @@ ne doivent pas être présentées comme un build DLL complet.
   aucune DLL de cette archive n’est encore embarquée dans un paquet publié.
   Ses bibliothèques ne doivent pas être présentées comme un SDK officiel AMD.
 
+## CI confirmée
+
+- AMD Linux : [38637934496](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38637934496),
+  **succès**, code `b0a44ff`, bibliothèque gfx1201 compilée/liée, aucune inférence.
+- Manager : [38637235847](https://github.com/Ta2b/AnimeJaNaiManager-HDR/actions/runs/38637235847),
+  **succès** sur les trois plateformes et [quatre assets publiés](https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/tag/hdr-5abbc367f9584cd026ef04ada8ea3524fb3c76f6).
+- Backend privé : push SSH confirmé ; l’API GitHub de cette session renvoie 404
+  pour ce dépôt. Les résultats des builds Windows ne sont donc pas encore
+  confirmés. Le workflow suivant enregistre logs/résultats et petites DLL du
+  projet sur `build-status/specialized-<commit>-<attempt>`, lisible via Git SSH.
+  Aucun runtime vendor ni modèle n’est ajouté à cette référence de build.
+
 ## Prochaines actions exactes
 
 1. Terminer le build Windows : SDK/version C API cohérents, compilation HIP
@@ -118,7 +130,7 @@ ne doivent pas être présentées comme un build DLL complet.
    la disponibilité de sa release `hdr-<sha>` avant assemblage.
 3. Recompiler les éléments modifiés depuis leur dernier build, contrôler les
    diffs ; **ne pas lancer de tests/benchmarks sans nouvelle instruction**.
-4. Commit/push des trois dépôts ; consigner SHAs, branches, builds et statuts CI.
+4. Les trois dépôts sont committés/poussés ; finaliser le suivi Windows et ses corrections puis consigner les nouveaux SHAs et statuts CI.
    Ne pas publier comme stable une intégration Windows encore non liée.
 5. Performance suivante : supprimer les transferts entre modèles du bridge Linux,
    porter la chronologie dessins Windows, puis validation réelle lorsque autorisée.

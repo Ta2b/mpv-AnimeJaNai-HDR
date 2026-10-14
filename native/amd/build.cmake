@@ -33,6 +33,7 @@ function(aji_add_amd_executor target)
     set(obj "${CMAKE_CURRENT_BINARY_DIR}/aji_hip_kernels.obj")
     add_custom_command(OUTPUT "${obj}"
       COMMAND "${AJI_HIP_COMPILER}" -x hip -std=c++17 -O3 -ffp-contract=off
+        "$<IF:$<CONFIG:Debug>,-fms-runtime-lib=dll_dbg,-fms-runtime-lib=dll>"
         ${arch_flags} --hip-path=${ROCM_PATH} --rocm-path=${ROCM_PATH}
         -D__HIP_PLATFORM_AMD__=1 -I "${ROCM_PATH}/include"
         -c "${AJI_AMD_SOURCE_DIR}/hip_kernels.hip" -o "${obj}"
