@@ -2,11 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Active GPU work — 14 October 2026
+
+Read [`docs/CHANTIER-GPU-SPECIALISE.md`](docs/CHANTIER-GPU-SPECIALISE.md) first:
+native MIGraphX/HIP Windows+Linux and TensorRT/CUDA integration. Linux libraries
+link; Windows C++ objects compile, full DLL build still pending. Existing models,
+no new tests/benchmarks. Background engine preparation explicitly abandoned.
+Keep released 3.8.0.29 separate from this unfinished work and preserve the dirty
+user backend checkout and untracked PDF/Core ML cache.
+
 ## Documentation map
 
 - **[`docs/CHANTIER-RIFE-165HZ.md`](docs/CHANTIER-RIFE-165HZ.md)** — 3.8.0.24 to 3.8.0.29:
   warp RIFE chain, drawings timeline, 165 Hz matching, packs, measurements, what remains,
-  recommendations (background TensorRT engine preparation first) and code critique.
+  historical recommendations and code critique; background engine preparation
+  was subsequently abandoned by the user.
 - **[`docs/ETAT-PROJET.md`](docs/ETAT-PROJET.md)** — current project state: 3.8.0.29
   published on Windows/Linux/macOS at `6fa85bb`, shared RIFE warp/drawings chain,
   independent release workflows without test jobs, private CUDA integration and

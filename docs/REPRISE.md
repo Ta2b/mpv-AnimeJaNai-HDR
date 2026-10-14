@@ -1,5 +1,16 @@
 # Reprise du travail — état au 14 octobre 2026
 
+## Chantier actif — 14 octobre, suite à la 3.8.0.29
+
+**MIGraphX + HIP Windows/Linux et TensorRT + CUDA spécialisé sont en cours
+d’intégration.** Les bibliothèques Linux compilent et se lient ; le portage
+Windows compile en objets, sa liaison complète reste à terminer. Les modèles
+sont conservés ; aucun nouveau test ni benchmark n’est lancé. La préparation
+anticipée des moteurs est **abandonnée à la demande de l’utilisateur**.
+Lire [le checkpoint exact et les étapes de reprise](CHANTIER-GPU-SPECIALISE.md).
+Les sections datées 20 h 45 et antérieures décrivent la release publiée,
+pas ces modifications encore non livrées.
+
 ## Situation actuelle — 3.8.0.29 (14/10/2026 à 20 h 45 (Paris))
 
 La **3.8.0.29 est publiée sur les trois plateformes**, depuis `6fa85bb`.

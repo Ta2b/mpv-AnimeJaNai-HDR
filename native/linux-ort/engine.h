@@ -109,6 +109,16 @@ public:
     // see onnx_flow.h): flow holds 4 planes of width x height floats (displacements in pixels,
     // towards a then towards b), mask one plane (weight of a). False when the model has none.
     virtual bool has_motion() const { return false; }
+    // A device executor can retain the full motion field and read back only
+    // its maximum for the existing pair decision. Its warp() then consumes
+    // that retained field. The default uses motion() and the CPU reference.
+    virtual bool device_motion(const uint8_t *, ptrdiff_t, const uint8_t *, ptrdiff_t,
+                               double, float *) { return false; }
+    // Optional device warp using the last motion() result. Exact endpoint
+    // identities invalidate uploaded pictures even when decoder addresses repeat.
+    // Returning false keeps the shared CPU implementation (Apple/ORT).
+    virtual bool warp(const uint8_t *, const uint8_t *, int, int, uint64_t, uint64_t,
+                      float, bool, uint8_t *, ptrdiff_t) { return false; }
     virtual void motion(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
                         std::vector<float> &flow, std::vector<float> &mask) { (void)a; (void)a_stride; (void)b; (void)b_stride; (void)t; flow.clear(); mask.clear(); }
     struct Timing {
@@ -119,6 +129,10 @@ public:
 };
 
 std::unique_ptr<Interpolator> make_ort_interpolator(const InterpolatorRequest &request);
+#if defined(AJI_NATIVE_AMD)
+std::unique_ptr<Executor> make_migraphx_executor(const ExecutorRequest &request);
+std::unique_ptr<Interpolator> make_migraphx_interpolator(const InterpolatorRequest &request);
+#endif
 std::unique_ptr<Executor> make_reference_executor(const ExecutorRequest &request);
 #if defined(__APPLE__)
 std::unique_ptr<Executor> make_coreml_executor(const ExecutorRequest &request);

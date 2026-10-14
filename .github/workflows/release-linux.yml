@@ -28,6 +28,10 @@ defaults:
     shell: bash
 
 jobs:
+  amd-engine:
+    uses: ./.github/workflows/build-amd-native.yml
+    permissions:
+      contents: read
   vulkan-engine:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -99,7 +103,7 @@ jobs:
           retention-days: 3
 
   package:
-    needs: [vulkan-engine, ort-engine]
+    needs: [vulkan-engine, ort-engine, amd-engine]
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -148,9 +152,16 @@ jobs:
         with:
           name: ort-engine
           path: ort-bundle
+      - uses: actions/download-artifact@v4
+        with:
+          name: amd-native-linux-gfx1201
+          path: amd-bundle
       - name: Put the engines together
         run: |
           cp -a ort-bundle/. vulkan-bundle/inference/
+          cp amd-bundle/libaji_migraphx_rgb.so vulkan-bundle/inference/
+          cp amd-bundle/AMD-README.md vulkan-bundle/inference/
+          cp amd-bundle/sdk-packages.json vulkan-bundle/inference/AMD-SDK-PROVENANCE.json
           chmod +x vulkan-bundle/inference/animejanai-ort-test vulkan-bundle/inference/animejanai-vulkan-test
           echo "MPV_LINUX_LOCAL=$GITHUB_WORKSPACE/native-bundle" >> "$GITHUB_ENV"
           echo "VULKAN_LOCAL=$GITHUB_WORKSPACE/vulkan-bundle" >> "$GITHUB_ENV"

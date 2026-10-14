@@ -255,11 +255,22 @@ bool uses_template(const std::string &provider, const std::string &device)
 std::unique_ptr<Executor> make_executor(const ExecutorRequest &request)
 {
     if (request.provider == "reference") return make_reference_executor(request);
+#if defined(AJI_NATIVE_AMD)
+    if (request.provider == "migraphx") return make_migraphx_executor(request);
+#endif
 #if defined(__APPLE__)
     if (uses_template(request.provider, request.device)) return make_coreml_executor(request);
     if (request.provider == "metal") return make_metal_executor(request);
 #endif
     return make_ort_executor(request);
+}
+
+std::unique_ptr<Interpolator> make_interpolator(const InterpolatorRequest &request)
+{
+#if defined(AJI_NATIVE_AMD)
+    if (request.provider == "migraphx") return make_migraphx_interpolator(request);
+#endif
+    return make_ort_interpolator(request);
 }
 
 void resized_dims(int w, int h, const AjiModelConf &conf, int *ow, int *oh)
@@ -739,7 +750,7 @@ void load_rife(Context &c)
                 InterpolatorRequest moving = request;
                 moving.models_dir = dir.string();
                 moving.model = request.model + ".flow";
-                std::unique_ptr<Interpolator> candidate = make_ort_interpolator(moving);
+                std::unique_ptr<Interpolator> candidate = make_interpolator(moving);
                 if (candidate->has_motion()) {
                     std::vector<float> flow, mask;
                     const std::vector<uint8_t> dark((size_t)c.rife_w * c.rife_h * 3, 96), light((size_t)c.rife_w * c.rife_h * 3, 160);
@@ -754,7 +765,7 @@ void load_rife(Context &c)
                 }
             } catch (const std::exception &e) { c.rife_note = std::string("interpolation on the upscaled pictures unavailable: ") + e.what(); }
         }
-        std::unique_ptr<Interpolator> rife = make_ort_interpolator(request);
+        std::unique_ptr<Interpolator> rife = make_interpolator(request);
         // Run once now, on two grey pictures: the model is compiled when the profile opens, and
         // a provider that cannot run it is found out here, not in the middle of playback.
         {
@@ -981,29 +992,37 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
             });
         auto &W = c.warp_pair;
         const bool many = (double)c.chain.rife_factor_num / c.chain.rife_factor_den > 3.0 + 1e-9;
+        auto motion = [&](double at, bool summarize = true) {
+            float largest = 0;
+            if (!c.rife->device_motion(wa.data(), stride, wb.data(), stride, at, summarize ? &largest : nullptr)) {
+                c.rife->motion(wa.data(), stride, wb.data(), stride, at, c.flow, c.mask);
+                if (summarize) for (float f : c.flow) largest = std::max(largest, std::fabs(f));
+            }
+            return largest;
+        };
         try {
             if (W.a != a.identity || W.b != next->identity) {
                 // A new pair: the middle first, unless the pair before moved too much.
                 const bool middle = !W.prev_split || instant == 0.5 || many;
-                c.rife->motion(wa.data(), stride, wb.data(), stride, middle ? 0.5 : instant, c.flow, c.mask);
-                float largest = 0;
-                for (float f : c.flow) largest = std::max(largest, std::fabs(f));
+                const float largest = motion(middle ? 0.5 : instant);
                 W.single = middle && (largest <= c.warp_px || many);
                 W.prev_split = !many && largest > c.warp_px;
                 if (!W.single && middle && instant != 0.5)
-                    c.rife->motion(wa.data(), stride, wb.data(), stride, instant, c.flow, c.mask);
+                    motion(instant, false);
                 W.a = a.identity; W.b = next->identity;
                 (W.single ? c.warp_single : c.warp_split)++;
             } else if (!W.single) {
-                c.rife->motion(wa.data(), stride, wb.data(), stride, instant, c.flow, c.mask);
+                motion(instant, false);
             }
         } catch (...) { if (following.joinable()) following.join(); throw; }
         if (following.joinable()) following.join();
         require(failure.empty(), failure);
         bool whole_a = false;
         const std::vector<uint8_t> &ua = up_of(c, a, &whole_a), &ub = up_of(c, *next, &following_whole);
-        warp_rgb(ua.data(), ub.data(), c.plan.width, c.plan.height, c.flow.data(), c.mask.data(),
-                 c.rife_w, c.rife_h, (float)instant, W.single, output, output_stride);
+        if (!c.rife->warp(ua.data(), ub.data(), c.plan.width, c.plan.height, a.identity, next->identity,
+                          (float)instant, W.single, output, output_stride))
+            warp_rgb(ua.data(), ub.data(), c.plan.width, c.plan.height, c.flow.data(), c.mask.data(),
+                     c.rife_w, c.rife_h, (float)instant, W.single, output, output_stride);
         c.rife_ms += now_ms() - start;
         c.interpolated++;
         return false;

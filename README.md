@@ -7,6 +7,12 @@ une option NVIDIA distincte. Les essais physiques HDR et RTX
 4050 restent nécessaires ; Linux demeure expérimental dans les releases communes. Voir
 [la documentation Linux](docs/LINUX.md) pour la construction, les tests et les limites.
 
+**Chantier GPU en cours :** MIGraphX + HIP natif pour RX 9070 XT sur
+Windows/Linux, TensorRT + CUDA spécialisé, modèles conservés. Les bibliothèques
+Linux sont compilées et liées ; la construction complète Windows est à confirmer.
+Voir [le checkpoint et les limites exactes](docs/CHANTIER-GPU-SPECIALISE.md).
+Ces modifications ne sont pas encore une nouvelle release validée.
+
 **État au 14 octobre 2026 :** [3.8.0.29 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.29).
 Le moteur partagé dispose de la nouvelle chaîne RIFE : upscale des sources une
 seule fois, mouvement réutilisé par paire et lissage de la chronologie des dessins.

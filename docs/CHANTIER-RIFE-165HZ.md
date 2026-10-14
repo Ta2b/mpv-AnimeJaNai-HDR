@@ -96,7 +96,12 @@ pas été revérifiée** (l'utilisateur teste lui-même).
 
 ## 4. Recommandations
 
-### 4.1 Préparer les moteurs TensorRT en arrière-plan (priorité 1)
+### 4.1 Préparer les moteurs TensorRT en arrière-plan — abandonné
+
+**Décision utilisateur ultérieure, 14 octobre : ne pas réaliser cette proposition.**
+Elle améliore le démarrage et pas le débit. La priorité active est
+[MIGraphX/HIP et TensorRT/CUDA spécialisé](CHANTIER-GPU-SPECIALISE.md).
+Le texte ci-dessous est conservé comme historique de la proposition initiale.
 
 Problème : le premier film pour un couple modèle + résolution déclenche la
 compilation `trtexec` (« pause de première lecture », parfois plusieurs minutes).

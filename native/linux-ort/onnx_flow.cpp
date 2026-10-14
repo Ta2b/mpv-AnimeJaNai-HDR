@@ -221,3 +221,43 @@ bool aji_onnx_add_flow_outputs(const std::vector<char> &model, std::vector<char>
     out->insert(out->end(), (const char *)after, model.data() + model.size());
     return true;
 }
+
+bool aji_onnx_motion_outputs(const std::vector<char> &model, std::vector<char> *out,
+                             std::string *why)
+{
+    std::vector<char> expanded;
+    if (!aji_onnx_add_flow_outputs(model, &expanded, why)) return false;
+    const auto *base = reinterpret_cast<const uint8_t *>(expanded.data());
+    Reader top{base, base + expanded.size()};
+    const uint8_t *graph = nullptr, *field_start = nullptr, *after = nullptr;
+    size_t length = 0;
+    while (top.p < top.end && top.ok) {
+        const auto *start = top.p; uint32_t field; const uint8_t *data; size_t n;
+        if (!top.next(&field, &data, &n)) break;
+        if (field == 7 && data) { graph = data; length = n; field_start = start; after = top.p; }
+    }
+    if (!top.ok || !graph) { *why = "unreadable motion graph"; return false; }
+    // The two entries just appended are the desired outputs. Existing output
+    // entries (including duplicate flow outputs in an expanded model) go away.
+    Reader count{graph, graph + length}; size_t outputs = 0;
+    while (count.p < count.end && count.ok) {
+        uint32_t field; const uint8_t *data; size_t n;
+        if (!count.next(&field, &data, &n)) break;
+        if (field == 12) ++outputs;
+    }
+    if (!count.ok || outputs < 3) { *why = "missing motion graph outputs"; return false; }
+    Reader read{graph, graph + length}; std::vector<char> body; size_t index = 0;
+    while (read.p < read.end && read.ok) {
+        const auto *start = read.p; uint32_t field; const uint8_t *data; size_t n;
+        if (!read.next(&field, &data, &n)) break;
+        if (field != 12 || ++index > outputs - 2)
+            body.insert(body.end(), reinterpret_cast<const char *>(start), reinterpret_cast<const char *>(read.p));
+    }
+    if (!read.ok) { *why = "truncated motion graph"; return false; }
+    std::string head(1, char(0x3a)); put_varint(head, body.size());
+    out->clear(); out->reserve(expanded.size());
+    out->insert(out->end(), static_cast<const char *>(expanded.data()), reinterpret_cast<const char *>(field_start));
+    out->insert(out->end(), head.begin(), head.end()); out->insert(out->end(), body.begin(), body.end());
+    out->insert(out->end(), reinterpret_cast<const char *>(after), static_cast<const char *>(expanded.data()) + expanded.size());
+    return true;
+}

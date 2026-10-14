@@ -227,6 +227,9 @@ if [ -n "$sm" ]; then
     fi
 fi
 
+fi
+
+# RIFE models are also needed by native MIGraphX, independently of TensorRT.
 # RIFE models (interpolation only) - fetched only when the user's config enables
 # a RIFE chain, so pure-upscaling users never download them.
 ls "$RIFEDATA"/*.onnx >/dev/null 2>&1 && [ ! -f "$DATA/animejanai/.pack-rife" ] && pack_mark rife rife
@@ -234,8 +237,6 @@ if { ! ls "$RIFEDATA"/*.onnx >/dev/null 2>&1 || pack_stale rife rife; } \
    && grep -qiE '^[[:space:]]*chain_[0-9]+_rife[[:space:]]*=[[:space:]]*(yes|true|1)' \
         "$DATA/animejanai/animejanai.conf" 2>/dev/null; then
     fetch_pack "rife" "RIFE interpolation models (~450 MB)" rife
-fi
-
 fi
 
 # ONNX Runtime engine with OpenVINO / MIGraphX (Intel GPUs, AMD through ROCm): a pack too, fetched

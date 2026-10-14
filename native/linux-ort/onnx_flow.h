@@ -12,3 +12,7 @@
 // expected structure.
 bool aji_onnx_add_flow_outputs(const std::vector<char> &model, std::vector<char> *out,
                                std::string *why);
+// Motion-only execution: keep all nodes/weights, expose only flow and mask.
+// The compiler can remove the unused final RGB warps without changing motion.
+bool aji_onnx_motion_outputs(const std::vector<char> &model, std::vector<char> *out,
+                             std::string *why);

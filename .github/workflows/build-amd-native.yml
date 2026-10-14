@@ -1,0 +1,52 @@
+name: Build native AMD engine
+# Compile/link only. No model inference, tests or benchmarks on the runner.
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: [hdr-3.8, 'perf/**', 'try/**']
+    paths:
+      - 'native/amd/**'
+      - 'native/linux-ort/**'
+      - '.github/workflows/build-amd-native.yml'
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build g++ libxml2 libnuma1 patchelf
+      - uses: actions/cache@v4
+        with:
+          path: amd-sdk
+          key: amd-compile-sdk-noble-7.2-${{ hashFiles('native/amd/fetch_rocm_sdk.py') }}
+      - name: Extract the AMD compile SDK
+        run: python3 native/amd/fetch_rocm_sdk.py amd-sdk
+      - name: Fetch the existing ORT ABI and configuration parser
+        run: |
+          curl -fsSL --retry 3 -o ort.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.24.1/onnxruntime-linux-x64-1.24.1.tgz
+          mkdir ort && tar -xzf ort.tgz -C ort --strip-components=1
+          git clone --depth 1 --branch v0.11.1 https://github.com/the-database/animejanai-inference.git aji-conf
+      - name: Compile the native AMD engine for RX 9070 XT
+        run: |
+          sdk="$GITHUB_WORKSPACE/amd-sdk/opt/rocm-7.2.0"
+          cmake -S native/linux-ort -B amd-build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DORT_ROOT="$GITHUB_WORKSPACE/ort" -DAJI_SOURCE="$GITHUB_WORKSPACE/aji-conf" \
+            -DAJI_NATIVE_AMD=ON -DAJI_AMD_ARCHITECTURES=gfx1201 \
+            -DMIGRAPHX_ROOT="$sdk" -DROCM_PATH="$sdk" -DCMAKE_PREFIX_PATH="$sdk" \
+            -DCMAKE_HIP_COMPILER="$sdk/llvm/bin/clang++" -DCMAKE_HIP_COMPILER_ROCM_ROOT="$sdk"
+          cmake --build amd-build --target aji_migraphx_rgb -j 4
+          mkdir amd-bundle
+          cp amd-build/libaji_migraphx_rgb.so amd-bundle/
+          cp amd-sdk/sdk-packages.json amd-bundle/
+          patchelf --set-rpath '$ORIGIN:/opt/rocm/lib' amd-bundle/libaji_migraphx_rgb.so
+          cp native/amd/README.md amd-bundle/AMD-README.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: amd-native-linux-gfx1201
+          path: amd-bundle/
+          if-no-files-found: error
+          retention-days: 14

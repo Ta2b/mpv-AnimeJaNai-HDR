@@ -72,6 +72,10 @@ end
 
 -- backend=migraphx / openvino: same host-frame bridge as Vulkan, another engine library.
 local function onnxruntime() return hw.backend=='migraphx' or hw.backend=='openvino' end
+local function ort_library()
+    local native=hw.inference_dir..'/libaji_migraphx_rgb.so'
+    return hw.backend=='migraphx' and utils.file_info(native) and native or hw.inference_dir..'/libaji_ort.so'
+end
 local function bridged() return hw.backend=='vulkan' or onnxruntime() end
 local function ready()
     hw.backend=(policy.read_bank(hw.conf) or {}).backend or 'tensorrt'
@@ -83,7 +87,7 @@ local function ready()
     end
     if onnxruntime() then
         -- The provider itself is checked by the engine at configure, with its own message.
-        hw.inference_available=not failed and not hw.bank_conflict and utils.file_info(hw.inference_dir..'/libaji_ort.so')~=nil
+        hw.inference_available=not failed and not hw.bank_conflict and utils.file_info(ort_library())~=nil
     end
     mp.set_property_native('user-data/animejanai-hardware',hw)
     return hw.inference_available
@@ -117,7 +121,7 @@ local function select(value, preload)
         local vulkan=hw.backend=='vulkan'
         local ort=onnxruntime()
         local f={name=(vulkan or ort) and 'animejanai-vulkan' or 'animejanai',label='aji',enabled=true,params={
-            lib=hw.inference_dir..(ort and '/libaji_ort.so' or vulkan and '/libaji_vulkan.so' or '/libaji.so'),conf=hw.conf_active or hw.conf,
+            lib=ort and ort_library() or hw.inference_dir..(vulkan and '/libaji_vulkan.so' or '/libaji.so'),conf=hw.conf_active or hw.conf,
             ['model-dir']=path('~~/../animejanai/onnx'),['rife-model-dir']=path('~~/../animejanai/rife'),
             stats=path('~~/../animejanai/currentanimejanai.log'),slot=tostring(wanted)}}
         if vulkan then

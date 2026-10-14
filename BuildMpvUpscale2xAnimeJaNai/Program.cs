@@ -433,7 +433,7 @@ async Task InstallAji()
     // Dev override: AJI_LOCAL_BUILD points at a local CMake build dir
     // (libaji.so + libaji_trt.so + tools), or AJI_LOCAL_ZIP at a built archive.
     var localBuild = Environment.GetEnvironmentVariable("AJI_LOCAL_BUILD");
-    if (!plat.IsWindows && !string.IsNullOrEmpty(localBuild))
+    if (!string.IsNullOrEmpty(localBuild))
     {
         Console.WriteLine($"Using local aji build dir: {localBuild}");
         foreach (var name in plat.AjiLibs.Concat(plat.AjiTools))
@@ -443,13 +443,19 @@ async Task InstallAji()
             {
                 var dst = Path.Combine(inferencePath, name);
                 File.Copy(src, dst, true);
-                await RunProcess("chmod", $"+x \"{dst}\"");
+                if (!plat.IsWindows) await RunProcess("chmod", $"+x \"{dst}\"");
             }
             else
             {
                 Console.WriteLine($"  (aji artifact missing, skipped: {name})");
             }
         }
+        // Optional native AMD ABI-9 backend; the ordinary package has none.
+        if (plat.IsWindows && File.Exists(Path.Combine(localBuild, "aji_migraphx.dll")))
+            File.Copy(Path.Combine(localBuild, "aji_migraphx.dll"), Path.Combine(inferencePath, "aji_migraphx.dll"), true);
+        var rtxAlias = plat.IsWindows ? "aji_trt_rtx.dll" : "libaji_trt_rtx.so";
+        if (File.Exists(Path.Combine(localBuild, rtxAlias)))
+            File.Copy(Path.Combine(localBuild, rtxAlias), Path.Combine(inferencePath, rtxAlias), true);
         return;
     }
 
@@ -726,6 +732,34 @@ void InstallVulkanInference()
             UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
 }
 
+// Optional complete native AMD bundle. The ordinary build never acquires an
+// AMD SDK dependency. A Windows bundle must include its matching runtime;
+// a Linux bundle may use the documented system ROCm installation.
+void InstallNativeAmdInference()
+{
+    var source = Environment.GetEnvironmentVariable("AJI_AMD_LOCAL");
+    if (string.IsNullOrEmpty(source)) return;
+    var library = plat.IsWindows ? "aji_migraphx.dll" : "libaji_migraphx_rgb.so";
+    var files = Path.Combine(source, "inference");
+    if (!File.Exists(Path.Combine(files, library)))
+        throw new FileNotFoundException($"Native AMD bundle missing inference/{library}");
+    if (plat.IsWindows && !File.Exists(Path.Combine(files, "aji.dll")))
+        throw new FileNotFoundException("Native AMD Windows bundle needs its matching inference/aji.dll dispatcher");
+    foreach (var file in Directory.GetFiles(files, "*", SearchOption.AllDirectories))
+    {
+        var relative = Path.GetRelativePath(files, file);
+        var destination = Path.Combine(inferencePath, relative);
+        // Never replace the shared ORT/DirectML/CUDA libraries with a different
+        // ABI merely because a vendor bundle contains similarly named files.
+        bool ownEngine = relative == library || (plat.IsWindows && relative == "aji.dll");
+        if (!ownEngine && File.Exists(destination) && !File.ReadAllBytes(destination).SequenceEqual(File.ReadAllBytes(file)))
+            throw new InvalidDataException($"Native AMD bundle conflicts with installed file: {relative}");
+    }
+    CopyDirectory(files, inferencePath);
+    if (Directory.Exists(Path.Combine(source, "licenses")))
+        CopyDirectory(Path.Combine(source, "licenses"), Path.Combine(installDirectory, "animejanai", "licenses"));
+}
+
 void InstallAnimeJaNaiCore()
 {
     CopyDirectory(animejanaiDirectory, installDirectory);
@@ -961,6 +995,9 @@ void WriteVersionAndManifest()
     // (EmitComponentPacks), downloaded by an update only when they changed.
     overlayPaths.AddRange(plat.AjiLibs.Select(n => "animejanai/inference/" + n));
     overlayPaths.AddRange(plat.AjiTools.Select(n => "animejanai/inference/" + n));
+    var specializedTrt = plat.IsWindows ? "aji_trt_rtx.dll" : "libaji_trt_rtx.so";
+    if (File.Exists(Path.Combine(inferencePath, specializedTrt)))
+        overlayPaths.Add("animejanai/inference/" + specializedTrt);
     overlayPaths.Add("portable_config/scripts");
     overlayPaths.Add("portable_config/shaders");
     // HDR fork: fork-managed code rides the overlay so fork updates deliver it. The user's
@@ -1037,6 +1074,8 @@ void WriteVersionAndManifest()
     var node = JsonSerializer.SerializeToNode(manifest)!;
     // Packs without a pinned upstream version are versioned by their content.
     node["deps"]!["models"] = ContentVersion(ModelFiles());
+    if (plat.IsWindows && OnnxRuntimeFiles().Length != 0)
+        node["deps"]!["onnxruntime"] = ContentVersion(OnnxRuntimeFiles());
     if (!plat.IsWindows)
     {
         node["deps"]!["onnxruntime"] = ContentVersion(OnnxRuntimeFiles());
@@ -1220,6 +1259,7 @@ async Task Main()
     await InstallYtDlp();
     InstallAnimeJaNaiCore();
     InstallVulkanInference();
+    InstallNativeAmdInference();
     PortConfigsForTarget();
     GenerateInputConf();
     await InstallAnimeJaNaiManager();
@@ -1281,17 +1321,27 @@ string[] ModelFiles()
         : Array.Empty<string>();
 }
 
-// Linux: the ONNX Runtime engine with OpenVINO (about 150 MB), useful only to Intel GPUs and to
-// AMD GPUs through MIGraphX. The NCNN/Vulkan engine and libgomp stay in the core.
+// Optional neural runtimes: Linux ORT/OpenVINO + native AMD; Windows native
+// MIGraphX/HIP prefix. The dispatcher and baseline DirectML stay in the core.
 string[] OnnxRuntimeFiles()
 {
-    if (plat.IsWindows || !Directory.Exists(inferencePath)) return Array.Empty<string>();
+    if (!Directory.Exists(inferencePath)) return Array.Empty<string>();
+    if (plat.IsWindows)
+    {
+        var files = new List<string>();
+        foreach (var name in new[] { "aji_migraphx.dll", "AMD-README.md" })
+            if (File.Exists(Path.Combine(inferencePath, name))) files.Add(Path.Combine(inferencePath, name));
+        var amd = Path.Combine(inferencePath, "amd");
+        if (Directory.Exists(amd)) files.AddRange(Directory.GetFiles(amd, "*", SearchOption.AllDirectories));
+        return files.Select(f => Path.GetRelativePath(installDirectory, f)).ToArray();
+    }
     return Directory.GetFiles(inferencePath)
         .Where(f =>
         {
             var n = Path.GetFileName(f);
-            return n.StartsWith("libaji_ort") || n.StartsWith("libonnxruntime") || n.StartsWith("libopenvino") ||
-                   n.StartsWith("libtbb") || n == "animejanai-ort-test" || n.Contains("ThirdPartyNotices");
+            return n.StartsWith("libaji_ort") || n.StartsWith("libaji_migraphx_rgb") || n.StartsWith("libonnxruntime") || n.StartsWith("libopenvino") ||
+                   n.StartsWith("libtbb") || n == "animejanai-ort-test" || n == "AMD-README.md" ||
+                   n == "AMD-SDK-PROVENANCE.json" || n.Contains("ThirdPartyNotices");
         })
         .Select(f => Path.GetRelativePath(installDirectory, f)).ToArray();
 }

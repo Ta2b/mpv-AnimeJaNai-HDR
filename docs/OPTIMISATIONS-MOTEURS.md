@@ -1,5 +1,22 @@
 # Optimisation des moteurs et de RIFE — analyse du 13 octobre 2026
 
+## Chantier actif — 14 octobre, suite à la 3.8.0.29
+
+**MIGraphX + HIP Windows/Linux et TensorRT + CUDA spécialisé sont en cours
+d’intégration.** Les bibliothèques Linux compilent et se lient ; le portage
+Windows compile en objets, sa liaison complète reste à terminer. Les modèles
+sont conservés ; aucun nouveau test ni benchmark n’est lancé. La préparation
+anticipée des moteurs est **abandonnée à la demande de l’utilisateur**.
+Lire [le checkpoint exact et les étapes de reprise](CHANTIER-GPU-SPECIALISE.md).
+Les sections datées 20 h 45 et antérieures décrivent la release publiée,
+pas ces modifications encore non livrées.
+
+Complément AMD / Windows du 14 octobre :
+[options, compatibilité MIGraphX Windows et plan de portage](AMD-PERFORMANCE.md).
+La distribution MIGraphX via Windows ML prend désormais en charge RDNA 3+ ;
+les hypothèses historiques sur son absence Windows doivent être relues dans
+ce contexte. Aucun nouveau test ni modification de moteur pour cette étude.
+
 ## Situation actuelle — 3.8.0.29 (14/10/2026 à 20 h 45 (Paris))
 
 La **3.8.0.29 est publiée sur les trois plateformes**, depuis `6fa85bb`.
