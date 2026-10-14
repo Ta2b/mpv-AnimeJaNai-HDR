@@ -48,7 +48,9 @@ nouvelle mesure dans les mêmes conditions, session déverrouillée.
 
 Les moyennes utilisent 30 images sources, dont trois d'échauffement exclues
 (10 images pour la cible CPU seule). AJI_BENCH_FRAMES et AJI_BENCH_WARMUP permettent
-de modifier ces nombres. AJI_PIXEL_POOL=0 rétablit les anciens threads par appel
+de modifier ces nombres. La notice des paquets 3.8.0.23 décrit les mesures corrigées ;
+les optimisations RIFE suivantes dans les sources ne sont pas dans ce paquet publié.
+AJI_PIXEL_POOL=0 rétablit les anciens threads par appel
 pour comparer le pool CPU persistant, avec le même programme de mesure.
 
 Conserver et partager le fichier resultats.txt entier, avec la version du paquet

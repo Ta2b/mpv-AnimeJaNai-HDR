@@ -1,5 +1,21 @@
 # AnimeJaNai et RIFE sous Linux : journal d'implémentation
 
+## État courant au 14 octobre 2026
+
+La **3.8.0.23 Linux est publiée**, portable, AppImage et overlay, avec Windows
+et macOS dans la même release. NCNN/Vulkan comprend la reprise exacte par défaut
+et les caches validés du chantier ; similarité opt-in et limites documentées.
+Le moteur partagé gère désormais RIFE via ORT : les mentions « RIFE non géré »
+dans les étapes du 12 octobre ci-dessous sont historiques. ORT Linux est compilé
+contre **1.24.1** pour le fournisseur OpenVINO livré ; cela ne démontre pas la
+vitesse ou la fidélité sur chaque GPU/NPU OpenVINO/MIGraphX physique.
+
+Suite non encore livrée : `30a3e83` (décision par paire et sortie RIFE préallouée,
+CI réussie) et `f4fcd17` (CUDA Graph RIFE dans un worktree NVIDIA isolé, compilation
+C++ seulement confirmée). La dépendance amont du paquet n'est pas remplacée.
+[État consolidé](ETAT-PROJET.md) / [relais et preuves](CHANTIER-PERFORMANCE-RELAIS.md).
+Les essais HDR physiques et RTX 4050 restent distincts des contrôles logiciels.
+
 ## Objectif
 
 Rendre l'upscaling AnimeJaNai et l'interpolation RIFE utilisables dans le lecteur

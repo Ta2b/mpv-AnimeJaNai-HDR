@@ -7,9 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **[`docs/CHANTIER-RIFE-165HZ.md`](docs/CHANTIER-RIFE-165HZ.md)** — 3.8.0.24 to 3.8.0.29:
   warp RIFE chain, drawings timeline, 165 Hz matching, packs, measurements, what remains,
   recommendations (background TensorRT engine preparation first) and code critique.
-- **[`docs/REPRISE.md`](docs/REPRISE.md)** — current handoff: pushed commits,
-  unfinished release, active GitHub runs, verified results and next actions.
-  Read this first when resuming the interrupted Linux/release work.
+- **[`docs/ETAT-PROJET.md`](docs/ETAT-PROJET.md)** — current project state: 3.8.0.23
+  published on Windows/Linux/macOS, later shared-engine code at `30a3e83`, isolated
+  NVIDIA branch at `f4fcd17`, CI evidence and remaining integration work.
+- **[`docs/CHANTIER-PERFORMANCE-RELAIS.md`](docs/CHANTIER-PERFORMANCE-RELAIS.md)** —
+  exact performance handoff, immutable artifact references, source commits and
+  implementation limits. User requested local tests/benchmarks stopped; preserve
+  this instruction. Automatic existing CI continued. No new measured CPU/SVP gain.
+- **[`docs/REPRISE.md`](docs/REPRISE.md)** — current entry point plus dated history
+  of the earlier Linux/release sessions; old pending statuses are historical.
 
 This file is the orientation doc: what the repo is, how the runtime fits together, and the
 conventions. The step-by-step procedures live next to it:

@@ -1,9 +1,26 @@
-# Reprise du travail — 12 octobre 2026
+# Reprise du travail — état au 14 octobre 2026
 
-**Chantier performances commencé le 13 octobre 2026 :** lire d'abord
-[l'état exact et les commandes de relais](CHANTIER-PERFORMANCE-RELAIS.md).
-Les changements de ce chantier conservent les modèles et sont encore locaux ;
-ne pas déduire leur publication des anciennes notes de release ci-dessous.
+> **Suite (3.8.0.24 → 3.8.0.29, 14 octobre 2026)** : voir [CHANTIER-RIFE-165HZ.md](CHANTIER-RIFE-165HZ.md).
+
+Lire d'abord [l'état courant](ETAT-PROJET.md) et
+[le relais performances détaillé](CHANTIER-PERFORMANCE-RELAIS.md).
+La **3.8.0.23 est publiée sur Windows, Linux et macOS**, depuis `aab89ba`.
+Le moteur partagé suivant `30a3e83` est poussé sur `hdr-3.8`, CI réussie ; le
+backend NVIDIA `f4fcd17` est poussé sur sa branche isolée, non intégré au paquet.
+Les optimisations suivantes ne sont pas déjà livrées dans la 3.8.0.23.
+
+Les tests locaux restent arrêtés à la demande de l'utilisateur. Aucun gain
+chiffré pour les nouveaux lots CPU/SVP. Les poids et modèles sont conservés.
+Sources, flags, builds, limites et références immuables sont consignés dans le
+relais ; les documents de procédure ne remplacent pas les preuves de publication.
+
+## Historique du 12 octobre 2026
+
+Les statuts, chemins de machine, versions et actions ci-dessous décrivent cette
+ancienne session. Les mentions « non publié », « local » et « en cours » ne
+représentent pas l'état actuel. Les index de packs de la 3.8.0.23 contiennent
+maintenant dix liens de réutilisation chacun ; leur installation physique sur
+une machine neuve n'a pas été répétée ici.
 
 ## Mise à jour du 12 octobre, 20 h (heure de Paris) : 3.8.0.9 publiée
 

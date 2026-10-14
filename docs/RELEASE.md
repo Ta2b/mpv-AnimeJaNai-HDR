@@ -1,8 +1,20 @@
 # Publication du fork HDR
 
-Pour l’état temporaire des builds du 12 octobre 2026 et les actions restantes,
-consulter [le document de reprise](REPRISE.md). Les procédures ci-dessous
-décrivent le workflow ; elles ne prouvent pas à elles seules une publication.
+## Publication confirmée au 14 octobre 2026
+
+**[3.8.0.23 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.23)**,
+15 assets `uploaded`. Commit de livraison `aab89ba` ;
+[Deploy 38479416318](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479416318)
+et [macOS 38479416046](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479416046)
+réussis. Deux correctifs de CI ont été nécessaires : fixture de chemins AppImage
+portable entre Windows/Linux et contrôle Mac adapté au libellé d'échauffement.
+
+Le code suivant `30a3e83` a sa propre CI réussie sur `hdr-3.8`, mais n'est pas dans
+cette release. La branche NVIDIA `f4fcd17` n'est pas intégrée à la dépendance
+`AjiVersion=v0.11.1`. Ne pas remplacer les assets 3.8.0.23 avec ces nouveaux lots ;
+une future livraison devra avoir son numéro et ses références propres.
+[État consolidé](ETAT-PROJET.md), [relais performances](CHANTIER-PERFORMANCE-RELAIS.md).
+Les étapes datées du 12 octobre plus bas restent un historique de packaging.
 
 Les dépôts actifs sont `Ta2b/mpv-AnimeJaNai-HDR` (branche `hdr-3.8`) et
 `Ta2b/AnimeJaNaiManager-HDR` (branche `hdr-settings-0.8`). Windows conserve
@@ -216,7 +228,9 @@ the file.
   it from the `url` in the index.
 - Re-running Deploy for a version that is already the latest release does not reuse anything.
 
-**Status: written on 12 October 2026, compiled, not yet exercised by a release.** The first
-Deploy after 3.8.0.9 is its test: check in the assembler log which packs were reused, that the
-release has `packs.json` entries with `url`, and that the Manager can still install a
-component on a fresh install.
+**Status on 14 October 2026: exercised by the 3.8.0.23 publication.** Both
+published `packs.json` and `packs-linux-x64.json` contain ten entries and all ten
+have a `url` pointing to an earlier release (including 3.8.0.9). The release has
+15 assets because unchanged component packs are referenced instead of uploaded
+again. Preserve those older releases. A fresh physical component installation
+was not repeated in this session; publishing the index does not prove that case.

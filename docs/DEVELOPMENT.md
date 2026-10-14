@@ -7,6 +7,43 @@ Repo de ce fork : `Ta2b/mpv-AnimeJaNai-HDR`. Le Manager HDR est dans le dépôt
 voisin `Ta2b/AnimeJaNaiManager-HDR`, branche `hdr-settings-0.8`. Le portage et les
 paquets de test Linux sont décrits dans [`LINUX.md`](LINUX.md).
 
+## Performance implementation status — 14 October 2026
+
+See [ETAT-PROJET.md](ETAT-PROJET.md) for current release/CI evidence and
+[CHANTIER-PERFORMANCE-RELAIS.md](CHANTIER-PERFORMANCE-RELAIS.md) for reproducible
+source/binary checkpoints. 3.8.0.23 is published on all three platforms at
+`aab89ba`. Shared-engine changes at `30a3e83` passed CI but are not in that release.
+The isolated NVIDIA branch at `f4fcd17` is not consumed by the player's upstream
+`AjiVersion=v0.11.1` dependency. No new ABI, model or precision change in these lots.
+
+**Current user instruction: do not run local tests or benchmarks.** Local Release
+compilation and automatic existing CI continued; previous parity/performance
+reports remain historical evidence for their exact source snapshots. Do not
+attribute the 516-image CPU parity suite to the newer pair/output-buffer changes.
+
+| Environment switch | Scope and availability | Meaning |
+|---|---|---|
+| `AJI_PIXEL_POOL=0` | Shared engine, 3.8.0.23 | Previous threads per pixel conversion instead of persistent helpers |
+| `AJI_RIFE_PROFILE=1` | Shared engine, 3.8.0.23 | Separate preparation / ORT inference / output / overlap-wait timings |
+| `AJI_RIFE_PARALLEL=0` | Shared engine | Disable overlap between RIFE-before and the next endpoint's upscale |
+| `AJI_VK_SAME=exact` / `similar` | NCNN/Vulkan, 3.8.0.23 | Exact default; approximation explicit, can erase small low-contrast motion |
+| `AJI_RIFE_PAIR_CACHE=0` | Shared engine at `30a3e83`, not shipped | Recompute drawing/cut decision at every timestep |
+| `AJI_RIFE_OUTPUT_BUFFER=0` | Shared engine at `30a3e83`, not shipped | Let ORT allocate each output instead of using fixed storage |
+| `AJI_RIFE_CUDA_GRAPH=0` | NVIDIA fork at `f4fcd17`, not shipped | Ordinary TensorRT submissions instead of the captured RIFE network |
+| `AJI_BENCH_STAY_AWAKE=0` | Mac benchmark, 3.8.0.23 | Disable temporary idle-sleep assertions; they never guarantee no lock |
+
+These are process environment controls, not new Manager settings. Restart the
+process when comparing switches cached on first use. `AJI_TEST_WARMUP`,
+`AJI_BENCH_FRAMES` and `AJI_BENCH_WARMUP` describe optional future measurements,
+not an instruction to resume them now. `other` in RESULT is a residual, not copy
+time; phase work can overlap. GPU pointer reuse is not a valid frame identity.
+
+Local artifact roots: `artifacts/performance/resume-ncnn`, `rife-cpu-prep`,
+`svp-rife-shared` and `svp-rife-trt`. Preserve reference binaries and reports.
+The NVIDIA worktree is `svp-rife-trt/source` on `perf-rife-cuda-graphs-20261014`;
+its local C++ objects compile against TensorRT 10.9 and 11.3 headers. Full CUDA
+linking/runtime validation and packaging integration remain unconfirmed.
+
 ## Prerequisites
 
 | Need | Why (evidence) |

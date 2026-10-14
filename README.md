@@ -7,9 +7,11 @@ une option NVIDIA distincte. Les essais physiques HDR et RTX
 4050 restent nécessaires ; Linux demeure expérimental dans les releases communes. Voir
 [la documentation Linux](docs/LINUX.md) pour la construction, les tests et les limites.
 
-**Reprise du travail :** [état des builds et actions restantes](docs/REPRISE.md).
-Windows et Linux sont prévus dans la même release **3.8.0.9** ; consulter cet
-état pour distinguer les sources poussées des paquets effectivement publiés.
+**État au 14 octobre 2026 :** [3.8.0.23 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.23).
+Les optimisations suivantes de RIFE sont poussées dans les sources et ont leur
+propre état de validation ; elles ne sont pas dans ces binaires. Consulter
+[l’état courant du projet](docs/ETAT-PROJET.md) et [le relais performances](docs/CHANTIER-PERFORMANCE-RELAIS.md)
+pour les changements livrés, les commits et les étapes restantes.
 
 
 Fork de [the-database/mpv-upscale-2x_animejanai](https://github.com/the-database/mpv-upscale-2x_animejanai), basé sur la version **3.8.0** (branche `hdr-3.8`, version publiée par défaut ; la branche `hdr` reste sur la 3.6.3). Il ajoute une conversion SDR → HDR soignée pour l'anime et s'adapte tout seul aux cartes NVIDIA et AMD :

@@ -1,8 +1,15 @@
 # Portage Linux du fork HDR
 
-La version Windows reste la version publiée. Linux est ajouté à côté, d'abord
-comme paquet SDR de test avec le Manager HDR. La cible initiale est Fedora,
+État au 14 octobre 2026 : **3.8.0.23 publiée sur Linux, Windows et macOS**.
+Linux fournit portable, AppImage et overlay et reste expérimental, en particulier
+pour la validation HDR physique et RTX 4050. La cible initiale est Fedora,
 GNOME et Wayland, sur processeur Intel avec RX 6500 ou RTX 4050 mobile.
+
+La release inclut les optimisations exactes NCNN/Vulkan et la préparation CPU du
+moteur partagé. La suite RIFE `30a3e83` a passé sa CI, mais n'est pas dans ces
+binaires ; la branche NVIDIA `f4fcd17` reste à intégrer. Voir
+[l'état courant](ETAT-PROJET.md) et [le relais performances](CHANTIER-PERFORMANCE-RELAIS.md).
+Aucun nouveau benchmark local après la consigne d'arrêt de l'utilisateur.
 
 L'extension AnimeJaNai/RIFE AMD et NVIDIA est suivie dans
 [`LINUX-INFERENCE.md`](LINUX-INFERENCE.md), actualisé à chaque avancée.

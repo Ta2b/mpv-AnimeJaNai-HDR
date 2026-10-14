@@ -1,5 +1,22 @@
 # Simplification des réglages du Manager
 
+## État actuel — 14 octobre 2026
+
+Les réglages et profils existants sont conservés dans la 3.8.0.23 publiée.
+Les derniers lots performances n'ajoutent pas de contrôle dans le Manager et
+ne remplacent aucun modèle. Sur Mac, les moteurs d'upscale Core ML natif/Metal
+utilisent encore l'interpolateur ORT/Core ML pour RIFE ; le choix de moteur SPAN
+n'implique pas un RIFE natif. L'ordre RIFE avant/après reste un choix de profil,
+sans sélection automatique nouvelle sur la base du retour SVP.
+
+Le souvenir SVP confirmé concerne RIFE 4.26/TensorRT, source 1080p et écran
+1080p ; la résolution réellement interpolée reste inconnue. Aucun réglage
+« upscale puis réduction écran puis RIFE » n'est ajouté par ce chantier.
+Les variables avancées de comparaison sont décrites dans
+[DEVELOPMENT.md](DEVELOPMENT.md), pas présentées comme des options du Manager.
+Voir [l'état consolidé](ETAT-PROJET.md) pour ce qui est livré ou reste sur une
+branche ; les sections datées suivantes documentent la simplification d'origine.
+
 ## Demande du 12 octobre 2026
 
 Regrouper les paramètres d'écran dans une seule section, indépendante du

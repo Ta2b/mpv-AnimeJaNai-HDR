@@ -1,5 +1,17 @@
 # Chantier performances — document de relais
 
+## Checkpoint courant — 14 octobre 2026, 01 h 14 à Paris (13 octobre, 23 h 14 UTC)
+
+[État consolidé du projet](ETAT-PROJET.md). **3.8.0.23 entièrement publiée sur
+Windows, Linux et macOS (15 assets)** ; Deploy `38479416318` et macOS
+`38479416046` réussis. Le moteur partagé du lot suivant, **`30a3e83`**, est
+committé/poussé sur `hdr-3.8` et sa CI `38481912353` / `38481912257` est
+**terminée avec succès**. Il n'est pas dans les binaires de la release.
+Le lot NVIDIA **`f4fcd17`** reste sur sa branche isolée, build CUDA complet et
+intégration non confirmés. Aucun test local relancé ; aucun gain mesuré sur les
+lots CPU/SVP. Les paragraphes « encore en cours » ou « non commité » conservés
+plus bas sont des checkpoints historiques, pas l'état courant.
+
 ## Suite SVP du 14 octobre — lot RIFE codé après la 3.8.0.23
 
 Demande utilisateur : travailler sur les pistes SVP pendant le build. **Tests
@@ -11,7 +23,8 @@ images concernent le moteur de la 3.8.0.23, pas ces nouvelles modifications.
 
 ### Moteur partagé (Mac / ORT)
 
-Base `785983c`, branche `hdr-3.8`, changements de ce lot dans
+Base `785983c`, commit **`30a3e83dfd3c7c30dd4874f01d71509023acf1a5`**
+poussé sur `hdr-3.8`, changements de ce lot dans
 `native/linux-ort/aji_ort.cpp` et `exec_ort.cpp` :
 
 - Décision dessin tenu/coupe conservée par paire. Chaque endpoint reçoit une
@@ -66,6 +79,8 @@ VideoFX local et 11.3.0.99 téléchargé depuis NVIDIA, headers CUDA 12.8 dans l
 deux cas. Objets et journaux sous `svp-rife-trt/` : `aji_trt-candidate.o`,
 `aji_trt-trt11-candidate.o`, `build-object.log`, `build-object-trt11.log`.
 Ce n'est pas une édition de liens CUDA complète ni une validation GPU.
+Le résultat du build complet NVIDIA reste non confirmé : accès API du dépôt
+refusé/404, sans conclusion sur la réussite du workflow.
 Le SDK local était hors du PATH ; aucune installation système faite.
 Les headers Debian sont extraits sous `trt11/` sans installer le paquet.
 
@@ -76,9 +91,9 @@ Référence de capture et durée de vie :
 
 **3.8.0.23 Mac publiée**, application, SHA-256, notice et paquet de benchmark
 présents dans [la release](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.23).
-Sources de cette release : `aab89ba`, qui précède ce lot. Build Windows réussi ;
-contrôles Vulkan/ORT/HDR/plateforme réussis ; packaging Linux encore en cours au
-moment de ce checkpoint. Suivi : run Deploy `38479416318`. Ne pas réécrire les
+Sources de cette release : `aab89ba`, qui précède ce lot. Builds Windows/Linux,
+contrôles Vulkan/ORT/HDR/plateforme et publication réussis ; 15 assets joints,
+macOS compris. Suivi : run Deploy `38479416318`. Ne pas réécrire les
 assets de cette version avec les modifications du lot SVP.
 
 Manifeste et patch locaux de ce lot : `svp-rife-shared/checkpoint.json`,
@@ -108,7 +123,8 @@ déclenche Deploy (Windows/Linux) et macOS ; seul un fichier effectivement joint
 à la release prouve sa publication. Commit moteur **`089b6b50696765f1af54e70f5a56217533300177`**, poussé sur les
 deux branches. Builds lancés : [macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479119500)
 et [Deploy initial](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479119497).
-Au moment de ce checkpoint, archives non encore publiées. Les références
+Checkpoint initial avant publication, désormais dépassé : les archives sont
+publiées sur les trois plateformes. Les références
 locales finales et le suivi des workflows sont consignés dans
 `artifacts/performance/rife-cpu-prep/publication.json`.
 
@@ -122,9 +138,9 @@ utiliser cette section et le commit de livraison, pas ces anciens statuts.
 Commit de publication corrigé : `aab89ba7ded15d81dc279a83cea2cb39440f6e90`.
 Runs à suivre : [Deploy](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479416318)
 et [macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479416046).
-Dernier état observé : build Windows réussi ; contrôles plateforme Windows/Linux,
-ORT et HDR réussis ; étape Vulkan encore en cours. Moteur Mac réussi, application
-Mac encore en construction. **Publication des assets non encore confirmée.**
+État final observé : builds et contrôles plateforme Windows/Linux, ORT, Vulkan
+et HDR réussis ; application Mac et publication réussies. **15 assets publiés
+sur les trois plateformes.**
 Aucun nouveau test local lancé. Les premières tentatives restent dans l'historique
 ci-dessus ; utiliser ces nouveaux runs pour le suivi courant.
 

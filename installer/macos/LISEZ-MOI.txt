@@ -25,7 +25,7 @@ Ctrl+6  Performance très léger, ramené à 360p puis doublé
 Ctrl+0  désactiver
 Ctrl+r  oublier le profil retenu pour ce Mac et mesurer à nouveau
 Ctrl+h  conversion SDR vers HDR : activer / désactiver
-Ctrl+j  état et temps par image : total, modèle (Core ML) et conversions
+Ctrl+j  état du moteur et temps par image ; avec RIFE, le résidu comprend aussi l’interpolation
 Ctrl+g  rendu HDR : personnalisé / naturel / désactivé
 Ctrl+i  état de la sortie HDR
 
@@ -46,11 +46,15 @@ par le temps gagné sur les images tenues qui l'entourent.
 Interpolation RIFE
 ------------------
 À activer par profil dans le Manager (onglet Profiles, « Enable RIFE Interpolation »), avec le
-facteur (x2, x3...) et le modèle : 4.26, 4.25 ou 4.22 lite (plus léger). Laisser « Interpolate
-before upscaling » coché : l'interpolation se fait à la taille de la vidéo, ce qui coûte bien
-moins. Global Settings choisit le processeur qui interpole (Auto, GPU, Neural Engine, CPU).
+facteur (x2, x3...) et le modèle : 4.26, 4.25 ou 4.22 lite (plus léger).
+« Interpolate before upscaling » fait travailler RIFE à la taille de la vidéo ;
+désactivée, l'option le fait travailler sur les images agrandies. Le coût de
+l'upscale des images interpolées et les caches peuvent changer le meilleur ordre.
+Le choix dépend donc du profil et du rendu souhaité.
+Global Settings choisit le processeur qui interpole (Auto, GPU, Neural Engine, CPU).
+RIFE passe par Core ML via ONNX Runtime, même si l'upscale utilise Metal ou Core ML natif.
 Deux images identiques (un dessin tenu) et les changements de scène ne sont pas interpolés.
-Interpoler double au moins le travail : commencez par un profil léger (Ctrl+5, Ctrl+6) et
+L’interpolation ajoute du calcul sur les images en mouvement : commencez par un profil léger (Ctrl+5, Ctrl+6) et
 regardez Ctrl+j. Run Benchmarks mesure aussi les profils avec RIFE.
 
 Mise à jour

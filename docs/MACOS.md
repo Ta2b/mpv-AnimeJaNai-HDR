@@ -1,55 +1,72 @@
-# macOS (puce Apple) : aperçu
+# macOS (puce Apple)
 
-État au 13 octobre 2026 : première version, **compilée et vérifiée sans écran en intégration
-continue, jamais ouverte sur un vrai Mac**. Mode d'emploi pour l'utilisateur :
-`installer/macos/LISEZ-MOI.txt` (joint à la release sous le nom `LISEZ-MOI-macOS.txt`).
+## État au 14 octobre 2026
 
-## Ce qui est livré
+La **[3.8.0.23 est publiée](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.23)** :
+application Apple Silicon, SHA-256, notice et paquet autonome de benchmark.
+La dernière application a été essayée par l'utilisateur sur son MacBook Pro
+M4 Pro, avec un retour qualitatif très favorable à Core ML natif GPU+NPU, suivi
+de Metal GPU+NPU. Ce retour ne fournit pas un gain chiffré du nouveau code.
 
-- `mpv-AnimeJaNai-HDR-v<version>-macos-arm64.zip` : l'application « mpv AnimeJaNai ».
-- `AnimeJaNai-mac-bench.zip` : mesure du temps de calcul des modèles avec Core ML, sans lecteur
-  (`native/macos-bench`). C'est par elle qu'on sait si un Mac donné tient le temps réel.
+Le benchmark 3.8.0.21 s'est déroulé en partie avec la session verrouillée : ses
+classements et longues pauses restent provisoires. Le nouveau programme exclut
+l'échauffement, fournit médiane/p95/max et phases RIFE et protège temporairement
+contre la veille automatique. Il ne garantit pas l'absence de verrouillage.
+`upscale work` et `other` remplacent les anciennes colonnes trompeuses ; `other`
+n'est pas un temps de copies. Les durées RIFE sont par intervalle source.
 
-## Composition
+[État du projet](ETAT-PROJET.md) et [relais détaillé](CHANTIER-PERFORMANCE-RELAIS.md).
+Mode d'emploi : `installer/macos/LISEZ-MOI.txt` ; notice de mesure :
+`native/macos-bench/LISEZ-MOI.txt`. Aucun nouveau test local après la demande d'arrêt.
 
-- **mpv** : le même mpv épinglé que sous Linux (`the-database/mpv`, `19c0fcf895`), avec le filtre à
-  pont d'images `animejanai-vulkan` (`native/linux-vulkan/install-filter.py`, étendu à macOS).
-  Compilé avec les bibliothèques de Homebrew, sortie Vulkan par MoltenVK (`gpu-context=macvk`),
-  empaqueté par `TOOLS/osxbundle.py`. Script : `installer/macos/build-mpv.sh`.
-- **Moteur** : `libaji_ort.dylib` (`native/linux-ort`), ONNX Runtime 1.31 standard pour macOS avec
-  le fournisseur **Core ML** (`backend=CoreML`). Modèle au format ML Program, demi-flottants, taille
-  d'entrée fixe. Périphérique : `ALL`, `GPU`, `ANE` (Neural Engine) ou `CPU`. Modèle compilé gardé
-  dans `~/Library/Caches/AnimeJaNai/coreml`.
-- **Application** (`installer/macos/package.sh`) : l'exécutable principal est `launcher.sh`. mpv ne
-  lit pas ses réglages dans son paquet d'application (constaté : seuls `~/.config/mpv`, `~/.mpv` et
-  le dossier de Homebrew sont consultés), donc le lanceur fixe `MPV_HOME` sur
-  `~/Library/Application Support/AnimeJaNai/mpv`, y copie le script à chaque lancement et les
-  fichiers de réglages s'ils manquent, puis lance mpv. Le script `animejanai_mac.lua` est autonome :
-  il ne dépend ni de `gpu-policy.lua` ni de l'assistant `AnimeJaNaiPlatform`.
-- **Signature** : ad hoc seulement. Sans compte développeur Apple l'application n'est ni signée ni
-  notariée : l'utilisateur doit retirer l'attribut de quarantaine (`xattr -dr com.apple.quarantine`).
+## Moteurs, modèles et fonctions livrés
 
-## Ce qui est vérifié en intégration continue (machine Apple Silicon virtuelle)
+- **Upscale :** Core ML natif, Metal et Core ML via ONNX Runtime, avec les cibles
+  proposées dans le Manager. Le moteur partagé `libaji_ort.dylib` organise les
+  tuiles, la reprise de dessins/zones et le traitement en avance.
+- **RIFE :** modèles actuels 4.26, 4.25 et 4.22 lite, avant ou après upscale.
+  RIFE est toujours exécuté via ORT/Core ML, même quand l'upscale est natif ou Metal.
+  Le meilleur ordre dépend des coûts et du rendu ; aucun changement automatique
+  d'ordre n'a été introduit dans les derniers lots.
+- **3.8.0.23 :** workers CPU persistants, entrée/timestep RIFE réutilisés et
+  buffers de conversion conservés. Modèles et précision conservés dans le code.
+- **Application :** mpv/MoltenVK, lanceur fixant `MPV_HOME`, réglages utilisateur
+  dans `~/Library/Application Support/AnimeJaNai`, cache de modèles sous
+  `~/Library/Caches/AnimeJaNai`. Manager, updater et profils RIFE sont inclus.
+- **Signature :** ad hoc, sans notarisation Apple ; la notice explique le retrait
+  de l'attribut de quarantaine pour le premier lancement.
 
-- Core ML accepte les modèles et donne le même pixel de contrôle que le fournisseur CPU, sur les
-  quatre périphériques.
-- L'application lit un clip de synthèse : script chargé, filtre actif, statistiques
-  `Backend: ONNX Runtime/CoreML`, sortie 1280x720 pour une source 640x360.
-- Les temps mesurés là (environ 45 ms en 320x180) ne disent rien d'un vrai Mac : la machine est
-  virtuelle.
+## Suite codée, pas encore livrée dans la 3.8.0.23
 
-## Ce qui n'est pas fait
+Commit **`30a3e83`**, `hdr-3.8` : décision dessin/coupe conservée par paire et sortie
+RIFE ORT préallouée. Compilation Release Linux et CI Mac/plateforme réussies,
+notamment [engine et player](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38481912353).
+La suite locale de 516 images par variante n'a pas été répétée pour ce nouveau
+lot ; aucune accélération chiffrée ni fidélité sur chaque puce physique annoncée.
+Les switches de comparaison et leurs versions sont dans [DEVELOPMENT.md](DEVELOPMENT.md).
 
-- Affichage réel, HDR, ouverture de fichiers depuis le Finder, raccourcis : jamais essayés.
-- Conversion SDR vers HDR avec le rendu TrueHDR (shader `anime-hdr-grade`), RIFE, Manager,
-  mise à jour automatique, intégration à l'assembleur `Program.cs`.
-- MLX : non essayé. À comparer à Core ML seulement si les mesures sur un vrai Mac déçoivent.
+RIFE natif Core ML/Metal et chaîne SPAN/RIFE résidente sur GPU restent à écrire.
+La branche CUDA Graph du backend NVIDIA ne concerne pas les binaires Mac.
 
-## Compilation
+## Compilation et preuves
 
-Workflow `.github/workflows/macos.yml` : jobs `engine` (moteur, essais, paquet de mesure) et
-`player` (mpv, application, essai de lecture). Sur la branche `release`, il attend que la release
-existe puis y ajoute les fichiers macOS ; il ne bloque jamais la release Windows et Linux.
+`.github/workflows/macos.yml` construit le moteur et l'application avec ONNX
+Runtime **1.31.0**. Sur `release`, il ajoute les assets Mac à la release ou la
+crée si Deploy ne l'a pas encore créée. Deploy publie Windows/Linux séparément.
+Le run de livraison [38479416046](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38479416046)
+et Deploy sont réussis ; la release contient maintenant les trois plateformes.
+
+Les contrôles sur le runner Apple Silicon valident compilation, modèle et
+intégration synthétique, pas le débit ou l'affichage HDR d'un Mac physique.
+Les comparaisons de moteurs sur le vrai Mac nécessitent une mesure déverrouillée
+si l'utilisateur souhaite reprendre les essais ; la consigne d'arrêt locale
+reste active dans ce chantier.
+
+## Historique du 13 octobre 2026
+
+Les sections suivantes conservent les premiers états et observations. Les
+mentions « RIFE/Manager/updater non faits », « jamais ouvert sur un vrai Mac »
+et « non publié » concernent ces étapes, pas l'état courant décrit ci-dessus.
 
 ## 3.8.0.15 (13 octobre 2026) : premier retour d'un vrai Mac
 

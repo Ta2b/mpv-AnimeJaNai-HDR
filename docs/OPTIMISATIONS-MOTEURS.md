@@ -16,6 +16,21 @@ persistant et réduit les préparations RIFE redondantes dans le moteur partagé
 Les modèles restent inchangés ; aucun gain chiffré n’est encore établi pour ce
 nouveau lot. Les mesures locales sont arrêtées à la demande de l’utilisateur.
 
+## État de réalisation au 14 octobre 2026
+
+[État consolidé du projet](ETAT-PROJET.md). **3.8.0.23 publiée sur les trois
+plateformes**, depuis `aab89ba`. Suite moteur partagé : **`30a3e83`**, poussée sur
+`hdr-3.8`, CI Mac et plateforme réussie, non incluse dans cette release.
+Suite NVIDIA : **`f4fcd17`**, branche `perf-rife-cuda-graphs-20261014` du dépôt
+voisin, unité C++ compilée contre deux versions de headers, build complet et
+intégration non confirmés. Aucun nouveau test local ni gain chiffré pour ces lots.
+
+Les points du catalogue sont des pistes, pas une liste entièrement implémentée.
+Workers persistants, préparations RIFE réutilisées et mesure correcte sont livrés.
+Décision par paire/sortie ORT réutilisée sont codées dans le moteur partagé ;
+la capture CUDA RIFE est codée dans la branche NVIDIA. RIFE natif Apple,
+interopération GPU SPAN/RIFE et concurrence multi-contextes restent à construire.
+
 DirectML, TensorRT, OpenVINO, MIGraphX et NCNN sont des moteurs d'exécution.
 SPAN/AnimeJaNai et RIFE sont les modèles qu'ils exécutent. On peut modifier la
 chaîne du lecteur, le graphe équivalent, les noyaux ou les modèles entraînés :
