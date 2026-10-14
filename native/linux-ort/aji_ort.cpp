@@ -57,6 +57,7 @@ struct Settings {
     std::string rife_device = "auto";   // the processor of the interpolation: auto, gpu, npu, cpu
     int overlap = -1;              // pixels a tile sees past its edges; -1 = what the model reads
     bool warp = true;              // [global] rife_engine: old = interpolate, then upscale each frame
+    bool drawings = true;          // [global] rife_drawings: spread the motion over held drawings
 };
 
 Settings read_settings(const std::string &conf)
@@ -85,6 +86,7 @@ Settings read_settings(const std::string &conf)
         else if (key == "engine_boost") { const std::string v = lower(value); s.boost = v == "yes" || v == "true" || v == "1" || v == "on"; }
         else if (key == "engine_overlap") s.overlap = std::atoi(value.c_str());
         else if (key == "rife_engine") s.warp = lower(value) != "old";
+        else if (key == "rife_drawings") s.drawings = lower(value) != "no";
     };
     while (std::getline(file, line)) {
         line = trim(line);
@@ -168,7 +170,13 @@ struct Context {
     bool rife_before = true;
     int rife_w = 0, rife_h = 0;
     std::string rife_model, rife_note;
-    Endpoint ends[2];
+    Endpoint ends[3];   // the pair, and the next drawing of a held one
+    // Drawings timeline: the pair last seen, whether it was one drawing held, and how many frames
+    // of the drawing on screen came before the pair's first frame.
+    uint64_t run_a = 0, run_b = 0;
+    bool run_held = false;
+    int run = 0;
+    uint64_t spread = 0;
     struct PairDecision {
         uint64_t a = 0, b = 0;
         bool same = false, cut = false;
@@ -681,6 +689,7 @@ void load_rife(Context &c)
 {
     c.rife.reset(); c.rife_note.clear(); c.rife_model.clear();
     for (auto &e : c.ends) e = Endpoint{};
+    c.run_a = c.run_b = 0; c.run_held = false; c.run = 0; c.spread = 0;
     c.pair_decision = Context::PairDecision{};
     c.rife_decisions = c.rife_decision_hits = 0;
     c.interpolated = c.held = c.cuts = 0; c.rife_ms = c.rife_wait_ms = 0;
@@ -773,7 +782,9 @@ Endpoint &endpoint(Context &c, const uint8_t *pixels, ptrdiff_t stride)
 {
     for (auto &e : c.ends)
         if (e.valid && same_bytes(e.source, pixels, stride, c.width, c.height)) { e.used = ++c.tick; return e; }
-    Endpoint &e = c.ends[0].used <= c.ends[1].used ? c.ends[0] : c.ends[1];
+    Endpoint *oldest = &c.ends[0];
+    for (auto &x : c.ends) if (x.used < oldest->used) oldest = &x;
+    Endpoint &e = *oldest;
     e.source.resize((size_t)c.width * c.height * 3);
     for (int y = 0; y < c.height; y++)
         std::memcpy(e.source.data() + (size_t)y * c.width * 3, pixels + (ptrdiff_t)y * stride, (size_t)c.width * 3);
@@ -920,54 +931,85 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
         ++c.rife_decisions;
     } else ++c.rife_decision_hits;
     const bool same = decision.same, cut = decision.cut;
-    if (same || cut) {
+    // Drawings timeline: anime holds a drawing for two to four frames. Instead of moving in one
+    // frame's time and holding still, the motion to the next drawing is spread over the whole
+    // hold: the pair becomes (this drawing, the next one) at the fraction of the hold. The next
+    // drawing is looked for in the frames the player shows ahead (aji_vk_upcoming).
+    Endpoint *next = &b;
+    double instant = t;
+    bool spread = false;
+    if (c.rife_before && c.settings.drawings) {
+        if (c.run_a != a.identity || c.run_b != b.identity) {
+            c.run = c.run_b == a.identity && c.run_held ? c.run + 1 : 0;
+            c.run_a = a.identity; c.run_b = b.identity; c.run_held = same;
+        }
+        int hold = 0;
+        if (same) {
+            for (size_t k = 0; k < c.upcoming.size() && k < 4; k++) {
+                if (!picture_unchanged(c.upcoming[k], c.upcoming_stride[k], current, current_stride, c.width, c.height, c.settings.same)) {
+                    if (difference(c.upcoming[k], c.upcoming_stride[k], current, current_stride, c.width, c.height) <= c.chain.rife_scd_threshold
+                        || c.chain.rife_scd_threshold <= 0) {
+                        next = &endpoint(c, c.upcoming[k], c.upcoming_stride[k]);
+                        hold = c.run + 2 + (int)k;
+                    }
+                    break;
+                }
+            }
+        } else if (!cut) hold = c.run + 1;
+        if (hold >= 2 && hold <= 4) {
+            spread = true;
+            instant = (c.run + t) / hold;
+            c.spread++;
+        } else next = &b;
+    }
+    if (!spread && (same || cut)) {
         (same ? c.held : c.cuts)++;
         give(up_of(c, a, &whole));
         return whole;
     }
     const double start = now_ms();
     if (c.rife_before && c.warp) {
-        const std::vector<uint8_t> &wa = work_of(c, a), &wb = work_of(c, b);
+        const std::vector<uint8_t> &wa = work_of(c, a), &wb = work_of(c, *next);
         const ptrdiff_t stride = (ptrdiff_t)c.rife_w * 3;
         // The following source frame is upscaled while RIFE runs (they need nothing of each other).
         std::thread following;
         std::string failure;
         bool following_whole = false;
-        if (!b.has_up)
+        if (!next->has_up)
             following = std::thread([&] {
-                try { up_of(c, b, &following_whole); } catch (const std::exception &e) { failure = e.what(); }
+                try { up_of(c, *next, &following_whole); } catch (const std::exception &e) { failure = e.what(); }
             });
         auto &W = c.warp_pair;
         const bool many = (double)c.chain.rife_factor_num / c.chain.rife_factor_den > 3.0 + 1e-9;
         try {
-            if (W.a != a.identity || W.b != b.identity) {
+            if (W.a != a.identity || W.b != next->identity) {
                 // A new pair: the middle first, unless the pair before moved too much.
-                const bool middle = !W.prev_split || t == 0.5 || many;
-                c.rife->motion(wa.data(), stride, wb.data(), stride, middle ? 0.5 : t, c.flow, c.mask);
+                const bool middle = !W.prev_split || instant == 0.5 || many;
+                c.rife->motion(wa.data(), stride, wb.data(), stride, middle ? 0.5 : instant, c.flow, c.mask);
                 float largest = 0;
                 for (float f : c.flow) largest = std::max(largest, std::fabs(f));
                 W.single = middle && (largest <= c.warp_px || many);
                 W.prev_split = !many && largest > c.warp_px;
-                if (!W.single && middle && t != 0.5)
-                    c.rife->motion(wa.data(), stride, wb.data(), stride, t, c.flow, c.mask);
-                W.a = a.identity; W.b = b.identity;
+                if (!W.single && middle && instant != 0.5)
+                    c.rife->motion(wa.data(), stride, wb.data(), stride, instant, c.flow, c.mask);
+                W.a = a.identity; W.b = next->identity;
                 (W.single ? c.warp_single : c.warp_split)++;
             } else if (!W.single) {
-                c.rife->motion(wa.data(), stride, wb.data(), stride, t, c.flow, c.mask);
+                c.rife->motion(wa.data(), stride, wb.data(), stride, instant, c.flow, c.mask);
             }
         } catch (...) { if (following.joinable()) following.join(); throw; }
         if (following.joinable()) following.join();
         require(failure.empty(), failure);
         bool whole_a = false;
-        const std::vector<uint8_t> &ua = up_of(c, a, &whole_a), &ub = up_of(c, b, &following_whole);
+        const std::vector<uint8_t> &ua = up_of(c, a, &whole_a), &ub = up_of(c, *next, &following_whole);
         warp_rgb(ua.data(), ub.data(), c.plan.width, c.plan.height, c.flow.data(), c.mask.data(),
-                 c.rife_w, c.rife_h, (float)t, W.single, output, output_stride);
+                 c.rife_w, c.rife_h, (float)instant, W.single, output, output_stride);
         c.rife_ms += now_ms() - start;
         c.interpolated++;
         return false;
     }
     if (c.rife_before) {
-        const std::vector<uint8_t> &wa = work_of(c, a), &wb = work_of(c, b);
+        const std::vector<uint8_t> &wa = work_of(c, a), &wb = work_of(c, *next);
         c.between.resize((size_t)c.rife_w * c.rife_h * 3);
         const ptrdiff_t stride = (ptrdiff_t)c.rife_w * 3;
         // The frame that follows this picture has to be upscaled anyway, and neither computation
@@ -978,12 +1020,12 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
         std::thread following;
         std::string failure;
         bool following_whole = false;
-        if (together && !b.has_up)
+        if (together && !next->has_up)
             following = std::thread([&] {
-                try { up_of(c, b, &following_whole); } catch (const std::exception &e) { failure = e.what(); }
+                try { up_of(c, *next, &following_whole); } catch (const std::exception &e) { failure = e.what(); }
             });
         try {
-            c.rife->run(wa.data(), stride, wb.data(), stride, t, c.between.data(), stride);
+            c.rife->run(wa.data(), stride, wb.data(), stride, instant, c.between.data(), stride);
         } catch (...) { if (following.joinable()) following.join(); throw; }
         if (following.joinable()) {
             const double wait = c.rife_profiled ? now_ms() : 0;
@@ -995,10 +1037,10 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
         whole = upscale(c, c.between.data(), stride, c.rife_w, c.rife_h, output, output_stride);
     } else {
         // Both upscaled frames first: the second one is the frame that follows this picture.
-        const std::vector<uint8_t> &ua = up_of(c, a, &whole), &ub = up_of(c, b, &whole);
+        const std::vector<uint8_t> &ua = up_of(c, a, &whole), &ub = up_of(c, *next, &whole);
         const ptrdiff_t stride = (ptrdiff_t)c.plan.width * 3;
         const double began = now_ms();
-        c.rife->run(ua.data(), stride, ub.data(), stride, t, output, output_stride);
+        c.rife->run(ua.data(), stride, ub.data(), stride, instant, output, output_stride);
         c.rife_ms += now_ms() - began;
     }
     c.interpolated++;
@@ -1021,6 +1063,7 @@ void write_stats(const Context &c, double ms)
           << c.rife_w << "x" << c.rife_h << ", x" << (double)c.plan.numerator / c.plan.denominator
           << " | interpolated " << c.interpolated << ", held " << c.held << ", cuts " << c.cuts
           << " | " << (c.interpolated ? c.rife_ms / c.interpolated : 0) << " ms an interpolation"
+          << (c.settings.drawings && c.rife_before ? " | on the drawings' timeline: " + std::to_string(c.spread) + " frames spread over a hold" : std::string())
           << (c.warp ? " | motion applied to the upscaled pictures: " + std::to_string(c.warp_single) + " pairs with one RIFE run, "
                        + std::to_string(c.warp_split) + " with one per instant" : std::string());
     else f << (c.rife_skipped ? "requested, not available: " + c.rife_note : std::string("off"));
@@ -1178,6 +1221,8 @@ AJI_ORT_EXPORT int aji_vk_upcoming(aji_vk_context *context, const unsigned char 
         if (!frames[k]) break;
         c.upcoming.push_back(frames[k]); c.upcoming_stride.push_back(strides[k]);
     }
+    // The drawings timeline looks four frames ahead for the next drawing.
+    if (c.rife && c.rife_before && c.settings.drawings) return 4;
     for (const auto &step : c.steps) if (step.boost) return 2;
     return 0;
 }
