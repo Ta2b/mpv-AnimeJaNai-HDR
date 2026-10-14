@@ -4,6 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Documentation map
 
+- **[`docs/CHANTIER-RIFE-165HZ.md`](docs/CHANTIER-RIFE-165HZ.md)** — 3.8.0.24 to 3.8.0.29:
+  warp RIFE chain, drawings timeline, 165 Hz matching, packs, measurements, what remains,
+  recommendations (background TensorRT engine preparation first) and code critique.
 - **[`docs/REPRISE.md`](docs/REPRISE.md)** — current handoff: pushed commits,
   unfinished release, active GitHub runs, verified results and next actions.
   Read this first when resuming the interrupted Linux/release work.
