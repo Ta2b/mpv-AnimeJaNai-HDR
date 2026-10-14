@@ -730,7 +730,9 @@ void load_rife(Context &c)
         c.warp = false;
         c.warp_pair = Context::WarpPair{};
         c.warp_single = c.warp_split = 0;
-        if (c.settings.warp && c.rife_before) {
+        // An ensemble averages two network outputs; one flow/mask pair does
+        // not represent that RGB result. Keep the original ensemble graph.
+        if (c.settings.warp && c.rife_before && !c.chain.rife_ensemble) {
             // A copy of the model that also outputs its motion and mask, written once in the cache
             // (the models' folder can be read-only: inside the macOS application).
             try {

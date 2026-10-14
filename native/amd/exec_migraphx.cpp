@@ -83,10 +83,7 @@ struct Proto {
         require(n<=(size_t)(end-p),"truncated ONNX field");body={p,p+n};p+=n;return true;
     }
 };
-std::string input_name(const std::filesystem::path &path) {
-    std::ifstream in(path,std::ios::binary);
-    require(in.good(),"cannot open ONNX model: "+path.string());
-    std::vector<char> bytes((std::istreambuf_iterator<char>(in)),{});
+std::string input_name(const std::vector<char> &bytes) {
     require(!bytes.empty(),"empty ONNX model");
     Proto model{(const uint8_t*)bytes.data(),(const uint8_t*)bytes.data()+bytes.size()},body{};
     unsigned tag;
@@ -136,18 +133,26 @@ public:
         // Ensure cleanup of the stream even if graph parsing/compilation throws.
         try {
             const auto path=std::filesystem::u8path(dir)/std::filesystem::u8path(name+".onnx");
-            const std::string input=input_name(path);input_name_=input;
+            std::ifstream file(path,std::ios::binary);
+            require(file.good(),"cannot open ONNX model: "+path.u8string());
+            std::vector<char> source((std::istreambuf_iterator<char>(file)),{}),motion;
+            const std::string input=input_name(source);input_name_=input;
             Handle<migraphx_onnx_options_t,migraphx_onnx_options_destroy> parse;
             mig_check(migraphx_onnx_options_create(parse.put()),"ONNX options");
             size_t dims[4]={1,(size_t)channels,(size_t)h,(size_t)w};
             mig_check(migraphx_onnx_options_set_input_parameter_shape(parse,input.c_str(),dims,4),"ONNX fixed input");
-            if(motion_only || (name.size()>=5 && name.compare(name.size()-5,5,".flow")==0)) {
-                std::ifstream file(path,std::ios::binary);
-                std::vector<char> source((std::istreambuf_iterator<char>(file)),{}),motion;
+            const bool flow_file=name.size()>=5 && name.compare(name.size()-5,5,".flow")==0;
+            if(motion_only || flow_file) {
                 std::string why;
-                require(aji_onnx_motion_outputs(source,&motion,&why),"MIGraphX motion graph: "+why);
-                mig_check(migraphx_parse_onnx_buffer(program_.put(),motion.data(),motion.size(),parse),"MIGraphX motion ONNX parse");
-            } else mig_check(migraphx_parse_onnx(program_.put(),path.u8string().c_str(),parse),"MIGraphX ONNX parse");
+                if(!aji_onnx_motion_outputs(source,&motion,&why)) {
+                    require(!flow_file,"MIGraphX motion graph: "+why);
+                    motion.clear(); // keep the unchanged RGB graph
+                }
+            }
+            // Current models embed their weights. Parsing their bytes also
+            // avoids narrow Windows file APIs for Unicode installation paths.
+            const auto &graph=motion.empty()?source:motion;
+            mig_check(migraphx_parse_onnx_buffer(program_.put(),graph.data(),graph.size(),parse),"MIGraphX ONNX parse");
             Handle<migraphx_target_t,migraphx_target_destroy> target;
             Handle<migraphx_compile_options_t,migraphx_compile_options_destroy> options;
             mig_check(migraphx_target_create(target.put(),"gpu"),"MIGraphX GPU target");

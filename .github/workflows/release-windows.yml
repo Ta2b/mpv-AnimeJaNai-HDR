@@ -59,6 +59,33 @@ jobs:
         shell: bash
         run: bash .github/scripts/previous-packs.sh "$VERSION" packs.json
 
+      - name: Stage the matching specialized GPU engines
+        shell: bash
+        run: bash .github/scripts/stage-specialized-engines.sh "$RUNNER_TEMP/specialized-gpu" win-x64
+
+      - uses: actions/setup-python@v5
+        if: env.AJI_SPECIALIZED_LOCAL != ''
+        with:
+          python-version: '3.12'
+
+      - name: Prepare the optional RX 9070 XT runtime component
+        if: env.AJI_SPECIALIZED_LOCAL != ''
+        shell: pwsh
+        run: |
+          $sdk = "$env:RUNNER_TEMP/amd-sdk"
+          python native/amd/fetch_windows_sdk.py $sdk --runtime
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Compile SDK archives are owned by this step; discard them before
+          # assembling the player so two large runtime trees never overlap.
+          Remove-Item "$env:RUNNER_TEMP/windows-amd-archives" -Recurse -Force
+          $bundle = "$env:RUNNER_TEMP/amd-bundle"
+          New-Item -ItemType Directory -Force "$bundle/inference"
+          Copy-Item "$env:AJI_SPECIALIZED_LOCAL/aji.dll","$env:AJI_SPECIALIZED_LOCAL/aji_migraphx.dll" "$bundle/inference/"
+          Copy-Item native/amd/README.md "$bundle/inference/AMD-README.md"
+          Move-Item $sdk "$bundle/inference/amd"
+          "AJI_AMD_LOCAL=$bundle" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "AJI_AMD_CONSUME_LOCAL=1" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Assemble the package and its component packs
         shell: bash
         run: bash .github/scripts/run.sh "assembler" ./publish/BuildMpvUpscale2xAnimeJaNai.exe "$VERSION" --packs

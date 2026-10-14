@@ -197,6 +197,8 @@ jobs:
       - name: Reuse the component packs of the previous release
         if: inputs.rebuild_packs != true
         run: bash .github/scripts/previous-packs.sh "$VER" packs-linux-x64.json
+      - name: Stage the matching specialized GPU engines
+        run: bash .github/scripts/stage-specialized-engines.sh "$RUNNER_TEMP/specialized-gpu" linux-x64
       - name: Assemble the package and its component packs
         run: bash .github/scripts/run.sh "assembler" ./publish/BuildMpvUpscale2xAnimeJaNai "$VER" --target linux-x64 --packs
       - name: Save component downloads

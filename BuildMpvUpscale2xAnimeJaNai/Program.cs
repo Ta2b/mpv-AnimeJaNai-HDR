@@ -755,9 +755,42 @@ void InstallNativeAmdInference()
         if (!ownEngine && File.Exists(destination) && !File.ReadAllBytes(destination).SequenceEqual(File.ReadAllBytes(file)))
             throw new InvalidDataException($"Native AMD bundle conflicts with installed file: {relative}");
     }
-    CopyDirectory(files, inferencePath);
+    if (Environment.GetEnvironmentVariable("AJI_AMD_CONSUME_LOCAL") == "1")
+    {
+        // CI owns this temporary SDK tree. Move it after validation so staging
+        // the large optional runtime does not duplicate its disk footprint.
+        foreach (var file in Directory.GetFiles(files, "*", SearchOption.AllDirectories))
+        {
+            var destination = Path.Combine(inferencePath, Path.GetRelativePath(files, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Move(file, destination, true);
+        }
+    }
+    else CopyDirectory(files, inferencePath);
     if (Directory.Exists(Path.Combine(source, "licenses")))
         CopyDirectory(Path.Combine(source, "licenses"), Path.Combine(installDirectory, "animejanai", "licenses"));
+}
+
+// Matching native GPU binaries, staged from an immutable build ref. Keep the
+// upstream tools/runtime, then replace the ABI-compatible engine libraries.
+void InstallSpecializedInference()
+{
+    var source = Environment.GetEnvironmentVariable("AJI_SPECIALIZED_LOCAL");
+    if (string.IsNullOrEmpty(source)) return;
+    var provenance = Path.Combine(source, "GPU-SOURCE.json");
+    using var record = JsonDocument.Parse(File.ReadAllText(provenance));
+    if (record.RootElement.GetProperty("api_version").GetInt32() != 9 ||
+        record.RootElement.GetProperty("tensorrt_version").GetString() != TrtVersion)
+        throw new InvalidDataException("Specialized GPU engines do not match this package's ABI/TensorRT version");
+    var libraries = plat.IsWindows
+        ? new[] { "aji.dll", "aji_trt.dll", "aji_trt_rtx.dll", "aji_dml.dll", "aji_migraphx.dll" }
+        : new[] { "libaji.so", "libaji_trt.so", "libaji_trt_rtx.so" };
+    foreach (var name in libraries.Append("GPU-SOURCE.json").Append("GPU-INFERENCE-NOTICES.txt"))
+    {
+        var path = Path.Combine(source, name);
+        if (!File.Exists(path)) throw new FileNotFoundException("Incomplete specialized GPU bundle", path);
+        File.Copy(path, Path.Combine(inferencePath, name), true);
+    }
 }
 
 void InstallAnimeJaNaiCore()
@@ -998,6 +1031,9 @@ void WriteVersionAndManifest()
     var specializedTrt = plat.IsWindows ? "aji_trt_rtx.dll" : "libaji_trt_rtx.so";
     if (File.Exists(Path.Combine(inferencePath, specializedTrt)))
         overlayPaths.Add("animejanai/inference/" + specializedTrt);
+    foreach (var name in new[] { "aji_migraphx.dll", "AMD-README.md", "GPU-SOURCE.json", "GPU-INFERENCE-NOTICES.txt" })
+        if (File.Exists(Path.Combine(inferencePath, name)))
+            overlayPaths.Add("animejanai/inference/" + name);
     overlayPaths.Add("portable_config/scripts");
     overlayPaths.Add("portable_config/shaders");
     // HDR fork: fork-managed code rides the overlay so fork updates deliver it. The user's
@@ -1259,6 +1295,8 @@ async Task Main()
     await InstallYtDlp();
     InstallAnimeJaNaiCore();
     InstallVulkanInference();
+    if (!args.Contains("--sdr-only") && !args.Contains("--vulkan-only"))
+        InstallSpecializedInference();
     InstallNativeAmdInference();
     PortConfigsForTarget();
     GenerateInputConf();
@@ -1329,8 +1367,8 @@ string[] OnnxRuntimeFiles()
     if (plat.IsWindows)
     {
         var files = new List<string>();
-        foreach (var name in new[] { "aji_migraphx.dll", "AMD-README.md" })
-            if (File.Exists(Path.Combine(inferencePath, name))) files.Add(Path.Combine(inferencePath, name));
+        // Small engine DLLs ride the overlay; the vendor prefix is a separate
+        // optional pack, reused when only our implementation changes.
         var amd = Path.Combine(inferencePath, "amd");
         if (Directory.Exists(amd)) files.AddRange(Directory.GetFiles(amd, "*", SearchOption.AllDirectories));
         return files.Select(f => Path.GetRelativePath(installDirectory, f)).ToArray();
@@ -1462,23 +1500,32 @@ async Task<List<string>> EmitComponentPacks()
             Console.WriteLine($"  component-{name}: same {dep} but {reusedBytes} bytes instead of {previous.InstalledBytes}; rebuilt");
         }
         // -spf2: store the relative paths as given (rooted at install dir)
-        var fileArgs = string.Join(' ', files.Select(f => $"\"{f}\""));
+        // The optional AMD runtime has thousands of headers/device files.
+        // A listfile avoids Windows' command-line limit and preserves UTF-8.
+        var listFile = Path.Combine(packsDir, $".{name}-files.txt");
+        File.WriteAllLines(listFile, files, new UTF8Encoding(false));
         var psi = new ProcessStartInfo
         {
             FileName = sevenZ,
-            // -snl: store symlinks AS links (don't follow + duplicate the target),
-            // so the versioned TRT libs stay deduplicated in the pack.
-            Arguments = $"a -spf2 -snl -mx=3 \"{archive}\" {fileArgs}",
             WorkingDirectory = installDirectory,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
+        // -snl keeps versioned TensorRT symlinks as links.
+        foreach (var argument in new[] { "a", "-spf2", "-snl", "-mx=3", "-scsUTF-8", archive, "@" + listFile })
+            psi.ArgumentList.Add(argument);
         using var proc = Process.Start(psi)!;
+        var outputRead = proc.StandardOutput.ReadToEndAsync();
+        var errorRead = proc.StandardError.ReadToEndAsync();
         await proc.WaitForExitAsync();
+        var outputText = await outputRead;
+        var errorText = await errorRead;
+        File.Delete(listFile);
         if (proc.ExitCode != 0)
         {
-            throw new InvalidOperationException($"{plat.ArchiveTool} failed for pack {name}");
+            var details = outputText + errorText;
+            throw new InvalidOperationException($"{plat.ArchiveTool} failed for pack {name}: {details[^Math.Min(details.Length, 4000)..]}");
         }
         // installed_bytes: what this pack occupies once extracted. The updater compares it against
         // the files actually on disk to decide whether an install is genuinely current, instead of

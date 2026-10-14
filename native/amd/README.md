@@ -76,6 +76,10 @@ HIP selects the GPU by the Direct3D adapter's LUID. There is no RGB24 host bridg
 on this path. Models bind directly to shared input/output allocations when the
 compiled graph exposes an output parameter; otherwise only a GPU copy is used.
 
+Pure RIFE and ensemble models keep their original RGB graph. When motion
+extraction is unavailable, Windows also keeps that graph. The shipped models
+embed their weights; this executor parses model bytes, not external-data models.
+
 RIFE-first `rife_engine=new` estimates motion on source-sized frames and warps
 the floating-point upscaled endpoints. Each endpoint is upscaled once, with
 the same midpoint/per-instant strategy as the CUDA chain. `rife_engine=old`
@@ -85,11 +89,14 @@ yet. Temporal rank-5 models are rejected explicitly by this native backend.
 Stage the artifact's `inference/` tree in `animejanai/inference`, then select
 `backend=MIGraphX`. For an assembled package, pass the extracted bundle root as
 `AJI_AMD_LOCAL`. The optional GPU engines component versions these files by
-content; its dependencies are delivered separately from the common overlay.
-The Manager exposes the choice only when the native module is present; runtime
-and driver compatibility are checked when it opens the model. Baseline DirectML
-remains selectable. The two Windows C++ units compile in PE/COFF with MinGW and Windows SDK
-headers. The MSVC DLL build is configured, its result is not confirmed yet.
+content; its vendor runtime is delivered separately from the small engine DLLs in the
+common overlay.
+The Manager exposes the Windows choice when both the native module and its
+MIGraphX runtime are present; driver compatibility is checked when opening the
+model. Linux requires the native module and a matching system ROCm runtime. Baseline DirectML
+remains selectable. The complete Windows AMD and NVIDIA DLL builds passed on MSVC runners at
+companion source `1f3e8f2` / player source `6a53c39`. Later source changes still
+need their own build result, recorded in the precise handoff.
 No Windows playback has been run; do not label this backend production-ready.
 
 ## Build evidence / continuation

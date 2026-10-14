@@ -1,5 +1,38 @@
 # Intégration GPU spécialisée AMD / NVIDIA
 
+## Checkpoint de livraison en cours
+
+**Les builds Windows complets ont réussi** pour AMD et NVIDIA : source backend
+`1f3e8f204cdabfd22b6673116c0e5b341adb43d3`, source lecteur `6a53c39`, run privé
+`38639699749`. Résultat et logs récupérés via la référence Git privée
+`build-status/specialized-1f3e8f204cdabfd22b6673116c0e5b341adb43d3-1`.
+Ce sont des compilations/liaisons MSVC et HIP/CUDA réelles, sans lecture GPU.
+Les anciennes mentions « DLL Windows non liée » ci-dessous sont dépassées.
+
+Depuis ce résultat, protections ajoutées pour RIFE ensemble (graphe RGB complet)
+et RIFE seul (pas de placeholder différé sans chaîne d’upscale), parsing MIGraphX
+des poids inline en mémoire et repli sur le graphe RGB si extraction impossible.
+Leurs compilations Linux passent ; leur dernier build Windows reste à obtenir.
+Le runtime AMD attend son scalaire par événement, sans drainer les upscales.
+La capture CUDA complète évite les captures de réseaux redondantes.
+
+Packaging en cours : `AJI_SPECIALIZED_LOCAL` remplace seulement les bibliothèques
+après la base amont, exige provenance ABI 9 / TRT 11.3, et conserve les outils.
+`gpu-binaries-source-ref.txt` devra pointer un commit immuable de petits binaires
+du projet, sans runtime vendor ni modèles. Le script de staging est écrit.
+Windows : runtime AMD séparé en composant, DLLs dans l’overlay ; le Manager
+exige module + runtime avant de proposer MIGraphX. `AJI_AMD_CONSUME_LOCAL=1`
+consomme le SDK temporaire CI pour éviter sa duplication. Les packs utilisent
+un listfile UTF-8 et drainent les sorties 7z, pour les milliers de fichiers.
+
+**Étapes restantes pour la livraison** : committer/pousser les protections et
+hooks de packaging, obtenir leur résultat Windows, récupérer leurs DLLs via
+la ref de build, y joindre les bibliothèques Linux compilées avec RPATH portable,
+créer la référence binaire immuable et son pin, puis construire la release et
+actualiser ici chaque SHA/statut. La préparation anticipée reste abandonnée.
+Aucun test, benchmark ni inférence locale n’est autorisé par l’instruction actuelle.
+Les modèles, GPU de référence et worktrees utilisateur restent à conserver.
+
 ## Mandat et statut — 14 octobre 2026, 23 h 08 (Paris)
 
 L’utilisateur demande MIGraphX + HIP spécialisé sur Windows/Linux, cible
