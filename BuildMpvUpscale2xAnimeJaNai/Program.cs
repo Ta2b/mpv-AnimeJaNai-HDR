@@ -870,8 +870,18 @@ async Task InstallAnimeJaNaiManager()
         if (!File.Exists(Path.Combine(installDirectory, name)))
             throw new FileNotFoundException($"HDR Manager package is missing {name}.");
     }
-    // Preserve the previous executable name for existing shortcuts and integrations.
-    File.Copy(executable, Path.Combine(installDirectory, plat.Exe("AnimeJaNaiManager")), true);
+    // Preserve the previous executable name for existing shortcuts and integrations. On Linux a
+    // link is enough (95 MB less in the archive); Windows keeps a copy.
+    var legacy = Path.Combine(installDirectory, plat.Exe("AnimeJaNaiManager"));
+    if (plat.IsWindows)
+    {
+        File.Copy(executable, legacy, true);
+    }
+    else
+    {
+        File.Delete(legacy);
+        File.CreateSymbolicLink(legacy, Path.GetFileName(executable));
+    }
 }
 
 void InstallPlatformHelper()

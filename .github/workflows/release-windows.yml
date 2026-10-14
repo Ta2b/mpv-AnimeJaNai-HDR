@@ -42,7 +42,8 @@ jobs:
         run: |
           dotnet publish BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj -c Release -o publish
           dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/platform-win-x64
-          dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release -o updater-publish
+          # Trimmed: the .NET runtime it carries shrinks from about 70 MB to 15 MB.
+          dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release -p:PublishTrimmed=true -o updater-publish
 
       - name: Restore component downloads
         id: downloads

@@ -25,6 +25,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using static Downloader;
 
@@ -1561,11 +1562,14 @@ Dictionary<string, string> ReadInstalledComponents(PackIndex index)
     return installed;
 }
 
+// JSON written through JsonNode, not reflection: the updater is published trimmed.
 void WriteInstalledComponents(Dictionary<string, string> installed)
 {
+    var list = new JsonObject();
+    foreach (var (name, version) in installed)
+        list[name] = version;
     File.WriteAllText(Path.Combine(installDir, "components.json"),
-        JsonSerializer.Serialize(new { installed },
-            new JsonSerializerOptions { WriteIndented = true }));
+        new JsonObject { ["installed"] = list }.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 }
 
 string? PackVersionMismatch(PackIndex index)
@@ -1638,20 +1642,25 @@ async Task ComponentsAsync(PackIndex? prefetched, bool json = false)
     if (json)
     {
         // consumed by the AnimeJaNai Manager GUI; keep keys stable
-        Console.WriteLine(JsonSerializer.Serialize(new
+        var packs = new JsonArray();
+        foreach (var p in index.Packs)
         {
-            package_version = index.PackageVersion,
-            version_mismatch = PackVersionMismatch(index),
-            gpu = new { nvidia = hasNvidia, sm, name = gpu },
-            packs = index.Packs.Select(p => new
+            packs.Add((JsonNode)new JsonObject
             {
-                name = p.Name,
-                bytes = p.Bytes,
-                installed = installed.ContainsKey(p.Name),
-                recommended = rec.Contains(p.Name),
-                preselect = PreselectPack(p, installed, rec),
-            }),
-        }));
+                ["name"] = p.Name,
+                ["bytes"] = p.Bytes,
+                ["installed"] = installed.ContainsKey(p.Name),
+                ["recommended"] = rec.Contains(p.Name),
+                ["preselect"] = PreselectPack(p, installed, rec),
+            });
+        }
+        Console.WriteLine(new JsonObject
+        {
+            ["package_version"] = index.PackageVersion,
+            ["version_mismatch"] = PackVersionMismatch(index),
+            ["gpu"] = new JsonObject { ["nvidia"] = hasNvidia, ["sm"] = sm, ["name"] = gpu },
+            ["packs"] = packs,
+        }.ToJsonString());
         return;
     }
     if (PackVersionMismatch(index) is string warn)

@@ -158,12 +158,15 @@ if [ -d "$HERE/animejanai/benchmarks" ] && { [ -L "$DATA/animejanai/benchmarks" 
 fi
 
 # Component packs fetched on demand into $DATA (writable). Like the Windows
-# slim-install model, the AppImage bakes in ONLY the base TensorRT runtime; the
-# heavy, situational pieces are pulled only when actually needed. A fetch failure
+# slim-install model, the AppImage carries no TensorRT component; the heavy,
+# situational pieces are pulled only when actually needed. A fetch failure
 # is non-fatal (e.g. offline, or a draft release whose assets need auth).
 INFDATA="$DATA/animejanai/inference"
 RIFEDATA="$DATA/animejanai/rife"
 mkdir -p "$INFDATA" "$RIFEDATA"
+# Links left by an earlier AppImage to files this one no longer carries (the TensorRT runtime
+# became a pack): a pack is unpacked over them, and they would point into a gone mount.
+find "$INFDATA" -maxdepth 1 -xtype l -delete 2>/dev/null || true
 ver="$(cat "$HERE/version.txt" 2>/dev/null || echo "")"
 relbase="https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/${ver}"
 
@@ -172,15 +175,17 @@ fetch_pack() { # $1 = pack base (e.g. trt-sm120, rife); $2 = human note
     [ "${ANIMEJANAI_OFFLINE:-0}" = "1" ] && return 0
     { [ -n "$ver" ] && command -v curl >/dev/null 2>&1; } || return 0
     echo "AnimeJaNai: fetching $2 (one-time)..." >&2
+    command -v notify-send >/dev/null 2>&1 && notify-send -a "mpv AnimeJaNai" "AnimeJaNai" "Téléchargement unique : $2. Le lecteur s'ouvre ensuite." 2>/dev/null || true
     # A pack that did not change since an earlier release is not published again: the index of
     # this release then gives the address it has in that earlier one.
     [ -n "${pack_index+x}" ] || pack_index="$(curl --connect-timeout 5 --max-time 30 -fsSL "$relbase/packs-linux-x64.json" 2>/dev/null | tr -d '\n')"
     pack_url="$(printf '%s' "$pack_index" | grep -o "\"url\"[[:space:]]*:[[:space:]]*\"[^\"]*/$pack\"" | head -1 | sed 's/.*"\(https[^"]*\)"$/\1/')"
     [ -n "$pack_url" ] || pack_url="$relbase/$pack"
-    if curl --connect-timeout 5 --max-time 180 -fSL "$pack_url" -o "$DATA/$pack"; then
+    if curl --connect-timeout 5 --max-time 1800 -fSL "$pack_url" -o "$DATA/$pack"; then
         "$HERE/7zz" x -snl -y -o"$DATA" "$DATA/$pack" >/dev/null 2>&1 || true
         rm -f "$DATA/$pack"
     else
+        rm -f "$DATA/$pack"
         echo "AnimeJaNai: could not fetch $pack (offline / draft release?)." >&2
     fi
 }
@@ -190,6 +195,11 @@ fetch_pack() { # $1 = pack base (e.g. trt-sm120, rife); $2 = human note
 if grep -qiE '^[[:space:]]*backend[[:space:]]*=[[:space:]]*TensorRT' "$DATA/animejanai/animejanai.conf" \
    && grep -qE '^[[:space:]]*default_slot[[:space:]]*=[[:space:]]*[1-9]' "$DATA/animejanai/animejanai.conf"; then
 sm="$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | tr -d ' .')"
+# TensorRT runtime (libraries and trtexec): only on an NVIDIA card, and not baked into the image
+# (it would weigh more than the rest of the AppImage).
+if [ -n "$sm" ] && [ ! -f "$INFDATA/libnvinfer.so.11" ] && [ ! -f "$HERE/animejanai/inference/libnvinfer.so.11" ]; then
+    fetch_pack "trt-runtime" "TensorRT runtime (~260 MB)"
+fi
 if [ -n "$sm" ] && ! ls "$INFDATA"/libnvinfer_builder_resource_sm${sm}.so* >/dev/null 2>&1; then
     fetch_pack "trt-sm${sm}" "TensorRT kernels for sm${sm} (~250 MB)"
 fi

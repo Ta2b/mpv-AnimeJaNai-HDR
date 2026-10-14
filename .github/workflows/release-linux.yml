@@ -171,7 +171,8 @@ jobs:
           echo "MANAGER_HDR_LOCAL=$GITHUB_WORKSPACE/manager-publish" >> "$GITHUB_ENV"
           dotnet publish BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj -c Release -o publish
           dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o publish/platform-linux-x64
-          dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o updater-publish
+          # Trimmed: the .NET runtime it carries shrinks from about 70 MB to 18 MB.
+          dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true -o updater-publish
 
       # ---- assembly ----
       - name: Restore component downloads
@@ -199,28 +200,18 @@ jobs:
       - name: Portable archive, AppImage and overlay
         run: |
           pkg="publish/mpv-upscale-2x_animejanai-v$VER"
-          packs="publish/packs-v$VER"
           dotnet publish AnimeJaNaiBenchmark/AnimeJaNaiBenchmark.csproj -c Release -r linux-x64 --self-contained \
-            -p:PublishSingleFile=true -o "$pkg/animejanai/benchmarks"
+            -p:PublishSingleFile=true -p:PublishTrimmed=true -o "$pkg/animejanai/benchmarks"
           chmod +x installer/linux/*.sh "$pkg/animejanai/benchmarks/AnimeJaNaiBenchmark"
           chmod +x "$pkg/animejanai/benchmarks/animejanai_benchmark_all.sh" 2>/dev/null || true
 
           bash .github/scripts/run.sh "portable archive" installer/linux/package-tarball.sh "$pkg" updater-publish/AnimeJaNaiUpdater "$VER" .
 
-          # The AppImage carries the TensorRT runtime pack. A pack reused from an earlier release
-          # is not in the packs folder: it is fetched from the address in the index, outside that
-          # folder so that it is not uploaded again.
+          # The AppImage holds the same slim core as the archive: the TensorRT runtime (about
+          # 750 MB once unpacked) is a pack its launcher fetches on the first start that needs it.
           full="appimage-tree/mpv-upscale-2x_animejanai-v$VER"
           mkdir -p "$full" && cp -a "$pkg/." "$full/"
           install -m 755 updater-publish/AnimeJaNaiUpdater "$full/AnimeJaNaiUpdater"
-          runtime="$packs/component-trt-runtime-linux-x64.7z"
-          if [ ! -f "$runtime" ]; then
-            url="$(jq -r '.packs[] | select(.name == "trt-runtime") | .url // empty' "$packs/packs-linux-x64.json")"
-            [ -n "$url" ] || { echo "::error::the trt-runtime pack was neither built nor reusable"; exit 1; }
-            runtime="$RUNNER_TEMP/component-trt-runtime-linux-x64.7z"
-            curl -fsSL --retry 3 "$url" -o "$runtime"
-          fi
-          "$pkg/7zz" x -snl -y -o"$full" "$runtime" > /dev/null
           bash .github/scripts/run.sh "AppImage" installer/linux/build-appimage.sh "$full" "$VER" .
 
           # Overlay: only the managed program files of the manifest, relative to the install root.
