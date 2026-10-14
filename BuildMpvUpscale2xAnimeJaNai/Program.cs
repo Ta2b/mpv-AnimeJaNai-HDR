@@ -955,12 +955,12 @@ void WriteVersionAndManifest()
         "version.txt",
         "manifest.json",
         plat.Exe("AnimeJaNaiUpdater"),
-        "animejanai/onnx",
         "animejanai/benchmarks",
     };
+    // The models (animejanai/onnx) and the Manager are not in the overlay: they are core packs
+    // (EmitComponentPacks), downloaded by an update only when they changed.
     overlayPaths.AddRange(plat.AjiLibs.Select(n => "animejanai/inference/" + n));
     overlayPaths.AddRange(plat.AjiTools.Select(n => "animejanai/inference/" + n));
-    overlayPaths.AddRange(plat.ManagerOverlay);
     overlayPaths.Add("portable_config/scripts");
     overlayPaths.Add("portable_config/shaders");
     // HDR fork: fork-managed code rides the overlay so fork updates deliver it. The user's
@@ -968,7 +968,6 @@ void WriteVersionAndManifest()
     overlayPaths.Add("portable_config/user-scripts");
     overlayPaths.Add("portable_config/user-shaders");
     overlayPaths.Add("portable_config/hdr-tools");
-    overlayPaths.Add(plat.Exe("AnimeJaNaiManager-HDR"));
     overlayPaths.Add(plat.Exe("AnimeJaNaiPlatform"));
     if (!plat.IsWindows)
     {
@@ -1036,8 +1035,11 @@ void WriteVersionAndManifest()
     };
 
     var node = JsonSerializer.SerializeToNode(manifest)!;
+    // Packs without a pinned upstream version are versioned by their content.
+    node["deps"]!["models"] = ContentVersion(ModelFiles());
     if (!plat.IsWindows)
     {
+        node["deps"]!["onnxruntime"] = ContentVersion(OnnxRuntimeFiles());
         node["deps"]!["vulkan_inference"] = args.Contains("--sdr-only") ? "none" : "ncnn-d8227bbe-rife-4.6-bridge1-span1";
         if (args.Contains("--vulkan-only") || args.Contains("--sdr-only"))
         {
@@ -1270,6 +1272,46 @@ void SlimInstallTree(List<string> packFiles)
 // heavy, hardware-specific pieces: the TensorRT runtime, per-GPU-generation
 // builder resources, and the RIFE models. Archive paths are relative to the
 // install root, so extraction over an install IS installation.
+// The models of the package: what the "models" core pack holds.
+string[] ModelFiles()
+{
+    var dir = Path.Combine(installDirectory, "animejanai", "onnx");
+    return Directory.Exists(dir)
+        ? Directory.GetFiles(dir, "*", SearchOption.AllDirectories).Select(f => Path.GetRelativePath(installDirectory, f)).ToArray()
+        : Array.Empty<string>();
+}
+
+// Linux: the ONNX Runtime engine with OpenVINO (about 150 MB), useful only to Intel GPUs and to
+// AMD GPUs through MIGraphX. The NCNN/Vulkan engine and libgomp stay in the core.
+string[] OnnxRuntimeFiles()
+{
+    if (plat.IsWindows || !Directory.Exists(inferencePath)) return Array.Empty<string>();
+    return Directory.GetFiles(inferencePath)
+        .Where(f =>
+        {
+            var n = Path.GetFileName(f);
+            return n.StartsWith("libaji_ort") || n.StartsWith("libonnxruntime") || n.StartsWith("libopenvino") ||
+                   n.StartsWith("libtbb") || n == "animejanai-ort-test" || n.Contains("ThirdPartyNotices");
+        })
+        .Select(f => Path.GetRelativePath(installDirectory, f)).ToArray();
+}
+
+// A version for files that have no upstream version: the hash of their names and contents.
+string ContentVersion(string[] files)
+{
+    if (files.Length == 0) return "none";
+    using var sha = System.Security.Cryptography.SHA256.Create();
+    foreach (var rel in files.Select(f => f.Replace('\\', '/')).OrderBy(f => f, StringComparer.Ordinal))
+    {
+        var name = System.Text.Encoding.UTF8.GetBytes(rel + "\n");
+        sha.TransformBlock(name, 0, name.Length, null, 0);
+        var data = File.ReadAllBytes(Path.Combine(installDirectory, rel));
+        sha.TransformBlock(data, 0, data.Length, null, 0);
+    }
+    sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+    return "sha256-" + Convert.ToHexString(sha.Hash!)[..16].ToLowerInvariant();
+}
+
 async Task<List<string>> EmitComponentPacks()
 {
     Console.WriteLine("Emitting component packs...");
@@ -1287,7 +1329,10 @@ async Task<List<string>> EmitComponentPacks()
     // releases (TensorRT runtime + builder resources are versioned by inference_runtime; RIFE by rife).
     // The base runtime libs (nvinfer/nvonnxparser/cudart/trtexec) but NOT the per-SM builder
     // resources, which split into their own per-GPU packs below.
-    var packs = new List<(string Name, string Dep, string[] Files)>
+    // Core packs stay in the package (Setup, full package, archive, AppImage): they are published
+    // so that an update downloads them only when they changed, instead of carrying them in every
+    // overlay. The other packs are installed on demand and removed from the package.
+    var packs = new List<(string Name, string Dep, string[] Files, bool Core)>
     {
         ("trt-runtime", "inference_runtime", Directory.GetFiles(inferencePath)
             .Where(f =>
@@ -1301,8 +1346,12 @@ async Task<List<string>> EmitComponentPacks()
                 return (runtime && !builderResource) ||
                        n.Contains("LICENSE", StringComparison.OrdinalIgnoreCase);
             })
-            .Select(f => Path.GetRelativePath(installDirectory, f)).ToArray()),
-        ("rife", "rife", new[] { Path.GetRelativePath(installDirectory, rifePath) }),
+            .Select(f => Path.GetRelativePath(installDirectory, f)).ToArray(), false),
+        ("rife", "rife", new[] { Path.GetRelativePath(installDirectory, rifePath) }, false),
+        ("onnxruntime", "onnxruntime", OnnxRuntimeFiles(), false),
+        ("models", "models", ModelFiles(), true),
+        ("manager", "manager_hdr", plat.ManagerOverlay.Prepend(plat.Exe("AnimeJaNaiManager-HDR"))
+            .Where(f => File.Exists(Path.Combine(installDirectory, f))).ToArray(), true),
     };
     foreach (var f in Directory.GetFiles(inferencePath, "*builder_resource_*"))
     {
@@ -1313,7 +1362,7 @@ async Task<List<string>> EmitComponentPacks()
         if (m.Success)
         {
             packs.Add(($"trt-{m.Groups[1].Value}", "inference_runtime",
-                       new[] { Path.GetRelativePath(installDirectory, f) }));
+                       new[] { Path.GetRelativePath(installDirectory, f) }, false));
         }
     }
 
@@ -1327,7 +1376,7 @@ async Task<List<string>> EmitComponentPacks()
 
     var index = new List<object>();
     var packedFiles = new List<string>();
-    foreach (var (name, dep, files) in packs)
+    foreach (var (name, dep, files, core) in packs)
     {
         if (files.Length == 0 ||
             !files.Any(f => File.Exists(Path.Combine(installDirectory, f)) ||
@@ -1349,13 +1398,14 @@ async Task<List<string>> EmitComponentPacks()
                 {
                     name,
                     dep,
+                    core,
                     asset = previous.Asset,
                     bytes = previous.Bytes,
                     installed_bytes = reusedBytes,
                     files = reusedFiles,
                     url = previous.Url,
                 });
-                packedFiles.AddRange(reusedFiles);
+                if (!core) packedFiles.AddRange(reusedFiles);
                 Console.WriteLine($"  component-{name}: unchanged ({dep} {depVersion}), reusing {previous.Url}");
                 continue;
             }
@@ -1390,12 +1440,13 @@ async Task<List<string>> EmitComponentPacks()
         {
             name,
             dep,
+            core,
             asset = Path.GetFileName(archive),
             bytes = new FileInfo(archive).Length,
             installed_bytes = installedBytes,
             files = allFiles,
         });
-        packedFiles.AddRange(allFiles);
+        if (!core) packedFiles.AddRange(allFiles);
         Console.WriteLine($"  component-{name}.7z ({new FileInfo(archive).Length / 1048576} MB, {allFiles.Length} files)");
     }
     File.WriteAllText(Path.Combine(packsDir, $"packs{plat.PackSuffix}.json"),

@@ -143,6 +143,16 @@ async Task CheckAsync()
     if (IsNewer(release.Tag, local) && published)
     {
         Console.WriteLine($"UPDATE_AVAILABLE {release.Tag}");
+        // UPDATE_PACKS name:bytes,... - the components this update downloads again.
+        try
+        {
+            var changed = await ChangedPacksAsync(release);
+            if (changed.Count > 0)
+            {
+                Console.WriteLine("UPDATE_PACKS " + string.Join(",", changed.Select(c => $"{c.Pack.Name}:{c.Pack.Bytes}")));
+            }
+        }
+        catch { /* the offer stands without the details */ }
         string? file = appImage ? Environment.GetEnvironmentVariable("APPIMAGE") : null;
         if (appImage && (string.IsNullOrEmpty(file) || !File.Exists(file)))
         {
@@ -979,8 +989,16 @@ async Task<int> ApplyAsync()
         string sourceRoot = overlay ? staging : FindVersionedRoot(staging);
 
         BackupInputConf(local);
+        // The versions of the packs before the update: InstallComponentAsync compares with them to
+        // skip the packs that did not change.
+        if (File.Exists(localManifest))
+        {
+            File.Copy(localManifest, Path.Combine(installDir, "manifest.prev.json"), true);
+        }
         Console.WriteLine("Applying update (your animejanai.conf, mpv-user.conf and added models are kept)...");
         ApplyOver(sourceRoot, installDir, overlay);
+        Console.WriteLine("Updating the components that changed...");
+        await RefreshPacksAsync();
 
         Console.WriteLine($"Update to v{release.Tag} complete.");
     }
@@ -1015,7 +1033,106 @@ async Task<bool> IsOverlaySufficientAsync(Release release, string work)
 
     string? localDeps = ReadDepsRaw(Path.Combine(installDir, "manifest.json"));
     string? remoteDeps = ReadDepsRaw(remotePath);
-    return localDeps != null && remoteDeps != null && localDeps == remoteDeps;
+    if (localDeps != null && remoteDeps != null && localDeps == remoteDeps)
+    {
+        return true;
+    }
+    // What a pack delivers (TensorRT, RIFE, the models, the Manager...) is brought up to date by
+    // the pack itself after the overlay (RefreshPacksAsync): only the other dependencies call for
+    // the full package.
+    PackIndex? index = null;
+    try { index = await ReleasePackIndexAsync(release); } catch { /* no index: compare everything */ }
+    if (index is null)
+    {
+        return false;
+    }
+    var byPacks = index.Packs.Where(p => p.Dep is not null).Select(p => p.Dep!).ToHashSet();
+    var local = ManifestDeps(Path.Combine(installDir, "manifest.json"));
+    var remote = ManifestDeps(remotePath);
+    if (local.Count == 0 || remote.Count == 0)
+    {
+        return false;
+    }
+    bool Same(Dictionary<string, string> a, Dictionary<string, string> b) =>
+        a.Where(kv => !byPacks.Contains(kv.Key)).All(kv => b.TryGetValue(kv.Key, out var v) && v == kv.Value);
+    return Same(local, remote) && Same(remote, local);
+}
+
+static Dictionary<string, string> ManifestDeps(string manifestPath)
+{
+    var deps = new Dictionary<string, string>();
+    try
+    {
+        using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
+        if (doc.RootElement.TryGetProperty("deps", out var node) && node.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var p in node.EnumerateObject())
+            {
+                deps[p.Name] = p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString() ?? "" : p.Value.GetRawText();
+            }
+        }
+    }
+    catch { /* missing/unreadable manifest -> empty */ }
+    return deps;
+}
+
+// After an update: the packs of this installation whose content changed are downloaded again -
+// the core packs (Manager, models) and the components the user installed (TensorRT, RIFE...).
+// Unchanged ones are skipped by InstallComponentAsync. A failure leaves the previous version of
+// that pack in place and does not undo the update.
+async Task RefreshPacksAsync()
+{
+    PackIndex index;
+    try { index = await GetPackIndexAsync(); }
+    catch (Exception e)
+    {
+        Console.WriteLine($"Components not checked: {e.Message}");
+        return;
+    }
+    var installed = ReadInstalledComponents(index);
+    foreach (var pack in index.Packs.Where(p => p.Core || installed.ContainsKey(p.Name)))
+    {
+        try
+        {
+            await InstallComponentAsync(pack.Name);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"{pack.Name} not updated: {e.Message}");
+        }
+    }
+}
+
+// The packs an update to this release would download again, with their size: the core packs and
+// the installed components whose version changes. Shown by the player with the update offer.
+async Task<List<(Pack Pack, string From, string To)>> ChangedPacksAsync(Release release)
+{
+    var changed = new List<(Pack, string, string)>();
+    string manifestName = isWinRid ? "manifest.json" : $"manifest-{platformRid}.json";
+    var asset = release.Assets.FirstOrDefault(a => a.Name == manifestName);
+    var index = await ReleasePackIndexAsync(release);
+    if (asset is null || index is null)
+    {
+        return changed;
+    }
+    string remotePath = Path.Combine(Path.GetTempPath(), $"animejanai-manifest-{release.Tag}.json");
+    await DownloadFileAsync(asset.Url, remotePath, _ => { });
+    var local = ManifestDeps(localManifest);
+    var remote = ManifestDeps(remotePath);
+    TryDelete(() => File.Delete(remotePath));
+    var installed = ReadInstalledComponents(index);
+    // An AppImage brings its core packs inside the new AppImage.
+    bool appImage = Environment.GetEnvironmentVariable("ANIMEJANAI_APPIMAGE") == "1";
+    foreach (var pack in index.Packs.Where(p => p.Dep is not null && (p.Core ? !appImage : installed.ContainsKey(p.Name))))
+    {
+        local.TryGetValue(pack.Dep!, out var from);
+        remote.TryGetValue(pack.Dep!, out var to);
+        if ((from ?? "") != (to ?? ""))
+        {
+            changed.Add((pack, from ?? "", to ?? ""));
+        }
+    }
+    return changed;
 }
 
 static string ReadManifestString(string manifestPath, string key, string fallback)
@@ -1460,18 +1577,32 @@ async Task<PackIndex> GetPackIndexAsync()
         // Packs must match this installation, including prereleases and older
         // versions. The latest endpoint is only for updating the application.
         var release = await GetInstalledReleaseAsync();
-        // packs index is RID-suffixed on Linux (packs-linux-x64.json) so it can
-        // coexist with the Windows packs.json on a shared release; its "asset"
-        // fields already carry the matching component-*-<rid>.7z names.
-        string packsName = isWinRid ? "packs.json" : $"packs-{platformRid}.json";
-        var idx = release.Assets.FirstOrDefault(a => a.Name == packsName)
-            ?? release.Assets.FirstOrDefault(a => a.Name == "packs.json")
+        return await ReleasePackIndexAsync(release)
             ?? throw new InvalidOperationException(
                 $"Release {release.Tag} publishes no component packs (packs.json missing).");
-        using var client = NewClient();
-        json = await client.GetStringAsync(idx.Url);
-        assets = release.Assets;
     }
+    return ParsePackIndex(json, assets);
+}
+
+// The pack index of a release, null when it publishes none.
+async Task<PackIndex?> ReleasePackIndexAsync(Release release)
+{
+    // packs index is RID-suffixed on Linux (packs-linux-x64.json) so it can
+    // coexist with the Windows packs.json on a shared release; its "asset"
+    // fields already carry the matching component-*-<rid>.7z names.
+    string packsName = isWinRid ? "packs.json" : $"packs-{platformRid}.json";
+    var idx = release.Assets.FirstOrDefault(a => a.Name == packsName)
+        ?? release.Assets.FirstOrDefault(a => a.Name == "packs.json");
+    if (idx is null)
+    {
+        return null;
+    }
+    using var client = NewClient();
+    return ParsePackIndex(await client.GetStringAsync(idx.Url), release.Assets);
+}
+
+PackIndex ParsePackIndex(string json, List<Asset> assets)
+{
 
     var packs = new List<Pack>();
     using var doc = JsonDocument.Parse(json);
@@ -1491,7 +1622,8 @@ async Task<PackIndex> GetPackIndexAsync()
             e.GetProperty("bytes").GetInt64(),
             files,
             e.TryGetProperty("dep", out var d) ? d.GetString() : null,
-            e.TryGetProperty("installed_bytes", out var ib) ? ib.GetInt64() : 0));
+            e.TryGetProperty("installed_bytes", out var ib) ? ib.GetInt64() : 0,
+            e.TryGetProperty("core", out var core) && core.ValueKind == JsonValueKind.True));
     }
     return new PackIndex(
         doc.RootElement.TryGetProperty("package_version", out var v)
@@ -1550,7 +1682,7 @@ Dictionary<string, string> ReadInstalledComponents(PackIndex index)
         }
         catch { /* fall through to inference */ }
     }
-    foreach (var pack in index.Packs)
+    foreach (var pack in index.Packs.Where(p => !p.Core))
     {
         // a pack counts as installed when all its files exist
         if (pack.Files.Count > 0 &&
@@ -1624,7 +1756,26 @@ List<string> RecommendedPacks(PackIndex index, bool hasNvidia, string sm)
         // (JIT-compiles for newer GPUs than this TensorRT knows)
         rec.Add(index.Packs.Any(p => p.Name == $"trt-{sm}") ? $"trt-{sm}" : "trt-ptx");
     }
+    else if (OperatingSystem.IsLinux() && index.Packs.Any(p => p.Name == "onnxruntime") && HasIntelGpu())
+    {
+        // OpenVINO, through the ONNX Runtime engine, is the engine of Intel GPUs on Linux.
+        rec.Add("onnxruntime");
+    }
     return rec;
+}
+
+static bool HasIntelGpu()
+{
+    try
+    {
+        return Directory.GetDirectories("/sys/class/drm", "card*")
+            .Select(d => Path.Combine(d, "device", "vendor"))
+            .Any(f => File.Exists(f) && File.ReadAllText(f).Trim().Equals("0x8086", StringComparison.OrdinalIgnoreCase));
+    }
+    catch
+    {
+        return false;
+    }
 }
 
 bool ComponentsNeverManaged() => !File.Exists(Path.Combine(installDir, "components.json"));
@@ -1643,7 +1794,7 @@ async Task ComponentsAsync(PackIndex? prefetched, bool json = false)
     {
         // consumed by the AnimeJaNai Manager GUI; keep keys stable
         var packs = new JsonArray();
-        foreach (var p in index.Packs)
+        foreach (var p in index.Packs.Where(p => !p.Core))
         {
             packs.Add((JsonNode)new JsonObject
             {
@@ -1673,7 +1824,7 @@ async Task ComponentsAsync(PackIndex? prefetched, bool json = false)
         : "GPU: no NVIDIA device detected - DirectML (in the core install) covers AMD/Intel");
     Console.WriteLine($"Recommended packs: {string.Join(", ", rec)}");
     Console.WriteLine();
-    foreach (var pack in index.Packs)
+    foreach (var pack in index.Packs.Where(p => !p.Core))
     {
         string state = installed.ContainsKey(pack.Name) ? "installed" :
                        rec.Contains(pack.Name) ? "RECOMMENDED" :
@@ -1730,8 +1881,11 @@ async Task<int> InstallComponentAsync(string name)
         current.TryGetValue(pack.Name, out var recorded);
         if (prev == target || recorded == target)
         {
-            current[pack.Name] = target;
-            WriteInstalledComponents(current);
+            if (!pack.Core)
+            {
+                current[pack.Name] = target;
+                WriteInstalledComponents(current);
+            }
             Console.WriteLine($"{pack.Name} already up to date ({target}); skipping download.");
             return 0;
         }
@@ -1752,11 +1906,14 @@ async Task<int> InstallComponentAsync(string name)
     Extract(archive, installDir);
     TryDelete(() => File.Delete(archive));
 
-    var installed = ReadInstalledComponents(index);
-    // Record the dep version (not the package version) so a later reinstall can tell whether this
-    // pack's content actually changed; fall back to the package version for an untagged pack.
-    installed[pack.Name] = target != "" ? target : index.PackageVersion;
-    WriteInstalledComponents(installed);
+    if (!pack.Core)
+    {
+        var installed = ReadInstalledComponents(index);
+        // Record the dep version (not the package version) so a later reinstall can tell whether
+        // this pack's content actually changed; fall back to the package version for an untagged pack.
+        installed[pack.Name] = target != "" ? target : index.PackageVersion;
+        WriteInstalledComponents(installed);
+    }
     Console.WriteLine($"{pack.Name} installed.");
     return 0;
 }
@@ -1768,6 +1925,11 @@ int RemoveComponent(string name)
     if (pack is null)
     {
         Console.WriteLine($"Unknown pack '{name}'. Available: {string.Join(", ", index.Packs.Select(p => p.Name))}");
+        return 2;
+    }
+    if (pack.Core)
+    {
+        Console.WriteLine($"{pack.Name} is part of every installation and cannot be removed.");
         return 2;
     }
     int gone = 0;
@@ -1798,7 +1960,7 @@ async Task<int> AutoComponentsAsync()
     // pack's content. Without this, --auto reports "everything is installed" after an upgrade and
     // the old runtime is kept forever; InstallComponentAsync re-checks and still skips genuine no-ops.
     var missing = index.Packs
-        .Where(p => PreselectPack(p, installed, rec))
+        .Where(p => !p.Core && PreselectPack(p, installed, rec))
         .Where(p => !installed.TryGetValue(p.Name, out var recorded) ||
                     (p.Dep is not null && ReadManifestDep(localManifest, p.Dep) is string t &&
                      t != "" && recorded != t) ||
@@ -1880,6 +2042,8 @@ record Asset(string Name, string Url);
 // InstalledBytes: the pack's total size once extracted (sum of its files on disk). Used to verify
 // that what is on disk really is this pack's content, since components.json bookkeeping alone can
 // be wrong. 0 when the index predates the field (older release) - verification is then skipped.
+// Core: a pack that is part of every installation (the Manager, the models). It is published so
+// that an update downloads it only when it changed; it is never offered, listed or removed.
 record Pack(string Name, string Asset, string? Url, long Bytes, List<string> Files, string? Dep,
-            long InstalledBytes = 0);
+            long InstalledBytes = 0, bool Core = false);
 record PackIndex(string PackageVersion, List<Pack> Packs);

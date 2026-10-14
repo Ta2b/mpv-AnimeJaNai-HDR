@@ -170,7 +170,22 @@ find "$INFDATA" -maxdepth 1 -xtype l -delete 2>/dev/null || true
 ver="$(cat "$HERE/version.txt" 2>/dev/null || echo "")"
 relbase="https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/${ver}"
 
-fetch_pack() { # $1 = pack base (e.g. trt-sm120, rife); $2 = human note
+# The version of one dependency in this AppImage's manifest (deps.KEY).
+dep_of() {
+    sed -n "s/^[[:space:]]*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$HERE/manifest.json" 2>/dev/null | head -1
+}
+# A pack fetched for another version of its dependency (a TensorRT or RIFE update, a new ONNX
+# Runtime): it is fetched again. A pack installed before these marks existed counts as current.
+pack_stale() { # $1 = pack, $2 = its dependency key
+    want="$(dep_of "$2")"
+    have="$(cat "$DATA/animejanai/.pack-$1" 2>/dev/null)"
+    [ -n "$want" ] && [ -n "$have" ] && [ "$want" != "$have" ]
+}
+pack_mark() { # $1 = pack, $2 = its dependency key
+    dep_of "$2" > "$DATA/animejanai/.pack-$1"
+}
+
+fetch_pack() { # $1 = pack base (e.g. trt-sm120, rife); $2 = human note; $3 = its dependency key
     pack="component-$1-linux-x64.7z"
     [ "${ANIMEJANAI_OFFLINE:-0}" = "1" ] && return 0
     { [ -n "$ver" ] && command -v curl >/dev/null 2>&1; } || return 0
@@ -182,7 +197,9 @@ fetch_pack() { # $1 = pack base (e.g. trt-sm120, rife); $2 = human note
     pack_url="$(printf '%s' "$pack_index" | grep -o "\"url\"[[:space:]]*:[[:space:]]*\"[^\"]*/$pack\"" | head -1 | sed 's/.*"\(https[^"]*\)"$/\1/')"
     [ -n "$pack_url" ] || pack_url="$relbase/$pack"
     if curl --connect-timeout 5 --max-time 1800 -fSL "$pack_url" -o "$DATA/$pack"; then
-        "$HERE/7zz" x -snl -y -o"$DATA" "$DATA/$pack" >/dev/null 2>&1 || true
+        if "$HERE/7zz" x -snl -y -o"$DATA" "$DATA/$pack" >/dev/null 2>&1 && [ -n "${3:-}" ]; then
+            pack_mark "$1" "$3"
+        fi
         rm -f "$DATA/$pack"
     else
         rm -f "$DATA/$pack"
@@ -197,21 +214,38 @@ if grep -qiE '^[[:space:]]*backend[[:space:]]*=[[:space:]]*TensorRT' "$DATA/anim
 sm="$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | tr -d ' .')"
 # TensorRT runtime (libraries and trtexec): only on an NVIDIA card, and not baked into the image
 # (it would weigh more than the rest of the AppImage).
-if [ -n "$sm" ] && [ ! -f "$INFDATA/libnvinfer.so.11" ] && [ ! -f "$HERE/animejanai/inference/libnvinfer.so.11" ]; then
-    fetch_pack "trt-runtime" "TensorRT runtime (~260 MB)"
+if [ -n "$sm" ] && [ ! -f "$HERE/animejanai/inference/libnvinfer.so.11" ]; then
+    [ -f "$INFDATA/libnvinfer.so.11" ] && [ ! -f "$DATA/animejanai/.pack-trt-runtime" ] && pack_mark trt-runtime inference_runtime
+    if [ ! -f "$INFDATA/libnvinfer.so.11" ] || pack_stale trt-runtime inference_runtime; then
+        fetch_pack "trt-runtime" "TensorRT runtime (~260 MB)" inference_runtime
+    fi
 fi
-if [ -n "$sm" ] && ! ls "$INFDATA"/libnvinfer_builder_resource_sm${sm}.so* >/dev/null 2>&1; then
-    fetch_pack "trt-sm${sm}" "TensorRT kernels for sm${sm} (~250 MB)"
+if [ -n "$sm" ]; then
+    ls "$INFDATA"/libnvinfer_builder_resource_sm${sm}.so* >/dev/null 2>&1 && [ ! -f "$DATA/animejanai/.pack-trt-sm${sm}" ] && pack_mark "trt-sm${sm}" inference_runtime
+    if ! ls "$INFDATA"/libnvinfer_builder_resource_sm${sm}.so* >/dev/null 2>&1 || pack_stale "trt-sm${sm}" inference_runtime; then
+        fetch_pack "trt-sm${sm}" "TensorRT kernels for sm${sm} (~250 MB)" inference_runtime
+    fi
 fi
 
 # RIFE models (interpolation only) - fetched only when the user's config enables
 # a RIFE chain, so pure-upscaling users never download them.
-if ! ls "$RIFEDATA"/*.onnx >/dev/null 2>&1 \
+ls "$RIFEDATA"/*.onnx >/dev/null 2>&1 && [ ! -f "$DATA/animejanai/.pack-rife" ] && pack_mark rife rife
+if { ! ls "$RIFEDATA"/*.onnx >/dev/null 2>&1 || pack_stale rife rife; } \
    && grep -qiE '^[[:space:]]*chain_[0-9]+_rife[[:space:]]*=[[:space:]]*(yes|true|1)' \
         "$DATA/animejanai/animejanai.conf" 2>/dev/null; then
-    fetch_pack "rife" "RIFE interpolation models (~450 MB)"
+    fetch_pack "rife" "RIFE interpolation models (~450 MB)" rife
 fi
 
+fi
+
+# ONNX Runtime engine with OpenVINO / MIGraphX (Intel GPUs, AMD through ROCm): a pack too, fetched
+# when the Manager selected one of its backends.
+if grep -qiE '^[[:space:]]*backend[[:space:]]*=[[:space:]]*(OpenVINO|MIGraphX)' "$DATA/animejanai/animejanai.conf" 2>/dev/null \
+   && [ ! -f "$HERE/animejanai/inference/libaji_ort.so" ]; then
+    [ -f "$INFDATA/libaji_ort.so" ] && [ ! -f "$DATA/animejanai/.pack-onnxruntime" ] && pack_mark onnxruntime onnxruntime
+    if [ ! -f "$INFDATA/libaji_ort.so" ] || pack_stale onnxruntime onnxruntime; then
+        fetch_pack "onnxruntime" "ONNX Runtime engine with OpenVINO (~60 MB)" onnxruntime
+    fi
 fi
 
 export LD_LIBRARY_PATH="$HERE/mpv:$HERE/animejanai/inference:$INFDATA:$HERE/usr/lib:${LD_LIBRARY_PATH:-}"

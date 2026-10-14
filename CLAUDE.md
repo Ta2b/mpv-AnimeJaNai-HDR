@@ -112,7 +112,13 @@ The `<release_version>` arg is required and is used only as the install-folder s
 parsing). If the target folder exists it is wiped first (`Main()` in `Program.cs`). `Main()` also
 writes `version.txt` + `manifest.json` into the install root — the **AnimeJaNaiUpdater** reads these
 to decide overlay-vs-full updates (`overlay_paths` = files an in-place update overwrites;
-`user_preserve` = what it keeps).
+`user_preserve` = what it keeps). With `--packs` the assembler also emits component packs
+(`component-*.7z` + `packs.json` / `packs-linux-x64.json`): optional ones (TensorRT runtime and
+kernels, RIFE, the Linux ONNX Runtime/OpenVINO engine) are removed from the package and installed
+on demand; core ones (`manager`, `models`, flagged `core` in the index) stay in the package but
+not in the overlay. After an overlay update the updater downloads again only the packs whose
+`deps` version changed, and `--check` lists them (`UPDATE_PACKS`) for the player's update offer.
+The AppImage launcher does the same for the packs it keeps in the data folder (`.pack-*` marks).
 
 The download/version pins are constants at the top of `Program.cs` (`AjiVersion`, `MpvForkVersion`,
 `TrtVersion`, `TrtCudaVersion`, `OrtDmlVersion`, `DirectMLVersion`, `RifeModelsVersion`, `MpvNetVersion`,

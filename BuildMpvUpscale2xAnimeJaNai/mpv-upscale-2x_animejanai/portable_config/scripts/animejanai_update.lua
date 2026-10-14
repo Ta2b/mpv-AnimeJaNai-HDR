@@ -40,6 +40,20 @@ local blocked_text = is_mac and {
     extracted = "This copy does not run from an AppImage file.\nDownload the new AppImage:\n" .. releases_url,
 }
 local updating = false
+-- The components the update downloads again (UPDATE_PACKS name:bytes,...), as one line.
+local engines = nil
+local pack_titles = {
+    ["trt-runtime"] = "TensorRT", ["rife"] = "RIFE models", ["onnxruntime"] = "ONNX Runtime / OpenVINO",
+    ["models"] = "AnimeJaNai models", ["manager"] = "Manager", ["trt-ptx"] = "TensorRT kernels",
+}
+local function describe_packs(list)
+    local parts = {}
+    for name, bytes in (list or ""):gmatch("([^:,]+):(%d+)") do
+        local title = pack_titles[name] or (name:match("^trt%-sm") and "TensorRT kernels") or name
+        parts[#parts + 1] = string.format("%s (%d MB)", title, math.floor(tonumber(bytes) / 1048576 + 0.5))
+    end
+    return #parts > 0 and table.concat(parts, ", ") or nil
+end
 
 -- macOS and AppImage: the updater downloads and verifies the new application (or AppImage) while
 -- the video keeps playing, and reports through a one-line file. When it is ready the player
@@ -139,6 +153,7 @@ local function check(done)
         local ver = out:match("UPDATE_AVAILABLE%s+(%S+)")
         available_version = ver
         blocked = ver and out:match("UPDATE_BLOCKED%s+(%S+)") or nil
+        engines = ver and describe_packs(out:match("UPDATE_PACKS%s+(%S+)")) or nil
         done(ver and "update" or "none")
     end)
 end
@@ -168,7 +183,8 @@ local function start_update()
         start_update_whole()
         return
     end
-    mp.osd_message("Installing AnimeJaNai " .. available_version .. " - mpv will close and reopen...", 5)
+    mp.osd_message("Installing AnimeJaNai " .. available_version .. " - mpv will close and reopen..." ..
+        (engines and ("\nAlso updating: " .. engines) or ""), 5)
     -- Detached so it outlives mpv; the updater waits for mpv to exit, applies, then relaunches mpv.
     mp.command_native({
         name = "subprocess",
@@ -189,7 +205,8 @@ end
 check(function(state)
     if state == "update" then
         msg.info("Update available: " .. available_version)
-        mp.osd_message("AnimeJaNai update " .. available_version .. " available - press Ctrl+U to install.", 8)
+        mp.osd_message("AnimeJaNai update " .. available_version .. " available - press Ctrl+U to install." ..
+            (engines and ("\nAlso updates: " .. engines) or ""), 8)
     elseif state == "none" then
         msg.verbose("AnimeJaNai is up to date.")
     end
