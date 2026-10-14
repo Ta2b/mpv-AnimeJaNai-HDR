@@ -216,10 +216,11 @@ The `aji` engine parses `animejanai.conf` (the old Python `animejanai_config.rea
   unknown ones are ignored). `rife_engine=new|old` is written by the Manager too (playback
   settings, "RIFE interpolation engine") and read by the engines that have both chains: with
   `new`, a profile that interpolates before the upscale runs the upscaler once per source frame
-  and makes the frames in between by warping the two upscaled pictures with RIFE's motion. Today
-  only the private NVIDIA engine (`libaji_trt_rtx.so`, branch `warp-chain` of
-  `Ta2b/animejanai-inference-rtx`) has it; every other engine ignores the key and keeps the
-  original chain. That engine runs RIFE once per pair (middle of the pair) and derives every
+  and makes the frames in between by warping the two upscaled pictures with RIFE's motion. The private
+  NVIDIA engine (`libaji_trt_rtx.so`, branch `warp-chain` of `Ta2b/animejanai-inference-rtx`) and
+  the shared engine (`native/linux-ort`: macOS Core ML / Metal / ONNX Runtime, Linux ONNX Runtime;
+  warp on the CPU, motion model written to the cache folder) have it; the NCNN/Vulkan engine and
+  the upstream Windows binaries ignore the key and keep the original chain. That engine runs RIFE once per pair (middle of the pair) and derives every
   instant from it under 15 px of motion, and always beyond x3, so its cost barely grows with the
   factor: this is what makes `rife_display_sync` with an exact ratio (`hdr-tools/rife-sync.lua`,
   e.g. 11011/1600 for 23.976 fps on 165 Hz) affordable. `rife_drawings=yes|no` (Manager,
