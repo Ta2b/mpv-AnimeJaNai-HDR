@@ -1,0 +1,247 @@
+name: Release Linux
+# Builds the Linux package (portable archive, AppImage, overlay, component packs) and adds it to
+# the release named by release-version.txt. Independent of the Windows and macOS releases.
+#
+#   vulkan-engine   NCNN/Vulkan engine and the converted models       (cached)
+#   ort-engine      ONNX Runtime engine with the OpenVINO provider
+#   package         native Wayland player (cached), Manager, assembler, packaging, publication
+on:
+  push:
+    # release publishes; a try/... branch builds everything without publishing.
+    branches: [release, 'try/**']
+  workflow_dispatch:
+    inputs:
+      rebuild_packs:
+        description: 'Rebuild and upload every component pack, even unchanged ones'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-linux
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  vulkan-engine:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore the engine
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: vulkan-bundle
+          key: vulkan-ubuntu24-${{ runner.arch }}-${{ hashFiles('native/linux-vulkan/CMakeLists.txt', 'native/linux-vulkan/aji_vulkan.cpp', 'native/linux-vulkan/aji_vulkan.h', 'native/linux-vulkan/rife_frame_cache.h', 'native/linux-vulkan/rife-v4-cache.patch', 'native/linux-ort/tiles.cpp', 'native/linux-ort/tiles.h', 'native/linux-vulkan/convert_span.py', 'native/linux-vulkan/smoke.cpp', 'installer/linux/build-inference.sh', 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx/*SPANF3*') }}
+      - name: Build the engine and convert the models
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake g++ git patch libvulkan-dev python3-venv
+          python3 -m venv "$RUNNER_TEMP/python"
+          "$RUNNER_TEMP/python/bin/pip" install -q onnx==1.23.2 numpy==2.5.4
+          AJ_PYTHON="$RUNNER_TEMP/python/bin/python" bash .github/scripts/run.sh "Vulkan engine build" bash installer/linux/build-inference.sh \
+            "$RUNNER_TEMP/vulkan-work" "$GITHUB_WORKSPACE/vulkan-bundle" \
+            BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vulkan-engine
+          path: vulkan-bundle/
+          if-no-files-found: error
+          retention-days: 3
+
+  ort-engine:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ORT_VERSION: 1.24.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch ONNX Runtime with the OpenVINO provider and the configuration parser
+        # Headers from the ONNX Runtime release, libraries from Intel's wheel of the same version
+        # (it carries the provider and the OpenVINO runtime). A library older than the headers
+        # refuses to load, hence the same version on both sides.
+        run: |
+          curl -fsSL --retry 3 -o ort.tgz "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VERSION/onnxruntime-linux-x64-$ORT_VERSION.tgz"
+          mkdir ort && tar -xzf ort.tgz -C ort --strip-components=1
+          rm -rf ort/lib && mkdir ort/lib wheel
+          python3 -m pip download "onnxruntime-openvino==$ORT_VERSION" --no-deps --only-binary=:all: \
+            --python-version 3.12 --platform manylinux_2_28_x86_64 -d wheel
+          unzip -q wheel/*.whl 'onnxruntime/capi/*.so*' 'onnxruntime/ThirdPartyNotices.txt' -d wheel/x || true
+          # One file per library, named by its soname: the wheel repeats the versioned names.
+          for f in wheel/x/onnxruntime/capi/*.so*; do
+            case "$f" in *pybind11*) continue;; esac
+            name="$(objdump -p "$f" | awk '/SONAME/ {print $2}')"
+            [ -n "$name" ] || name="$(basename "$f")"
+            [ -e "ort/lib/$name" ] || cp "$f" "ort/lib/$name"
+          done
+          ln -s libonnxruntime.so.1 ort/lib/libonnxruntime.so
+          cp wheel/x/onnxruntime/ThirdPartyNotices.txt ort/lib/ONNXRuntime-OpenVINO-ThirdPartyNotices.txt
+          git clone --depth 1 --branch v0.11.1 https://github.com/the-database/animejanai-inference.git aji-source
+      - name: Build the engine
+        run: |
+          cmake -S native/linux-ort -B ort-build -DCMAKE_BUILD_TYPE=Release -DORT_ROOT="$GITHUB_WORKSPACE/ort" -DAJI_SOURCE="$GITHUB_WORKSPACE/aji-source"
+          bash .github/scripts/run.sh "ONNX Runtime engine build" cmake --build ort-build -j 4
+          mkdir ort-bundle
+          cp ort-build/libaji_ort.so ort-build/animejanai-ort-test ort-bundle/
+          cp -L ort/lib/*.so* ort/lib/*.txt ort-bundle/
+          rm -f ort-bundle/libonnxruntime.so
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ort-engine
+          path: ort-bundle/
+          if-no-files-found: error
+          retention-days: 3
+
+  package:
+    needs: [vulkan-engine, ort-engine]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ANIMEJANAI_DOWNLOAD_CACHE: ${{ github.workspace }}/download-cache
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'  # must match <TargetFramework> of the projects
+
+      - name: Version, disk space and packaging tools
+        run: |
+          echo "VER=$(tr -d '[:space:]' < release-version.txt)" >> "$GITHUB_ENV"
+          # In the background: the space is only needed by the assembler, minutes later.
+          nohup sudo rm -rf /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL > /dev/null 2>&1 &
+          sudo apt-get update && sudo apt-get install -y zstd jq patchelf libfuse2t64
+
+      # ---- native Wayland player (the long build, cached as soon as it exists) ----
+      - name: Restore the native player
+        id: player
+        uses: actions/cache/restore@v4
+        with:
+          path: native-bundle
+          key: wayland-ubuntu24-${{ runner.arch }}-${{ hashFiles('installer/linux/build-native.sh', 'native/linux-vulkan/install-filter.py', 'native/linux-vulkan/vf_animejanai_vulkan.c', 'native/linux-vulkan/aji_vulkan.h') }}
+      - name: Build the native player
+        if: steps.player.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get install -y build-essential git cmake python3-venv meson ninja-build pkg-config nasm libass-dev libvulkan-dev libxkbcommon-dev libwayland-dev libxml2-dev libffi-dev libexpat1-dev liblua5.2-dev liblcms2-dev libx11-dev libxrandr-dev libxss-dev libxcursor-dev libxi-dev libxpresent-dev libxinerama-dev libpulse-dev libasound2-dev libshaderc-dev spirv-cross libspirv-cross-c-shared-dev glslang-dev libfreetype-dev libfontconfig-dev libfribidi-dev libharfbuzz-dev libunibreak-dev autoconf automake libtool
+          bash .github/scripts/run.sh "native player build" installer/linux/build-native.sh "$RUNNER_TEMP/native-work" "$GITHUB_WORKSPACE/native-bundle"
+          rm -rf "$RUNNER_TEMP/native-work"
+      - name: Save the native player
+        if: steps.player.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: native-bundle
+          key: ${{ steps.player.outputs.cache-primary-key }}
+
+      # ---- engines built by the two other jobs ----
+      - uses: actions/download-artifact@v4
+        with:
+          name: vulkan-engine
+          path: vulkan-bundle
+      - uses: actions/download-artifact@v4
+        with:
+          name: ort-engine
+          path: ort-bundle
+      - name: Put the engines together
+        run: |
+          cp -a ort-bundle/. vulkan-bundle/inference/
+          chmod +x vulkan-bundle/inference/animejanai-ort-test vulkan-bundle/inference/animejanai-vulkan-test
+          echo "MPV_LINUX_LOCAL=$GITHUB_WORKSPACE/native-bundle" >> "$GITHUB_ENV"
+          echo "VULKAN_LOCAL=$GITHUB_WORKSPACE/vulkan-bundle" >> "$GITHUB_ENV"
+
+      # ---- Manager, assembler, helper, updater, benchmark tool ----
+      - name: Pinned Manager source
+        run: echo "MANAGER_REF=$(tr -d '[:space:]' < manager-source-ref.txt)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          repository: Ta2b/AnimeJaNaiManager-HDR
+          ref: ${{ env.MANAGER_REF }}
+          path: manager
+      - name: Build the Manager, the assembler, the platform helper and the updater
+        run: |
+          dotnet publish manager/AnimeJaNaiConfEditor/AnimeJaNaiConfEditor.csproj -c Release -r linux-x64 --self-contained true \
+            -p:PlatformSource="$GITHUB_WORKSPACE/AnimeJaNaiPlatform/PlatformServices.cs" -o manager-publish
+          mv manager-publish/AnimeJaNaiManager manager-publish/AnimeJaNaiManager-HDR
+          echo "MANAGER_HDR_LOCAL=$GITHUB_WORKSPACE/manager-publish" >> "$GITHUB_ENV"
+          dotnet publish BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj -c Release -o publish
+          dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o publish/platform-linux-x64
+          dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o updater-publish
+
+      # ---- assembly ----
+      - name: Restore component downloads
+        id: downloads
+        uses: actions/cache/restore@v4
+        with:
+          path: download-cache
+          key: linux-downloads-v1-${{ hashFiles('BuildMpvUpscale2xAnimeJaNai/Program.cs', 'BuildMpvUpscale2xAnimeJaNai/Downloader.cs') }}
+          restore-keys: |
+            linux-downloads-v1-
+      - name: Reuse the component packs of the previous release
+        if: inputs.rebuild_packs != true
+        run: bash .github/scripts/previous-packs.sh "$VER" packs-linux-x64.json
+      - name: Assemble the package and its component packs
+        run: bash .github/scripts/run.sh "assembler" ./publish/BuildMpvUpscale2xAnimeJaNai "$VER" --target linux-x64 --packs
+      - name: Save component downloads
+        # Before packaging: a later failure does not lose several GB of downloads.
+        if: steps.downloads.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: download-cache
+          key: ${{ steps.downloads.outputs.cache-primary-key }}
+
+      # ---- packaging ----
+      - name: Portable archive, AppImage and overlay
+        run: |
+          pkg="publish/mpv-upscale-2x_animejanai-v$VER"
+          packs="publish/packs-v$VER"
+          dotnet publish AnimeJaNaiBenchmark/AnimeJaNaiBenchmark.csproj -c Release -r linux-x64 --self-contained \
+            -p:PublishSingleFile=true -o "$pkg/animejanai/benchmarks"
+          chmod +x installer/linux/*.sh "$pkg/animejanai/benchmarks/AnimeJaNaiBenchmark"
+          chmod +x "$pkg/animejanai/benchmarks/animejanai_benchmark_all.sh" 2>/dev/null || true
+
+          bash .github/scripts/run.sh "portable archive" installer/linux/package-tarball.sh "$pkg" updater-publish/AnimeJaNaiUpdater "$VER" .
+
+          # The AppImage carries the TensorRT runtime pack. A pack reused from an earlier release
+          # is not in the packs folder: it is fetched from the address in the index, outside that
+          # folder so that it is not uploaded again.
+          full="appimage-tree/mpv-upscale-2x_animejanai-v$VER"
+          mkdir -p "$full" && cp -a "$pkg/." "$full/"
+          install -m 755 updater-publish/AnimeJaNaiUpdater "$full/AnimeJaNaiUpdater"
+          runtime="$packs/component-trt-runtime-linux-x64.7z"
+          if [ ! -f "$runtime" ]; then
+            url="$(jq -r '.packs[] | select(.name == "trt-runtime") | .url // empty' "$packs/packs-linux-x64.json")"
+            [ -n "$url" ] || { echo "::error::the trt-runtime pack was neither built nor reusable"; exit 1; }
+            runtime="$RUNNER_TEMP/component-trt-runtime-linux-x64.7z"
+            curl -fsSL --retry 3 "$url" -o "$runtime"
+          fi
+          "$pkg/7zz" x -snl -y -o"$full" "$runtime" > /dev/null
+          bash .github/scripts/run.sh "AppImage" installer/linux/build-appimage.sh "$full" "$VER" .
+
+          # Overlay: only the managed program files of the manifest, relative to the install root.
+          cp "$pkg/manifest.json" manifest-linux-x64.json
+          mapfile -t paths < <(jq -r '.overlay_paths[]' "$pkg/manifest.json")
+          ( cd "$pkg" && ./7zz a -t7z -mx=5 -mmt=on "$GITHUB_WORKSPACE/mpv-upscale-2x_animejanai-overlay-$VER-linux-x64.7z" "${paths[@]}" > /dev/null )
+
+      - name: Publish
+        if: github.ref == 'refs/heads/release'
+        run: |
+          shopt -s nullglob   # no pack file at all when every pack is reused
+          # One flat folder: SHA256SUMS lists bare file names, as the AppImage's updater reads it.
+          mkdir release-assets
+          mv ./*-linux-x64.tar.zst ./*.AppImage ./*-linux-x64.7z manifest-linux-x64.json \
+             "publish/packs-v$VER"/component-*-linux-x64.7z "publish/packs-v$VER/packs-linux-x64.json" release-assets/
+          cd release-assets
+          sha256sum * > ../SHA256SUMS && mv ../SHA256SUMS .
+          last=(*.AppImage mpv-upscale-2x_animejanai-overlay-*.7z)
+          [ "${#last[@]}" -eq 2 ] || { echo "::error::the AppImage or the overlay is missing"; exit 1; }
+          first=()
+          for f in *; do
+            case " ${last[*]} " in *" $f "*) ;; *) first+=("$f") ;; esac
+          done
+          bash "$GITHUB_WORKSPACE/.github/scripts/publish.sh" "$VER" "${first[@]}" -- "${last[@]}"

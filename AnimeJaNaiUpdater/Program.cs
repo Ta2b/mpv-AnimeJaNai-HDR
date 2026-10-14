@@ -132,10 +132,14 @@ async Task CheckAsync()
     MigrateMpvConfProfile();
     var release = await GetLatestReleaseAsync();
     string local = ReadLocalVersion();
-    // An AppImage is replaced by the AppImage of the release: a release that does not have it
-    // (yet) is not an update.
+    // Platforms are released independently: a release that does not have this platform's files
+    // (yet) is not an update. An AppImage is replaced by the AppImage of the release, a folder
+    // install by its overlay or full package; the overlay is the last file a platform uploads.
     bool appImage = Environment.GetEnvironmentVariable("ANIMEJANAI_APPIMAGE") == "1";
-    if (IsNewer(release.Tag, local) && (!appImage || AppImageAsset(release, platformRid) is not null))
+    bool published = appImage
+        ? AppImageAsset(release, platformRid) is not null
+        : release.Assets.Any(a => Regex.IsMatch(a.Name, @"overlay-.*\.7z$") && RidMatch(a.Name));
+    if (IsNewer(release.Tag, local) && published)
     {
         Console.WriteLine($"UPDATE_AVAILABLE {release.Tag}");
         string? file = appImage ? Environment.GetEnvironmentVariable("APPIMAGE") : null;

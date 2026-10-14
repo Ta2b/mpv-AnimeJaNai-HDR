@@ -1,0 +1,175 @@
+name: Release macOS
+# Builds the Apple Silicon application and the benchmark bundle, and adds them to the release
+# named by release-version.txt. Independent of the Windows and Linux releases.
+#
+#   engine   the shared engine (ONNX Runtime with Core ML, Core ML alone, Metal), the converted
+#            models, the RIFE models and the benchmark bundle
+#   app      mpv with the filter, the Manager and the updater, assembled as one application
+#
+# On a try/... branch the application is kept as an artifact of the run instead of being published.
+on:
+  push:
+    # release publishes; a try/... branch builds everything without publishing.
+    branches: [release, 'try/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      ORT_VERSION: 1.31.0
+      ONNX: BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Fetch ONNX Runtime (Core ML provider included) and the configuration parser
+        run: |
+          curl -fsSL --retry 3 -o ort.tgz "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VERSION/onnxruntime-osx-arm64-$ORT_VERSION.tgz"
+          mkdir ort-x && tar -xzf ort.tgz -C ort-x
+          header="$(find ort-x -name onnxruntime_cxx_api.h -print -quit)"
+          mv "$(dirname "$(dirname "$header")")" ort
+          git clone --depth 1 --branch v0.11.1 https://github.com/the-database/animejanai-inference.git aji-source
+
+      - name: Convert the models for the Apple engines
+        # Core ML templates with their size tables, the Metal model files, and the ONNX variants
+        # of the ONNX Runtime engine.
+        run: |
+          pip install -q onnx==1.19.1 numpy==2.2.6 onnxruntime coremltools==9.0
+          mkdir models
+          cp "$ONNX"/*SPANF3*.onnx models/
+          for f in "$ONNX"/*SPANF3*.onnx; do
+            python native/linux-ort/fuse_unshuffle.py "$f" "models/$(basename "${f%.onnx}").coreml.onnx"
+          done
+          bash .github/scripts/run.sh "model conversion" python native/apple/convert_models.py "$ONNX" models
+
+      - name: RIFE models
+        # Three of the forty models of the other platforms: the latest, the one before and the
+        # latest light one, with their picture size named, which Core ML requires.
+        run: |
+          curl -fsSL --retry 3 -o rife.7z "https://github.com/the-database/animejanai-inference/releases/download/models-rife-fp16-1/rife-fp16-1.7z"
+          mkdir rife-all rife
+          tar -xf rife.7z -C rife-all || { brew install sevenzip > /dev/null && 7zz x -y -orife-all rife.7z > /dev/null; }
+          for name in rife_v4.26 rife_v4.25 rife_v4.22_lite; do
+            python native/linux-ort/name_rife_dims.py "$(find rife-all -name "$name.onnx" -print -quit)" "rife/$name.onnx"
+          done
+
+      - name: Build the engine
+        run: |
+          cmake -S native/linux-ort -B ort-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3 -DORT_ROOT="$GITHUB_WORKSPACE/ort" -DAJI_SOURCE="$GITHUB_WORKSPACE/aji-source"
+          bash .github/scripts/run.sh "engine build" cmake --build ort-build -j 4
+
+      - name: Benchmark bundle
+        run: |
+          b=AnimeJaNai-mac-bench
+          mkdir -p "$b/models"
+          cp ort-build/libaji_ort.dylib ort-build/animejanai-ort-test "$b/"
+          cp -a ort/lib/libonnxruntime*.dylib "$b/"
+          cp native/macos-bench/bench.command native/macos-bench/bench.conf native/macos-bench/LISEZ-MOI.txt "$b/"
+          for kind in Sharp1_Performance Sharp1_Balanced; do cp -R models/*"$kind"* "$b/models/"; done
+          cp rife/*.onnx "$b/models/"
+          chmod +x "$b/bench.command" "$b/animejanai-ort-test"
+          # The test program finds the engine and ONNX Runtime next to itself.
+          install_name_tool -add_rpath @loader_path "$b/animejanai-ort-test" 2>/dev/null || true
+          install_name_tool -add_rpath @loader_path "$b/libaji_ort.dylib" 2>/dev/null || true
+          codesign --force -s - "$b"/*.dylib "$b/animejanai-ort-test"
+          ditto -c -k --keepParent "$b" "$b.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-bench
+          path: AnimeJaNai-mac-bench.zip
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Engine files for the application
+        run: |
+          mkdir -p mac-engine/onnx mac-engine/rife
+          cp ort-build/libaji_ort.dylib ort-build/animejanai-ort-test mac-engine/
+          cp -L ort/lib/libonnxruntime.1.dylib mac-engine/libonnxruntime.1.dylib
+          # Everything the three engines read besides the ONNX files of the repository.
+          cp models/*.coreml.onnx models/*.ajm models/*.ajw models/*.mlpatch mac-engine/onnx/
+          cp -R models/*.mlpackage mac-engine/onnx/
+          cp rife/*.onnx mac-engine/rife/
+          cp native/macos-bench/bench.command native/macos-bench/bench.conf mac-engine/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-engine
+          path: mac-engine/
+          if-no-files-found: error
+          retention-days: 3
+
+  app:
+    needs: engine
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Build mpv with the AnimeJaNai filter
+        run: |
+          brew update > /dev/null
+          brew install meson ninja pkgconf ffmpeg libplacebo libass luajit molten-vk vulkan-loader vulkan-headers little-cms2 uchardet zimg jpeg-turbo
+          bash .github/scripts/run.sh "mpv build" bash installer/macos/build-mpv.sh "$RUNNER_TEMP/mpv-work" "$GITHUB_WORKSPACE/mac-mpv"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-engine
+          path: mac-engine
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-bench
+
+      - name: Updater and Manager
+        # The updater of the other platforms, published for Apple Silicon and trimmed. The
+        # Manager is the build pinned by manager-source-ref.txt, as on the other platforms.
+        run: |
+          bash .github/scripts/run.sh "updater build" dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release \
+            -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o updater-publish
+          ref="$(tr -d '[:space:]' < manager-source-ref.txt)"
+          curl -fsSL --retry 3 -o manager.zip "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-$ref/AnimeJaNaiManager-HDR-macos-arm64.zip" \
+            || { echo "::error title=Manager not found::no macOS Manager in release hdr-$ref of Ta2b/AnimeJaNaiManager-HDR"; exit 1; }
+          mkdir manager-app && ditto -x -k manager.zip manager-app
+
+      - name: Assemble and archive the application
+        run: |
+          VER="$(tr -d '[:space:]' < release-version.txt)"
+          echo "VER=$VER" >> "$GITHUB_ENV"
+          bash .github/scripts/run.sh "application assembly" bash installer/macos/package.sh mac-mpv/mpv.app mac-engine \
+            BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx "$VER" mac-out \
+            "manager-app/AnimeJaNai Manager.app" updater-publish/AnimeJaNaiUpdater
+          zip="mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip"
+          ( cd mac-out && ditto -c -k --keepParent "mpv AnimeJaNai.app" "../$zip" )
+          # Read by the updater before it unpacks a download.
+          shasum -a 256 "$zip" > "$zip.sha256"
+          cp installer/macos/LISEZ-MOI.txt LISEZ-MOI-macOS.txt
+
+      - name: Publish
+        if: github.ref == 'refs/heads/release'
+        run: |
+          zip="mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip"
+          bash .github/scripts/publish.sh "$VER" "$zip.sha256" LISEZ-MOI-macOS.txt AnimeJaNai-mac-bench.zip -- "$zip"
+
+      - name: Keep the application of a trial build
+        if: github.ref != 'refs/heads/release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-app
+          path: mpv-AnimeJaNai-HDR-v*-macos-arm64.zip
+          if-no-files-found: error
+          retention-days: 7

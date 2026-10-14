@@ -1,0 +1,107 @@
+name: Release Windows
+# Builds the Windows package and adds it to the release named by release-version.txt.
+# Independent of the Linux and macOS releases: each one publishes its own files.
+on:
+  push:
+    # release publishes; a try/... branch builds everything without publishing.
+    branches: [release, 'try/**']
+  workflow_dispatch:
+    inputs:
+      rebuild_packs:
+        description: 'Rebuild and upload every component pack, even unchanged ones'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-windows
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ANIMEJANAI_DOWNLOAD_CACHE: ${{ github.workspace }}/download-cache
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'  # must match <TargetFramework> of the three projects
+
+      - name: Version
+        shell: bash
+        run: echo "VERSION=$(tr -d '[:space:]' < release-version.txt)" >> "$GITHUB_ENV"
+
+      - name: Build the assembler, the platform helper and the updater
+        shell: bash
+        run: |
+          dotnet publish BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj -c Release -o publish
+          dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/platform-win-x64
+          dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release -o updater-publish
+
+      - name: Restore component downloads
+        id: downloads
+        uses: actions/cache/restore@v4
+        with:
+          path: download-cache
+          key: windows-downloads-v1-${{ hashFiles('BuildMpvUpscale2xAnimeJaNai/Program.cs', 'BuildMpvUpscale2xAnimeJaNai/Downloader.cs', 'manager-source-ref.txt') }}
+          restore-keys: |
+            windows-downloads-v1-
+
+      - name: Reuse the component packs of the previous release
+        if: inputs.rebuild_packs != true
+        shell: bash
+        run: bash .github/scripts/previous-packs.sh "$VERSION" packs.json
+
+      - name: Assemble the package and its component packs
+        shell: bash
+        run: bash .github/scripts/run.sh "assembler" ./publish/BuildMpvUpscale2xAnimeJaNai.exe "$VERSION" --packs
+
+      - name: Save component downloads
+        # Before packaging: a later failure does not lose several GB of downloads.
+        if: steps.downloads.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: download-cache
+          key: ${{ steps.downloads.outputs.cache-primary-key }}
+
+      - name: Setup installer, full package and overlay
+        run: |
+          $ver = "${{ env.VERSION }}"
+          $pkg = "publish/mpv-upscale-2x_animejanai-v$ver"
+          Copy-Item updater-publish/AnimeJaNaiUpdater.exe "$pkg/AnimeJaNaiUpdater.exe" -Force
+
+          # Setup: per-user installer around the slim core; components install on demand.
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y }
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$ver" "/DSourceDir=$(Resolve-Path $pkg)" "/O$(Get-Location)" installer/animejanai.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          # Full package: the same slim core as a multi-volume archive.
+          7z a -t7z -mx=5 -mmt=on -v1900m "mpv-upscale-2x_animejanai-full-package-$ver.7z" "./$pkg"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          # Overlay: only the managed program files of the manifest, relative to the install
+          # root. The manifest goes up beside it: the updater compares it before downloading.
+          Copy-Item "$pkg/manifest.json" manifest.json -Force
+          $paths = (Get-Content "$pkg/manifest.json" -Raw | ConvertFrom-Json).overlay_paths
+          $out = Join-Path (Get-Location) "mpv-upscale-2x_animejanai-overlay-$ver.7z"
+          Push-Location $pkg
+          & 7z a -t7z -mx=5 -mmt=on $out @paths
+          $code = $LASTEXITCODE
+          Pop-Location
+          exit $code
+
+      - name: Publish
+        if: github.ref == 'refs/heads/release'
+        shell: bash
+        run: |
+          shopt -s nullglob   # no pack file at all when every pack is reused
+          bash .github/scripts/publish.sh "$VERSION" \
+            mpv-AnimeJaNai-HDR-Setup-*.exe mpv-upscale-2x_animejanai-full-package-*.7z.* manifest.json \
+            publish/packs-v*/component-*.7z publish/packs-v*/packs.json \
+            -- mpv-upscale-2x_animejanai-overlay-*.7z

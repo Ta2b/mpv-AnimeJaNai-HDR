@@ -55,8 +55,13 @@ Ne pas déduire la version CUDA de la version TensorRT.
    ainsi que `latest-hdr-settings-0.8`. Ce tag roulant conserve les fichiers
    existants ; les builds indépendants ne publient jamais chacun de leur côté.
 3. Vérifier les assets du Manager, puis pousser le commit du lecteur sur `release`.
-   Un push sur cette branche lance `Deploy` avec les deux builds.
-4. Vérifier les contrôles et les assets publiés. Aucun push forcé n’est nécessaire.
+   Ce push lance trois workflows indépendants : `Release Windows`, `Release Linux`
+   et `Release macOS`. Chacun construit sa plateforme et ajoute ses fichiers à la
+   release de `release-version.txt` (créée par le premier qui termine) ; l’échec
+   de l’un ne retient pas les autres, et il suffit de relancer celui qui a échoué.
+   Ils n’exécutent aucun test. Les fichiers qu’une installation attend pour proposer
+   la mise à jour (overlay, AppImage, application macOS) sont envoyés en dernier.
+4. Vérifier les assets publiés. Aucun push forcé n’est nécessaire.
 
 Les anciennes releases ne sont pas réécrites pour changer de version. Lorsqu’un
 build est relancé, les assets du même nom peuvent être remplacés ; les fichiers

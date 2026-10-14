@@ -68,9 +68,11 @@ libmpv fork and the aji release and bump **both** `MpvForkVersion` and `AjiVersi
 The assembler takes `--target win-x64|linux-x64`. The upstream Linux bundle omits
 Wayland; this fork's `installer/linux/build-native.sh` builds the same mpv commit
 with Wayland required. Linux test packages include the HDR Manager and keep
-inference opt-in. See [`docs/LINUX.md`](docs/LINUX.md) and `.github/workflows/linux-port.yml`.
-`deploy.yml` preserves Windows asset names and publishes Windows and Linux assets together in one release; Linux remains
-identified as experimental until physical NVIDIA/HDR validation.
+inference opt-in. See [`docs/LINUX.md`](docs/LINUX.md). Each platform has its own release
+workflow (`release-windows.yml`, `release-linux.yml`, `release-macos.yml`): started by a push to
+`release`, each one builds and publishes its files to the release named by `release-version.txt`
+without waiting for the others (`.github/scripts/publish.sh`). They run no tests. Windows asset
+names are preserved; Linux remains identified as experimental until physical NVIDIA/HDR validation.
 
 Windows-only pieces (no Linux equivalent installed): mpv.net, and the DirectML backend
 (`aji_dml.dll`, ONNX Runtime DirectML, `DirectML.dll` — `HasDirectML = false` on Linux).
@@ -116,8 +118,8 @@ The download/version pins are constants at the top of `Program.cs` (`AjiVersion`
 `TrtVersion`, `TrtCudaVersion`, `OrtDmlVersion`, `DirectMLVersion`, `RifeModelsVersion`, `MpvNetVersion`,
 `ManagerVersion`). Bumping a component = bump its constant.
 
-All three csproj target **net10.0**, and `.github/workflows/deploy.yml` pins
-`dotnet-version: '10.x'` in both legs — keep them in sync after a TFM bump. There is no
+All three csproj target **net10.0**, and the three release workflows pin
+`dotnet-version: '10.x'` — keep them in sync after a TFM bump. There is no
 `global.json`.
 
 There is no test suite and no linter configured.
