@@ -53,7 +53,13 @@ l'upscale des images interpolées et les caches peuvent changer le meilleur ordr
 Le choix dépend donc du profil et du rendu souhaité.
 Global Settings choisit le processeur qui interpole (Auto, GPU, Neural Engine, CPU).
 RIFE passe par Core ML via ONNX Runtime, même si l'upscale utilise Metal ou Core ML natif.
-Deux images identiques (un dessin tenu) et les changements de scène ne sont pas interpolés.
+Le choix « RIFE interpolation engine » du Manager conserve l'ancien moteur et
+propose la nouvelle chaîne : upscale des sources une seule fois, puis déformation
+et mélange à partir du mouvement RIFE. L’option de chronologie des dessins répartit le mouvement
+sur la durée des dessins tenus ; désactivé, le rythme d'origine est conservé.
+Ces options changent la génération et le rythme des images. Le warp du moteur
+partagé est encore calculé sur CPU ; sa vitesse dépend donc aussi du Mac.
+Les changements de scène sont traités pour éviter l'interpolation entre deux scènes.
 L’interpolation ajoute du calcul sur les images en mouvement : commencez par un profil léger (Ctrl+5, Ctrl+6) et
 regardez Ctrl+j. Run Benchmarks mesure aussi les profils avec RIFE.
 

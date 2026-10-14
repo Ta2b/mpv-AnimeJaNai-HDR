@@ -1,9 +1,16 @@
 # Chantier RIFE fluide à 165 Hz, paquets allégés — 3.8.0.24 à 3.8.0.29
 
 État au **14 octobre 2026**. Ce document prend la suite de
-[ETAT-PROJET.md](ETAT-PROJET.md) (arrêté à la 3.8.0.23) : ce qui a été livré
+[ETAT-PROJET.md](ETAT-PROJET.md) (désormais consolidé jusqu’à la 3.8.0.29) : ce qui a été livré
 depuis, les mesures, ce qui reste, les recommandations et une critique honnête
 du code.
+
+Publication confirmée : **3.8.0.29**, source `6fa85bb`, 16 assets GitHub et
+builds Windows/Linux/macOS réussis. Les mesures ci-dessous proviennent de la
+session d'implémentation CUDA ; elles n'ont pas été répétées dans la session
+qui consolide les documents. Modèles conservés ne signifie pas rendu identique :
+le warp médian et la chronologie des dessins changent la génération temporelle.
+L'ancien moteur et le rythme original restent sélectionnables.
 
 Machine de référence : Linux, RTX 4070 Ti, écran 4K 165 Hz HDR. Profil cible
 (slot 3) : source 1080p réduite en 720p → RIFE 4.26 → SPAN V3.1 Sharp1
@@ -82,7 +89,9 @@ pas été revérifiée** (l'utilisateur teste lui-même).
 - Porter la chaîne warp et les dessins sur NCNN/Vulkan (sert surtout aux AMD).
   NCNN permet d'extraire n'importe quel blob : le flux RIFE est lisible sans
   modifier le modèle ; il faut un shader de warp Vulkan.
-- Windows : impossible tant que the-database ne republie pas ses binaires.
+- Windows : non porté et non livré. Les paquets consomment les binaires amont ;
+  un build Windows du fork et son intégration avec une référence immuable seraient
+  une autre voie à réaliser, sans attendre nécessairement une publication amont.
 - Modèle ~165 i/s entraîné maison : reporté par l'utilisateur.
 
 ## 4. Recommandations
@@ -91,7 +100,8 @@ pas été revérifiée** (l'utilisateur teste lui-même).
 
 Problème : le premier film pour un couple modèle + résolution déclenche la
 compilation `trtexec` (« pause de première lecture », parfois plusieurs minutes).
-Aucune pré-compilation n'existe aujourd'hui.
+Aucune préparation anticipée des moteurs usuels après installation n’est
+documentée ici ; la compilation déclenchée à la première utilisation est un autre mécanisme.
 
 Distribuer des moteurs précompilés est une **mauvaise** piste : un moteur dépend
 de la carte (SM), de la version exacte de TensorRT et de la forme d'entrée ; le

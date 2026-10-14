@@ -49,7 +49,9 @@ nouvelle mesure dans les mêmes conditions, session déverrouillée.
 Les moyennes utilisent 30 images sources, dont trois d'échauffement exclues
 (10 images pour la cible CPU seule). AJI_BENCH_FRAMES et AJI_BENCH_WARMUP permettent
 de modifier ces nombres. La notice des paquets 3.8.0.23 décrit les mesures corrigées ;
-les optimisations RIFE suivantes dans les sources ne sont pas dans ce paquet publié.
+la chaîne RIFE a ensuite évolué en 3.8.0.29 (warp et chronologie des dessins).
+Toujours indiquer la version du paquet et le choix du moteur RIFE lors d'une
+comparaison : des stratégies de génération différentes ne mesurent pas le même travail.
 AJI_PIXEL_POOL=0 rétablit les anciens threads par appel
 pour comparer le pool CPU persistant, avec le même programme de mesure.
 

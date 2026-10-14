@@ -1,5 +1,21 @@
 # Reprise du travail — état au 14 octobre 2026
 
+## Situation actuelle — 3.8.0.29 (14/10/2026 à 20 h 45 (Paris))
+
+La **3.8.0.29 est publiée sur les trois plateformes**, depuis `6fa85bb`.
+Les releases Windows/Linux/macOS sont indépendantes et n'ont plus de jobs de
+tests. Le code RIFE partagé `30a3e83` est maintenant dépassé et intégré par les
+lots suivants : `d639dc1` / `b3f9d5d` ajoutent la chaîne warp et la chronologie
+des dessins. La branche NVIDIA CUDA Graph `f4fcd17` reste isolée.
+
+Lire [l'état consolidé courant](ETAT-PROJET.md) et
+[le chantier 3.8.0.24–29 / 165 Hz](CHANTIER-RIFE-165HZ.md). Les sections datées
+3.8.0.23 ci-dessous restent un historique des preuves de cette session, pas
+l'état global actuel. La chaîne warp est livrée dans le moteur partagé ;
+**elle ne l'est pas dans NCNN/Vulkan ni dans les binaires Windows amont**.
+Les modèles sont conservés, mais cette stratégie et le lissage des dessins
+changent le rendu temporel ; l'ancien mode est conservé.
+
 > **Suite (3.8.0.24 → 3.8.0.29, 14 octobre 2026)** : voir [CHANTIER-RIFE-165HZ.md](CHANTIER-RIFE-165HZ.md).
 
 Lire d'abord [l'état courant](ETAT-PROJET.md) et

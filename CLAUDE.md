@@ -7,9 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **[`docs/CHANTIER-RIFE-165HZ.md`](docs/CHANTIER-RIFE-165HZ.md)** — 3.8.0.24 to 3.8.0.29:
   warp RIFE chain, drawings timeline, 165 Hz matching, packs, measurements, what remains,
   recommendations (background TensorRT engine preparation first) and code critique.
-- **[`docs/ETAT-PROJET.md`](docs/ETAT-PROJET.md)** — current project state: 3.8.0.23
-  published on Windows/Linux/macOS, later shared-engine code at `30a3e83`, isolated
-  NVIDIA branch at `f4fcd17`, CI evidence and remaining integration work.
+- **[`docs/ETAT-PROJET.md`](docs/ETAT-PROJET.md)** — current project state: 3.8.0.29
+  published on Windows/Linux/macOS at `6fa85bb`, shared RIFE warp/drawings chain,
+  independent release workflows without test jobs, private CUDA integration and
+  isolated CUDA Graph branch at `f4fcd17`; earlier checkpoints remain historical.
 - **[`docs/CHANTIER-PERFORMANCE-RELAIS.md`](docs/CHANTIER-PERFORMANCE-RELAIS.md)** —
   exact performance handoff, immutable artifact references, source commits and
   implementation limits. User requested local tests/benchmarks stopped; preserve

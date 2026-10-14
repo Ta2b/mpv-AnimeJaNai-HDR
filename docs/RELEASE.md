@@ -1,5 +1,61 @@
 # Publication du fork HDR
 
+## Procédure actuelle — 3.8.0.29, 14 octobre 2026
+
+La **[3.8.0.29 est publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.29)**,
+16 assets `uploaded`, source `6fa85bbe932cbcd5725f26b0107c9142b4c7388a`.
+[Windows 38570902971](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38570902971),
+[Linux 38570902856](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38570902856)
+et [macOS 38570902519](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38570902519)
+sont terminés avec succès. Les versions 3.8.0.24 à 3.8.0.28 sont également
+présentes dans les releases GitHub.
+
+Depuis `6eb4971`, trois workflows remplacent l'ancien Deploy et ses contrôles :
+
+| Workflow actuel | Publication |
+|---|---|
+| `release-windows.yml` | Windows : Setup, archive, overlay et index de composants |
+| `release-linux.yml` | Linux : moteurs, portable/AppImage/overlay, pack ORT/OpenVINO et index |
+| `release-macos.yml` | Apple Silicon : moteur partagé, application et benchmark |
+
+Les trois partent sur `release`, publient leurs assets indépendamment sur le tag
+lu dans `release-version.txt` et ne contiennent **aucun job de tests**. Une erreur
+sur une plateforme n'empêche plus les deux autres de publier. Il faut donc
+vérifier les fichiers de chacune avant d'annoncer une release complète.
+Les branches `try/**` construisent et archivent des artefacts sans publier.
+Un push documentaire sur `hdr-3.8` ne déclenche plus les anciens workflows de tests.
+
+### Pour une future release
+
+1. Publier les sources sur `hdr-3.8`. Si le Manager change, épingler sa source et
+   vérifier la présence du paquet correspondant à son SHA immuable.
+2. Mettre `release-version.txt` au numéro de la nouvelle version, puis pousser
+   le commit retenu sur `release` sans réécrire les anciennes releases.
+3. Suivre les trois workflows indépendants et contrôler leurs assets et index.
+   Chaque build peut être relancé via `workflow_dispatch` sur le ref voulu :
+   `gh workflow run release-linux.yml --ref release` (idem Windows/macOS).
+   `rebuild_packs=true` existe sous Windows/Linux pour reconstruire les packs.
+4. Conserver les anciennes releases référencées par les index. L'Updater compare
+   les versions de contenu des packs ; il ne retélécharge que ce qui a changé.
+
+TensorRT est sorti de l'AppImage ; ORT/OpenVINO Linux et les composants « core »
+utilisent des packs. L'absence d'un composant lourd dans une archive principale
+ne prouve pas qu'il a été supprimé du produit. Les manifests/index sont la
+référence de disponibilité, avec les assets qu'ils pointent.
+
+La chaîne warp RIFE du moteur partagé est maintenant livrée en 3.8.0.29.
+Le backend NVIDIA `warp-chain`, installé séparément, et la branche CUDA Graph
+`perf-rife-cuda-graphs-20261014` sont deux branches distinctes : leur présence
+locale ne prouve pas qu'elles sont dans les paquets Windows/Linux, qui consomment
+encore `AjiVersion=v0.11.1`. Voir [l'état courant](ETAT-PROJET.md) et
+[le chantier 165 Hz](CHANTIER-RIFE-165HZ.md) pour la matrice des moteurs.
+
+## Archive — procédure et publications jusqu'à la 3.8.0.23
+
+Les workflows, commandes `deploy.yml`, conditions de tests et états ci-dessous
+sont ceux de l'ancien système. Ils sont conservés pour expliquer les builds et
+les preuves précédentes ; **ne pas les utiliser comme procédure actuelle**.
+
 ## Publication confirmée au 14 octobre 2026
 
 **[3.8.0.23 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.23)**,

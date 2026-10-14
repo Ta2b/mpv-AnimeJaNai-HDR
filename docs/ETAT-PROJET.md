@@ -1,6 +1,59 @@
 # État du projet et du chantier performances
 
-> **Suite (3.8.0.24 → 3.8.0.29, 14 octobre 2026)** : voir [CHANTIER-RIFE-165HZ.md](CHANTIER-RIFE-165HZ.md).
+## État courant — 14/10/2026 à 20 h 45 (Paris)
+
+**[3.8.0.29 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.29)**,
+16 assets `uploaded`, source **`6fa85bbe932cbcd5725f26b0107c9142b4c7388a`**.
+Les workflows indépendants ont réussi :
+[Windows 38570902971](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38570902971),
+[Linux 38570902856](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38570902856),
+[macOS 38570902519](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38570902519).
+Depuis `6eb4971`, les releases sont construites par trois workflows distincts,
+**sans jobs de tests** ; `try/**` construit sans publier. Les succès CI de
+`30a3e83` cités dans l'historique appartiennent à l'ancienne organisation.
+
+Le moteur partagé de la 3.8.0.29 inclut désormais `d639dc1` et `b3f9d5d` :
+**un upscale par source, extraction du mouvement RIFE, warp des images upscalées,
+réutilisation d'un RIFE médian par paire et chronologie des dessins tenus**.
+Le calcul partagé du warp reste sur CPU. La branche NVIDIA privée `warp-chain`
+possède cette chaîne sur CUDA ; son binaire reste installé séparément du paquet.
+**NCNN/Vulkan et les binaires Windows amont n'ont pas cette nouvelle chaîne.**
+La branche CUDA Graph de cette session (`f4fcd17`, documentation `0dba21a`) est
+une branche différente, non fusionnée dans `warp-chain` et non livrée par le paquet.
+
+Les modèles entraînés sont conservés, mais la nouvelle chaîne warp et la
+chronologie des dessins **modifient la méthode de génération et le rythme des
+images** : elles ne sont pas démontrées équivalentes pixel à pixel à l'ancienne
+chaîne. Le choix `rife_engine=old` et `rife_drawings=no` reste disponible sur les
+moteurs concernés. L'objectif de qualité ne doit pas être confondu avec une
+preuve d'identité numérique de ces nouvelles stratégies.
+
+Mesures consignées par l'autre session sur RTX 4070 Ti : RIFE 4.26 720p 7,9 ms
+contre 1080p 26,6 ms ; ×6 ancien 60–63 ms/source, nouveau 14–15 ms/source ; ×7
+Performance 14,2–15,6 ms/source. Ce sont les mesures de
+[CHANTIER-RIFE-165HZ.md](CHANTIER-RIFE-165HZ.md), **pas de nouvelles mesures de
+cette session ni des résultats Mac**. La lecture réelle ×7 à 165 Hz reste
+non revérifiée dans ce document ; l'acceptabilité visuelle des approximations
+et le coût du warp CPU sur Mac restent à établir.
+
+Paquets actuels : TensorRT retiré de l'AppImage, outils .NET réduits, OpenVINO/ORT
+Linux et composants « core » en packs, mise à jour des seuls contenus changés.
+L'AppImage publiée est passée de **615 Mo en 3.8.0.23 à 206 Mo en 3.8.0.29**
+(tailles décimales des assets GitHub, pas tailles d'installation).
+Synchronisation d'affichage par ratio rationnel exact et scaler final allégé
+au-delà de 100 i/s sont également implémentés.
+
+Prochaines étapes documentées : warp GPU sur Mac, portage NCNN/Vulkan et Windows,
+préparation anticipée des moteurs TensorRT et gestion de surcharge à haute cadence.
+Aucun nouveau modèle entraîné ni remplacement du lecteur complet n'est nécessaire
+pour reprendre ces chantiers. Les détails, réglages et critiques de l'autre
+session sont dans [CHANTIER-RIFE-165HZ.md](CHANTIER-RIFE-165HZ.md) ; les références
+immutables des premiers lots restent dans [le relais](CHANTIER-PERFORMANCE-RELAIS.md).
+
+## Archive — checkpoint des premiers lots à la 3.8.0.23
+
+Les sections suivantes décrivent le snapshot vérifié à 01 h 14, antérieur aux
+releases 3.8.0.24–29. Leurs mentions « non livré » concernent cette époque.
 
 État vérifié le **14 octobre 2026, 01 h 14 à Paris (13 octobre, 23 h 14 UTC)**. Ce document résume la situation
 courante ; [le relais détaillé](CHANTIER-PERFORMANCE-RELAIS.md) conserve les
