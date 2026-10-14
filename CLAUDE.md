@@ -219,7 +219,10 @@ The `aji` engine parses `animejanai.conf` (the old Python `animejanai_config.rea
   and makes the frames in between by warping the two upscaled pictures with RIFE's motion. Today
   only the private NVIDIA engine (`libaji_trt_rtx.so`, branch `warp-chain` of
   `Ta2b/animejanai-inference-rtx`) has it; every other engine ignores the key and keeps the
-  original chain. This is the pattern for any future "Manager configures mpv" setting:
+  original chain. That engine runs RIFE once per pair (middle of the pair) and derives every
+  instant from it under 15 px of motion, and always beyond x3, so its cost barely grows with the
+  factor: this is what makes `rife_display_sync` with an exact ratio (`hdr-tools/rife-sync.lua`,
+  e.g. 11011/1600 for 23.976 fps on 165 Hz) affordable. This is the pattern for any future "Manager configures mpv" setting:
   a `[global]` key here, the actual mpv options in a managed profile.
 
 ### Stats overlay
