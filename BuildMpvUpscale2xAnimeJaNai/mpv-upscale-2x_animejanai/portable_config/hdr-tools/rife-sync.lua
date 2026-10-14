@@ -2,9 +2,28 @@
 local M = {}
 
 local TOLERANCE = 0.002  -- 0.2 %: one repeated/dropped frame about every 20 s at 48 fps
+local EXACT = 0.00001    -- a large fraction must be this close: one frame every ten minutes at 165
 
--- Interpolation factor p/q (q <= 4, p/q <= max_factor) so that the output frame rate is the
--- display refresh divided by a whole number: every frame stays on screen for the same time.
+-- The fraction closest to x whose denominator is at most max_q (continued fractions).
+local function fraction(x, max_q)
+    local h0, h1, k0, k1 = 0, 1, 1, 0
+    local y = x
+    for _ = 1, 40 do
+        local a = math.floor(y)
+        local h2, k2 = a * h1 + h0, a * k1 + k0
+        if k2 > max_q then break end
+        h0, h1, k0, k1 = h1, h2, k1, k2
+        local rest = y - a
+        if rest < 1e-12 then break end
+        y = 1 / rest
+    end
+    return h1, k1
+end
+
+-- Interpolation factor p/q (p/q <= max_factor) so that the output frame rate is the display
+-- refresh divided by a whole number: every frame stays on screen for the same time. A small
+-- fraction (q <= 4) is preferred; otherwise the exact ratio, e.g. 6875/999 for 23.976 fps on a
+-- 165 Hz screen, which engines that make in-between frames from one RIFE run per pair can afford.
 -- Returns p, q, output_fps, refreshes_per_frame; nil when no such factor exists.
 function M.choose(source_fps, display_fps, max_factor)
     source_fps, display_fps = tonumber(source_fps), tonumber(display_fps)
@@ -20,6 +39,10 @@ function M.choose(source_fps, display_fps, max_factor)
                 if p >= q and math.abs(p / q - f) / f <= TOLERANCE then
                     return p, q, source_fps * p / q, n
                 end
+            end
+            local p, q = fraction(f, 10000)
+            if p >= q and math.abs(p / q - f) / f <= EXACT then
+                return p, q, source_fps * p / q, n
             end
         end
     end

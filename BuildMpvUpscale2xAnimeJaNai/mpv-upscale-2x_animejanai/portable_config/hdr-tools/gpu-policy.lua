@@ -27,6 +27,9 @@ function M.options()
         vibrance=0.15,vibrance_rtx=0.10,grade_native_hdr=false,subtitle_white=200,
         -- RIFE output rate matched to the display refresh (factor p/q, at most rife_max_factor).
         rife_display_sync=false,rife_max_factor=2,
+        -- Above 100 frames per second the last enlargement to the screen uses spline36 instead of
+        -- the high-quality profile's ewa_lanczossharp (about 1 ms less per frame at 4K).
+        rife_light_scale=true,
         -- Linux, NVIDIA: driver frame generation on the Vulkan swapchain; the launcher sets its variable.
         smooth_motion=false,
         -- Vulkan output (NVIDIA): RTX Video runs inside the engine instead of D3D11 filters.
@@ -105,6 +108,7 @@ function M.options()
     o.vibrance_rtx = number(o.vibrance_rtx, .10, 0, .8)
     o.subtitle_white = number(o.subtitle_white, 200, 80, 1000)
     o.rife_display_sync = bool(o.rife_display_sync)
+    o.rife_light_scale = bool(o.rife_light_scale)
     o.smooth_motion = bool(o.smooth_motion)
     o.rife_max_factor = number(o.rife_max_factor, 2, 1, 8)
     o.render_api = tostring(o.render_api):lower() == 'vulkan' and 'vulkan' or 'd3d11'

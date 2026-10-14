@@ -150,9 +150,12 @@ mp.add_hook('on_load',-50,function()
     last_conf=read(hw.conf);last_default=bank and bank.default_slot or 0
     select(mp.get_property_native('user-data/animejanai-active-slot') or last_default,true)
 end)
+local light_scale=false
 mp.add_hook('on_preloaded',-50,function()
     hw.conf_active=hw.conf
     local text=read(hw.conf)
+    if light_scale and mp.get_property('scale')=='spline36' then mp.set_property('scale','ewa_lanczossharp') end
+    light_scale=false
     if text and options.rife_display_sync then
         local fps=tonumber((mp.get_property_native('container-fps')))
         if not fps then
@@ -165,6 +168,11 @@ mp.add_hook('on_preloaded',-50,function()
             local runtime=path('~~/../animejanai/animejanai-runtime.conf')
             local f=io.open(runtime,'wb')
             if f then f:write((sync.rewrite(text,p,q)));f:close();hw.conf_active=runtime end
+            -- At this rate the screen's last enlargement weighs as much as the engine: a lighter
+            -- one, only while the option still holds the managed profile's value.
+            if out>=100 and options.rife_light_scale and mp.get_property('scale')=='ewa_lanczossharp' then
+                mp.set_property('scale','spline36');light_scale=true
+            end
             mp.set_property_native('user-data/animejanai-rife-sync',string.format('x%d/%d -> %.3f i/s (%d rafraichissements)',p,q,out,n))
         else mp.set_property_native('user-data/animejanai-rife-sync','aucun facteur exact : profil conserve') end
     else mp.set_property_native('user-data/animejanai-rife-sync',nil) end
