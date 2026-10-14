@@ -222,7 +222,11 @@ The `aji` engine parses `animejanai.conf` (the old Python `animejanai_config.rea
   original chain. That engine runs RIFE once per pair (middle of the pair) and derives every
   instant from it under 15 px of motion, and always beyond x3, so its cost barely grows with the
   factor: this is what makes `rife_display_sync` with an exact ratio (`hdr-tools/rife-sync.lua`,
-  e.g. 11011/1600 for 23.976 fps on 165 Hz) affordable. This is the pattern for any future "Manager configures mpv" setting:
+  e.g. 11011/1600 for 23.976 fps on 165 Hz) affordable. `rife_drawings=yes|no` (Manager,
+  default yes) puts RIFE on the drawings' timeline: the Linux CUDA filter is patched
+  (`native/linux-cuda/vf_animejanai-drawings.patch`, applied by `build-native.sh`) to look 4 frames
+  ahead and spread the motion to the next drawing over the whole hold; it needs the engine's
+  optional `aji_rife_drawings` / `aji_same_drawing` and a pre-RIFE downscale. This is the pattern for any future "Manager configures mpv" setting:
   a `[global]` key here, the actual mpv options in a managed profile.
 
 ### Stats overlay

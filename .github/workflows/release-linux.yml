@@ -125,7 +125,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: native-bundle
-          key: wayland-ubuntu24-${{ runner.arch }}-${{ hashFiles('installer/linux/build-native.sh', 'native/linux-vulkan/install-filter.py', 'native/linux-vulkan/vf_animejanai_vulkan.c', 'native/linux-vulkan/aji_vulkan.h') }}
+          key: wayland-ubuntu24-${{ runner.arch }}-${{ hashFiles('installer/linux/build-native.sh', 'native/linux-vulkan/install-filter.py', 'native/linux-vulkan/vf_animejanai_vulkan.c', 'native/linux-vulkan/aji_vulkan.h', 'native/linux-cuda/*.patch') }}
       - name: Build the native player
         if: steps.player.outputs.cache-hit != 'true'
         run: |

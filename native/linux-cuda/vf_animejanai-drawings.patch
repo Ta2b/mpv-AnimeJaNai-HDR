@@ -1,0 +1,316 @@
+--- a/video/filter/vf_animejanai.c
++++ b/video/filter/vf_animejanai.c
+@@ -151,6 +151,8 @@
+ };
+ 
+ #define MAX_DEPTH 4
++// Drawings timeline: how many frames ahead the filter looks for the next drawing.
++#define DRAWING_LOOK 4
+ 
+ struct aji_api {
+     void *handle;
+@@ -170,6 +172,9 @@
+                   void *cu_stream);          // optional; pre-RIFE downscale
+     int (*infer_rife)(aji_ctx *c, const aji_frame *a, const aji_frame *b,
+                       double t, const aji_frame *out, void *cu_stream);
++    int (*rife_drawings)(aji_ctx *c);                       // optional
++    int (*same_drawing)(aji_ctx *c, const aji_frame *a, const aji_frame *b,
++                        void *cu_stream);                   // optional
+     int (*poll)(aji_ctx *c);
+     int (*temporal_radius)(aji_ctx *c);
+     int (*ingest)(aji_ctx *c, const aji_frame *in, uint64_t seq,
+@@ -284,6 +289,17 @@
+     // The interp temps and upscale inputs are then at the work resolution
+     // (work_pool). When there is no pre-resize, work_w/h == params.w/h.
+     bool has_pre_resize;
++
++    // Drawings timeline (rife-first with a pre-RIFE downscale; see process_drawings()).
++    bool drawings;
++    struct mp_image *d_cur;          // work frame of the drawing on screen
++    double d_cur_pts;                // when it started
++    struct mp_image *d_next;         // the next drawing once found, and when it starts
++    double d_next_pts;
++    struct {                         // work frames of queued source frames, made once
++        struct mp_image *src, *work;
++        double pts;
++    } wcache[DRAWING_LOOK + 3];
+     int work_w, work_h;
+     AVBufferRef *work_pool;          // work-res frames (interp temps + the
+                                      // pre-RIFE downscale output); only used
+@@ -399,6 +415,8 @@
+     }
+ }
+ 
++static void drawings_reset(struct mp_filter *vf);
++
+ static void flush_frames(struct mp_filter *vf)
+ {
+     struct priv *p = vf->priv;
+@@ -413,6 +431,7 @@
+     if (p->aji && p->temporal_r)
+         p->api.temporal_reset(p->aji);
+     p->seq0 = p->seq_next = 0;
++    drawings_reset(vf);
+     mp_image_unrefp(&p->rife_prev);
+     for (int i = 0; i < p->outq_n; i++)
+         mp_image_unrefp(&p->outq[p->outq_pos + i]);
+@@ -449,6 +468,7 @@
+     clear_ring(vf);
+     drain_backend(vf);
+ 
++    drawings_reset(vf);
+     mp_image_unrefp(&p->rife_prev);
+     for (int i = 0; i < p->outq_n; i++)
+         mp_image_unrefp(&p->outq[p->outq_pos + i]);
+@@ -544,7 +564,8 @@
+     int depth = MPCLAMP(p->opts->queue_depth, 1, MAX_DEPTH);
+     p->depth = (p->aji_active && !p->rife_on && !p->temporal_r) ? depth : 1;
+     mp_refqueue_set_refs(p->queue, 0,
+-                         p->temporal_r ? p->temporal_r : p->depth - 1);
++                         p->temporal_r ? p->temporal_r :
++                         p->drawings ? DRAWING_LOOK : p->depth - 1);
+ }
+ 
+ // (Re)configure the shim for the current stream params and slot. Updates
+@@ -585,6 +606,7 @@
+     p->rife_on = false;
+     p->rife_first = false;
+     p->has_pre_resize = false;
++    p->drawings = false;
+     p->work_w = p->params.w;
+     p->work_h = p->params.h;
+     p->rife_num = p->rife_den = 1;
+@@ -680,6 +702,13 @@
+                        p->params.w, p->params.h, ww, wh);
+         }
+     }
++    // Drawings timeline: only on our own work frames (never pins decoder surfaces), with an
++    // engine that can tell two drawings apart.
++    p->drawings = p->rife_first && p->has_pre_resize && !p->is_d3d11 &&
++                  p->api.rife_drawings && p->api.same_drawing &&
++                  p->api.rife_drawings(p->aji) == 1;
++    if (p->drawings)
++        MP_VERBOSE(vf, "RIFE on the drawings' timeline (looking %d frames ahead)\n", DRAWING_LOOK);
+     update_depth(vf);
+     MP_VERBOSE(vf, "Configured slot %d: %dx%d -> %dx%d (depth %d)\n",
+                p->cur_slot, p->params.w, p->params.h, ow, oh, p->depth);
+@@ -1412,6 +1441,198 @@
+     return pop_ring(vf);
+ }
+ 
++// ---- Drawings timeline ---------------------------------------------------------------------
++// Anime holds a drawing for two, three or four frames. Interpolating frame to frame then moves
++// the picture in one frame's time and keeps it still for the others: the motion advances by
++// jolts. Here the motion from one drawing to the next is spread over the whole time the first
++// one is held: each emitted frame (same instants as before) shows the pair (drawing on screen,
++// next drawing) at the fraction of that time. The next drawing is looked for up to DRAWING_LOOK
++// frames ahead; a longer hold (a still shot) keeps the usual behaviour.
++
++static void drawings_reset(struct mp_filter *vf)
++{
++    struct priv *p = vf->priv;
++    mp_image_unrefp(&p->d_cur);
++    mp_image_unrefp(&p->d_next);
++    for (int i = 0; i < MP_ARRAY_SIZE(p->wcache); i++) {
++        mp_image_unrefp(&p->wcache[i].work);
++        p->wcache[i].src = NULL;
++    }
++}
++
++// The work frame of a queued source frame: always the same one for a given frame, so that the
++// engine recognises a picture it already upscaled. A new ref, NULL on failure.
++static struct mp_image *downscale_src(struct mp_filter *vf, struct mp_image *src);
++static struct mp_image *work_of(struct mp_filter *vf, struct mp_image *src)
++{
++    struct priv *p = vf->priv;
++    for (int i = 0; i < MP_ARRAY_SIZE(p->wcache); i++) {
++        if (p->wcache[i].work && p->wcache[i].src == src && p->wcache[i].pts == src->pts)
++            return mp_image_new_ref(p->wcache[i].work);
++    }
++    struct mp_image *w = downscale_src(vf, src);
++    if (!w)
++        return NULL;
++    // the slot of a frame that left the queue
++    int slot = 0;
++    for (int i = 0; i < MP_ARRAY_SIZE(p->wcache); i++) {
++        bool queued = false;
++        for (int k = 0; k <= DRAWING_LOOK && p->wcache[i].src; k++)
++            queued |= p->wcache[i].src == mp_refqueue_get(p->queue, k);
++        if (!queued) {
++            slot = i;
++            break;
++        }
++    }
++    mp_image_unrefp(&p->wcache[slot].work);
++    p->wcache[slot].src = src;
++    p->wcache[slot].pts = src->pts;
++    p->wcache[slot].work = mp_image_new_ref(w);
++    return w;
++}
++
++static aji_frame work_frame(struct priv *p, struct mp_image *img)
++{
++    aji_frame f = {
++        .width = p->work_w, .height = p->work_h, .format = p->aji_fmt,
++        .matrix = map_matrix(&p->params), .range = map_range(&p->params),
++        .siting = map_siting(&p->params),
++    };
++    for (int i = 0; i < 3; i++) {
++        f.plane[i] = img->planes[i];
++        f.stride[i] = img->stride[i];
++    }
++    return f;
++}
++
++// 1 same drawing, 0 different, negative on failure.
++static int same_drawing(struct mp_filter *vf, struct mp_image *a, struct mp_image *b)
++{
++    struct priv *p = vf->priv;
++    const aji_frame fa = work_frame(p, a), fb = work_frame(p, b);
++    return p->api.same_drawing(p->aji, &fa, &fb, p->stream);
++}
++
++static struct mp_image *interp_source(struct mp_filter *vf, struct mp_image *a,
++                                      struct mp_image *b, double t);
++static struct mp_image *upscale_image(struct mp_filter *vf, struct mp_image *in);
++
++static void process_drawings(struct mp_filter *vf)
++{
++    struct priv *p = vf->priv;
++    struct mp_image *src = mp_refqueue_get(p->queue, 0);
++    if (!src)
++        return;
++    const double in_fps = src->nominal_fps;
++    struct mp_image *cur = work_of(vf, src);
++    if (!cur) {
++        mp_filter_internal_mark_failed(vf);
++        return;
++    }
++    struct mp_image *list[8];
++    int n = 0;
++    bool failed = false;
++    if (p->rife_prev && p->d_cur && p->rife_prev->pts != MP_NOPTS_VALUE &&
++        src->pts != MP_NOPTS_VALUE && src->pts > p->rife_prev->pts) {
++        const double frame = src->pts - p->rife_prev->pts;
++        const int same = same_drawing(vf, p->rife_prev, cur);
++        if (same == 0) {
++            // a new drawing starts with this frame
++            mp_image_unrefp(&p->d_next);
++            p->d_next = mp_image_new_ref(cur);
++            p->d_next_pts = src->pts;
++        } else if (same == 1 && !(p->d_next && p->d_next_pts > src->pts)) {
++            // still the same drawing: where does the next one start?
++            mp_image_unrefp(&p->d_next);
++            for (int k = 1; k <= DRAWING_LOOK; k++) {
++                struct mp_image *f = mp_refqueue_get(p->queue, k);
++                if (!f || f->pts == MP_NOPTS_VALUE)
++                    break;
++                struct mp_image *fw = work_of(vf, f);
++                const int s = fw ? same_drawing(vf, cur, fw) : -1;
++                if (s == 0) {
++                    p->d_next = fw;
++                    p->d_next_pts = f->pts;
++                    break;
++                }
++                mp_image_unrefp(&fw);
++                if (s < 0)
++                    break;
++            }
++        }
++        // Spread over the hold when the next drawing comes within DRAWING_LOOK frames.
++        const bool spread = same >= 0 && p->d_next && p->d_next_pts > p->d_cur_pts &&
++                            p->d_next_pts - p->d_cur_pts <= (DRAWING_LOOK + 0.5) * frame;
++        while (p->rife_acc <= p->rife_num && n < 8) {
++            const double tt = (double)p->rife_acc / p->rife_num;
++            const double pts = p->rife_prev->pts + (src->pts - p->rife_prev->pts) * tt;
++            struct mp_image *out = NULL, *tmp = NULL;
++            if (spread) {
++                const double t = (pts - p->d_cur_pts) / (p->d_next_pts - p->d_cur_pts);
++                if (t >= 1.0 - 1e-9) {
++                    out = upscale_image(vf, p->d_next);
++                } else {
++                    tmp = interp_source(vf, p->d_cur, p->d_next, t);
++                    out = tmp ? upscale_image(vf, tmp) : NULL;
++                }
++            } else if (same == 1) {
++                out = upscale_image(vf, p->d_cur);       // a still shot: the drawing as it is
++            } else if (p->rife_acc == p->rife_num) {
++                out = upscale_image(vf, cur);
++            } else {
++                tmp = interp_source(vf, p->rife_prev, cur, tt);  // after a still: as before
++                out = tmp ? upscale_image(vf, tmp) : NULL;
++            }
++            mp_image_unrefp(&tmp);
++            if (!out) {
++                failed = true;
++                break;
++            }
++            out->pts = pts;
++            if (in_fps > 0)
++                out->nominal_fps = in_fps * p->rife_num / p->rife_den;
++            list[n++] = out;
++            p->rife_acc += p->rife_den;
++        }
++        if (failed) {
++            for (int i = 0; i < n; i++)
++                mp_image_unrefp(&list[i]);
++            n = 0;
++        } else {
++            p->rife_acc -= p->rife_num;
++        }
++        if (same == 0) {
++            mp_image_unrefp(&p->d_cur);
++            p->d_cur = mp_image_new_ref(cur);
++            p->d_cur_pts = src->pts;
++        }
++    }
++    if (!n) {
++        // start, seek, invalid pts or a failure: the source frame as the grid origin
++        p->rife_acc = p->rife_den;
++        struct mp_image *u = upscale_image(vf, cur);
++        if (!u) {
++            mp_image_unrefp(&cur);
++            mp_filter_internal_mark_failed(vf);
++            return;
++        }
++        u->pts = src->pts;
++        if (in_fps > 0)
++            u->nominal_fps = in_fps * p->rife_num / p->rife_den;
++        list[n++] = u;
++        mp_image_unrefp(&p->d_cur);
++        mp_image_unrefp(&p->d_next);
++        p->d_cur = mp_image_new_ref(cur);
++        p->d_cur_pts = src->pts;
++    }
++    mp_image_unrefp(&p->rife_prev);
++    p->rife_prev = cur;
++    for (int i = 1; i < n; i++)
++        p->outq[p->outq_n++] = list[i];
++    p->outq_pos = 0;
++    mp_refqueue_write_out_pin(p->queue, list[0]);
++}
++
+ static void vf_animejanai_process(struct mp_filter *vf)
+ {
+     struct priv *p = vf->priv;
+@@ -1671,6 +1892,10 @@
+     if (!mp_refqueue_can_output(p->queue))
+         return;
+ 
++    if (p->rife_first && p->drawings) {
++        process_drawings(vf);
++        return;
++    }
+     if (p->rife_first) {
+         // RIFE-first: interpolate the source pair, then upscale each emitted
+         // frame. Same output-grid cadence as the default path below, but
+@@ -2028,6 +2253,9 @@
+         p->api.pre_resize = aji_lib_sym(p->api.handle, "aji_pre_resize");
+         p->api.resize = aji_lib_sym(p->api.handle, "aji_resize");
+         p->api.infer_rife = aji_lib_sym(p->api.handle, "aji_infer_rife");
++        // Optional drawings timeline; NULL on engines that do not have it.
++        p->api.rife_drawings = aji_lib_sym(p->api.handle, "aji_rife_drawings");
++        p->api.same_drawing = aji_lib_sym(p->api.handle, "aji_same_drawing");
+         p->api.poll = aji_lib_sym(p->api.handle, "aji_poll");
+         p->api.temporal_radius =
+             aji_lib_sym(p->api.handle, "aji_temporal_radius");

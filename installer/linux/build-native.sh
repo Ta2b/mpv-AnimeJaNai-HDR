@@ -45,6 +45,9 @@ clone https://github.com/the-database/libass.git "$WORK/libass" 896614fa263f9f64
   make -j "$JOBS"; make install )
 clone https://github.com/the-database/mpv.git "$WORK/mpv" 19c0fcf895
 python3 "$REPO/native/linux-vulkan/install-filter.py" "$WORK/mpv"
+# The CUDA filter on the drawings' timeline (native/linux-cuda): optional engine entry points,
+# the filter behaves as before without them.
+patch -p1 -d "$WORK/mpv" < "$REPO/native/linux-cuda/vf_animejanai-drawings.patch"
 build_meson "$WORK/mpv" --prefix="$PREFIX" --libdir=lib --buildtype=release \
     -Dlibmpv=true -Dwayland=enabled -Dvulkan=enabled -Dcuda-hwaccel=enabled -Dlua=enabled
 cp -a "$PREFIX/bin/mpv" "$OUTPUT/"
