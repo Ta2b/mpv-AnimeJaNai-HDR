@@ -9,7 +9,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #
 # One library on every platform. The core (aji_ort.cpp) and the ONNX Runtime executor are built
 # everywhere; on macOS the Core ML and Metal executors of native/apple are added.
-set(ENGINE_SOURCES aji_ort.cpp tiles.cpp ajm.cpp mlpatch.cpp pixel_workers.cpp exec_ort.cpp exec_ref.cpp "${AJI_SOURCE}/src/aji_conf.cpp")
+set(ENGINE_SOURCES aji_ort.cpp tiles.cpp ajm.cpp mlpatch.cpp pixel_workers.cpp exec_ort.cpp exec_ref.cpp onnx_flow.cpp "${AJI_SOURCE}/src/aji_conf.cpp")
 if(APPLE)
   enable_language(OBJCXX)
   list(APPEND ENGINE_SOURCES ../apple/exec_coreml.mm ../apple/exec_metal.mm)

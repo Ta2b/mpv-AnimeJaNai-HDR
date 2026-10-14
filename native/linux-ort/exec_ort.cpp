@@ -327,6 +327,11 @@ public:
         require(supported(in) && supported(out), "RIFE tensors must be float or half float: " + r.model);
         half_in_ = in == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
         half_out_ = out == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
+        // A model with its motion field and mask as outputs 2 and 3 (onnx_flow.h).
+        if (session_->GetOutputCount() >= 3) {
+            flow_name_ = session_->GetOutputNameAllocated(1, allocator).get();
+            mask_name_ = session_->GetOutputNameAllocated(2, allocator).get();
+        }
 
         const size_t plane = (size_t)pw_ * ph_;
         floats_.assign(11 * plane, 0.0f);
@@ -367,11 +372,57 @@ public:
         }
     }
 
+    bool has_motion() const override { return !flow_name_.empty(); }
+
+    void motion(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
+                std::vector<float> &flow, std::vector<float> &mask) override
+    {
+        require(has_motion(), "this RIFE model gives no motion field");
+        double began = profile_ ? now_ms() : 0;
+        prepare(a, a_stride, b, b_stride, t, began);
+        const char *input_names[1] = {input_.c_str()}, *output_names[2] = {flow_name_.c_str(), mask_name_.c_str()};
+        std::vector<Ort::Value> got = session_->Run(Ort::RunOptions{nullptr}, input_names, &input_tensor_, 1, output_names, 2);
+        if (profile_) { const double inferred = now_ms(); timing.inference_ms += inferred - began; began = inferred; }
+        const size_t plane = (size_t)pw_ * ph_, area = (size_t)w_ * h_;
+        flow.resize(4 * area);
+        mask.resize(area);
+        auto take = [&](const Ort::Value &v, int planes, float *dst) {
+            const auto dims = v.GetTensorTypeAndShapeInfo().GetShape();
+            require(dims.size() == 4 && dims[1] == planes && dims[2] == ph_ && dims[3] == pw_, "RIFE motion of an unexpected shape");
+            const bool half = v.GetTensorTypeAndShapeInfo().GetElementType() == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
+            const uint16_t *hs = half ? v.GetTensorData<uint16_t>() : nullptr;
+            const float *fs = half ? nullptr : v.GetTensorData<float>();
+            const size_t rows = (size_t)h_;
+            const int w = w_, pw = pw_, left = left_, top = top_;
+            parallel((size_t)planes * rows, 64, [=](size_t first, size_t end) {
+                for (size_t r = first; r < end; r++) {
+                    const size_t k = r / rows, y = r % rows;
+                    const size_t from = k * plane + (y + top) * pw + left;
+                    float *to = dst + k * area + y * w;
+                    if (half) halves_to_floats(hs + from, to, (size_t)w);
+                    else std::memcpy(to, fs + from, (size_t)w * sizeof(float));
+                }
+            });
+        };
+        take(got[0], 4, flow.data());
+        take(got[1], 1, mask.data());
+        if (profile_) { timing.output_ms += now_ms() - began; ++timing.runs; }
+    }
+
     void run(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
              uint8_t *out, ptrdiff_t out_stride) override
     {
         const size_t plane = (size_t)pw_ * ph_;
         double began = profile_ ? now_ms() : 0;
+        prepare(a, a_stride, b, b_stride, t, began);
+        run_model(out, out_stride, plane, began);
+    }
+
+private:
+    // The input planes for the pair (a, b) at instant t; what is already there is kept.
+    void prepare(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t, double &began)
+    {
+        const size_t plane = (size_t)pw_ * ph_;
         // The second picture of the last pair is the first of this one: its planes move, no
         // conversion.
         bool have_a = have_[0] && same(a, a_stride, kept_[0]);
@@ -401,6 +452,11 @@ public:
             const double ready = now_ms();
             timing.preparation_ms += ready - began; began = ready;
         }
+    }
+
+    // The picture for the prepared input, to RGB24.
+    void run_model(uint8_t *out, ptrdiff_t out_stride, size_t plane, double began)
+    {
         const char *input_names[1] = {input_.c_str()}, *output_names[1] = {output_.c_str()};
         std::vector<Ort::Value> allocated;
         if (buffered_output_)
@@ -503,6 +559,7 @@ private:
     std::vector<uint16_t> output_halves_;
     std::vector<float> output_floats_;
     Ort::Value output_tensor_{nullptr};
+    std::string flow_name_, mask_name_;
 };
 } // namespace
 

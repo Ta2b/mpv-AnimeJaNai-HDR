@@ -17,6 +17,7 @@
 #include "ajm.h"
 #include "engine.h"
 #include "mlpatch.h"
+#include "onnx_flow.h"
 #include "tiles.h"
 #include <chrono>
 #include <cmath>
@@ -55,6 +56,7 @@ struct Settings {
     bool boost = false;            // the heavier model for drawings that stay on screen (reuse=frame)
     std::string rife_device = "auto";   // the processor of the interpolation: auto, gpu, npu, cpu
     int overlap = -1;              // pixels a tile sees past its edges; -1 = what the model reads
+    bool warp = true;              // [global] rife_engine: old = interpolate, then upscale each frame
 };
 
 Settings read_settings(const std::string &conf)
@@ -82,6 +84,7 @@ Settings read_settings(const std::string &conf)
         else if (key == "engine_rife_device") s.rife_device = lower(value);
         else if (key == "engine_boost") { const std::string v = lower(value); s.boost = v == "yes" || v == "true" || v == "1" || v == "on"; }
         else if (key == "engine_overlap") s.overlap = std::atoi(value.c_str());
+        else if (key == "rife_engine") s.warp = lower(value) != "old";
     };
     while (std::getline(file, line)) {
         line = trim(line);
@@ -101,6 +104,7 @@ Settings read_settings(const std::string &conf)
     env("AJI_BOOST", "engine_boost");
     env("AJI_RIFE_DEVICE", "engine_rife_device");
     env("AJI_OVERLAP", "engine_overlap");
+    if (const char *v = std::getenv("AJI_WARP"); v && *v == '0') s.warp = false;
     return s;
 }
 
@@ -173,6 +177,18 @@ struct Context {
     uint64_t tick = 0;
     std::vector<uint8_t> between;
     uint64_t interpolated = 0, held = 0, cuts = 0;
+    // Interpolation on the upscaled pictures (RIFE before the upscale, a model with its motion as
+    // outputs): each source frame is upscaled once; RIFE runs once per pair, for the middle, and
+    // every instant is made from that motion when it stays under warp_px; above it, RIFE runs for
+    // each instant (only up to x3: beyond, the middle run serves every instant).
+    bool warp = false;
+    float warp_px = 15.0f;
+    struct WarpPair {
+        uint64_t a = 0, b = 0;
+        bool single = false, prev_split = false;
+    } warp_pair;
+    std::vector<float> flow, mask;
+    uint64_t warp_single = 0, warp_split = 0;
     double rife_ms = 0;
     double rife_wait_ms = 0;
     bool rife_profiled = false;
@@ -691,6 +707,44 @@ void load_rife(Context &c)
         request.width = c.rife_w; request.height = c.rife_h;
         const char *profile = std::getenv("AJI_RIFE_PROFILE");
         request.profile = profile && *profile && *profile != '0';
+        c.warp = false;
+        c.warp_pair = Context::WarpPair{};
+        c.warp_single = c.warp_split = 0;
+        if (c.settings.warp && c.rife_before) {
+            // A copy of the model that also outputs its motion and mask, written once in the cache
+            // (the models' folder can be read-only: inside the macOS application).
+            try {
+                namespace fs = std::filesystem;
+                const fs::path dir = c.cache.empty() ? fs::temp_directory_path() / "animejanai-rife" : fs::path(c.cache);
+                const fs::path made = dir / (request.model + ".flow.onnx");
+                if (!fs::is_regular_file(made)) {
+                    std::ifstream in(fs::path(c.rife_dir) / (request.model + ".onnx"), std::ios::binary);
+                    std::vector<char> source((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()), copy;
+                    std::string why;
+                    require(!source.empty() && aji_onnx_add_flow_outputs(source, &copy, &why), "no motion output: " + why);
+                    fs::create_directories(dir);
+                    const fs::path part = made.string() + ".part";
+                    { std::ofstream out(part, std::ios::binary); out.write(copy.data(), (std::streamsize)copy.size()); require(out.good(), "cannot write " + part.string()); }
+                    fs::rename(part, made);
+                }
+                InterpolatorRequest moving = request;
+                moving.models_dir = dir.string();
+                moving.model = request.model + ".flow";
+                std::unique_ptr<Interpolator> candidate = make_ort_interpolator(moving);
+                if (candidate->has_motion()) {
+                    std::vector<float> flow, mask;
+                    const std::vector<uint8_t> dark((size_t)c.rife_w * c.rife_h * 3, 96), light((size_t)c.rife_w * c.rife_h * 3, 160);
+                    candidate->motion(dark.data(), (ptrdiff_t)c.rife_w * 3, light.data(), (ptrdiff_t)c.rife_w * 3, 0.5, flow, mask);
+                    candidate->timing = Interpolator::Timing{};
+                    c.warp_px = 15.0f * (float)c.rife_h / 720.0f;
+                    c.rife = std::move(candidate);
+                    c.warp = true;
+                    c.rife_profiled = request.profile;
+                    c.rife_model = request.model;
+                    return;
+                }
+            } catch (const std::exception &e) { c.rife_note = std::string("interpolation on the upscaled pictures unavailable: ") + e.what(); }
+        }
         std::unique_ptr<Interpolator> rife = make_ort_interpolator(request);
         // Run once now, on two grey pictures: the model is compiled when the profile opens, and
         // a provider that cannot run it is found out here, not in the middle of playback.
@@ -763,6 +817,76 @@ double difference(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdif
     return (double)sum / (255.0 * width * height * 3);
 }
 
+// ---- interpolation on the upscaled pictures ----------------------------------------------------
+
+static inline float sample_plane(const float *p, int w, int h, float x, float y)
+{
+    x = std::min(std::max(x, 0.0f), (float)(w - 1));
+    y = std::min(std::max(y, 0.0f), (float)(h - 1));
+    const int x0 = (int)x, y0 = (int)y, x1 = std::min(x0 + 1, w - 1), y1 = std::min(y0 + 1, h - 1);
+    const float fx = x - x0, fy = y - y0;
+    const float *r0 = p + (size_t)y0 * w, *r1 = p + (size_t)y1 * w;
+    return (r0[x0] * (1 - fx) + r0[x1] * fx) * (1 - fy) + (r1[x0] * (1 - fx) + r1[x1] * fx) * fy;
+}
+
+static inline void sample_rgb(const uint8_t *img, int w, int h, float x, float y, float rgb[3])
+{
+    x = std::min(std::max(x, 0.0f), (float)(w - 1));
+    y = std::min(std::max(y, 0.0f), (float)(h - 1));
+    const int x0 = (int)x, y0 = (int)y, x1 = std::min(x0 + 1, w - 1), y1 = std::min(y0 + 1, h - 1);
+    const float fx = x - x0, fy = y - y0;
+    const uint8_t *a = img + ((size_t)y0 * w + x0) * 3, *b = img + ((size_t)y0 * w + x1) * 3;
+    const uint8_t *c = img + ((size_t)y1 * w + x0) * 3, *d = img + ((size_t)y1 * w + x1) * 3;
+    for (int k = 0; k < 3; k++)
+        rgb[k] = (a[k] * (1 - fx) + b[k] * fx) * (1 - fy) + (c[k] * (1 - fx) + d[k] * fx) * fy;
+}
+
+// The picture at instant t from the two upscaled pictures (W x H, RGB24) and RIFE's motion and
+// mask (fw x fh: 4 planes, then 1). derived: the motion and mask are those of the middle of the
+// pair, the instant's are made from them as in the NVIDIA engine (aji_warp_blend_mid): each point
+// moves in a straight line from where it was at the middle, the blend follows RIFE's own law
+// fitted on real pairs, logit w = 0.285 logit mask + 2.591 ln((1 - t) / t) + 0.170.
+static void warp_rgb(const uint8_t *ua, const uint8_t *ub, int W, int H, const float *flow, const float *mask,
+                     int fw, int fh, float t, bool derived, uint8_t *out, ptrdiff_t out_stride)
+{
+    const float sx = (float)W / fw, sy = (float)H / fh;
+    const size_t plane = (size_t)fw * fh;
+    const float *f0x = flow, *f0y = flow + plane, *f1x = flow + 2 * plane, *f1y = flow + 3 * plane;
+    const float time_term = derived && t != 0.5f ? 2.591f * std::log((1 - t) / t) + 0.170f : 0.0f;
+    parallel((size_t)H, 8, [=](size_t first, size_t end) {
+        for (size_t yy = first; yy < end; yy++) {
+            const int y = (int)yy;
+            uint8_t *row = out + (ptrdiff_t)y * out_stride;
+            const float v = (y + 0.5f) / sy - 0.5f;
+            for (int x = 0; x < W; x++) {
+                const float u = (x + 0.5f) / sx - 0.5f;
+                float d0x, d0y, d1x, d1y, m;
+                if (!derived || t == 0.5f) {
+                    d0x = sample_plane(f0x, fw, fh, u, v); d0y = sample_plane(f0y, fw, fh, u, v);
+                    d1x = sample_plane(f1x, fw, fh, u, v); d1y = sample_plane(f1y, fw, fh, u, v);
+                    m = sample_plane(mask, fw, fh, u, v);
+                } else {
+                    const float a0x = sample_plane(f0x, fw, fh, u, v), a0y = sample_plane(f0y, fw, fh, u, v);
+                    const float a1x = sample_plane(f1x, fw, fh, u, v), a1y = sample_plane(f1y, fw, fh, u, v);
+                    const float u2 = u - ((1 - t) * a0x + t * a1x), v2 = v - ((1 - t) * a0y + t * a1y);
+                    const float tx = sample_plane(f1x, fw, fh, u2, v2) - sample_plane(f0x, fw, fh, u2, v2);
+                    const float ty = sample_plane(f1y, fw, fh, u2, v2) - sample_plane(f0y, fw, fh, u2, v2);
+                    d0x = -t * tx; d0y = -t * ty; d1x = (1 - t) * tx; d1y = (1 - t) * ty;
+                    const float mm = std::min(std::max(sample_plane(mask, fw, fh, u2, v2), 1e-4f), 1 - 1e-4f);
+                    m = 1.0f / (1.0f + std::exp(-(0.285f * std::log(mm / (1 - mm)) + time_term)));
+                }
+                float a[3], b[3];
+                sample_rgb(ua, W, H, x + sx * d0x, y + sy * d0y, a);
+                sample_rgb(ub, W, H, x + sx * d1x, y + sy * d1y, b);
+                for (int k = 0; k < 3; k++) {
+                    const float value = a[k] * m + b[k] * (1 - m);
+                    row[3 * x + k] = (uint8_t)std::min(std::max(value + 0.5f, 0.0f), 255.0f);
+                }
+            }
+        }
+    });
+}
+
 // One output frame of a profile that interpolates. t = 1 (or no previous frame): the frame
 // itself. Otherwise the picture between the two: nothing is computed when the two frames are
 // the same drawing (it is that drawing) or belong to two scenes (the first one stays).
@@ -802,6 +926,46 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
         return whole;
     }
     const double start = now_ms();
+    if (c.rife_before && c.warp) {
+        const std::vector<uint8_t> &wa = work_of(c, a), &wb = work_of(c, b);
+        const ptrdiff_t stride = (ptrdiff_t)c.rife_w * 3;
+        // The following source frame is upscaled while RIFE runs (they need nothing of each other).
+        std::thread following;
+        std::string failure;
+        bool following_whole = false;
+        if (!b.has_up)
+            following = std::thread([&] {
+                try { up_of(c, b, &following_whole); } catch (const std::exception &e) { failure = e.what(); }
+            });
+        auto &W = c.warp_pair;
+        const bool many = (double)c.chain.rife_factor_num / c.chain.rife_factor_den > 3.0 + 1e-9;
+        try {
+            if (W.a != a.identity || W.b != b.identity) {
+                // A new pair: the middle first, unless the pair before moved too much.
+                const bool middle = !W.prev_split || t == 0.5 || many;
+                c.rife->motion(wa.data(), stride, wb.data(), stride, middle ? 0.5 : t, c.flow, c.mask);
+                float largest = 0;
+                for (float f : c.flow) largest = std::max(largest, std::fabs(f));
+                W.single = middle && (largest <= c.warp_px || many);
+                W.prev_split = !many && largest > c.warp_px;
+                if (!W.single && middle && t != 0.5)
+                    c.rife->motion(wa.data(), stride, wb.data(), stride, t, c.flow, c.mask);
+                W.a = a.identity; W.b = b.identity;
+                (W.single ? c.warp_single : c.warp_split)++;
+            } else if (!W.single) {
+                c.rife->motion(wa.data(), stride, wb.data(), stride, t, c.flow, c.mask);
+            }
+        } catch (...) { if (following.joinable()) following.join(); throw; }
+        if (following.joinable()) following.join();
+        require(failure.empty(), failure);
+        bool whole_a = false;
+        const std::vector<uint8_t> &ua = up_of(c, a, &whole_a), &ub = up_of(c, b, &following_whole);
+        warp_rgb(ua.data(), ub.data(), c.plan.width, c.plan.height, c.flow.data(), c.mask.data(),
+                 c.rife_w, c.rife_h, (float)t, W.single, output, output_stride);
+        c.rife_ms += now_ms() - start;
+        c.interpolated++;
+        return false;
+    }
     if (c.rife_before) {
         const std::vector<uint8_t> &wa = work_of(c, a), &wb = work_of(c, b);
         c.between.resize((size_t)c.rife_w * c.rife_h * 3);
@@ -856,7 +1020,9 @@ void write_stats(const Context &c, double ms)
         f << c.rife_model << " (" << c.rife->label << "), " << (c.rife_before ? "before" : "after") << " the upscale at "
           << c.rife_w << "x" << c.rife_h << ", x" << (double)c.plan.numerator / c.plan.denominator
           << " | interpolated " << c.interpolated << ", held " << c.held << ", cuts " << c.cuts
-          << " | " << (c.interpolated ? c.rife_ms / c.interpolated : 0) << " ms an interpolation";
+          << " | " << (c.interpolated ? c.rife_ms / c.interpolated : 0) << " ms an interpolation"
+          << (c.warp ? " | motion applied to the upscaled pictures: " + std::to_string(c.warp_single) + " pairs with one RIFE run, "
+                       + std::to_string(c.warp_split) + " with one per instant" : std::string());
     else f << (c.rife_skipped ? "requested, not available: " + c.rife_note : std::string("off"));
     f
       << "\nOutput: " << c.plan.width << "x" << c.plan.height << "\nFrames: " << c.count

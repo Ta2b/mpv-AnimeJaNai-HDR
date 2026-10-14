@@ -105,6 +105,12 @@ public:
     // picture of a pair is not converted again when it becomes the first of the next one.
     virtual void run(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
                      uint8_t *out, ptrdiff_t out_stride) = 0;
+    // The motion field and mask RIFE computes for instant t (models with them as extra outputs,
+    // see onnx_flow.h): flow holds 4 planes of width x height floats (displacements in pixels,
+    // towards a then towards b), mask one plane (weight of a). False when the model has none.
+    virtual bool has_motion() const { return false; }
+    virtual void motion(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
+                        std::vector<float> &flow, std::vector<float> &mask) { (void)a; (void)a_stride; (void)b; (void)b_stride; (void)t; flow.clear(); mask.clear(); }
     struct Timing {
         uint64_t runs = 0, source_preparations = 0, source_hits = 0, source_promotions = 0, timestep_updates = 0;
         double preparation_ms = 0, inference_ms = 0, output_ms = 0;
