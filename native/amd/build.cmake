@@ -26,6 +26,10 @@ function(aji_add_amd_executor target)
     find_program(AJI_HIP_COMPILER NAMES clang++ amdclang++
       HINTS "${ROCM_PATH}/bin" "${ROCM_PATH}/lib/llvm/bin"
             "$ENV{HIP_PATH}/bin" "$ENV{HIP_PATH}/lib/llvm/bin" REQUIRED NO_DEFAULT_PATH)
+    file(GLOB hip_resource_dirs "${ROCM_PATH}/lib/llvm/lib/clang/*/lib/amdgcn/bitcode")
+    find_path(AJI_HIP_DEVICE_LIBRARIES ocml.bc
+      HINTS "${ROCM_PATH}/lib/llvm/amdgcn/bitcode" "${ROCM_PATH}/amdgcn/bitcode"
+            ${hip_resource_dirs} REQUIRED NO_DEFAULT_PATH)
     set(arch_flags)
     foreach(arch IN LISTS AJI_AMD_ARCHITECTURES)
       list(APPEND arch_flags "--offload-arch=${arch}")
@@ -35,6 +39,7 @@ function(aji_add_amd_executor target)
       COMMAND "${AJI_HIP_COMPILER}" -x hip -std=c++17 -O3 -ffp-contract=off
         "$<IF:$<CONFIG:Debug>,-fms-runtime-lib=dll_dbg,-fms-runtime-lib=dll>"
         ${arch_flags} --hip-path=${ROCM_PATH} --rocm-path=${ROCM_PATH}
+        --rocm-device-lib-path=${AJI_HIP_DEVICE_LIBRARIES}
         -D__HIP_PLATFORM_AMD__=1 -I "${ROCM_PATH}/include"
         -c "${AJI_AMD_SOURCE_DIR}/hip_kernels.hip" -o "${obj}"
       DEPENDS "${AJI_AMD_SOURCE_DIR}/hip_kernels.hip" "${AJI_AMD_SOURCE_DIR}/hip_kernels.h"
