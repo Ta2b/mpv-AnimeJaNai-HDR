@@ -16,3 +16,7 @@ bool aji_onnx_add_flow_outputs(const std::vector<char> &model, std::vector<char>
 // The compiler can remove the unused final RGB warps without changing motion.
 bool aji_onnx_motion_outputs(const std::vector<char> &model, std::vector<char> *out,
                              std::string *why);
+// Every external weight location (including nested graphs, sparse tensors and
+// local functions), deduplicated. Malformed metadata is rejected.
+bool aji_onnx_external_locations(const std::vector<char> &model, std::vector<std::string> *locations,
+                                  std::string *why);

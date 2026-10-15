@@ -18,6 +18,7 @@
 #include "engine.h"
 #include "mlpatch.h"
 #include "onnx_flow.h"
+#include "rife_flow_cache.h"
 #include "tiles.h"
 #include <chrono>
 #include <cmath>
@@ -744,20 +745,12 @@ void load_rife(Context &c)
             try {
                 namespace fs = std::filesystem;
                 const fs::path dir = c.cache.empty() ? fs::temp_directory_path() / "animejanai-rife" : fs::path(c.cache);
-                const fs::path made = dir / (request.model + ".flow.onnx");
-                if (!fs::is_regular_file(made)) {
-                    std::ifstream in(fs::path(c.rife_dir) / (request.model + ".onnx"), std::ios::binary);
-                    std::vector<char> source((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()), copy;
-                    std::string why;
-                    require(!source.empty() && aji_onnx_add_flow_outputs(source, &copy, &why), "no motion output: " + why);
-                    fs::create_directories(dir);
-                    const fs::path part = made.string() + ".part";
-                    { std::ofstream out(part, std::ios::binary); out.write(copy.data(), (std::streamsize)copy.size()); require(out.good(), "cannot write " + part.string()); }
-                    fs::rename(part, made);
-                }
+                const fs::path made = cached_rife_flow(fs::path(c.rife_dir) / (request.model + ".onnx"),dir);
                 InterpolatorRequest moving = request;
-                moving.models_dir = dir.string();
-                moving.model = request.model + ".flow";
+                moving.models_dir = made.parent_path().string();
+                moving.model = made.stem().string();
+                // Provider-compiled caches must inherit the source identity too.
+                moving.cache_dir = made.parent_path().string();
                 std::unique_ptr<Interpolator> candidate = make_interpolator(moving);
                 if (candidate->has_motion()) {
                     std::vector<float> flow, mask;

@@ -8,12 +8,14 @@
 
 #include <cstdint>
 #include <map>
+#include <set>
 
 namespace {
 
 struct Reader {
     const uint8_t *p, *end;
     bool ok = true;
+    uint64_t scalar = 0;
 
     uint64_t varint()
     {
@@ -36,9 +38,11 @@ struct Reader {
         if (!ok || p >= end)
             return false;
         const uint64_t tag = varint();
+        if (!tag) { ok = false; return false; }
         *field = (uint32_t)(tag >> 3);
+        scalar = 0;
         switch (tag & 7) {
-        case 0: varint(); break;
+        case 0: scalar = varint(); break;
         case 1: if (end - p < 8) ok = false; else p += 8; break;
         case 5: if (end - p < 4) ok = false; else p += 4; break;
         case 2: {
@@ -96,6 +100,81 @@ std::string output_entry(const std::string &name, int elem_type)
 }
 
 } // namespace
+
+bool aji_onnx_external_locations(const std::vector<char> &model, std::vector<std::string> *locations,
+                                  std::string *why)
+{
+    // ONNX 1.19.1 onnx.proto: only descend into declared message fields.
+    // Raw tensor bytes and strings must never be interpreted as protobuf.
+    enum class Kind { Model, Graph, Node, Attribute, Tensor, Sparse, Function, Training };
+    std::set<std::string> found;
+    auto walk = [&](auto &&self, const uint8_t *p, size_t n, Kind kind, unsigned depth) -> bool {
+        if (depth > 64) { *why = "ONNX metadata nesting exceeds 64"; return false; }
+        Reader r{p, p+n}; uint32_t field; const uint8_t *data; size_t len;
+        bool external = false, metadata = false, graph = false;
+        std::string location;
+        while (r.next(&field, &data, &len)) {
+            if (kind == Kind::Tensor && field == 14) external = r.scalar == 1;
+            if (!data) continue;
+            if (kind == Kind::Tensor && field == 13) {
+                metadata = true;
+                Reader entry{data, data+len}; uint32_t f; const uint8_t *d; size_t l;
+                std::string key, value;
+                while (entry.next(&f, &d, &l)) if (d) {
+                    if (f == 1) key.assign((const char *)d,l);
+                    if (f == 2) value.assign((const char *)d,l);
+                }
+                if (!entry.ok) { *why = "Malformed ONNX external_data"; return false; }
+                if (key == "location") {
+                    if (!location.empty() && location != value) { *why = "Conflicting ONNX weight locations"; return false; }
+                    location = value;
+                }
+                continue;
+            }
+            Kind child = kind; bool descend = true;
+            switch (kind) {
+            case Kind::Model:
+                if (field == 7) { child = Kind::Graph; graph = true; }
+                else if (field == 20) child = Kind::Training;
+                else if (field == 25) child = Kind::Function;
+                else descend = false;
+                break;
+            case Kind::Graph:
+                if (field == 1) child = Kind::Node;
+                else if (field == 5) child = Kind::Tensor;
+                else if (field == 15) child = Kind::Sparse;
+                else descend = false;
+                break;
+            case Kind::Node: if (field == 5) child = Kind::Attribute; else descend = false; break;
+            case Kind::Attribute:
+                if (field == 5 || field == 10) child = Kind::Tensor;
+                else if (field == 6 || field == 11) child = Kind::Graph;
+                else if (field == 22 || field == 23) child = Kind::Sparse;
+                else descend = false;
+                break;
+            case Kind::Sparse: if (field == 1 || field == 2) child = Kind::Tensor; else descend = false; break;
+            case Kind::Function:
+                if (field == 7) child = Kind::Node;
+                else if (field == 11) child = Kind::Attribute;
+                else descend = false;
+                break;
+            case Kind::Training: if (field == 1 || field == 2) child = Kind::Graph; else descend = false; break;
+            case Kind::Tensor: descend = false; break;
+            }
+            if (descend && !self(self,data,len,child,depth+1)) return false;
+        }
+        if (!r.ok) { *why = "Malformed ONNX weight metadata"; return false; }
+        if (kind == Kind::Model && !graph) { *why = "Missing ONNX graph"; return false; }
+        if (kind == Kind::Tensor && (external || metadata)) {
+            if (location.empty() || location.find('\0') != std::string::npos) { *why = "Missing/invalid ONNX weight location"; return false; }
+            found.insert(location);
+        }
+        return true;
+    };
+    locations->clear();
+    if (model.empty() || !walk(walk,(const uint8_t *)model.data(),model.size(),Kind::Model,0)) return false;
+    locations->assign(found.begin(),found.end()); return true;
+}
 
 bool aji_onnx_add_flow_outputs(const std::vector<char> &model, std::vector<char> *out,
                                std::string *why)
