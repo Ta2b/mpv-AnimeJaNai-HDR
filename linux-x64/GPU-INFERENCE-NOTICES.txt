@@ -5,3 +5,6 @@ No models or vendor runtime libraries are present in this binary source bundle.
 
 Fast complete-view guard backend: 3f6f60fa58b5ed649bb94c11030d8e354a6d3fc0
 Linux targeted identity/fidelity qualification; Windows compilation/linking only. No FPS claim.
+
+Per-key builder backend: 62c1c5a7cdc5ae65e77f9e511913aa1e59e95972
+Linux targeted coordination and fidelity qualification; Windows compile/link only.

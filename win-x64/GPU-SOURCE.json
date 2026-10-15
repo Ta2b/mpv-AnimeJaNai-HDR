@@ -1,17 +1,17 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "3f6f60fa58b5ed649bb94c11030d8e354a6d3fc0",
+  "backend_source": "62c1c5a7cdc5ae65e77f9e511913aa1e59e95972",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "3f6f60fa58b5ed649bb94c11030d8e354a6d3fc0",
-    "GITHUB_RUN_ID": "38822986680",
+    "GITHUB_SHA": "62c1c5a7cdc5ae65e77f9e511913aa1e59e95972",
+    "GITHUB_RUN_ID": "38824878954",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Linux RTX4070Ti/TRT11.3: complete-view/ID/lifetime guards, 11 Fast numeric cases exact against fresh, Quality unchanged, final multi-SM player 13 hashes/PTS exact. Windows compile/link only. No FPS claim.",
+  "validation": "Linux RTX4070Ti/TRT11.3: two real builders coalesced to one; same-plan output exact; failure release, async wait cancellation, motion export and invalid cache repair pass. Windows compile/link only. No steady-state FPS claim.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -22,13 +22,17 @@
     "ordinary-engine-content-identity-v2",
     "fast-explicit-source-views",
     "one-shot-fast-handoff",
-    "inference-stream-order"
+    "inference-stream-order",
+    "per-key-engine-builder",
+    "cancelable-build-lock-waits",
+    "coordinated-fast-motion-export"
   ],
   "sha256": {
-    "aji.dll": "6faf88831a3a6369b6fba5b77236ba9d0e58b06d42f1abec954de420f2e7c776",
-    "aji_dml.dll": "5cb84aeef0ec3a8fe3e6220198ec26ed988bde6b3f020424a9444bc07c23c189",
-    "aji_migraphx.dll": "95c979d6ec5fb400cd7d7e1fde0b133118f624aab9f3736873bf9ad7726051a1",
-    "aji_trt.dll": "f28081b8ed5d5145fa13ffd048065fde008119a93f6521a09263ae76bade3a94",
-    "aji_trt_rtx.dll": "f28081b8ed5d5145fa13ffd048065fde008119a93f6521a09263ae76bade3a94"
-  }
+    "aji.dll": "67e07b58b5d29784a42372c1fc75a23d800094c5770662ee1a8529f77b9bde9d",
+    "aji_dml.dll": "46aac2eb101131033a054a798540509fc4af6afb0d3aca7b41bc1029f30e8eb5",
+    "aji_migraphx.dll": "b7628a13e8b31bbbf5b3139cc663a06ed9dbed66491a301fc6eb1f2abbb17f3d",
+    "aji_trt.dll": "dddc8613f66600dd19ade1585f5afd9de020053ea84980dd66b2f13db230a6b0",
+    "aji_trt_rtx.dll": "dddc8613f66600dd19ade1585f5afd9de020053ea84980dd66b2f13db230a6b0"
+  },
+  "player_qualification_source": "11682f1"
 }
