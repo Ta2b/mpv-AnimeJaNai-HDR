@@ -1,28 +1,42 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "1468be6f24cac537407283d434bd5d542d642cf3",
-  "player_source": "04d2a78389a1fce22226d8bdabadea5c8c83c7de",
+  "backend_source": "d9d0a941d62f1dfcb3ed2f87018c4871aea12be7",
+  "player_source": "735a33d87d228b3b77718b6d918111ed83e476af",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "1468be6f24cac537407283d434bd5d542d642cf3",
-    "GITHUB_RUN_ID": "38670166267",
+    "GITHUB_SHA": "d9d0a941d62f1dfcb3ed2f87018c4871aea12be7",
+    "GITHUB_RUN_ID": "38801311797",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Compilation and linking only; no inference, tests or benchmarks",
+  "validation": "Windows: compilation/linking only, no hardware inference. Linux: targeted RTX4070Ti/TRT11.3 inference, real cold build/hit/weight invalidation; same-plan output parity, independent rebuild max delta 1/255. No FPS claim.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
     "exact-pair-input-cache",
     "full-rgb-post-graph",
     "virtual-yuv-padding",
-    "fast-motion-stream"
+    "fast-motion-stream",
+    "ordinary-engine-content-identity-v2"
   ],
   "sha256": {
     "libaji.so": "c79eb7cfc4be4aecc207664636c906cea4c0de1b68287aac1a71b992a52a7dd2",
-    "libaji_trt.so": "bbaf06e374f74d6ad82d0a986abb30406e34c2ad49af459d0d37ecfdaa061f12",
-    "libaji_trt_rtx.so": "bbaf06e374f74d6ad82d0a986abb30406e34c2ad49af459d0d37ecfdaa061f12"
+    "libaji_trt.so": "2cef3796af600b752fa0805ca6ff800b6d2ddfe4f42067b60390f1fbdbedac8c",
+    "libaji_trt_rtx.so": "2cef3796af600b752fa0805ca6ff800b6d2ddfe4f42067b60390f1fbdbedac8c"
+  },
+  "linux_build": {
+    "environment": "local aji-rtx-build Ubuntu baseline Docker",
+    "cuda_architectures": [
+      "75-real",
+      "80-real",
+      "86-real",
+      "89-real",
+      "90-real",
+      "100-real",
+      "120-real",
+      "120-virtual"
+    ]
   }
 }

@@ -1,30 +1,31 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "1468be6f24cac537407283d434bd5d542d642cf3",
-  "player_source": "04d2a78389a1fce22226d8bdabadea5c8c83c7de",
+  "backend_source": "d9d0a941d62f1dfcb3ed2f87018c4871aea12be7",
+  "player_source": "735a33d87d228b3b77718b6d918111ed83e476af",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "1468be6f24cac537407283d434bd5d542d642cf3",
-    "GITHUB_RUN_ID": "38670166267",
+    "GITHUB_SHA": "d9d0a941d62f1dfcb3ed2f87018c4871aea12be7",
+    "GITHUB_RUN_ID": "38801311797",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Compilation and linking only; no inference, tests or benchmarks",
+  "validation": "Windows: compilation/linking only, no hardware inference. Linux: targeted RTX4070Ti/TRT11.3 inference, real cold build/hit/weight invalidation; same-plan output parity, independent rebuild max delta 1/255. No FPS claim.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
     "exact-pair-input-cache",
     "full-rgb-post-graph",
     "virtual-yuv-padding",
-    "fast-motion-stream"
+    "fast-motion-stream",
+    "ordinary-engine-content-identity-v2"
   ],
   "sha256": {
-    "aji.dll": "a1fec81fe9ab2fbbf3c2b4d35f4c3e5e97ced85b1048257c47e222569b2f47ef",
-    "aji_migraphx.dll": "b35ee3b2f521d0fff55fafb6440c0e8b5e4595d367d69b6e4bb76d643c8f436c",
-    "aji_trt.dll": "53eadedb866888c46558fe507cdff8fe898b3d3563e4812572108c32db08cfc3",
-    "aji_trt_rtx.dll": "53eadedb866888c46558fe507cdff8fe898b3d3563e4812572108c32db08cfc3",
-    "aji_dml.dll": "2d1cff8a18f19c8d084dc7796bb42968cc6af25d2ddc5608a426ddf19d7843ac"
+    "aji.dll": "79cb98805cdf0e9357eda683522637445963db00e32791eb52ffeb0afe0cb9b6",
+    "aji_dml.dll": "ce5dd04b107e2c20f206149a9b5fa9983dcedfda5aaced4128967af7e19aa641",
+    "aji_migraphx.dll": "19b038d7cde8654200837ebf1c16343719effd112a2b2ffe59d451b0e6b326d7",
+    "aji_trt.dll": "071135961abab2611dbbec5403eb4060116c1b1a6bacbb6820bd5eaefce15f58",
+    "aji_trt_rtx.dll": "071135961abab2611dbbec5403eb4060116c1b1a6bacbb6820bd5eaefce15f58"
   }
 }
