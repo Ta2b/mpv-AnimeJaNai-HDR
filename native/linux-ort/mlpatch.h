@@ -17,7 +17,8 @@ const int kCoreMLMinSide = 256, kCoreMLMaxSide = 8190;
 void write_coreml_package(const std::string &models_dir, const std::string &model, int width, int height,
                           const std::string &destination);
 
-// Changes whenever the template or its table change: part of the cache key of compiled models.
+// Versioned SHA-256 of the table and every package resource, including weights.
+// Old cache names are left intact; missing/unreadable resources throw.
 std::string coreml_template_tag(const std::string &models_dir, const std::string &model);
 
 } // namespace aji

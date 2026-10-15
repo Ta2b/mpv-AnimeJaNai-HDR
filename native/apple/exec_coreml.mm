@@ -11,6 +11,7 @@
 #import <CoreVideo/CoreVideo.h>
 #include "engine.h"
 #include "mlpatch.h"
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 
@@ -69,12 +70,14 @@ public:
             // One compiled model per model, size and template: the compute units are chosen when
             // it is loaded, not when it is compiled.
             require(!r.cache_dir.empty(), "Core ML: no cache folder for compiled models");
+            const std::string content = coreml_template_tag(r.models_dir, r.model);
             const fs::path folder = fs::path(r.cache_dir) / "native"
-                / (r.model + "-" + std::to_string(w_) + "x" + std::to_string(h_) + "-" + coreml_template_tag(r.models_dir, r.model));
+                / (r.model + "-" + std::to_string(w_) + "x" + std::to_string(h_) + "-" + content);
             const fs::path compiled = folder / "model.mlmodelc";
             NSError *error = nil;
             NSFileManager *files = [NSFileManager defaultManager];
             if (!fs::is_directory(compiled)) {
+                std::fprintf(stderr, "[aji] Core ML compiled cache miss: %s content %s; rebuilding\n", r.model.c_str(), content.c_str());
                 const fs::path package = folder / "model.mlpackage";
                 write_coreml_package(r.models_dir, r.model, w_, h_, package.string());
                 NSURL *made = [MLModel compileModelAtURL:[NSURL fileURLWithPath:@(package.string().c_str())] error:&error];

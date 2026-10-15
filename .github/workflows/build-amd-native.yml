@@ -8,6 +8,7 @@ on:
     paths:
       - 'native/amd/**'
       - 'native/linux-ort/**'
+      - 'native/common/**'
       - '.github/workflows/build-amd-native.yml'
 permissions:
   contents: read

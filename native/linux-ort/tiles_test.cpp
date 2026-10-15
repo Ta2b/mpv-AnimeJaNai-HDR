@@ -141,7 +141,8 @@ int main(int argc, char **argv)
         bool refused = false;
         try { write_coreml_package(models, model, 200, 720, made.string()); } catch (const std::exception &) { refused = true; }
         check(refused, "a size the template cannot express is refused");
-        check(coreml_template_tag(models, model).size() == 12, "the template has a cache tag");
+        const std::string tag = coreml_template_tag(models, model);
+        check(tag.size() == 67 && tag.substr(0, 3) == "v2-", "the template and all weights have a versioned SHA-256 cache tag");
         std::error_code ignored;
         std::filesystem::remove_all(made, ignored);
     }

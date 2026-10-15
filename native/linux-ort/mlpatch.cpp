@@ -1,5 +1,6 @@
 #include "mlpatch.h"
 #include "engine.h"
+#include "../common/content_identity.h"
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
@@ -96,16 +97,16 @@ void write_coreml_package(const std::string &models_dir, const std::string &mode
 
 std::string coreml_template_tag(const std::string &models_dir, const std::string &model)
 {
-    // FNV-1a of the size table and the template description: small files, read once per profile.
+    // Includes all package resources, especially the external weights. v2 is a
+    // new namespace: older compiled caches stay on disk but cannot be reused.
     namespace fs = std::filesystem;
     const fs::path table_path = fs::path(models_dir) / (model + ".mlpatch");
     const Table t = read_table(table_path);
-    uint64_t hash = 1469598103934665603ull;
-    for (const auto &bytes : {read_all(table_path), read_all(fs::path(models_dir) / (model + ".mlpackage") / t.model_path)})
-        for (uint8_t b : bytes) { hash ^= b; hash *= 1099511628211ull; }
-    char text[17];
-    std::snprintf(text, sizeof text, "%016llx", (unsigned long long)hash);
-    return std::string(text, 12);
+    const fs::path package = fs::path(models_dir) / (model + ".mlpackage");
+    require(fs::is_regular_file(package / t.model_path), "Core ML model description missing: " + (package / t.model_path).string());
+    auto resources = identity::tree(package, "package/");
+    resources.emplace_back("table", table_path);
+    return "v2-" + identity::files("coreml-native-template-v2", std::move(resources));
 }
 
 } // namespace aji

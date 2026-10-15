@@ -1,0 +1,17 @@
+{
+  "sync_status": "pending_connector_unavailable",
+  "release": "3.8.0.34",
+  "updates": [
+    {
+      "issue_key": "AH-29",
+      "desired_status": "In Progress",
+      "done_blocker": "Essai du cycle cache .mlmodelc et diagnostic sur API Apple non disponible localement.",
+      "comment": "Lot 03 / 3.8.0.34 : tag Core ML natif SHA-256 de la table et de toutes les ressources mlpackage, vrais poids inclus. Nouveau namespace v2, anciens caches/modèles conservés, diagnostic de reconstruction. Essai avant/après ciblé C++17 Linux : poids même nom/taille/mtime, ancien tag inchangé, nouveau changé ; oracle hashlib, relocation stable, renommage sensible, description absente refusée. Packages redimensionnés identiques octet pour octet. Build/link libaji_ort réussi. Coût processus unique 16 Mio : 1,2454 -> 86,8164 ms, pas une mesure FPS. Correctif de fidélité conservé. Qualification partielle Apple : .mlmodelc et diagnostic runtime non exercés ; ticket non Done avant cet essai. Détails docs/qualification/lot-03-coreml-20261015.md."
+    },
+    {
+      "issue_key": "AH-28",
+      "desired_status": "In Progress",
+      "comment": "Primitive portable SHA-256 et sérialisation encadrée ajoutée dans native/common/content_identity.h ; utilisée pour le template Core ML CAC-02. Incrément seulement : identités générales ONNX/TensorRT, poids externes, convertisseur, options et GPU/runtime encore à faire. AH-28 non Done."
+    }
+  ]
+}
