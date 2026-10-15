@@ -2,7 +2,7 @@
 # Assembles "mpv AnimeJaNai.app" for macOS (Apple Silicon): mpv.app, the settings and scripts, the
 # models, the engine (Core ML through ONNX Runtime, Core ML alone, Metal), the Manager and the
 # updater.
-# Usage: package.sh MPV_APP ENGINE_DIR ONNX_DIR VERSION OUTPUT_DIR [MANAGER_APP [UPDATER]]
+# Usage: package.sh MPV_APP ENGINE_DIR ONNX_DIR VERSION OUTPUT_DIR [MANAGER_APP [UPDATER [PLATFORM]]]
 #   ENGINE_DIR:  libaji_ort.dylib, libonnxruntime*.dylib, the engine test program, the benchmark
 #                files and onnx/ (what the engine build prepared from the models)
 #   MANAGER_APP: "AnimeJaNai Manager.app" of the Manager build, opened by Ctrl+E
@@ -12,6 +12,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 MPV_APP="${1:?mpv.app}"; ENGINE="${2:?engine directory}"; ONNX="${3:?onnx directory}"
 VERSION="${4:?version}"; OUT="${5:?output directory}"; MANAGER="${6:-}"; UPDATER="${7:-}"
+PLATFORM="${8:-}"
 mkdir -p "$OUT"
 APP="$OUT/mpv AnimeJaNai.app"
 rm -rf "$APP"
@@ -25,6 +26,10 @@ cp "$HERE/config/mpv.conf" "$CONF/mpv.conf"
 cp "$HERE/config/scripts/"*.lua "$CONF/scripts/"
 # SDR -> HDR conversion: the HDR scripts and the shaders of the other platforms.
 PC="$HERE/../../BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config"
+if [ -n "$PLATFORM" ]; then
+    install -m755 "$PLATFORM" "$RES/AnimeJaNaiPlatform"
+    cp "$PC/scripts/animejanai_reference.lua" "$CONF/scripts/"
+fi
 mkdir -p "$CONF/hdr-tools" "$CONF/user-shaders"
 cp "$PC/hdr-tools/gpu-policy.lua" "$PC/hdr-tools/hdr-grade.lua" "$PC/hdr-tools/linux-hdr.lua" "$CONF/hdr-tools/"
 cp "$PC/user-shaders/"*.hook "$CONF/user-shaders/"

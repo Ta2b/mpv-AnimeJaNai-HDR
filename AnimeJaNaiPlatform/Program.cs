@@ -12,11 +12,25 @@ try
         PlatformServices.SaveActiveConfig(root, Get("--expected-hash") ?? "", File.ReadAllBytes(args[1]), Get("--expected-bank"));
         Console.WriteLine("{\"saved\":true}"); return 0;
     }
+    if (args.FirstOrDefault() == "--export-reference")
+    {
+        string ipc = Get("--mpv-ipc") ?? Environment.GetEnvironmentVariable("ANIMEJANAI_IPC_PATH")
+            ?? throw new ArgumentException("--mpv-ipc is required for an observed reference");
+        var report = await ReferenceExporter.Capture(root, ipc);
+        string json = JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true });
+        if (Get("--output") is string output)
+        {
+            ReferenceExporter.WriteNew(output, json);
+            Console.WriteLine(JsonSerializer.Serialize(new { exported = Path.GetFullPath(output) }));
+        }
+        else Console.WriteLine(json);
+        return 0;
+    }
     object result = args.FirstOrDefault() switch
     {
         "--probe" => PlatformServices.Probe(root, Get("--vendor") ?? "auto"),
         "--activate-bank" when args.Length > 1 => PlatformServices.ActivateBank(root, args[1]),
-        _ => throw new ArgumentException("Usage: AnimeJaNaiPlatform --probe | --activate-bank BANK [--root DIR]")
+        _ => throw new ArgumentException("Usage: AnimeJaNaiPlatform --probe | --activate-bank BANK | --export-reference --mpv-ipc ENDPOINT [--output FILE] [--root DIR]")
     };
     Console.WriteLine(JsonSerializer.Serialize(result));
     return 0;

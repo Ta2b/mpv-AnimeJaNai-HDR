@@ -1,0 +1,10 @@
+{
+  "sync_status": "pending_connector_unavailable",
+  "release": "3.8.0.33",
+  "updates": [
+    {
+      "issue_key": "AH-11",
+      "comment": "Lot 02 / 3.8.0.33 : incrément export de référence implémenté, ticket partiel non clos. CLI --export-reference et script-message animejanai-export-reference ; mpv observé, configuration réelle du vf, runtime, inventaire modèles/exports et poids SHA-256. Fonctionnel Linux NVDEC/Vulkan : exports CLI et Lua, mêmes PNG16/PTS avant/après ; 29 hashes vérifiés indépendamment, coût CLI ponctuel 1,6147 s. Fixture ciblée : poids remplacés même nom/taille/mtime détectés, changement chaîne détecté, symlink/cycle, absence vidéo, rapport existant. Pas de gain FPS attendu ; utilité reproductibilité. Limites explicites JSON qualification=partial : pas de précision par opérateur/placement/dimensions intermédiaires ni preuve des poids déjà chargés, stats fraîcheur inconnue, média non hashé. Builds Windows/macOS à suivre, non qualifiés matériellement. Détails docs/qualification/lot-02-reference-20261015.md."
+    }
+  ]
+}

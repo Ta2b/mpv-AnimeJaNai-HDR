@@ -135,12 +135,14 @@ jobs:
         with:
           name: mac-bench
 
-      - name: Updater and Manager
+      - name: Updater, platform helper and Manager
         # The updater of the other platforms, published for Apple Silicon and trimmed. The
         # Manager is the build pinned by manager-source-ref.txt, as on the other platforms.
         run: |
           bash .github/scripts/run.sh "updater build" dotnet publish AnimeJaNaiUpdater/AnimeJaNaiUpdater.csproj -c Release \
             -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o updater-publish
+          dotnet publish AnimeJaNaiPlatform/AnimeJaNaiPlatform.csproj -c Release \
+            -r osx-arm64 --self-contained true -p:PublishSingleFile=true -o platform-publish
           ref="$(tr -d '[:space:]' < manager-source-ref.txt)"
           curl -fsSL --retry 3 -o manager.zip "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-$ref/AnimeJaNaiManager-HDR-macos-arm64.zip" \
             || { echo "::error title=Manager not found::no macOS Manager in release hdr-$ref of Ta2b/AnimeJaNaiManager-HDR"; exit 1; }
@@ -152,7 +154,7 @@ jobs:
           echo "VER=$VER" >> "$GITHUB_ENV"
           bash .github/scripts/run.sh "application assembly" bash installer/macos/package.sh mac-mpv/mpv.app mac-engine \
             BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx "$VER" mac-out \
-            "manager-app/AnimeJaNai Manager.app" updater-publish/AnimeJaNaiUpdater
+            "manager-app/AnimeJaNai Manager.app" updater-publish/AnimeJaNaiUpdater platform-publish/AnimeJaNaiPlatform
           zip="mpv-AnimeJaNai-HDR-v$VER-macos-arm64.zip"
           ( cd mac-out && ditto -c -k --keepParent "mpv AnimeJaNai.app" "../$zip" )
           # Read by the updater before it unpacks a download.
