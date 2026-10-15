@@ -167,7 +167,19 @@
      if (p->rife_first && p->drawings) {
          process_drawings(vf);
          return;
-@@ -1929,6 +2002,7 @@
+@@ -1924,11 +1997,19 @@
+             mp_filter_internal_mark_failed(vf);
+             return;
+         }
++        // Without pre-resize the first GPU read is RIFE, before submit_frame
++        // establishes its normal decode dependency. Order that read explicitly.
++        if (!p->is_d3d11 && !p->has_pre_resize && !order_after_decode(vf)) {
++            mp_image_unrefp(&cur_src);
++            mp_filter_internal_mark_failed(vf);
++            return;
++        }
+         struct mp_image *list[8];
+         int n = 0;
          bool failed = false;
          if (p->rife_prev && p->rife_prev->pts != MP_NOPTS_VALUE &&
              src->pts != MP_NOPTS_VALUE && src->pts > p->rife_prev->pts) {
@@ -175,7 +187,7 @@
              while (p->rife_acc <= p->rife_num && n < 8) {
                  struct mp_image *frame;
                  double pts;
-@@ -1956,6 +2030,7 @@
+@@ -1956,6 +2037,7 @@
                  list[n++] = frame;
                  p->rife_acc += p->rife_den;
              }
@@ -183,7 +195,7 @@
              if (failed || !n) {
                  for (int i = 0; i < n; i++)
                      mp_image_unrefp(&list[i]);
-@@ -1980,6 +2055,7 @@
+@@ -1980,6 +2062,7 @@
              list[n++] = u;
          }
          mp_image_unrefp(&p->rife_prev);
@@ -191,7 +203,7 @@
          p->rife_prev = cur_src;  // previous *source* endpoint (owns the ref)
          for (int i = 1; i < n; i++)
              p->outq[p->outq_n++] = list[i];
-@@ -2033,6 +2109,8 @@
+@@ -2033,6 +2116,8 @@
              int n = 0;
              bool failed = false;
              emitted_cur = false;
@@ -200,7 +212,7 @@
              while (p->rife_acc <= p->rife_num && n < 8) {
                  if (p->rife_acc == p->rife_num) {
                      list[n++] = out;
-@@ -2080,6 +2158,7 @@
+@@ -2080,6 +2165,7 @@
          }
          mp_image_unrefp(&p->rife_prev);
          p->rife_prev = mp_image_new_ref(out);
@@ -208,7 +220,7 @@
          if (!emitted_cur)
              mp_image_unrefp(&out);  // endpoint only; rife_prev keeps it
          p->seq0++;
-@@ -2254,6 +2333,7 @@
+@@ -2254,6 +2340,7 @@
          p->api.resize = aji_lib_sym(p->api.handle, "aji_resize");
          p->api.infer_rife = aji_lib_sym(p->api.handle, "aji_infer_rife");
          // Optional drawings timeline; NULL on engines that do not have it.

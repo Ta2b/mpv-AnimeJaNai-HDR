@@ -38,7 +38,8 @@ active. Seuls compilation/liaison et contrôles statiques sont autorisés.
   pour les images détenues dans le cache des dessins tenus. Métadonnées/strides/stream vérifiés. Même paire : on garde
   préparation et décision de coupe ; B devient A : copie RGB FP16 déjà convertie.
   Ancien lecteur : cache désactivé, exécution classique maintenue.
-- Filtre Linux : intermédiaires/upscales soumis en rafale bornée à huit sorties,
+- Filtre Linux : dépendance NVDEC explicite avant RIFE sans pre-resize.
+  Intermédiaires/upscales soumis en rafale bornée à huit sorties,
   attente du dernier ticket avant présentation ; références d'entrée conservées
   jusqu'à complétion, drainage des chemins d'erreur. Plus d'attente entre un
   intermédiaire RIFE et son upscale consommateur sur le même stream.
