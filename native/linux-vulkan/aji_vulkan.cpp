@@ -3,6 +3,8 @@
 #include "rife.h"
 #include "gpu.h"
 #include "tiles.h"
+#include "../common/stats_snapshot.h"
+#include <sstream>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -38,6 +40,9 @@ struct CachedPair {
 };
 struct Context {
     std::string conf, models, rife_dir, device, stats, error;
+    aji::StatsPublisher stats_publisher;
+    std::string stats_text, stats_state = "configured";
+    double last_frame_ms = 0;
     int slot, gpu=-1, width=0, height=0, work_w=0, work_h=0;
     AjiChainConf chain;
     aji_vk_plan plan{};
@@ -262,6 +267,38 @@ void load_steps(Context &c) {
         c.steps.push_back(std::move(step));
     }
 }
+std::string format_stats(const Context &c) {
+    uint64_t uploads=0,hits=0; size_t bytes=0;
+    if (c.rife) c.rife->cache_stats(uploads,hits,bytes);
+    std::ostringstream f;
+    f << "Stats state: " << c.stats_state << "\n";
+    if (!c.error.empty()) f << "Error: " << c.error << "\n";
+    f<<"Backend: NCNN/Vulkan\nGPU: "<<(c.gpu >= 0 ? ncnn::get_gpu_info(c.gpu).device_name() : "unavailable")
+     <<"\nAnimeJaNai models: "<<c.steps.size()<<"\nRIFE: "<<(c.rife?"4.6":"off")
+     <<"\nOutput: "<<c.plan.width<<"x"<<c.plan.height<<"\nFrames: "<<c.count
+     <<"\nInference ms: "<<c.last_frame_ms<<"\nAverage inference ms: "<<(c.count ? c.total_ms/c.count : 0)<<"\n";
+    f<<"Source cache: "<<(c.cache?"on":"off");
+    if (c.cache && c.same.threshold>0) f<<", same drawing within "<<c.same.threshold<<" level a block and "<<c.same.peak<<" a byte";
+    else if (c.cache) f<<", identical bytes only";
+    f<<"\nHeld RIFE outputs reused: "<<c.held_outputs
+     <<"\nSource preparations: "<<c.source_preparations<<"\nSource cache hits: "<<c.cache_hits
+     <<"\nSPAN inferences: "<<c.span_inferences<<"\nRIFE inferences: "<<c.rife_inferences
+     <<"\nPair preparations: "<<c.pair_preparations
+     <<"\nRIFE GPU input cache: "<<(c.cache && c.rife_gpu_cache?"on":"off")
+     <<"\nRIFE cached uploads: "<<c.rife_uploads<<"\nRIFE GPU input hits: "<<c.rife_gpu_hits
+     <<"\nRIFE cached tensor bytes: "<<bytes<<"\n";
+    f<<"RIFE RGB preparations: "<<c.rife_rgb_preparations
+     <<"\nRIFE direct RGB outputs: "<<c.rife_packed_outputs<<"\n";
+    return f.str();
+}
+void publish_stats(Context &c, bool force = false) {
+    c.stats_publisher.publish(c.stats, [&] { return format_stats(c); }, force);
+}
+void publish_error(Context &c, const std::exception &e) {
+    const bool changed = c.stats_state != "error" || c.error != e.what();
+    c.error = e.what(); c.stats_state = "error";
+    publish_stats(c, changed);
+}
 }
 extern "C" uint32_t aji_vk_version(void) { return AJI_VK_ABI; }
 extern "C" aji_vk_context *aji_vk_create(const char *conf, const char *models,
@@ -295,11 +332,12 @@ extern "C" int aji_vk_configure(aji_vk_context *context,int width,int height,dou
     try {
         require(width>0 && height>0 && width<=16384 && height<=16384,"Invalid source dimensions");
         require(width%2==0 && height%2==0,"Vulkan spatial profiles require even source dimensions");
+        c.error.clear();c.stats_state="configured";c.last_frame_ms=0;
         c.rife.reset();c.steps.clear();c.width=width;c.height=height;
         for (auto &frame:c.frames) frame=CachedFrame();
         c.pair=CachedPair();
         c.plan={width,height,1,1,0};
-        if (c.slot==0) { *plan=c.plan;return 0; }
+        if (c.slot==0) { *plan=c.plan;publish_stats(c,true);return 0; }
         AjiConf conf;std::string error;
         require(aji_conf_load(c.conf.c_str(),&conf,&error),error);
         auto found=conf.slots.find(c.slot);
@@ -311,7 +349,7 @@ extern "C" int aji_vk_configure(aji_vk_context *context,int width,int height,dou
                 c.chain=chain;matched=true;break;
             }
         }
-        if (!matched) { *plan=c.plan;return 0; }
+        if (!matched) { *plan=c.plan;publish_stats(c,true);return 0; }
         load_steps(c);
         ncnn::Mat shape(width,height,3);
         if (!c.steps.empty()) resize_step(shape,c.steps[0].conf);
@@ -334,8 +372,9 @@ extern "C" int aji_vk_configure(aji_vk_context *context,int width,int height,dou
         }
         int gcd=std::gcd(num,den);
         c.plan={w,h,c.rife?num/gcd:1,c.rife?den/gcd:1,1};*plan=c.plan;
+        publish_stats(c,true);
         return 0;
-    } catch(const std::exception &e) { c.error=e.what();return -1; }
+    } catch(const std::exception &e) { publish_error(c,e);return -1; }
 }
 extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previous,ptrdiff_t previous_stride,
     const unsigned char *current,ptrdiff_t current_stride,double timestep,unsigned char *output,ptrdiff_t output_stride) {
@@ -386,29 +425,23 @@ extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previ
         else result.to_pixels(output,ncnn::Mat::PIXEL_RGB,(int)output_stride);
         double ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
         c.total_ms+=ms;++c.count;
-        if (!c.stats.empty()) {
-            uint64_t uploads=0,hits=0; size_t bytes=0;
-            if (c.rife) c.rife->cache_stats(uploads,hits,bytes);
-            std::ofstream f(c.stats);
-            f<<"Backend: NCNN/Vulkan\nGPU: "<<ncnn::get_gpu_info(c.gpu).device_name()
-             <<"\nAnimeJaNai models: "<<c.steps.size()<<"\nRIFE: "<<(c.rife?"4.6":"off")
-             <<"\nOutput: "<<result.w<<"x"<<result.h<<"\nFrames: "<<c.count
-             <<"\nInference ms: "<<ms<<"\nAverage inference ms: "<<c.total_ms/c.count<<"\n";
-            f<<"Source cache: "<<(c.cache?"on":"off");
-            if (c.cache && c.same.threshold>0) f<<", same drawing within "<<c.same.threshold<<" level a block and "<<c.same.peak<<" a byte";
-            else if (c.cache) f<<", identical bytes only";
-            f<<"\nHeld RIFE outputs reused: "<<c.held_outputs
-             <<"\nSource preparations: "<<c.source_preparations<<"\nSource cache hits: "<<c.cache_hits
-             <<"\nSPAN inferences: "<<c.span_inferences<<"\nRIFE inferences: "<<c.rife_inferences
-             <<"\nPair preparations: "<<c.pair_preparations
-             <<"\nRIFE GPU input cache: "<<(c.cache && c.rife_gpu_cache?"on":"off")
-             <<"\nRIFE cached uploads: "<<c.rife_uploads<<"\nRIFE GPU input hits: "<<c.rife_gpu_hits
-             <<"\nRIFE cached tensor bytes: "<<bytes<<"\n";
-            f<<"RIFE RGB preparations: "<<c.rife_rgb_preparations
-             <<"\nRIFE direct RGB outputs: "<<c.rife_packed_outputs<<"\n";
-        }
+        c.last_frame_ms=ms;
+        const bool changed=c.stats_state!="running";
+        c.stats_state="running";
+        publish_stats(c,changed);
         return 0;
-    }catch(const std::exception &e){c.error=e.what();return -1;}
+    }catch(const std::exception &e){publish_error(c,e);return -1;}
 }
 extern "C" const char *aji_vk_error(aji_vk_context *c) { return c?((Context *)c)->error.c_str():create_error.c_str(); }
-extern "C" void aji_vk_destroy(aji_vk_context *c) { delete (Context *)c; }
+extern "C" const char *aji_vk_stats_snapshot(aji_vk_context *context) {
+    if (!context) return "";
+    auto &c=*(Context *)context;
+    try { c.stats_text=format_stats(c);return c.stats_text.c_str(); }
+    catch (...) { return nullptr; }
+}
+extern "C" void aji_vk_destroy(aji_vk_context *context) {
+    if (!context) return;
+    auto &c=*(Context *)context;
+    if (c.error.empty()) c.stats_state="stopped";
+    publish_stats(c,true);delete &c;
+}

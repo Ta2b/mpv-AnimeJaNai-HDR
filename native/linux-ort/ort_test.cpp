@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -102,7 +103,9 @@ int main(int argc, char **argv)
         if (i == 0) std::printf("first frame: %.1f ms\n", ms);
         // A source interval can contain several calls. Read cumulative work, not only the
         // final endpoint call (which is cached when RIFE precomputed it).
-        std::ifstream stats("ort-stats.txt");
+        const char *snapshot = aji_vk_stats_snapshot(c);
+        if (!snapshot) { std::fprintf(stderr, "Cannot read live counters\n"); aji_vk_destroy(c); return 1; }
+        std::istringstream stats(snapshot);
         placement.clear();
         double current_model = 0, average_model = 0, current_prepare = 0, current_infer = 0, current_output = 0, current_wait = 0;
         uint64_t calls = 0;

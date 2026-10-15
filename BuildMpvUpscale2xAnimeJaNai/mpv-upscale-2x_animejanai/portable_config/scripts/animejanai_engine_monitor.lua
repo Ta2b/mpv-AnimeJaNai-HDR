@@ -46,6 +46,8 @@ end
 
 mp.add_periodic_timer(o.poll_interval, function()
     local s = read_stats()
+    -- A missing/empty observation is not evidence that a build completed.
+    if not s or s == "" then return end
     if s ~= dead_stats then dead_stats = nil end
     local b = s ~= nil and dead_stats == nil and
               s:find("Building TensorRT engine", 1, true) ~= nil

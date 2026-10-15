@@ -1,40 +1,32 @@
-local open = io.open
-
-local showingMessage = false
+local showing = false
 local MAX_DURATION = 2147483
 
--- Function to be called when the custom action is triggered
-function show_animejanai_stats()
-    if showingMessage then
-        mp.osd_message("")  -- Clear the OSD message
-        showingMessage = false
-    else
-        local message = ""
-
-        if mp.get_property("vf") == "" then
-            message = "Upscaling is disabled"
-        else
-            local data_file_path = (mp.command_native({'expand-path', "~~/../animejanai/currentanimejanai.log"}))
-            message = read_file(data_file_path)
-
-            if message == "" then
-                message = "Error during upscale; press ~ to view error in console"
-            end
-        end
-        
-        mp.osd_message(message, MAX_DURATION)
-        showingMessage = true
-    end
-end
-
-function read_file(path)
-    local file = open(path, "r") -- r read mode and b binary mode
+local function read_file(path)
+    local file = io.open(path, "r")
     if not file then return nil end
-    local content = file:read "*a" -- *a or *all reads the whole file
+    local content = file:read("*a")
     file:close()
-    return content
+    return content ~= "" and content or nil
 end
 
+local function refresh()
+    if not showing then return end
+    local message
+    if (mp.get_property("vf") or "") == "" then
+        message = "Upscaling is disabled"
+    else
+        local path = mp.command_native({'expand-path', "~~/../animejanai/currentanimejanai.log"})
+        message = read_file(path) or "Waiting for AnimeJaNai statistics; press ~ for engine errors"
+    end
+    mp.osd_message(message, MAX_DURATION)
+end
 
--- Register the custom action to a key binding (e.g., "Ctrl+Shift+C")
-mp.add_key_binding("Ctrl+j", "show_animejanai_stats", show_animejanai_stats)
+-- Producers publish complete snapshots up to four times a second. Refresh only
+-- while visible; missing/empty snapshots do not masquerade as an engine failure.
+local timer = mp.add_periodic_timer(0.25, refresh)
+timer:kill()
+mp.add_key_binding("Ctrl+j", "show_animejanai_stats", function()
+    showing = not showing
+    if showing then timer:resume(); refresh()
+    else timer:kill(); mp.osd_message("") end
+end)

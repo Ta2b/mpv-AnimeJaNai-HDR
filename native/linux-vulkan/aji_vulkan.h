@@ -28,6 +28,11 @@ int aji_vk_process(aji_vk_context *, const unsigned char *previous, ptrdiff_t pr
  * from now on (0: none; the bridge then starts each frame as soon as it has it). */
 int aji_vk_upcoming(aji_vk_context *, const unsigned char *const *frames, const ptrdiff_t *strides, int count);
 const char *aji_vk_error(aji_vk_context *);
+/* Optional live text, no file I/O; valid until the next call for this context.
+ * Call serially with configure/process. Periodic files are snapshots (up to 4 Hz).
+ * Tools requiring per-call counters should use this entry point; NULL means a
+ * snapshot could not be formatted. ABI 1 retained. */
+const char *aji_vk_stats_snapshot(aji_vk_context *);
 void aji_vk_destroy(aji_vk_context *);
 #ifdef __cplusplus
 }

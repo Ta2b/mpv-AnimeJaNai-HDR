@@ -20,6 +20,8 @@
 #include "onnx_flow.h"
 #include "rife_flow_cache.h"
 #include "tiles.h"
+#include "../common/stats_snapshot.h"
+#include <sstream>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -170,6 +172,9 @@ struct Endpoint {
 
 struct Context {
     std::string conf, models, rife_dir, device, stats, error, provider, backend_label, cache;
+    aji::StatsPublisher stats_publisher;
+    std::string stats_text, stats_state = "configured";
+    double last_frame_ms = 0;
     // Interpolation. Before the upscale (the profile's default): the two source frames are
     // interpolated at the size the first model takes, and the result is upscaled like a frame.
     // After: the two upscaled frames are interpolated.
@@ -1067,9 +1072,12 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
     return whole;
 }
 
-void write_stats(const Context &c, double ms)
+std::string format_stats(const Context &c)
 {
-    std::ofstream f(c.stats);
+    const double ms = c.last_frame_ms;
+    std::ostringstream f;
+    f << "Stats state: " << c.stats_state << "\n";
+    if (!c.error.empty()) f << "Error: " << c.error << "\n";
     double recent = 0;
     for (double v : c.recent) recent += v;
     recent = c.recent.empty() ? 0 : recent / c.recent.size();
@@ -1089,9 +1097,9 @@ void write_stats(const Context &c, double ms)
     else f << (c.rife_skipped ? "requested, not available: " + c.rife_note : std::string("off"));
     f
       << "\nOutput: " << c.plan.width << "x" << c.plan.height << "\nFrames: " << c.count
-      << "\nInference ms: " << ms << "\nAverage inference ms: " << c.total_ms / c.count
-      << "\nModel ms: " << c.last_model_ms << "\nAverage model ms: " << c.model_ms / c.count
-      << "\nAverage conversion ms: " << (c.total_ms - c.model_ms) / c.count
+      << "\nInference ms: " << ms << "\nAverage inference ms: " << (c.count ? c.total_ms / c.count : 0)
+      << "\nModel ms: " << c.last_model_ms << "\nAverage model ms: " << (c.count ? c.model_ms / c.count : 0)
+      << "\nAverage conversion ms: " << (c.count ? (c.total_ms - c.model_ms) / c.count : 0)
       << "\nModel total ms: " << std::setprecision(12) << c.model_ms << std::setprecision(6)
       // What the player's automatic profile choice reads: the last two seconds, and what a frame
       // costs when nothing can be reused (a pan, a cut).
@@ -1143,6 +1151,16 @@ void write_stats(const Context &c, double ms)
             if (!w.executor->note.empty()) f << "Placement: " << w.executor->label << ": " << w.executor->note << "\n";
     }
     if (!c.boost_note.empty()) f << "Boost: not active (" << c.boost_note << ")\n";
+    return f.str();
+}
+void publish_stats(Context &c, bool force = false)
+{
+    c.stats_publisher.publish(c.stats, [&] { return format_stats(c); }, force);
+}
+void publish_error(Context &c, const std::exception &e) {
+    const bool changed = c.stats_state != "error" || c.error != e.what();
+    c.error = e.what(); c.stats_state = "error";
+    publish_stats(c, changed);
 }
 } // namespace
 
@@ -1166,13 +1184,14 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
     try {
         require(width > 0 && height > 0 && width <= 16384 && height <= 16384, "Invalid source dimensions");
         require(width % 2 == 0 && height % 2 == 0, "Spatial profiles require even source dimensions");
+        c.error.clear(); c.stats_state = "configured"; c.last_frame_ms = 0;
         c.steps.clear(); c.width = width; c.height = height; c.rife_skipped = false;
         c.rife.reset();
         c.count = 0; c.full_frames = 0; c.total_ms = 0; c.model_ms = 0; c.full_ms = 0; c.recent.clear();
         c.upcoming.clear(); c.upcoming_stride.clear();
         c.interval_ms = fps > 1 ? 1000.0 / fps : 41.7;
         c.plan = {width, height, 1, 1, 0};
-        if (c.slot == 0) { *plan = c.plan; return 0; }
+        if (c.slot == 0) { *plan = c.plan; publish_stats(c, true); return 0; }
         AjiConf conf; std::string error;
         require(aji_conf_load(c.conf.c_str(), &conf, &error), error);
         c.provider = wanted_provider(conf);
@@ -1187,7 +1206,7 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
                 c.chain = chain; matched = true; break;
             }
         }
-        if (!matched) { *plan = c.plan; return 0; }
+        if (!matched) { *plan = c.plan; publish_stats(c, true); return 0; }
         load_steps(c, width, height);
         require(!c.steps.empty(), "This engine needs at least one upscale model in the profile");
         load_rife(c);
@@ -1195,8 +1214,9 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
         c.plan = {2 * c.steps.back().in_w, 2 * c.steps.back().in_h, 1, 1, 1};
         if (c.rife) { c.plan.numerator = c.chain.rife_factor_num; c.plan.denominator = c.chain.rife_factor_den; }
         *plan = c.plan;
+        publish_stats(c, true);
         return 0;
-    } catch (const std::exception &e) { c.error = e.what(); return -1; }
+    } catch (const std::exception &e) { publish_error(c, e); return -1; }
 }
 
 AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *previous, ptrdiff_t previous_stride,
@@ -1226,9 +1246,12 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
         c.recent.push_back(ms - c.boost_extra_ms);
         if (c.recent.size() > 48) c.recent.pop_front();
         c.upcoming.clear(); c.upcoming_stride.clear();
-        if (!c.stats.empty()) write_stats(c, ms);
+        c.last_frame_ms = ms;
+        const bool changed = c.stats_state != "running";
+        c.stats_state = "running";
+        publish_stats(c, changed);
         return 0;
-    } catch (const std::exception &e) { c.error = e.what(); return -1; }
+    } catch (const std::exception &e) { publish_error(c, e); return -1; }
 }
 
 // The frames that follow the next aji_vk_process call. Asked for (two of them) only when a
@@ -1248,4 +1271,18 @@ AJI_ORT_EXPORT int aji_vk_upcoming(aji_vk_context *context, const unsigned char 
 }
 
 AJI_ORT_EXPORT const char *aji_vk_error(aji_vk_context *c) { return c ? ((Context *)c)->error.c_str() : create_error.c_str(); }
-AJI_ORT_EXPORT void aji_vk_destroy(aji_vk_context *c) { delete (Context *)c; }
+AJI_ORT_EXPORT const char *aji_vk_stats_snapshot(aji_vk_context *context)
+{
+    if (!context) return "";
+    auto &c = *(Context *)context;
+    try { c.stats_text = format_stats(c); return c.stats_text.c_str(); }
+    catch (...) { return nullptr; }
+}
+AJI_ORT_EXPORT void aji_vk_destroy(aji_vk_context *context)
+{
+    if (!context) return;
+    auto &c = *(Context *)context;
+    if (c.error.empty()) c.stats_state = "stopped";
+    publish_stats(c, true);
+    delete &c;
+}
