@@ -60,7 +60,7 @@ active. Seuls compilation/liaison et contrôles statiques sont autorisés.
 ## Références du lot en cours
 
 - Lecteur / filtre / packaging : `2600de1` puis correctif des identités de dessins tenus (commit suivant).
-- Backend : branche `perf-specialized-gpu-20261014`, HEAD `ade976c` (CI Windows en cours).
+- Backend : branche `perf-specialized-gpu-20261014`, HEAD `1468be6` (CI Windows en cours).
 - Manager : `b3a8c1fcfd7b5acc846c0fb6ecba2fea793ef740`, paquets immuables publiés.
 - Build AMD Linux : `38669623563`, succès.
 - Le suffixe de dépendance du lecteur Linux est incrémenté en `quality-fast1`
@@ -78,6 +78,7 @@ sur toutes les cartes. Les ordres/formules et paramètres de modèle sont gardé
 
 ## Commandes de comparaison (ne pas exécuter sans nouvelle autorisation)
 
+- `AJI_RIFE_BURST=0` : attentes synchrones historiques entre RIFE et upscale.
 - `AJI_RIFE_PAIR_CACHE=0` : pas de cache exact des entrées/paires.
 - `AJI_RIFE_PICTURE_GRAPH=0` : pas de capture RGB + post ; réseau complet gardé.
 - `AJI_RIFE_FUSED_PRE=0` : staging/conversion historiques, tous formats.
@@ -88,7 +89,7 @@ sur toutes les cartes. Les ordres/formules et paramètres de modèle sont gardé
 
 | Lot | Statut |
 |---|---|
-| Quality/Fast, compatibilité et garde des raccourcis | Codé ; compilations en cours |
+| Quality/Fast, compatibilité et garde des raccourcis | Codé ; compilations Linux/Manager réussies, Windows en cours |
 | Attentes CUDA limitées à l'événement utile | Codé |
 | Cache exact de paire et promotion des RGB préparés | Codé ; activation par filtre Linux mis à jour |
 | Capture RIFE plus large et fusion padding/conversion 4:4:4 / 4:2:0 | Codé |
