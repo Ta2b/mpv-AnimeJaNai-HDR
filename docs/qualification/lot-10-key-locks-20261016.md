@@ -32,4 +32,4 @@ Pilotes `tests/cache/key_lock_check.py SPEC --phase flow|gpu|remaining|motion|re
 
 Conserver : les demandes concurrentes coûtent un seul producteur, les chemins échec/annulation/revalidation aboutissent et le résultat numérique reste exact avec les mêmes plans. Ce lot ne certifie pas l’arrêt brutal du processus, le nettoyage de stagings orphelins, les quotas, .mlmodelc/providers ou le matériel Windows. Ces périmètres restent ouverts explicitement.
 
-Linux multi-SM 75/80/86/89/90/100/120 + PTX120 compilé ; Windows compilation/linking en arrière-plan. Publication prévue **3.8.0.41** ; pin et preuves de publication complétés lors de la livraison, sans attente inactive des builds.
+Linux multi-SM 75/80/86/89/90/100/120 + PTX120 compilé, chargé et vérifié sur une sortie chaude avec le même plan : 0 octet changé, 24 exports ABI conservés. SHA-256 Linux `73fa892f9530d7ddbb4295c271ae97d39a515453b3a8358487ed582a61315234`. Windows NVIDIA/AMD build `38824878954` success, compilation/linking seulement. Pin `7b7b723a23029b421f9cfcffc8e15263d41252cb`. Publication **3.8.0.41** lancée ; état des assets dans le relais Jira, sans attente inactive des builds.
