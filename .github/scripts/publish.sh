@@ -17,11 +17,15 @@ done
 
 repo="$GITHUB_REPOSITORY"
 if ! gh release view "$version" --repo "$repo" > /dev/null 2>&1; then
+    notes="$(dirname "${BASH_SOURCE[0]}")/../release-notes/$version.md"
+    note_args=(--notes "mpv-AnimeJaNai HDR $version. Windows, Linux and macOS are published independently: the files of a platform appear when its build succeeds.")
+    [ ! -f "$notes" ] || note_args=(--notes-file "$notes")
     # Another platform may create it at the same moment: then the release exists and that is fine.
     gh release create "$version" --repo "$repo" --target "$GITHUB_SHA" --title "$version" --latest=false \
-        --notes "mpv-AnimeJaNai HDR $version. Windows, Linux and macOS are published independently: the files of a platform appear when its build succeeds." \
+        "${note_args[@]}" \
         || gh release view "$version" --repo "$repo" > /dev/null
 fi
 [ "${#first[@]}" -eq 0 ] || gh release upload "$version" --repo "$repo" --clobber "${first[@]}"
 [ "${#last[@]}" -eq 0 ] || gh release upload "$version" --repo "$repo" --clobber "${last[@]}"
-gh release edit "$version" --repo "$repo" --latest
+# Promotion is a separate, serialized job shared by all platforms. An older
+# build finishing later must not turn an earlier release back into latest.

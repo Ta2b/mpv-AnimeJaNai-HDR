@@ -16,8 +16,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-windows
-  cancel-in-progress: true
+  group: release-windows-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   windows:
@@ -133,3 +133,10 @@ jobs:
             mpv-AnimeJaNai-HDR-Setup-*.exe mpv-upscale-2x_animejanai-full-package-*.7z.* manifest.json \
             publish/packs-v*/component-*.7z publish/packs-v*/packs.json \
             -- mpv-upscale-2x_animejanai-overlay-*.7z
+
+  latest:
+    needs: windows
+    if: github.ref == 'refs/heads/release'
+    uses: ./.github/workflows/release-latest.yml
+    permissions:
+      contents: write

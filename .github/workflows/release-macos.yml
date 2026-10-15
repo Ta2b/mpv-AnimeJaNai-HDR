@@ -17,8 +17,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-macos-${{ github.ref }}
-  cancel-in-progress: true
+  group: release-macos-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   engine:
@@ -173,3 +173,10 @@ jobs:
           path: mpv-AnimeJaNai-HDR-v*-macos-arm64.zip
           if-no-files-found: error
           retention-days: 7
+
+  latest:
+    needs: app
+    if: github.ref == 'refs/heads/release'
+    uses: ./.github/workflows/release-latest.yml
+    permissions:
+      contents: write

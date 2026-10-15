@@ -1,0 +1,19 @@
+name: Promote latest release
+on:
+  workflow_call:
+permissions:
+  contents: write
+jobs:
+  latest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    concurrency:
+      group: release-latest-${{ github.repository }}
+      cancel-in-progress: false
+      queue: max
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote without downgrading latest
+        run: python3 .github/scripts/promote-latest.py "$(tr -d '[:space:]' < release-version.txt)"

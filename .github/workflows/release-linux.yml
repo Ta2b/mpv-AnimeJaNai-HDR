@@ -20,8 +20,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-linux
-  cancel-in-progress: true
+  group: release-linux-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 defaults:
   run:
@@ -249,3 +249,10 @@ jobs:
             case " ${last[*]} " in *" $f "*) ;; *) first+=("$f") ;; esac
           done
           bash "$GITHUB_WORKSPACE/.github/scripts/publish.sh" "$VER" "${first[@]}" -- "${last[@]}"
+
+  latest:
+    needs: package
+    if: github.ref == 'refs/heads/release'
+    uses: ./.github/workflows/release-latest.yml
+    permissions:
+      contents: write
