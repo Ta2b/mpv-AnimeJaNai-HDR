@@ -34,8 +34,8 @@ active. Seuls compilation/liaison et contrôles statiques sont autorisés.
 - CUDA commun : score de coupe lu en mémoire pinned et attendu par événement,
   préparation des sources soumise avant l'attente ; formule/seuil conservés.
 - Cache exact : nouvelle extension optionnelle `aji_rife_begin_pair(c,a_id,b_id)`.
-  Le lecteur fournit des IDs monotones non réinitialisés sur seek, zéro pour le
-  chemin dessins tenu. Métadonnées/strides/stream vérifiés. Même paire : on garde
+  Le lecteur fournit des IDs uniques non réinitialisés sur seek, y compris
+  pour les images détenues dans le cache des dessins tenus. Métadonnées/strides/stream vérifiés. Même paire : on garde
   préparation et décision de coupe ; B devient A : copie RGB FP16 déjà convertie.
   Ancien lecteur : cache désactivé, exécution classique maintenue.
 - Filtre Linux : intermédiaires/upscales soumis en rafale bornée à huit sorties,
@@ -54,13 +54,24 @@ active. Seuls compilation/liaison et contrôles statiques sont autorisés.
   de fin protègent le partage. Upscale et mouvement peuvent se chevaucher.
   Les approximations médianes, masques et retiming restent réservés à Fast.
 - DML/AMD Windows gardent leur exécution et un stub de l'extension optionnelle.
+- Le cache Fast utilise aussi les IDs explicites, évite la réutilisation d'un
+  pointeur recyclé, et promeut B même si un facteur fractionnaire ne l'a pas émis.
+
+## Références du lot en cours
+
+- Lecteur / filtre / packaging : `2600de1` puis correctif des identités de dessins tenus (commit suivant).
+- Backend : branche `perf-specialized-gpu-20261014`, HEAD `ade976c` (CI Windows en cours).
+- Manager : `b3a8c1fcfd7b5acc846c0fb6ecba2fea793ef740`, paquets immuables publiés.
+- Build AMD Linux : `38669623563`, succès.
+- Le suffixe de dépendance du lecteur Linux est incrémenté en `quality-fast1`
+  pour que la mise à jour livre le filtre avec le cache/rafale, pas seulement la .so.
 
 ## Compilations et limites
 
 Logs ignorés dans `artifacts/performance/amd-specialized/quality-fast-*.log` :
-Manager Release (44 avertissements préexistants, zéro erreur), backend CUDA/TRT
-Linux complet, modules ORT/AMD Linux et objet C du filtre mpv compilés. Les
-modifications plus récentes doivent être recompilées avant publication.
+Manager Release (44 avertissements préexistants, zéro erreur ; CI `38669549109` réussie), backend CUDA/TRT
+Linux complet, modules ORT/AMD Linux et objet C du filtre mpv compilés. Le dernier
+build Windows complet est lancé ; les modules Linux viennent d’être recompilés.
 Aucune inférence, mesure de gain ou comparaison numérique exécutée. Ne pas
 présenter les optimisations comme garantissant des pixels identiques ni un gain
 sur toutes les cartes. Les ordres/formules et paramètres de modèle sont gardés.

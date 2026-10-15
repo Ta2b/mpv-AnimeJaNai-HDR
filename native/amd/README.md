@@ -35,7 +35,7 @@ Only four bytes of motion amplitude return for the existing pair decision.
 Upscaled endpoints are uploaded once per content identity and kept on GPU for
 the following instants. This RGB bridge still transfers model images to/from
 host memory and keeps its existing RGB24 boundary. It is not a fully resident
-video pipeline. Original host behavior and `rife_engine=old` remain available.
+video pipeline. Original host behavior and `rife_engine=quality` (legacy `old`) remain available.
 
 ## Windows D3D11/D3D12 bridge
 
@@ -80,9 +80,9 @@ Pure RIFE and ensemble models keep their original RGB graph. When motion
 extraction is unavailable, Windows also keeps that graph. The shipped models
 embed their weights; this executor parses model bytes, not external-data models.
 
-RIFE-first `rife_engine=new` estimates motion on source-sized frames and warps
+RIFE-first `rife_engine=fast` (legacy `new`) estimates motion on source-sized frames and warps
 the floating-point upscaled endpoints. Each endpoint is upscaled once, with
-the same midpoint/per-instant strategy as the CUDA chain. `rife_engine=old`
+the same midpoint/per-instant strategy as the CUDA chain. `rife_engine=quality` (legacy `old`)
 keeps the classic pipeline. Windows drawings-timeline spreading is not ported
 yet. Temporal rank-5 models are rejected explicitly by this native backend.
 
