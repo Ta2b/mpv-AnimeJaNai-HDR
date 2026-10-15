@@ -1,0 +1,41 @@
+--- a/video/filter/vf_animejanai.c
++++ b/video/filter/vf_animejanai.c
+@@ -65,6 +65,7 @@
+ #endif
+ 
+ #include "common/common.h"
++#include "misc/io_utils.h"
+ #include "filters/filter.h"
+ #include "filters/filter_internal.h"
+ #include "filters/user_filters.h"
+@@ -547,13 +548,12 @@
+     struct priv *p = vf->priv;
+     if (!p->path.stats || !p->aji)
+         return;
+-    FILE *f = fopen(p->path.stats, "w");
+-    if (!f) {
+-        MP_WARN(vf, "Cannot write stats file %s\n", p->path.stats);
+-        return;
+-    }
+-    fputs(p->api.current_log(p->aji), f);
+-    fclose(f);
++    // A configure/build state is immediate, but readers must see a complete
++    // old or new state. The common writer uses a unique same-directory file
++    // and a checked close followed by the platform's replacing rename.
++    const char *text = p->api.current_log(p->aji);
++    if (!text || !mp_save_to_file(p->path.stats, text, strlen(text)))
++        MP_WARN(vf, "Cannot publish stats snapshot %s\n", p->path.stats);
+ }
+ 
+ // Pipeline depth for the current configuration. RIFE chains stay
+--- a/misc/io_utils.c
++++ b/misc/io_utils.c
+@@ -78,6 +78,8 @@
+     if (written > 0 && !ret) {
+         ret = rename(tmp, filepath);
+         result = !ret;
++        if (ret)
++            unlink(tmp); // A failed replacement must not leak the unique file.
+     } else {
+         unlink(tmp);
+     }
