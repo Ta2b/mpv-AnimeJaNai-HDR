@@ -1,6 +1,7 @@
 #include "rife_flow_cache.h"
 #include "onnx_flow.h"
 #include "../common/content_identity.h"
+#include "../common/cache_key_lock.h"
 #include <iostream>
 #include <random>
 
@@ -70,6 +71,8 @@ fs::path cached_rife_flow(const fs::path &source, const fs::path &cache)
     const std::string key = source_key(graph,weights);
     const fs::path parent = cache / "rife-flow-v2", destination = parent / key;
     fs::create_directories(parent);
+    if (valid(destination,locations)) return destination / graph_name;
+    cache::KeyLock lock(parent / (key + ".key-lock"));
     if (valid(destination,locations)) return destination / graph_name;
 
     Stage stage{temporary(parent,".part-")};
