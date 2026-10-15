@@ -1,0 +1,92 @@
+# Quality / Fast et optimisation TensorRT-CUDA — 15 octobre 2026
+
+## Mandat et règles
+
+Renommer Original en Quality et New en Fast. Conserver les modèles actuels.
+Quality conserve chaque prédiction complète RIFE et l'upscale de chaque image ;
+aucune extrapolation de mouvement, réutilisation approximative ou modification
+des dessins tenus. Fast bénéficie des mêmes optimisations d'exécution et garde
+les raccourcis de reconstruction/réutilisation temporelle. La conservation de
+l'algorithme est une exigence théorique, pas une preuve d'identité numérique.
+Aucun test, benchmark ni inférence locale : instruction utilisateur toujours
+active. Seuls compilation/liaison et contrôles statiques sont autorisés.
+
+## Dépôts à reprendre
+
+- Lecteur : `/home/ta2b/Documents/mpv-AnimeJaNai-HDR`, branche
+  `perf/specialized-gpu-20261014`, base `5933526` après release 3.8.0.30.
+- Backend : `/home/ta2b/.animejanai-tools/work/gpu-specialized`, branche
+  `perf-specialized-gpu-20261014`, base `c7bdb1a`.
+- Manager : `/home/ta2b/.animejanai-tools/work/manager-specialized`, même branche,
+  base `fade3c7`. Ne pas modifier le worktree backend utilisateur d'origine.
+- Dernière release livrée : 3.8.0.30. Les modifications de ce document ne sont
+  pas encore intégrées dans ses binaires.
+
+## Avancement exact — premier lot codé
+
+- Manager : Quality/Fast et valeurs `quality`/`fast`, lecture des aliases old/new
+  et des sauvegardes sérialisées ; Fast reste le défaut antérieur. Retiming
+  grisé en Quality, ses valeurs préexistantes sont ignorées par les moteurs.
+- Quality CUDA : graphe RGB complet par instant, pas de warp des sources ni de
+  skip de dessins ressemblants, même si le sidecar RTX demandait ce skip.
+- Quality partagé Apple/ORT/AMD : pas de warp, retiming, reuse approximatif ni
+  boost adaptatif ; chaque intermédiaire conserve son passage RIFE complet.
+- CUDA commun : score de coupe lu en mémoire pinned et attendu par événement,
+  préparation des sources soumise avant l'attente ; formule/seuil conservés.
+- Cache exact : nouvelle extension optionnelle `aji_rife_begin_pair(c,a_id,b_id)`.
+  Le lecteur fournit des IDs monotones non réinitialisés sur seek, zéro pour le
+  chemin dessins tenu. Métadonnées/strides/stream vérifiés. Même paire : on garde
+  préparation et décision de coupe ; B devient A : copie RGB FP16 déjà convertie.
+  Ancien lecteur : cache désactivé, exécution classique maintenue.
+- Filtre Linux : intermédiaires/upscales soumis en rafale bornée à huit sorties,
+  attente du dernier ticket avant présentation ; références d'entrée conservées
+  jusqu'à complétion, drainage des chemins d'erreur. Plus d'attente entre un
+  intermédiaire RIFE et son upscale consommateur sur le même stream.
+- CUDA classique : capture prédiction RGB + post-conversion existante ; cropping
+  vers la sortie courante reste vivant. Première sortie de warmup utilisée,
+  pas d'inférence doublée. Repli sur réseau complet si capture impossible.
+- Kernels RIFE 4:4:4, NV12 et P010 : padding virtuel studio-black et conversion
+  RGB FP16 sans copie préalable de l'image paddée. En 4:2:0 les deux passes
+  chroma, poids, ordre d'accumulation et matrice sont conservés ; géométrie
+  impaire = repli historique. Moins de copies et de lectures de tampons paddés.
+- Fast : scalaire de mouvement lu avant les upscales, et réseau de mouvement
+  dans un stream non bloquant indépendant ; événement d'entrée et attente CPU
+  de fin protègent le partage. Upscale et mouvement peuvent se chevaucher.
+  Les approximations médianes, masques et retiming restent réservés à Fast.
+- DML/AMD Windows gardent leur exécution et un stub de l'extension optionnelle.
+
+## Compilations et limites
+
+Logs ignorés dans `artifacts/performance/amd-specialized/quality-fast-*.log` :
+Manager Release (44 avertissements préexistants, zéro erreur), backend CUDA/TRT
+Linux complet, modules ORT/AMD Linux et objet C du filtre mpv compilés. Les
+modifications plus récentes doivent être recompilées avant publication.
+Aucune inférence, mesure de gain ou comparaison numérique exécutée. Ne pas
+présenter les optimisations comme garantissant des pixels identiques ni un gain
+sur toutes les cartes. Les ordres/formules et paramètres de modèle sont gardés.
+
+## Commandes de comparaison (ne pas exécuter sans nouvelle autorisation)
+
+- `AJI_RIFE_PAIR_CACHE=0` : pas de cache exact des entrées/paires.
+- `AJI_RIFE_PICTURE_GRAPH=0` : pas de capture RGB + post ; réseau complet gardé.
+- `AJI_RIFE_FUSED_PRE=0` : staging/conversion historiques, tous formats.
+- `AJI_RIFE_OVERLAP=0` : mouvement Fast et upscale sur le stream initial.
+- `AJI_RIFE_CUDA_GRAPH=0` : captures RIFE désactivées.
+
+## Liste du chantier restant
+
+| Lot | Statut |
+|---|---|
+| Quality/Fast, compatibilité et garde des raccourcis | Codé ; compilations en cours |
+| Attentes CUDA limitées à l'événement utile | Codé |
+| Cache exact de paire et promotion des RGB préparés | Codé ; activation par filtre Linux mis à jour |
+| Capture RIFE plus large et fusion padding/conversion 4:4:4 / 4:2:0 | Codé |
+| Recouvrement GPU RIFE/upscale, soumission groupée au lecteur | Codé ; pas de mesure |
+| Préparation des prochaines paires hors de la paire courante | Non implémentée ; ownership/contextes à étendre |
+| Fusion des conversions RIFE→upscale, plugins d'opérateurs neuronaux | Non implémentés ; conserver chroma et arrondis |
+| Batching neuronal et contextes concurrents par modèle | Non implémentés ; distinct de la rafale de soumissions |
+| Choix empirique des tactiques/streams TensorRT | Pas effectué ; builder niveau 5 déjà actif, profilage interdit |
+| Publication des binaires et pin Manager | À faire ; 3.8.0.30 demeure la release précédente |
+
+Ne pas confondre ces pistes avec les lots déjà codés. Les anciens worktrees
+utilisateur et fichiers non suivis restent à préserver.

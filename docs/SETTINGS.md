@@ -1,5 +1,21 @@
 # Simplification des réglages du Manager
 
+## RIFE Quality / Fast (chantier après 3.8.0.30)
+
+- **Quality** (`rife_engine=quality`, ancien `old`) : chaque intermédiaire est
+  calculé par RIFE complet, puis suit l'upscale configuré. Pas de reconstruction
+  par warp des sources, de skip des dessins ressemblants ni de retiming.
+- **Fast** (`rife_engine=fast`, ancien `new`) : garde les optimisations communes,
+  utilise le warp des sources upscalées et les raccourcis temporels disponibles.
+  Des différences visuelles sont possibles. Fast reste le défaut antérieur.
+- Le réglage d'étalement des dessins est ignoré en Quality. Les modèles,
+  résolutions, facteurs et choix Ensemble restent ceux du profil utilisateur.
+- Redémarrer la lecture pour appliquer. Le maintien des formules ne constitue
+  pas une validation de qualité ou de performance : pas de nouveau benchmark.
+
+Voir [le checkpoint et la liste des optimisations](CHANTIER-QUALITY-FAST.md).
+
+
 ## Situation actuelle — 3.8.0.29 (14/10/2026 à 20 h 45 (Paris))
 
 La **3.8.0.29 est publiée sur les trois plateformes**, depuis `6fa85bb`.

@@ -1,0 +1,184 @@
+--- a/video/filter/vf_animejanai.c
++++ b/video/filter/vf_animejanai.c
+@@ -172,6 +172,7 @@
+                   void *cu_stream);          // optional; pre-RIFE downscale
+     int (*infer_rife)(aji_ctx *c, const aji_frame *a, const aji_frame *b,
+                       double t, const aji_frame *out, void *cu_stream);
++    void (*rife_begin_pair)(aji_ctx *c, uint64_t left_id, uint64_t right_id);                    // optional exact-cache lifetime
+     int (*rife_drawings)(aji_ctx *c);                       // optional
+     int (*same_drawing)(aji_ctx *c, const aji_frame *a, const aji_frame *b,
+                         void *cu_stream);                   // optional
+@@ -291,6 +292,11 @@
+     bool has_pre_resize;
+ 
+     // Drawings timeline (rife-first with a pre-RIFE downscale; see process_drawings()).
++    uint64_t rife_serial, rife_prev_serial;
++    bool cuda_burst;
++    uint64_t burst_ticket;
++    int burst_refs_n;
++    struct mp_image *burst_refs[8];  // inputs live until the final output ticket
+     bool drawings;
+     struct mp_image *d_cur;          // work frame of the drawing on screen
+     double d_cur_pts;                // when it started
+@@ -428,7 +434,7 @@
+     // seek/reset so old work cannot contend with the post-seek chain.
+     drain_backend(vf);
+     mp_refqueue_flush(p->queue);
+-    if (p->aji && p->temporal_r)
++    if (p->aji)
+         p->api.temporal_reset(p->aji);
+     p->seq0 = p->seq_next = 0;
+     drawings_reset(vf);
+@@ -1375,6 +1381,35 @@
+     return work;
+ }
+ 
++// Submit an entire source pair before waiting for its last output. All reads
++// and writes use the same CUDA stream; source/interpolation refs stay alive.
++static void rife_burst_begin(struct mp_filter *vf)
++{
++    struct priv *p = vf->priv;
++    mp_assert(!p->cuda_burst && !p->burst_refs_n && !p->ring_n);
++    p->burst_ticket = 0;
++    p->cuda_burst = !p->is_d3d11 && p->rife_first && p->aji_active;
++    if (!p->is_d3d11 && p->api.rife_begin_pair)
++        p->api.rife_begin_pair(p->aji, p->drawings ? 0 : p->rife_prev_serial, p->drawings ? 0 : p->rife_serial);
++}
++
++static bool rife_burst_end(struct mp_filter *vf)
++{
++    struct priv *p = vf->priv;
++    bool ok = true;
++    if (p->cuda_burst) {
++        if (p->burst_ticket)
++            ok = p->api.wait(p->aji, p->burst_ticket) == AJI_OK;
++        // Include partially submitted work on an error path before dropping inputs.
++        drain_backend(vf);
++    }
++    p->cuda_burst = false;
++    p->burst_ticket = 0;
++    for (int i = 0; i < p->burst_refs_n; ++i) mp_image_unrefp(&p->burst_refs[i]);
++    p->burst_refs_n = 0;
++    return ok;
++}
++
+ // RIFE-first: interpolate two work-resolution frames at time t into a fresh
+ // work-resolution frame (the caller upscales it). Without a pre-RIFE downscale
+ // the work res equals the source res. Returns a new ref of `a` on a scene
+@@ -1418,9 +1453,11 @@
+     }
+     if (ret != AJI_OK) {
+         MP_ERR(vf, "interpolation failed: %s\n", p->api.last_error(p->aji));
++        drain_backend(vf);
+         talloc_free(out);
+         return NULL;
+     }
++    if (p->cuda_burst) return out; // the following upscale and final ticket order access
+     bool ok = p->is_d3d11;   // the DirectML shim completes synchronously
+     if (!ok && CHECK_CU(p->cu->cuCtxPushCurrent(p->cuda_ctx)) >= 0) {
+         ok = CHECK_CU(p->cu->cuStreamSynchronize(p->stream)) >= 0;
+@@ -1436,9 +1473,18 @@
+ static struct mp_image *upscale_image(struct mp_filter *vf,
+                                       struct mp_image *in)
+ {
+-    if (!submit_frame(vf, in, -1))
++    struct priv *p = vf->priv;
++    if (!submit_frame(vf, in, -1)) {
++        drain_backend(vf);
+         return NULL;
+-    return pop_ring(vf);
++    }
++    if (!p->cuda_burst) return pop_ring(vf);
++    mp_assert(p->ring_n == 1 && p->burst_refs_n < MP_ARRAY_SIZE(p->burst_refs));
++    p->burst_refs[p->burst_refs_n++] = mp_image_new_ref(in);
++    struct mp_image *out = p->ring[0].out;
++    p->burst_ticket = p->ring[0].ticket;
++    p->ring_n = 0; // out is owned by the caller, input by burst_refs until completion
++    return out;
+ }
+ 
+ // ---- Drawings timeline ---------------------------------------------------------------------
+@@ -1563,6 +1609,7 @@
+         // Spread over the hold when the next drawing comes within DRAWING_LOOK frames.
+         const bool spread = same >= 0 && p->d_next && p->d_next_pts > p->d_cur_pts &&
+                             p->d_next_pts - p->d_cur_pts <= (DRAWING_LOOK + 0.5) * frame;
++        rife_burst_begin(vf);
+         while (p->rife_acc <= p->rife_num && n < 8) {
+             const double tt = (double)p->rife_acc / p->rife_num;
+             const double pts = p->rife_prev->pts + (src->pts - p->rife_prev->pts) * tt;
+@@ -1594,6 +1641,7 @@
+             list[n++] = out;
+             p->rife_acc += p->rife_den;
+         }
++        if (!rife_burst_end(vf)) failed = true;
+         if (failed) {
+             for (int i = 0; i < n; i++)
+                 mp_image_unrefp(&list[i]);
+@@ -1627,6 +1675,7 @@
+     }
+     mp_image_unrefp(&p->rife_prev);
+     p->rife_prev = cur;
++    p->rife_prev_serial = p->rife_serial;
+     for (int i = 1; i < n; i++)
+         p->outq[p->outq_n++] = list[i];
+     p->outq_pos = 0;
+@@ -1892,6 +1941,10 @@
+     if (!mp_refqueue_can_output(p->queue))
+         return;
+ 
++    if (p->rife_on) { // never reset these IDs on seek: recycled surfaces are different frames
++        ++p->rife_serial;
++        if (!p->rife_serial) ++p->rife_serial;
++    }
+     if (p->rife_first && p->drawings) {
+         process_drawings(vf);
+         return;
+@@ -1929,6 +1982,7 @@
+         bool failed = false;
+         if (p->rife_prev && p->rife_prev->pts != MP_NOPTS_VALUE &&
+             src->pts != MP_NOPTS_VALUE && src->pts > p->rife_prev->pts) {
++            rife_burst_begin(vf);
+             while (p->rife_acc <= p->rife_num && n < 8) {
+                 struct mp_image *frame;
+                 double pts;
+@@ -1956,6 +2010,7 @@
+                 list[n++] = frame;
+                 p->rife_acc += p->rife_den;
+             }
++            if (!rife_burst_end(vf)) failed = true;
+             if (failed || !n) {
+                 for (int i = 0; i < n; i++)
+                     mp_image_unrefp(&list[i]);
+@@ -1980,6 +2035,7 @@
+             list[n++] = u;
+         }
+         mp_image_unrefp(&p->rife_prev);
++        p->rife_prev_serial = p->rife_serial;
+         p->rife_prev = cur_src;  // previous *source* endpoint (owns the ref)
+         for (int i = 1; i < n; i++)
+             p->outq[p->outq_n++] = list[i];
+@@ -2033,6 +2089,8 @@
+             int n = 0;
+             bool failed = false;
+             emitted_cur = false;
++            if (!p->is_d3d11 && p->api.rife_begin_pair)
++                p->api.rife_begin_pair(p->aji, p->drawings ? 0 : p->rife_prev_serial, p->drawings ? 0 : p->rife_serial);
+             while (p->rife_acc <= p->rife_num && n < 8) {
+                 if (p->rife_acc == p->rife_num) {
+                     list[n++] = out;
+@@ -2080,6 +2138,7 @@
+         }
+         mp_image_unrefp(&p->rife_prev);
+         p->rife_prev = mp_image_new_ref(out);
++        p->rife_prev_serial = p->rife_serial;
+         if (!emitted_cur)
+             mp_image_unrefp(&out);  // endpoint only; rife_prev keeps it
+         p->seq0++;
+@@ -2254,6 +2313,7 @@
+         p->api.resize = aji_lib_sym(p->api.handle, "aji_resize");
+         p->api.infer_rife = aji_lib_sym(p->api.handle, "aji_infer_rife");
+         // Optional drawings timeline; NULL on engines that do not have it.
++        p->api.rife_begin_pair = aji_lib_sym(p->api.handle, "aji_rife_begin_pair");
+         p->api.rife_drawings = aji_lib_sym(p->api.handle, "aji_rife_drawings");
+         p->api.same_drawing = aji_lib_sym(p->api.handle, "aji_same_drawing");
+         p->api.poll = aji_lib_sym(p->api.handle, "aji_poll");

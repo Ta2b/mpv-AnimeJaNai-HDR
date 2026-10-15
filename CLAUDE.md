@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Active Quality / Fast work
+
+Read [`docs/CHANTIER-QUALITY-FAST.md`](docs/CHANTIER-QUALITY-FAST.md) first for
+unreleased Quality/Fast policies, CUDA optimizations, compile evidence and
+remaining work. The 3.8.0.30 status below is the previous published release.
+
 ## Specialized GPU release — 15 October 2026
 
 Read [`docs/CHANTIER-GPU-SPECIALISE.md`](docs/CHANTIER-GPU-SPECIALISE.md) first.

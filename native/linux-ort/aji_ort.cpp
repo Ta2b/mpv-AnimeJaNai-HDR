@@ -56,7 +56,8 @@ struct Settings {
     bool boost = false;            // the heavier model for drawings that stay on screen (reuse=frame)
     std::string rife_device = "auto";   // the processor of the interpolation: auto, gpu, npu, cpu
     int overlap = -1;              // pixels a tile sees past its edges; -1 = what the model reads
-    bool warp = true;              // [global] rife_engine: old = interpolate, then upscale each frame
+    bool quality = false;          // quality (legacy old): no approximate reuse or retiming
+    bool warp = true;              // fast (legacy new): warp upscaled endpoints
     bool drawings = true;          // [global] rife_drawings: spread the motion over held drawings
 };
 
@@ -85,7 +86,7 @@ Settings read_settings(const std::string &conf)
         else if (key == "engine_rife_device") s.rife_device = lower(value);
         else if (key == "engine_boost") { const std::string v = lower(value); s.boost = v == "yes" || v == "true" || v == "1" || v == "on"; }
         else if (key == "engine_overlap") s.overlap = std::atoi(value.c_str());
-        else if (key == "rife_engine") s.warp = lower(value) != "old";
+        else if (key == "rife_engine") { s.quality = lower(value) == "quality" || lower(value) == "old"; s.warp = !s.quality; }
         else if (key == "rife_drawings") s.drawings = lower(value) != "no";
     };
     while (std::getline(file, line)) {
@@ -107,6 +108,11 @@ Settings read_settings(const std::string &conf)
     env("AJI_RIFE_DEVICE", "engine_rife_device");
     env("AJI_OVERLAP", "engine_overlap");
     if (const char *v = std::getenv("AJI_WARP"); v && *v == '0') s.warp = false;
+    if (s.quality) {
+        s.drawings = false;
+        s.reuse = "off";
+        s.boost = false;
+    }
     return s;
 }
 
@@ -936,8 +942,8 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
         return !(value && *value == '0');
     }();
     if (!keep_decision || decision.a != a.identity || decision.b != b.identity) {
-        decision.same = &a == &b
-            || picture_unchanged(current, current_stride, previous, previous_stride, c.width, c.height, c.settings.same);
+        decision.same = !c.settings.quality && (&a == &b
+            || picture_unchanged(current, current_stride, previous, previous_stride, c.width, c.height, c.settings.same));
         decision.cut = !decision.same && c.chain.rife_scd_threshold > 0
             && difference(previous, previous_stride, current, current_stride, c.width, c.height) > c.chain.rife_scd_threshold;
         decision.a = a.identity; decision.b = b.identity;
