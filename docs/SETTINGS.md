@@ -1,6 +1,6 @@
 # Simplification des réglages du Manager
 
-## RIFE Quality / Fast (chantier après 3.8.0.30)
+## RIFE Quality / Fast (3.8.0.31)
 
 - **Quality** (`rife_engine=quality`, ancien `old`) : chaque intermédiaire est
   calculé par RIFE complet, puis suit l'upscale configuré. Pas de reconstruction

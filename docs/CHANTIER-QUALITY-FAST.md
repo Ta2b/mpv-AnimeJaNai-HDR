@@ -57,10 +57,18 @@ active. Seuls compilation/liaison et contrôles statiques sont autorisés.
 - Le cache Fast utilise aussi les IDs explicites, évite la réutilisation d'un
   pointeur recyclé, et promeut B même si un facteur fractionnaire ne l'a pas émis.
 
+## Publication 3.8.0.31 en cours
+
+Le push `release` déclenche Windows, Linux et macOS. Ne pas annoncer la
+publication avant les résultats et les assets. Binaires immuables :
+`7c4ab72707fab87e77aa4778514f5aa723721015`, pin `gpu-binaries-source-ref.txt`.
+Référence privée de résultat Windows :
+`build-status/specialized-1468be6f24cac537407283d434bd5d542d642cf3-1`.
+
 ## Références du lot en cours
 
-- Lecteur / filtre / packaging : `2600de1` puis correctif des identités de dessins tenus (commit suivant).
-- Backend : branche `perf-specialized-gpu-20261014`, HEAD `1468be6` (CI Windows en cours).
+- Lecteur / filtre / packaging : `2600de1`, puis identités des dessins `8e7d767`, drainage borné `04d2a78`.
+- Backend : branche `perf-specialized-gpu-20261014`, HEAD `1468be6f24cac537407283d434bd5d542d642cf3` ; CI Windows `38670166267`, AMD/NVIDIA **success**.
 - Manager : `b3a8c1fcfd7b5acc846c0fb6ecba2fea793ef740`, paquets immuables publiés.
 - Build AMD Linux : `38669623563`, succès.
 - Le suffixe de dépendance du lecteur Linux est incrémenté en `quality-fast1`
@@ -71,7 +79,7 @@ active. Seuls compilation/liaison et contrôles statiques sont autorisés.
 Logs ignorés dans `artifacts/performance/amd-specialized/quality-fast-*.log` :
 Manager Release (44 avertissements préexistants, zéro erreur ; CI `38669549109` réussie), backend CUDA/TRT
 Linux complet, modules ORT/AMD Linux et objet C du filtre mpv compilés. Le dernier
-build Windows complet est lancé ; les modules Linux viennent d’être recompilés.
+build Windows complet est réussi ; les modules Linux sont recompilés.
 Aucune inférence, mesure de gain ou comparaison numérique exécutée. Ne pas
 présenter les optimisations comme garantissant des pixels identiques ni un gain
 sur toutes les cartes. Les ordres/formules et paramètres de modèle sont gardés.
@@ -89,7 +97,7 @@ sur toutes les cartes. Les ordres/formules et paramètres de modèle sont gardé
 
 | Lot | Statut |
 |---|---|
-| Quality/Fast, compatibilité et garde des raccourcis | Codé ; compilations Linux/Manager réussies, Windows en cours |
+| Quality/Fast, compatibilité et garde des raccourcis | Codé ; compilations Linux/Windows/Manager réussies |
 | Attentes CUDA limitées à l'événement utile | Codé |
 | Cache exact de paire et promotion des RGB préparés | Codé ; activation par filtre Linux mis à jour |
 | Capture RIFE plus large et fusion padding/conversion 4:4:4 / 4:2:0 | Codé |
@@ -98,7 +106,7 @@ sur toutes les cartes. Les ordres/formules et paramètres de modèle sont gardé
 | Fusion des conversions RIFE→upscale, plugins d'opérateurs neuronaux | Non implémentés ; conserver chroma et arrondis |
 | Batching neuronal et contextes concurrents par modèle | Non implémentés ; distinct de la rafale de soumissions |
 | Choix empirique des tactiques/streams TensorRT | Pas effectué ; builder niveau 5 déjà actif, profilage interdit |
-| Publication des binaires et pin Manager | À faire ; 3.8.0.30 demeure la release précédente |
+| Publication des binaires et pin Manager | 3.8.0.31 déclenchée ; résultats des trois workflows à confirmer |
 
 Ne pas confondre ces pistes avec les lots déjà codés. Les anciens worktrees
 utilisateur et fichiers non suivis restent à préserver.
