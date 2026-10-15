@@ -21,6 +21,7 @@
 #include "rife_flow_cache.h"
 #include "tiles.h"
 #include "../common/stats_snapshot.h"
+#include "../common/source_identity.h"
 #include <sstream>
 #include <chrono>
 #include <cmath>
@@ -165,6 +166,7 @@ struct Step {
 // A source frame of the pair being interpolated, recognised by its bytes (the player reuses its
 // buffers: an address says nothing), with what was derived from it.
 struct Endpoint {
+    aji::SourceKey source_key;
     std::vector<uint8_t> source, work, up;   // as given; at the interpolation size; upscaled
     bool valid = false, has_work = false, has_up = false;
     uint64_t used = 0, identity = 0; // identity changes only when source bytes are replaced
@@ -173,6 +175,9 @@ struct Endpoint {
 struct Context {
     std::string conf, models, rife_dir, device, stats, error, provider, backend_label, cache;
     aji::StatsPublisher stats_publisher;
+    aji::SourceIds pending_ids, active_ids;
+    aji::SourceIdTracker id_tracker;
+    uint64_t source_id_hits = 0, source_byte_comparisons = 0;
     std::string stats_text, stats_state = "configured";
     double last_frame_ms = 0;
     // Interpolation. Before the upscale (the profile's default): the two source frames are
@@ -795,16 +800,28 @@ bool same_bytes(const std::vector<uint8_t> &kept, const uint8_t *pixels, ptrdiff
 }
 
 // The entry of a source frame: found by its bytes, or taking the place of the one used longest ago.
-Endpoint &endpoint(Context &c, const uint8_t *pixels, ptrdiff_t stride)
+Endpoint &endpoint(Context &c, const uint8_t *pixels, ptrdiff_t stride, aji::SourceKey key = {})
 {
-    for (auto &e : c.ends)
-        if (e.valid && same_bytes(e.source, pixels, stride, c.width, c.height)) { e.used = ++c.tick; return e; }
+    // Only an explicit immutable ID can avoid reading bytes; legacy clients
+    // retain the exact comparison, including every useful row.
+    for (auto &e : c.ends) {
+        if (e.valid && e.source_key.matches(key)) { ++c.source_id_hits; e.used = ++c.tick; return e; }
+    }
+    for (auto &e : c.ends) {
+        if (!e.valid) continue;
+        ++c.source_byte_comparisons;
+        if (same_bytes(e.source, pixels, stride, c.width, c.height)) {
+            if (key.valid()) e.source_key = key;
+            e.used = ++c.tick; return e;
+        }
+    }
     Endpoint *oldest = &c.ends[0];
     for (auto &x : c.ends) if (x.used < oldest->used) oldest = &x;
     Endpoint &e = *oldest;
     e.source.resize((size_t)c.width * c.height * 3);
     for (int y = 0; y < c.height; y++)
         std::memcpy(e.source.data() + (size_t)y * c.width * 3, pixels + (ptrdiff_t)y * stride, (size_t)c.width * 3);
+    e.source_key = key;
     e.valid = true; e.has_work = e.has_up = false; e.identity = e.used = ++c.tick;
     return e;
 }
@@ -928,9 +945,9 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
             for (size_t y = first; y < end; y++) std::memcpy(output + (ptrdiff_t)y * output_stride, picture.data() + y * row, row);
         });
     };
-    Endpoint &b = endpoint(c, current, current_stride);
+    Endpoint &b = endpoint(c, current, current_stride, c.active_ids.key(false, c.width, c.height, current_stride));
     if (!previous || t >= 1) { give(up_of(c, b, &whole)); return whole; }
-    Endpoint &a = endpoint(c, previous, previous_stride);
+    Endpoint &a = endpoint(c, previous, previous_stride, c.active_ids.key(true, c.width, c.height, previous_stride));
     // Endpoints were matched by all active RGB bytes, not decoder addresses. Once
     // a pair is recognised, every timestep has the same drawing/cut decision.
     // Replacing either endpoint changes its identity and invalidates the decision.
@@ -1150,6 +1167,7 @@ std::string format_stats(const Context &c)
         for (const auto &w : step.workers)
             if (!w.executor->note.empty()) f << "Placement: " << w.executor->label << ": " << w.executor->note << "\n";
     }
+    f << "Source ID hits: " << c.source_id_hits << "\nSource byte comparisons: " << c.source_byte_comparisons << "\nSource ID rejected calls: " << c.id_tracker.rejected_calls << "\n";
     if (!c.boost_note.empty()) f << "Boost: not active (" << c.boost_note << ")\n";
     return f.str();
 }
@@ -1184,6 +1202,8 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
     try {
         require(width > 0 && height > 0 && width <= 16384 && height <= 16384, "Invalid source dimensions");
         require(width % 2 == 0 && height % 2 == 0, "Spatial profiles require even source dimensions");
+        c.pending_ids = {}; c.active_ids = {}; c.id_tracker = {};
+        c.source_id_hits = c.source_byte_comparisons = 0;
         c.error.clear(); c.stats_state = "configured"; c.last_frame_ms = 0;
         c.steps.clear(); c.width = width; c.height = height; c.rife_skipped = false;
         c.rife.reset();
@@ -1224,6 +1244,7 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
                                   unsigned char *output, ptrdiff_t output_stride)
 {
     auto &c = *(Context *)context;
+    c.active_ids = c.pending_ids; c.pending_ids = {};
     try {
         const double start = now_ms();
         require(current && output && timestep >= 0 && timestep <= 1, "Invalid frame arguments");
@@ -1270,6 +1291,10 @@ AJI_ORT_EXPORT int aji_vk_upcoming(aji_vk_context *context, const unsigned char 
     return 0;
 }
 
+AJI_ORT_EXPORT void aji_vk_source_ids(aji_vk_context *context, uint64_t generation, uint64_t previous, uint64_t current)
+{
+    if (context) { auto &c = *(Context *)context; c.pending_ids = c.id_tracker.accept(generation, previous, current); }
+}
 AJI_ORT_EXPORT const char *aji_vk_error(aji_vk_context *c) { return c ? ((Context *)c)->error.c_str() : create_error.c_str(); }
 AJI_ORT_EXPORT const char *aji_vk_stats_snapshot(aji_vk_context *context)
 {

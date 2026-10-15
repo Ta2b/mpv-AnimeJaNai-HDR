@@ -27,6 +27,15 @@ int aji_vk_process(aji_vk_context *, const unsigned char *previous, ptrdiff_t pr
  * until that call returns. Returns how many following frames the engine would like to be given
  * from now on (0: none; the bridge then starts each frame as soon as it has it). */
 int aji_vk_upcoming(aji_vk_context *, const unsigned char *const *frames, const ptrdiff_t *strides, int count);
+/* Optional symbol, ABI 1. Applies to the next process call only; zero disables.
+ * Nonzero generation + sequence identify immutable active RGB24 bytes, never an
+ * address. IDs must not repeat within a generation. Advance the generation on
+ * seek/stream/colour/conversion/model lifetime changes or before sequence wrap.
+ * The engine also checks configured dimensions and the supplied stride. Call
+ * serially after configure, before process. Without this hook, comparison stays
+ * exact. Regressing counters fail closed until a higher generation arrives.
+ * Clients and old libraries negotiate by dlsym/GetProcAddress. */
+void aji_vk_source_ids(aji_vk_context *, uint64_t generation, uint64_t previous, uint64_t current);
 const char *aji_vk_error(aji_vk_context *);
 /* Optional live text, no file I/O; valid until the next call for this context.
  * Call serially with configure/process. Periodic files are snapshots (up to 4 Hz).

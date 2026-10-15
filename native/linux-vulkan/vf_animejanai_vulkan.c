@@ -31,7 +31,7 @@
 enum { JOB_QUEUED, JOB_RUNNING, JOB_DONE };
 #define MAX_PEEK 4
 // One output picture. `last`: the last one made from its source frame, numbered `source`.
-struct job { struct mp_image *previous, *in, *out; double t; int state; bool last; uint64_t source; };
+struct job { struct mp_image *previous, *in, *out; double t; int state; bool last; uint64_t source, previous_source, generation; };
 
 struct opts { char *lib, *conf, *model_dir, *rife_model_dir, *device, *stats; int slot, ahead; };
 struct priv {
@@ -51,7 +51,8 @@ struct priv {
     const char *(*error)(aji_vk_context *);
     void (*destroy)(aji_vk_context *);
     int (*upcoming)(aji_vk_context *,const unsigned char *const *,const ptrdiff_t *,int);   // optional
-    uint64_t source;
+    void (*source_ids)(aji_vk_context *,uint64_t,uint64_t,uint64_t); // optional immutable RGB identity
+    uint64_t source, previous_source, generation;
     // Pictures in display order, a ring that starts at `head`. Everything below is guarded by
     // `lock`. The engine keeps state from one call to the next (reuse, RIFE pairs): one thread
     // runs the jobs, in order.
@@ -94,6 +95,7 @@ static MP_THREAD_VOID worker(void *arg) {
         struct job run=*j;
         mp_mutex_unlock(&p->lock);
         int wanted=p->upcoming?p->upcoming(p->context,next,strides,known):0;
+        if(p->source_ids) p->source_ids(p->context,run.generation,run.previous_source,run.source);
         int result=p->process(p->context,run.previous?run.previous->planes[0]:NULL,
             run.previous?run.previous->stride[0]:0,run.in->planes[0],run.in->stride[0],run.t,
             run.out->planes[0],run.out->stride[0]);
@@ -132,6 +134,8 @@ static void reset(struct mp_filter *f) {
     struct priv *p=f->priv;
     drain(p);
     mp_image_unrefp(&p->previous);mp_image_unrefp(&p->pending);
+    p->previous_source=0;
+    if(!++p->generation)++p->generation; // source sequence is never reset by seek
     p->eof=p->reported=false;p->acc=p->plan.denominator;
 }
 static void destroy(struct mp_filter *f) {
@@ -208,6 +212,7 @@ static void process(struct mp_filter *f) {
         if(p->configure(p->context,format->w,format->h,format->nominal_fps,&p->plan)<0) {
             MP_ERR(f,"Vulkan profile: %s\n",p->error(p->context));mp_filter_internal_mark_failed(f);return;
         }
+        if(!++p->generation)++p->generation; // includes conversion/colour/view changes
         p->format=format->params;p->have_format=true;p->acc=p->plan.denominator;
         long long bytes=(long long)p->plan.width*p->plan.height*3;
         p->capacity=MPCLAMP(bytes>0?(int)(AHEAD_BYTES/bytes):MAX_JOBS,9,MAX_JOBS);
@@ -233,6 +238,8 @@ static void process(struct mp_filter *f) {
             p->pending=in;mp_filter_internal_mark_progress(f);return;
         }
     }
+    if(!++p->source) { p->source=1;if(!++p->generation)++p->generation; }
+    const uint64_t previous_source=p->previous?p->previous_source:0;
     struct job jobs[8]={0};int n=0;
     if(!p->plan.active) {
         mp_image_unrefp(&p->previous);
@@ -261,9 +268,9 @@ static void process(struct mp_filter *f) {
         mp_image_unrefp(&p->previous);p->previous=in;
     }
     jobs[n-1].last=true;
-    p->source++;
+    p->previous_source=p->previous?p->source:0;
     mp_mutex_lock(&p->lock);
-    for(int i=0;i<n;++i) { jobs[i].source=p->source;*job_at(p,p->count++)=jobs[i]; }
+    for(int i=0;i<n;++i) { jobs[i].source=p->source;jobs[i].previous_source=previous_source;jobs[i].generation=p->generation;*job_at(p,p->count++)=jobs[i]; }
     p->sources++;p->flush=false;
     mp_cond_signal(&p->work);
     mp_mutex_unlock(&p->lock);
@@ -280,7 +287,7 @@ static struct mp_filter *create(struct mp_filter *parent,void *options) {
     if(!f){talloc_free(options);return NULL;}
     struct priv *p=f->priv;p->opts=talloc_steal(p,options);
     mp_mutex_init(&p->lock);mp_cond_init(&p->work);mp_cond_init(&p->idle);p->locks=true;
-    p->capacity=MAX_JOBS;
+    p->capacity=MAX_JOBS;p->generation=1;
     mp_filter_add_pin(f,MP_PIN_IN,"in");mp_filter_add_pin(f,MP_PIN_OUT,"out");
     char *paths[5];char *sources[]={p->opts->lib,p->opts->conf,p->opts->model_dir,p->opts->rife_model_dir,p->opts->stats};
     for(int i=0;i<5;++i)paths[i]=sources[i]?mp_normalize_user_path(p,f->global,sources[i]):NULL;
@@ -292,6 +299,8 @@ static struct mp_filter *create(struct mp_filter *parent,void *options) {
     LOAD(create);LOAD(configure);LOAD(process);LOAD(error);LOAD(destroy);
 #undef LOAD
     *(void **)(&p->upcoming)=dlsym(p->library,"aji_vk_upcoming");
+    const char *ids=getenv("AJI_FRAME_IDS");
+    if(!(ids && strcmp(ids,"0")==0)) *(void **)(&p->source_ids)=dlsym(p->library,"aji_vk_source_ids");
     p->context=p->create(paths[1],paths[2],paths[3],p->opts->device,paths[4],p->opts->slot);
     if(!p->context){MP_ERR(f,"Vulkan backend: %s\n",p->error(NULL));goto fail;}
     // Frames reach the engine as RGB24, whatever the decoder gives.

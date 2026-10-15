@@ -4,6 +4,7 @@
 #include "gpu.h"
 #include "tiles.h"
 #include "../common/stats_snapshot.h"
+#include "../common/source_identity.h"
 #include <sstream>
 #include <algorithm>
 #include <chrono>
@@ -29,6 +30,7 @@ struct Step { std::unique_ptr<ncnn::Net> net; AjiModelConf conf; };
 // Derived pictures are immutable:
 // upscale() normalizes its argument in place, so a cached input must be cloned before use.
 struct CachedFrame {
+    aji::SourceKey source_key;
     std::vector<unsigned char> source, output, rife_pixels;
     ncnn::Mat prepared, endpoint;
     bool endpoint_served=false;
@@ -41,6 +43,9 @@ struct CachedPair {
 struct Context {
     std::string conf, models, rife_dir, device, stats, error;
     aji::StatsPublisher stats_publisher;
+    aji::SourceIds pending_ids, active_ids;
+    aji::SourceIdTracker id_tracker;
+    uint64_t source_id_hits=0, source_byte_comparisons=0;
     std::string stats_text, stats_state = "configured";
     double last_frame_ms = 0;
     int slot, gpu=-1, width=0, height=0, work_w=0, work_h=0;
@@ -160,9 +165,17 @@ bool same_source(const CachedFrame &frame, const unsigned char *data, ptrdiff_t 
     if (!frame.identity || frame.source.size()!=row*(size_t)h) return false;
     return aji::picture_unchanged(data,stride,frame.source.data(),(ptrdiff_t)row,w,h,same);
 }
-CachedFrame &prepare_frame(Context &c, const unsigned char *data, ptrdiff_t stride) {
+CachedFrame &prepare_frame(Context &c, const unsigned char *data, ptrdiff_t stride, aji::SourceKey key = {}) {
+    // Similarity keeps its existing anchor policy. IDs accelerate exact reuse only.
+    if (c.same.threshold==0) for (auto &frame:c.frames) {
+        if (frame.identity && frame.source_key.matches(key)) {
+            ++c.source_id_hits; ++c.cache_hits; frame.used=++c.clock; return frame;
+        }
+    }
     for (auto &frame:c.frames) {
+        if (frame.identity) ++c.source_byte_comparisons;
         if (same_source(frame,data,stride,c.width,c.height,c.same)) {
+            if (c.same.threshold==0 && key.valid()) frame.source_key=key;
             frame.used=++c.clock;
             ++c.cache_hits;
             return frame;
@@ -170,6 +183,7 @@ CachedFrame &prepare_frame(Context &c, const unsigned char *data, ptrdiff_t stri
     }
     auto &frame=c.frames[c.frames[0].used<=c.frames[1].used?0:1];
     // Mark invalid until both the source and its derived picture have been prepared.
+    frame.source_key=key;
     frame.identity=0; frame.prepared=ncnn::Mat(); frame.endpoint=ncnn::Mat();
     frame.output.clear(); frame.endpoint_served=false;
     frame.rife_pixels.clear();
@@ -289,6 +303,7 @@ std::string format_stats(const Context &c) {
      <<"\nRIFE cached tensor bytes: "<<bytes<<"\n";
     f<<"RIFE RGB preparations: "<<c.rife_rgb_preparations
      <<"\nRIFE direct RGB outputs: "<<c.rife_packed_outputs<<"\n";
+    f<<"Source ID hits: "<<c.source_id_hits<<"\nSource byte comparisons: "<<c.source_byte_comparisons<<"\nSource ID rejected calls: "<<c.id_tracker.rejected_calls<<"\n";
     return f.str();
 }
 void publish_stats(Context &c, bool force = false) {
@@ -332,6 +347,7 @@ extern "C" int aji_vk_configure(aji_vk_context *context,int width,int height,dou
     try {
         require(width>0 && height>0 && width<=16384 && height<=16384,"Invalid source dimensions");
         require(width%2==0 && height%2==0,"Vulkan spatial profiles require even source dimensions");
+        c.pending_ids={};c.active_ids={};c.id_tracker={};c.source_id_hits=c.source_byte_comparisons=0;
         c.error.clear();c.stats_state="configured";c.last_frame_ms=0;
         c.rife.reset();c.steps.clear();c.width=width;c.height=height;
         for (auto &frame:c.frames) frame=CachedFrame();
@@ -379,6 +395,7 @@ extern "C" int aji_vk_configure(aji_vk_context *context,int width,int height,dou
 extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previous,ptrdiff_t previous_stride,
     const unsigned char *current,ptrdiff_t current_stride,double timestep,unsigned char *output,ptrdiff_t output_stride) {
     auto &c=*(Context *)context;
+    c.active_ids=c.pending_ids;c.pending_ids={};
     try {
         auto start=std::chrono::steady_clock::now();
         require(current && output && timestep>=0 && timestep<=1,"Invalid frame arguments");
@@ -388,12 +405,12 @@ extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previ
         if (!c.plan.active) result=rgb(current,current_stride,c.width,c.height);
         else if (c.cache) {
             if (!previous || timestep>=1 || !c.rife) {
-                output_frame=&prepare_frame(c,current,current_stride);
+                output_frame=&prepare_frame(c,current,current_stride,c.active_ids.key(false,c.width,c.height,current_stride));
                 result=endpoint(c,*output_frame);
             }
             else {
-                auto &a=prepare_frame(c,previous,previous_stride);
-                auto &b=prepare_frame(c,current,current_stride);
+                auto &a=prepare_frame(c,previous,previous_stride,c.active_ids.key(true,c.width,c.height,previous_stride));
+                auto &b=prepare_frame(c,current,current_stride,c.active_ids.key(false,c.width,c.height,current_stride));
                 if (&a==&b && c.same.threshold>0) {
                     // The two frames are the same drawing: the picture between them is that drawing.
                     // (With identical bytes only, the interpolation runs as it always did.)
@@ -431,6 +448,9 @@ extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previ
         publish_stats(c,changed);
         return 0;
     }catch(const std::exception &e){publish_error(c,e);return -1;}
+}
+extern "C" void aji_vk_source_ids(aji_vk_context *context,uint64_t generation,uint64_t previous,uint64_t current) {
+    if (context) { auto &c=*(Context *)context;c.pending_ids=c.id_tracker.accept(generation,previous,current); }
 }
 extern "C" const char *aji_vk_error(aji_vk_context *c) { return c?((Context *)c)->error.c_str():create_error.c_str(); }
 extern "C" const char *aji_vk_stats_snapshot(aji_vk_context *context) {

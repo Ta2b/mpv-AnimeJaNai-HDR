@@ -42,7 +42,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vulkan-bundle
-          key: vulkan-ubuntu24-${{ runner.arch }}-${{ hashFiles('native/linux-vulkan/CMakeLists.txt', 'native/linux-vulkan/aji_vulkan.cpp', 'native/common/stats_snapshot.h', 'native/linux-vulkan/aji_vulkan.h', 'native/linux-vulkan/rife_frame_cache.h', 'native/linux-vulkan/rife-v4-cache.patch', 'native/linux-ort/tiles.cpp', 'native/linux-ort/tiles.h', 'native/linux-vulkan/convert_span.py', 'native/linux-vulkan/smoke.cpp', 'installer/linux/build-inference.sh', 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx/*SPANF3*') }}
+          key: vulkan-ubuntu24-${{ runner.arch }}-${{ hashFiles('native/linux-vulkan/CMakeLists.txt', 'native/linux-vulkan/aji_vulkan.cpp', 'native/common/stats_snapshot.h', 'native/common/source_identity.h', 'native/linux-vulkan/aji_vulkan.h', 'native/linux-vulkan/rife_frame_cache.h', 'native/linux-vulkan/rife-v4-cache.patch', 'native/linux-ort/tiles.cpp', 'native/linux-ort/tiles.h', 'native/linux-vulkan/convert_span.py', 'native/linux-vulkan/smoke.cpp', 'installer/linux/build-inference.sh', 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx/*SPANF3*') }}
       - name: Build the engine and convert the models
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
