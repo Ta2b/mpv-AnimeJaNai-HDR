@@ -60,8 +60,16 @@ active. Seuls compilation/liaison et contrôles statiques sont autorisés.
 
 ## Publication 3.8.0.31 en cours
 
-Le push `release` déclenche Windows, Linux et macOS. Ne pas annoncer la
-publication avant les résultats et les assets. Binaires immuables :
+Le commit de livraison est `bf4dc2b` (attente NVDEC avant lecture RIFE directe).
+Premier lancement `58f2e3d` remplacé avant publication pour inclure ce correctif.
+Windows et macOS ont terminé avec succès, leurs dix assets sont `uploaded`.
+Linux : moteurs réussis, compilation du lecteur natif en cours ; pas encore
+publié. Ne pas annoncer la livraison Linux avant les résultats et les assets :
+
+- [Windows 38670981195](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38670981195).
+- [Linux 38670981419](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38670981419).
+- [macOS 38670981300](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38670981300).
+ Binaires immuables :
 `7c4ab72707fab87e77aa4778514f5aa723721015`, pin `gpu-binaries-source-ref.txt`.
 Référence privée de résultat Windows :
 `build-status/specialized-1468be6f24cac537407283d434bd5d542d642cf3-1`.
