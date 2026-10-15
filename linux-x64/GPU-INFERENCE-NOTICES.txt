@@ -2,3 +2,6 @@ Specialized AnimeJaNai inference engines
 Source projects: https://github.com/the-database/animejanai-inference and Ta2b/animejanai-inference-rtx.
 Contains project-owned compiled engine libraries only. NVIDIA, AMD, ONNX Runtime and DirectML runtimes retain their separate bundled notices and terms.
 No models or vendor runtime libraries are present in this binary source bundle.
+
+Fast complete-view guard backend: 3f6f60fa58b5ed649bb94c11030d8e354a6d3fc0
+Linux targeted identity/fidelity qualification; Windows compilation/linking only. No FPS claim.

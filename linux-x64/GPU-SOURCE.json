@@ -1,17 +1,17 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "d9d0a941d62f1dfcb3ed2f87018c4871aea12be7",
-  "player_source": "735a33d87d228b3b77718b6d918111ed83e476af",
+  "backend_source": "3f6f60fa58b5ed649bb94c11030d8e354a6d3fc0",
+  "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "d9d0a941d62f1dfcb3ed2f87018c4871aea12be7",
-    "GITHUB_RUN_ID": "38801311797",
+    "GITHUB_SHA": "3f6f60fa58b5ed649bb94c11030d8e354a6d3fc0",
+    "GITHUB_RUN_ID": "38822986680",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Windows: compilation/linking only, no hardware inference. Linux: targeted RTX4070Ti/TRT11.3 inference, real cold build/hit/weight invalidation; same-plan output parity, independent rebuild max delta 1/255. No FPS claim.",
+  "validation": "Linux RTX4070Ti/TRT11.3: complete-view/ID/lifetime guards, 11 Fast numeric cases exact against fresh, Quality unchanged, final multi-SM player 13 hashes/PTS exact. Windows compile/link only. No FPS claim.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -19,12 +19,15 @@
     "full-rgb-post-graph",
     "virtual-yuv-padding",
     "fast-motion-stream",
-    "ordinary-engine-content-identity-v2"
+    "ordinary-engine-content-identity-v2",
+    "fast-explicit-source-views",
+    "one-shot-fast-handoff",
+    "inference-stream-order"
   ],
   "sha256": {
     "libaji.so": "c79eb7cfc4be4aecc207664636c906cea4c0de1b68287aac1a71b992a52a7dd2",
-    "libaji_trt.so": "2cef3796af600b752fa0805ca6ff800b6d2ddfe4f42067b60390f1fbdbedac8c",
-    "libaji_trt_rtx.so": "2cef3796af600b752fa0805ca6ff800b6d2ddfe4f42067b60390f1fbdbedac8c"
+    "libaji_trt.so": "142e6ea3245b797d38f90d698cfcc3488d53b5dae9625aeec640f63f57a65d95",
+    "libaji_trt_rtx.so": "142e6ea3245b797d38f90d698cfcc3488d53b5dae9625aeec640f63f57a65d95"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
