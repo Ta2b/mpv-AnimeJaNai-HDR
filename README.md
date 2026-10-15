@@ -7,7 +7,15 @@ une option NVIDIA distincte. Les essais physiques HDR et RTX
 4050 restent nécessaires ; Linux demeure expérimental dans les releases communes. Voir
 [la documentation Linux](docs/LINUX.md) pour la construction, les tests et les limites.
 
-**[3.8.0.30 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.30).**
+**[3.8.0.31 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.31).**
+RIFE propose maintenant **Quality** (prédiction complète par instant) et **Fast**
+(reconstruction/réutilisation temporelle). CUDA optimise les attentes, conversions,
+captures et préparations communes ; le lecteur Linux livre la gestion des paires
+et des sorties groupées. Les anciens réglages old/new restent reconnus.
+Voir [le bilan, les limites et la suite](docs/CHANTIER-QUALITY-FAST.md).
+Aucun nouveau benchmark ni contrôle de qualité sur GPU n'a été exécuté.
+
+**Historique — 3.8.0.30 :** **[3.8.0.30 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.30).**
 MIGraphX + HIP natif pour RX 9070 XT et TensorRT + CUDA spécialisé sont embarqués,
 avec les modèles actuels. Linux AMD nécessite un runtime ROCm 7.2 compatible.
 Les builds et la publication ont réussi ; le fonctionnement et les gains GPU

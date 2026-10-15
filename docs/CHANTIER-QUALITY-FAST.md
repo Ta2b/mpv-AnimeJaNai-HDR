@@ -19,10 +19,10 @@ active. Seuls compilation/liaison et contrôles statiques sont autorisés.
   `perf-specialized-gpu-20261014`, base `c7bdb1a`.
 - Manager : `/home/ta2b/.animejanai-tools/work/manager-specialized`, même branche,
   base `fade3c7`. Ne pas modifier le worktree backend utilisateur d'origine.
-- Dernière release livrée : 3.8.0.30. Les modifications de ce document ne sont
-  pas encore intégrées dans ses binaires.
+- Dernière release livrée : 3.8.0.31. Les modifications Quality/Fast sont livrées
+  dans la 3.8.0.31 ; 3.8.0.30 reste le checkpoint précédent.
 
-## Avancement exact — premier lot codé
+## Avancement exact — premier lot livré
 
 - Manager : Quality/Fast et valeurs `quality`/`fast`, lecture des aliases old/new
   et des sauvegardes sérialisées ; Fast reste le défaut antérieur. Retiming
@@ -58,23 +58,26 @@ active. Seuls compilation/liaison et contrôles statiques sont autorisés.
 - Le cache Fast utilise aussi les IDs explicites, évite la réutilisation d'un
   pointeur recyclé, et promeut B même si un facteur fractionnaire ne l'a pas émis.
 
-## Publication 3.8.0.31 en cours
+## Publication 3.8.0.31 confirmée
 
 Le commit de livraison est `bf4dc2b` (attente NVDEC avant lecture RIFE directe).
 Premier lancement `58f2e3d` remplacé avant publication pour inclure ce correctif.
-Windows et macOS ont terminé avec succès, leurs dix assets sont `uploaded`.
-Linux : moteurs réussis, compilation du lecteur natif en cours ; pas encore
-publié. Ne pas annoncer la livraison Linux avant les résultats et les assets :
+Les trois plateformes sont publiées : **18 assets `uploaded`**, dont l'AppImage
+et l'archive Linux. Compilations et packaging réussis, sans inférence ni benchmark.
+
 
 - [Windows 38670981195](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38670981195).
 - [Linux 38670981419](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38670981419).
 - [macOS 38670981300](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38670981300).
  Binaires immuables :
 `7c4ab72707fab87e77aa4778514f5aa723721015`, pin `gpu-binaries-source-ref.txt`.
+Les trois workflows ont terminé avec succès. Le champ `player_source` du
+`GPU-SOURCE.json` décrit le staging `04d2a78` ; le SDK Windows vient du
+`PLAYER_REF` `8e7d767` du workflow backend, et le lecteur publié est `bf4dc2b`.
 Référence privée de résultat Windows :
 `build-status/specialized-1468be6f24cac537407283d434bd5d542d642cf3-1`.
 
-## Références du lot en cours
+## Références du lot livré
 
 - Lecteur / filtre / packaging : `2600de1`, puis identités des dessins `8e7d767`, drainage borné `04d2a78`.
 - Backend : branche `perf-specialized-gpu-20261014`, HEAD `1468be6f24cac537407283d434bd5d542d642cf3` ; CI Windows `38670166267`, AMD/NVIDIA **success**.
@@ -115,7 +118,15 @@ sur toutes les cartes. Les ordres/formules et paramètres de modèle sont gardé
 | Fusion des conversions RIFE→upscale, plugins d'opérateurs neuronaux | Non implémentés ; conserver chroma et arrondis |
 | Batching neuronal et contextes concurrents par modèle | Non implémentés ; distinct de la rafale de soumissions |
 | Choix empirique des tactiques/streams TensorRT | Pas effectué ; builder niveau 5 déjà actif, profilage interdit |
-| Publication des binaires et pin Manager | 3.8.0.31 déclenchée ; résultats des trois workflows à confirmer |
+| Publication des binaires et pin Manager | Livrée dans la 3.8.0.31, 18 assets |
 
 Ne pas confondre ces pistes avec les lots déjà codés. Les anciens worktrees
 utilisateur et fichiers non suivis restent à préserver.
+
+**Reprise** : les optimisations codées sont livrées. Avant un lot supplémentaire,
+identifier le coût dominant sur la lecture réelle ; aucun profilage ni test n'est
+autorisé actuellement. Le batching neuronal, les contextes concurrents et les
+plugins ne sont pas implémentés et ne doivent pas être présentés comme acquis.
+Quality garantit la politique algorithmique décrite, pas une identité numérique
+vérifiée ni la qualité maximale de tous les modèles possibles. Les modèles,
+résolutions, facteurs, Ensemble et autres effets restent choisis dans les profils.

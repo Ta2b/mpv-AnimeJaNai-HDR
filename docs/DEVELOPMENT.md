@@ -1,5 +1,11 @@
 # Local development
 
+Latest release: **3.8.0.31**, Quality/Fast and CUDA execution optimizations,
+source `bf4dc2b`, 18 uploaded assets. See [the exact follow-up](CHANTIER-QUALITY-FAST.md).
+Linux must use the matching native-player patch and `quality-fast1` dependency
+suffix to activate exact pair preparation and grouped submissions. Tests and
+benchmarks remain disabled at the user's request.
+
 ## Native GPU integration (3.8.0.30 published, 15 October 2026)
 
 Release source `1c695d5`; Windows/Linux/macOS workflows succeeded, 19 uploaded assets.

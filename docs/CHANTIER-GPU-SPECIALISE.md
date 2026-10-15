@@ -1,7 +1,7 @@
 # Intégration GPU spécialisée AMD / NVIDIA
 
-**Chantier suivant en cours :** [Quality / Fast et CUDA](CHANTIER-QUALITY-FAST.md).
-Les nouveaux changements ne sont pas dans les binaires 3.8.0.30 ci-dessous.
+**Suite publiée dans la 3.8.0.31 :** [Quality / Fast et CUDA](CHANTIER-QUALITY-FAST.md).
+Le bilan 3.8.0.30 ci-dessous décrit la livraison précédente.
 
 ## Livraison 3.8.0.30 — checkpoint exact
 

@@ -1,5 +1,18 @@
 # Optimisation des moteurs et de RIFE — analyse du 13 octobre 2026
 
+## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
+
+**[3.8.0.31 disponible sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.31)** :
+18 assets `uploaded`, source `bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6`.
+Quality garde chaque prédiction RIFE complète et l'upscale configuré, sans les
+raccourcis de mouvement/réutilisation approximative/retiming de Fast. Les deux
+modes bénéficient des optimisations d'exécution applicables : événements CUDA,
+préparation exacte réutilisée, captures étendues et padding/conversions fusionnés.
+Le nouveau filtre Linux ajoute IDs de sources, soumission groupée et ordre NVDEC.
+Pas de nouveau test, benchmark ou validation numérique ; aucun gain chiffré.
+Lire [le relais exact et les travaux restants](CHANTIER-QUALITY-FAST.md).
+Les sections 3.8.0.30 et antérieures ci-dessous sont historiques.
+
 ## Livraison GPU — 15 octobre 2026
 
 **[3.8.0.30 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.30)**,
