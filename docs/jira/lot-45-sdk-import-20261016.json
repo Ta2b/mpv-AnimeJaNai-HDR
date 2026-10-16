@@ -1,8 +1,8 @@
 {
   "lot": 45,
   "tickets": {
-    "AH-316": "In Progress",
-    "AH-319": "In Progress"
+    "AH-316": "Done",
+    "AH-319": "Done"
   },
   "manager_source": "98c8d27f0efcc7e8b2240ec1dd103457eb9d6b76",
   "manager_run": 38971467600,
@@ -15,12 +15,15 @@
   "import_ms": 482.9863,
   "native_setup_ms": 120.590302,
   "video_arithmetic_changed": false,
-  "release": "3.8.0.76 preparing",
+  "release": "3.8.0.76",
   "jira_comments": {
     "AH-316": "10164",
     "AH-319": "10165"
   },
-  "remaining": [
-    "verify complete player release"
-  ]
+  "remaining": [],
+  "delivery_receipt": "docs/jira/release-20261017-3.8.0.76.json",
+  "jira_delivery_comments": {
+    "AH-316": "10168",
+    "AH-319": "10169"
+  }
 }

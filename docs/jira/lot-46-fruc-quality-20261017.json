@@ -1,0 +1,23 @@
+{
+  "lot": 46,
+  "tickets": {
+    "AH-320": "In Progress",
+    "AH-322": "To Do"
+  },
+  "diagnosis": "Severe beam corruption reproduced directly in SDK RGBA and NV12; format change rejected as fix.",
+  "manager_source": "6a781fd",
+  "pixel_engine_changed": false,
+  "qualification": "artifacts/performance/lots-20261016/lot-46/beam/summary.json",
+  "ui_render": "artifacts/performance/lots-20261016/lot-46/ui/stage-categories-compact.png",
+  "jira_comments": [
+    "10167",
+    "10170"
+  ],
+  "release": "3.8.0.77 preparing",
+  "remaining": [
+    "verify Manager immutable assets",
+    "publish player release with warning/report",
+    "verify delivery before AH-320 Done"
+  ],
+  "user_media_uploaded": false
+}

@@ -57,23 +57,29 @@ static double elapsed(std::chrono::steady_clock::time_point start) {
 }
 int main(int argc, char **argv) {
     try {
-        if (argc != 7) throw std::runtime_error("Usage: fruc_probe LIB INPUT.rgba WIDTH HEIGHT FPS OUTPUT_PREFIX");
+        if (argc != 7 && argc != 8) throw std::runtime_error("Usage: fruc_probe LIB INPUT WIDTH HEIGHT FPS OUTPUT_PREFIX [rgba|nv12]");
+        const std::string format = argc == 8 ? argv[7] : "rgba";
+        if (format != "rgba" && format != "nv12") throw std::runtime_error("Unknown input format");
+        const bool nv12 = format == "nv12";
         const int width = std::stoi(argv[3]), height = std::stoi(argv[4]);
         const double fps = std::stod(argv[5]);
         if (width < 32 || height < 32 || fps <= 0) throw std::runtime_error("Invalid dimensions/fps");
-        const size_t bytes = size_t(width) * height * 4;
+        if (nv12 && (width % 2 || height % 2)) throw std::runtime_error("NV12 requires even dimensions");
+        const size_t bytes = nv12 ? size_t(width) * height * 3 / 2 : size_t(width) * height * 4;
+        const size_t pitch = size_t(width) * (nv12 ? 1 : 4);
+        const std::string extension = nv12 ? ".nv12" : ".rgba";
         std::ifstream input(argv[2], std::ios::binary | std::ios::ate);
         if (!input) throw std::runtime_error("Cannot read input");
         const auto length = input.tellg();
         if (length < std::streamoff(bytes * 2) || size_t(length) % bytes)
-            throw std::runtime_error("Input must contain at least two complete RGBA frames");
+            throw std::runtime_error("Input must contain at least two complete frames in the selected format");
         const size_t frames = size_t(length) / bytes;
         input.seekg(0);
         std::string prefix(argv[6]);
-        if (std::filesystem::weakly_canonical(argv[2]) == std::filesystem::weakly_canonical(prefix + ".rgba"))
+        if (std::filesystem::weakly_canonical(argv[2]) == std::filesystem::weakly_canonical(prefix + extension))
             throw std::runtime_error("Input and output must be different files");
         if (std::ifstream(prefix + ".json")) throw std::runtime_error("Receipt already exists; inspect it instead of repeating");
-        std::ofstream output(prefix + ".rgba", std::ios::binary);
+        std::ofstream output(prefix + extension, std::ios::binary);
         std::ofstream receipt(prefix + ".partial.json");
         if (!output || !receipt) throw std::runtime_error("Cannot open output");
         Session s;
@@ -81,7 +87,11 @@ int main(int argc, char **argv) {
         cuda_check(cuInit(0));
         CUdevice device;
         cuda_check(cuDeviceGet(&device, 0));
+#if CUDA_VERSION >= 13000
+        cuda_check(cuCtxCreate(&s.context, nullptr, 0, device));
+#else
         cuda_check(cuCtxCreate(&s.context, 0, device));
+#endif
         size_t free_before = 0, total = 0;
         cuda_check(cuMemGetInfo(&free_before, &total));
         for (auto &buffer : s.buffers) cuda_check(cuMemAlloc(&buffer, bytes));
@@ -94,7 +104,7 @@ int main(int argc, char **argv) {
         s.destroy = symbol<PtrToFuncNvOFFRUCDestroy>(s.library, DestroyProcName);
         NvOFFRUC_CREATE_PARAM c{};
         c.uiWidth = width; c.uiHeight = height;
-        c.eResourceType = CudaResource; c.eSurfaceFormat = ARGBSurface;
+        c.eResourceType = CudaResource; c.eSurfaceFormat = nv12 ? NV12Surface : ARGBSurface;
         c.eCUDAResourceType = CudaResourceCuDevicePtr;
         fruc_check(create(&c, &s.handle), "create");
         NvOFFRUC_REGISTER_RESOURCE_PARAM r{};
@@ -105,7 +115,7 @@ int main(int argc, char **argv) {
         std::vector<unsigned char> host(bytes);
         size_t repetitions = 0;
         receipt << "{\"width\":" << width << ",\"height\":" << height << ",\"fps\":" << fps
-                << ",\"format\":\"ARGBSurface (RGBA byte order)\",\"setup_ms\":" << setup_ms
+                << ",\"format\":\"" << (nv12 ? "NV12Surface" : "ARGBSurface (RGBA byte order)") << "\",\"setup_ms\":" << setup_ms
                 << ",\"client_allocated_bytes\":" << bytes * 3 << ",\"calls\":[";
         for (size_t i = 0; i < frames; ++i) {
             if (!input.read(reinterpret_cast<char *>(host.data()), bytes)) throw std::runtime_error("Short input");
@@ -118,10 +128,10 @@ int main(int argc, char **argv) {
             bool repeated = false;
             in.stFrameDataInput.pFrame = &s.buffers[slot];
             in.stFrameDataInput.nTimeStamp = (i + 1) * 1000.0 / fps;
-            in.stFrameDataInput.nCuSurfacePitch = size_t(width) * 4;
+            in.stFrameDataInput.nCuSurfacePitch = pitch;
             out.stFrameDataOutput.pFrame = &s.buffers[2];
             out.stFrameDataOutput.nTimeStamp = (i + 0.5) * 1000.0 / fps;
-            out.stFrameDataOutput.nCuSurfacePitch = size_t(width) * 4;
+            out.stFrameDataOutput.nCuSurfacePitch = pitch;
             out.stFrameDataOutput.bHasFrameRepetitionOccurred = &repeated;
             auto start = std::chrono::steady_clock::now();
             fruc_check(process(s.handle, &in, &out), "process");

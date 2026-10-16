@@ -1,11 +1,10 @@
 # Étages d’interpolation ordonnés — Linux NVIDIA
 
-Le lecteur Linux de 3.8.0.72 accepte des étages ordonnés explicites dans
-`animejanai.conf`. Le Manager3.8.0.73 (AH-302) ajoute l’éditeur de
-ces étages dans les chaînes des profils personnalisés. Le lecteur3.8.0.72
-livre le raccord natif AH-301. Les profils existants conservent leur chemin,
-Quality et les fractions RIFE (dont5/2). Un schéma strictement équivalent à
-ces réglages emprunte également ce chemin inchangé.
+Le lecteur Linux accepte des étages ordonnés explicites dans `animejanai.conf`.
+Le Manager livré avec3.8.0.76 propose des catégories fixes et l’import du SDK
+FRUC. Les profils existants conservent leur chemin, Quality et les fractions
+RIFE (dont5/2). Un schéma strictement équivalent à ces réglages emprunte
+également ce chemin inchangé.
 
 ## Capacités livrées
 
@@ -13,7 +12,8 @@ ces réglages emprunte également ce chemin inchangé.
   modèle RIFE disponible, ensemble, seuil de scène, politique Quality ou Fast.
 - Interpolation `nvidia-fruc` / `cuda` : Fast explicite×2, SDK NVIDIA installé
   séparément, SDR8bits interne même dans un conteneur16bits. Ses défauts de
-  contours/bouche/occultation excluent une équivalence Quality.
+  contours/bouche/occultation et des artefacts sévères sur des changements
+  lumineux rapides excluent une équivalence Quality.
 - Upscaling `onnx` / `tensorrt` spatial, entre ou après les interpolateurs.
   Les upscalers contigus restent regroupés pour conserver leurs calculs.
 
@@ -29,10 +29,20 @@ Les autres moteurs du comparatif restent des travaux distincts du backlog.
 Ouvrir un profil personnalisé (ou cloner un profil prédéfini dans un slot
 personnalisé), puis sa chaîne : cocher **Ordered interpolation and upscaling
 stages**. Les réglages RIFE/upscaling existants sont repris sans perte.
-**Add NVIDIA FRUC** ajoute un étage inactif ; renseigner SDK libNvOFFRUC.so,
-son CUDART11 compatible et aji_fruc.fatbin, activer, puis déplacer l’étage
-entre RIFE et SPAN avec les flèches. Choisir×2 pour RIFE et×2 pour FRUC.
-Le Manager affiche24→48→96fps à titre d’exemple de cadence cumulée.
+Ajouter **Interpolation**, puis choisir **NVIDIA FRUC** dans cet étage.
+Installer son SDK depuis **Install optional engines…** ou l’onglet **Optional
+engines** : le lien NVIDIA ouvre le téléchargement officiel ; importer le ZIP
+Optical Flow SDK dans le Manager. Les chemins sont installés automatiquement.
+FRUC reste grisé lorsque le SDK/provider ou le lecteur compatible manque.
+Activer l’étage, le déplacer entre RIFE et SPAN avec les flèches, puis choisir
+×2 pour RIFE ; FRUC implémente×2. Le Manager affiche24→48→96fps à titre d’exemple.
+Les modes Quality/Fast concernent RIFE ; FRUC n’offre pas de modeQuality.
+
+Les ajouts **Upscale**, **Downscale** et **HDR** sont des catégories distinctes.
+Le choix de technologie d’un étage reste limité à sa catégorie. Downscale/HDR
+restent grisés dans3.8.0.76 en attendant leurs providers. L’ordre affiché est
+l’ordre réel ; un resize historique attaché à un upscaler s’exécute juste avant
+cet upscaler. Il ne réduit donc pas la résolution d’un interpolateur placé avant.
 Les profils/exports gardent les IDs, l’ordre, options et étages désactivés.
 Une erreur de saisie laisse le dernier fichier valide et un diagnostic inline.
 Les autres moteurs deviendront des choix après livraison de leur provider ;
@@ -42,9 +52,10 @@ le catalogue d’intégrations prévues ne prétend pas les exécuter déjà.
 
 Conserver la section `[global]` de son profil avec `backend=TensorRT`, et ses
 options de construction. Dans le slot/règle choisi, garder les limites de
-résolution/FPS, puis ajouter les clés suivantes. Remplacer les trois chemins
-absolus FRUC par ses fichiers réels ; aucun SDK/runtime propriétaire n’est
-livré. Le modèle RIFE426 et le SPAN doivent être présents dans le paquet/cache.
+résolution/FPS, puis ajouter les clés suivantes. Cet exemple manuel
+illustre les clés écrites automatiquement par le Manager après l’importSDK ;
+ses chemins sont à adapter uniquement pour une configuration manuelle. Aucun
+SDK/runtime propriétaire n’est livré. Le modèle RIFE426 et le SPAN doivent être présents dans le paquet/cache.
 
 ```ini
 [slot_1]
@@ -111,3 +122,10 @@ Aucune garantie FPS tous matériels, HDR physique ou autre API n’est établie.
 Le SDK FRUC n’a pas montré une reproductibilité exacte bit à bit.
 Voir le rapport `docs/qualification/lot-40-ordered-interpolation-20261016.md`
 dans les sources du projet pour les preuves et diagnostics exclus.
+
+
+Le cas utilisateur d’un faisceau lumineux à17min32s a été reproduit directement
+avec le SDK en RGBA et NV12, sans lecteur ni shader : blocs/trous sévères dans
+la lumière synthétisée, sources propres. Changer de format ne corrige pas ce
+cas. Voir docs/qualification/lot-46-fruc-quality-20261016.md. Aucun remède
+universel ni qualité supérieure à OpticalFlow brut n’est établi.
