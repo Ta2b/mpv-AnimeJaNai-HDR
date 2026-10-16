@@ -36,7 +36,7 @@ enum aji_surface_dither { AJI_SURFACE_DITHER_UNKNOWN=0, AJI_SURFACE_DITHER_NONE=
 enum aji_surface_cap_flags { AJI_SURFACE_SYNC=1, AJI_SURFACE_BORROWED_CALL=2,
     AJI_SURFACE_OWNER_CALLBACKS=4, AJI_SURFACE_HOST_ROI=8,
     AJI_SURFACE_PRESERVES_DESCRIPTORS=16, AJI_SURFACE_CUDA_ROI=32,
-    AJI_SURFACE_SPATIAL=64, AJI_SURFACE_RIFE=128 };
+    AJI_SURFACE_SPATIAL=64, AJI_SURFACE_RIFE=128, AJI_SURFACE_EXACT_SOURCE_CACHE=256 };
 enum aji_surface_time_flags { AJI_SURFACE_HAS_PTS=1, AJI_SURFACE_HAS_DURATION=2 };
 
 typedef struct aji_surface_rect_v1 { int32_t x,y,width,height; } aji_surface_rect_v1;
@@ -75,12 +75,27 @@ typedef struct aji_surface_caps_v1 {
     uint32_t max_planes,negative_stride,device_kind,device_index;
 } aji_surface_caps_v1;
 
+/* Optional native counters. Read only while the context is idle and its async
+ * queue disabled; otherwise BUSY. Counters are observational, never a cache key.
+ * These values do not certify timing/quality or other hardware. */
+typedef struct aji_surface_cache_stats_v1_result {
+    uint32_t struct_size,version;
+    uint64_t eligible_hits,eligible_misses,uncached_calls;
+    uint64_t rife_preparations,rife_hits,promoted_inputs,fast_upscaled,fast_warped;
+} aji_surface_cache_stats_v1_result;
+int aji_surface_cache_stats_v1(void *context,uint32_t version,aji_surface_cache_stats_v1_result *,size_t);
+
 /* CUDA Linux v1 accepts native NV12/P010/YUV444P16 SDR on the configured
  * context, positive strides and chroma-aligned crop, reference-native YUV
  * quantization with no added dither. SPATIAL/RIFE flags describe the configured
  * standard chain; temporal/pre-resize/RTX configurations are refused. Source
- * identities are used only within one call, and all derived pair identities are
- * invalidated on entry/exit, including when mixing with ABI9. No host staging.
+ * identities may protect owned GPU preparation across phases when
+ * EXACT_SOURCE_CACHE is negotiated. Nonzero sequence/generation identify an
+ * immutable active view; complete source/device/color/view keys must match.
+ * Zero identities, changed views/policy, errors, reset/drain and legacy calls
+ * invalidate reuse. No client owners/descriptors are retained after completion;
+ * owned prepared pixels and numeric view addresses may remain as cache keys.
+ * No host staging.
  *
  * Resolve these optional symbols on the selected engine module. Query after
  * successful configure; unsupported version/provider/format is never an implicit convert.
