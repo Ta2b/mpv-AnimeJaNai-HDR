@@ -28,9 +28,11 @@ try
     }
     object result = args.FirstOrDefault() switch
     {
+        "--capabilities" => BackendCapabilities.Describe(),
+        "--versions" => PackageProvenance.Capture(root, Get("--release-manifest")),
         "--probe" => PlatformServices.Probe(root, Get("--vendor") ?? "auto"),
         "--activate-bank" when args.Length > 1 => PlatformServices.ActivateBank(root, args[1]),
-        _ => throw new ArgumentException("Usage: AnimeJaNaiPlatform --probe | --activate-bank BANK | --export-reference --mpv-ipc ENDPOINT [--output FILE] [--root DIR]")
+        _ => throw new ArgumentException("Usage: AnimeJaNaiPlatform --probe | --capabilities | --versions [--release-manifest FILE] | --activate-bank BANK | --export-reference --mpv-ipc ENDPOINT [--output FILE] [--root DIR]")
     };
     Console.WriteLine(JsonSerializer.Serialize(result));
     return 0;

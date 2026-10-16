@@ -10,6 +10,85 @@ using System.Text.RegularExpressions;
 
 namespace AnimeJaNai.Platform;
 
+// Shared by the player CLI and the Manager through its pinned PlatformSource.
+// Describes implemented paths, never a claim that a particular GPU was tested.
+public static class BackendCapabilities
+{
+    public const string OpenVino = "Experimental OpenVINO / ONNX Runtime inference for Intel GPUs: spatial ONNX upscaling and the shared ONNX RIFE path. Requires a compatible OpenVINO provider, supported operators and ONNX RIFE models; SDR sources. Provider availability is checked during playback.";
+    public const string NcnnVulkan = "NCNN / Vulkan inference on Linux: SPAN AnimeJaNai and RIFE 4.6 models. SDR sources, even dimensions; CPU/GPU transfers. Select the mpv display API separately.";
+    public const string TensorRt = "TensorRT / CUDA inference on NVIDIA. Uses ONNX RIFE models. The mpv display API is a separate setting.";
+    public const string VulkanPresentation = "Vulkan display API: mpv presents the finished pictures. These RTX Video controls apply to NVIDIA inference with Vulkan display; HDR contrast, saturation and middle grey are shared with the mpv conversion.";
+    public static object Describe() => new {
+        schema = "animejanai.capabilities.v1",
+        source = "AnimeJaNaiPlatform/PlatformServices.cs:BackendCapabilities",
+        openvino = OpenVino, ncnn_vulkan = NcnnVulkan, tensorrt = TensorRt,
+        vulkan_presentation = VulkanPresentation,
+        qualification = "Implemented paths; library/provider/model availability and native hardware qualification are separate evidence."
+    };
+}
+
+// Read-only, on-demand comparison. A package declaration is not runtime loading.
+public static class PackageProvenance
+{
+    public static object Capture(string root, string? releaseManifest = null)
+    {
+        var errors = new List<string>();
+        JsonElement? ReadJson(string path)
+        {
+            if (!File.Exists(path)) return null;
+            try { using var doc = JsonDocument.Parse(File.ReadAllText(path)); return doc.RootElement.Clone(); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+            { errors.Add($"{path}: {e.Message}"); return null; }
+        }
+        string? ReadText(string path)
+        {
+            if (!File.Exists(path)) return null;
+            try { return File.ReadAllText(path).Trim(); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            { errors.Add($"{path}: {e.Message}"); return null; }
+        }
+        var libraries = new List<object>();
+        foreach (string directory in new[] { Path.Combine(root,"animejanai","inference"), Path.Combine(root,"inference") }.Distinct())
+        {
+            JsonElement? metadata = ReadJson(Path.Combine(directory,"GPU-SOURCE.json"));
+            JsonElement hashes = default;
+            if (metadata is { ValueKind: JsonValueKind.Object } m) m.TryGetProperty("sha256",out hashes);
+            var names = new HashSet<string>(new[] { "libaji.so","libaji_trt.so","libaji_trt_rtx.so","libaji_ort.so","libaji_vulkan.so","libaji_migraphx_rgb.so",
+                "aji.dll","aji_trt.dll","aji_trt_rtx.dll","aji_dml.dll","aji_migraphx.dll" },StringComparer.Ordinal);
+            if (hashes.ValueKind == JsonValueKind.Object)
+                foreach (var entry in hashes.EnumerateObject())
+                    if (Path.GetFileName(entry.Name)==entry.Name) names.Add(entry.Name);
+            foreach (string name in names.Order(StringComparer.Ordinal))
+            {
+                string path=Path.Combine(directory,name);
+                if (!File.Exists(path)) continue;
+                try {
+                    using var file=File.OpenRead(path);
+                    string actual=Convert.ToHexString(SHA256.HashData(file)).ToLowerInvariant();
+                    string? expected=hashes.ValueKind==JsonValueKind.Object && hashes.TryGetProperty(name,out var h) && h.ValueKind==JsonValueKind.String ? h.GetString() : null;
+                    bool? matches=expected is null ? null : string.Equals(actual,expected,StringComparison.OrdinalIgnoreCase);
+                    libraries.Add(new { path, actual_sha256=actual, declared_sha256=expected,
+                        matches_compiled_metadata=matches, compiled_library_metadata=metadata });
+                } catch(Exception e) when(e is IOException or UnauthorizedAccessException)
+                { errors.Add($"{path}: {e.Message}"); }
+            }
+        }
+        var assembly=System.Reflection.Assembly.GetEntryAssembly();
+        var info=assembly?.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute),false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion;
+        return new {
+            schema="animejanai.versions.v1",
+            compiled_tool=new { assembly_version=assembly?.GetName().Version?.ToString(), informational_version=info },
+            installed_package=new { root=Path.GetFullPath(root), version=ReadText(Path.Combine(root,"version.txt")), manifest=ReadJson(Path.Combine(root,"manifest.json")) },
+            delivered_manifest=releaseManifest is null ? null : ReadJson(Path.GetFullPath(releaseManifest)),
+            installed_libraries=libraries, errors,
+            limitations=new[] { "Actual hashes describe files on disk, not libraries or models already loaded in a running process.",
+                "Compiled source/build information is a separate declaration; a missing or mismatched hash does not identify the installed source revision.",
+                "An explicitly supplied release manifest describes delivery; it is not inferred from the installed version or compile/link success." }
+        };
+    }
+}
+
 public static class PlatformServices
 {
     public record Adapter(string vendor, string name, string pci, bool discrete);
