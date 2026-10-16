@@ -115,7 +115,7 @@
     "sha256": {
       "libaji_pipeline.so": "321e52c50c0819642c7539195fb646117d1e81184324a57329447b135fef9280",
       "aji_pipeline.fatbin": "912e8c30f67c64c7a9276484323fdd22bc09ca870aaaabecb5cff93a5756e21e",
-      "PIPELINE-README.md": "6f084c8d85e476122b75bd8e4ab96af0ac11177e2f99f8fd21a6bdb7ddaf30b1"
+      "PIPELINE-README.md": "46cc7bef08612a0574a7b8dc943ab6a8766d71e40bc2d2600cdab01141b34477"
     },
     "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
     "explicit_opt_in": true,

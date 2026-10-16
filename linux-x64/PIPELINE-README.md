@@ -14,8 +14,8 @@ Mixed factors currently integer; exact-equivalent legacy RIFE fractions remain
 on ABI9. Unsupported stages/options/temporal SR fail explicitly, never vanish.
 
 FRUC requires explicit paths to separately installed libNvOFFRUC.so and its
-compatible CUDA runtime (SDK5.0.7 uses CUDART11). The bundled FRUC fatbin is
-selected by default. Never rename CUDART13 to11. FRUC is internally8bit SDR,
+compatible CUDA runtime (SDK5.0.7 uses CUDART11). The stage kernel_fatbin path must point explicitly
+to the bundled aji_fruc.fatbin. Never rename CUDART13 to11. FRUC is internally8bit SDR,
 with known jagged/mouth/occlusion defects and nonconclusive SDK repeatability.
 No Quality equivalence is claimed. PQ/HLG mixed chains are refused. TrueHDR
 retagging is disabled on mixed chains; the unchanged legacy route retains it.
