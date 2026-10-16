@@ -50,6 +50,4 @@ Build Release multi-SM75/80/86/89/90/100/120+PTX120 réussi ; en-tête C public/
 
 Commande : `python3 tests/inference/surface_pair_cache_check.py SPEC.json`, avec bibliothèques CUDA/TensorRT du paquet dans LD_LIBRARY_PATH. `cache=0|1` sélectionne l'ablation ; `phase=guards-ref|guards-on` les gardes. La sonde test-only du lot32 est chargée par LD_PRELOAD pour l'erreur native.
 
-Sources : backend `7e9c87137e77046e5c521e635634bfdef751a277`, qualification publique `afe9136bf25173bd8db4899bbc66a4e703a14ba8`. Release prévue **3.8.0.65**, binaires Linux nouveaux ; Windows et Manager conservés. AH-284 reste In Progress jusqu'à publication vérifiée ; parent AH-33 et qualifications restantes ouverts.
-
-Bundle Linux livré : `3d434bd856afed2f63f51e117c96d4b259cd8083` ; sections .text/fatbin inchangées après RPATH.
+Sources : backend `7e9c87137e77046e5c521e635634bfdef751a277`, qualification publique `afe9136bf25173bd8db4899bbc66a4e703a14ba8`. **3.8.0.65 publiée**, source `ba85db40e6b6869803c0537ad152b5d746633f0b` ; trois workflows success et 15 assets uploaded vérifiés. Binaires Linux nouveaux ; Windows et Manager conservés. AH-284 **Done**, qualification10116 et clôture10117 ; parent AH-33 et qualifications restantes ouverts.

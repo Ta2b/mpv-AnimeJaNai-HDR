@@ -50,6 +50,7 @@ python3 "$REPO/native/linux-vulkan/install-filter.py" "$WORK/mpv"
 patch -p1 -d "$WORK/mpv" < "$REPO/native/linux-cuda/vf_animejanai-drawings.patch"
 patch -p1 -d "$WORK/mpv" < "$REPO/native/linux-cuda/vf_animejanai-quality-fast.patch"
 patch -p1 -d "$WORK/mpv" < "$REPO/native/linux-cuda/vf_animejanai-stats.patch"
+patch -p1 -d "$WORK/mpv" < "$REPO/native/linux-cuda/vf_animejanai-prefetch-prototype.patch"
 build_meson "$WORK/mpv" --prefix="$PREFIX" --libdir=lib --buildtype=release \
     -Dlibmpv=true -Dwayland=enabled -Dvulkan=enabled -Dcuda-hwaccel=enabled -Dlua=enabled
 cp -a "$PREFIX/bin/mpv" "$OUTPUT/"
@@ -70,4 +71,4 @@ contexts="$(LD_LIBRARY_PATH="$OUTPUT:$LD_LIBRARY_PATH" "$OUTPUT/mpv" --no-config
 grep -q waylandvk <<< "$contexts"
 options="$(LD_LIBRARY_PATH="$OUTPUT:$LD_LIBRARY_PATH" "$OUTPUT/mpv" --no-config --list-options)"
 grep -q target-colorspace-hint-strict <<< "$options"
-printf 'mpv=19c0fcf895\naji_abi=9\nstats_atomic=1\nsource_ids=aji-v1\nvulkan_bridge_abi=1\nwayland_queue_api=unnamed-compatible\nlibass=896614fa263f9f64944f7b8650ff6806d5328c4d\nwayland=1.23.1\nprotocols=1.45\nffmpeg=n9.0.2\nlibplacebo=v7.360.1\n' > "$OUTPUT/build-info.txt"
+printf 'mpv=19c0fcf895\naji_abi=9\nstats_atomic=1\nprefetch_prototype=1\nsource_ids=aji-v1\nvulkan_bridge_abi=1\nwayland_queue_api=unnamed-compatible\nlibass=896614fa263f9f64944f7b8650ff6806d5328c4d\nwayland=1.23.1\nprotocols=1.45\nffmpeg=n9.0.2\nlibplacebo=v7.360.1\n' > "$OUTPUT/build-info.txt"
