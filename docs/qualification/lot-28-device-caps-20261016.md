@@ -37,3 +37,5 @@ Artefacts `artifacts/performance/lots-20261016/lot-28/` : `actual-capabilities.j
 ## Livraison
 
 Backend652fbc6 poussé sur `perf-specialized-capabilities-20261016`, compilationWindows/Linux lancée. SourceCLI/CPU et qualification prêtes ; assembler le prochain lot/release avec le nouveau pin de binaires après disponibilité, sans attendre pour entreprendre une tâche indépendante. AH-276 reste In Progress jusqu'à publication vérifiée du livrable complet. ParentAH-16/AH-277 restent ouverts ; aucune qualificationWindows/AMD/Intel/Apple inventée.
+
+Livraison préparée3.8.0.60, pinbinaires `d00ed919d8337a89b68f519f1ab1ce71e68a8628` ; compilationWindows AMD/NVIDIA38874628974 success. Hashes etsymboleoptionnel/RPATH du staging vérifiés, patchRPATH préserve `.text`. Manager inchangé.
