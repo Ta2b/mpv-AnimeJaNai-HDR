@@ -1,17 +1,17 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "650c2a71f5c8bca8cfa52805e0db1c17dad8aa67",
+  "backend_source": "df489209a9758149f0e8e580539ebdc50c2ae577",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "650c2a71f5c8bca8cfa52805e0db1c17dad8aa67",
-    "GITHUB_RUN_ID": "38836161283",
+    "GITHUB_SHA": "df489209a9758149f0e8e580539ebdc50c2ae577",
+    "GITHUB_RUN_ID": "38839055041",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Linux RTX4070Ti/TRT11.3: actual ENOSPC tmpfs and Unix permissions, native EDQUOT fault injection, read-only references, corrupt/partial publication rejected, async failure latch/reopen recovery; reference bytes/output exact on tested cases. Windows compile/link only. No FPS claim.",
+  "validation": "Portable v3 contract: 16 relevant mutations invalidate, 11 invalid contracts rejected; Linux RTX4070Ti/TRT11.3 real migration preserves v2, one cold builder/zero warm builders, same-plan output exact; independent rebuild max delta 1/255. Windows compile/link only. No FPS claim.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -32,12 +32,15 @@
     "actionable-cache-storage-errors",
     "read-only-complete-caches",
     "validate-plan-before-publication",
-    "latched-async-build-errors"
+    "latched-async-build-errors",
+    "common-program-key-contract-v3",
+    "portable-flow-key-v3",
+    "explicit-builder-environment-key"
   ],
   "sha256": {
     "libaji.so": "c79eb7cfc4be4aecc207664636c906cea4c0de1b68287aac1a71b992a52a7dd2",
-    "libaji_trt.so": "1feffed7390245ff6d3d25ad8d9e11d29bbce816f950c4fa80678d596f51585e",
-    "libaji_trt_rtx.so": "1feffed7390245ff6d3d25ad8d9e11d29bbce816f950c4fa80678d596f51585e"
+    "libaji_trt.so": "9d9e87d50753613acb6e6b2e3bb0202ad3b2283728797c8f1511a414f3e33868",
+    "libaji_trt_rtx.so": "9d9e87d50753613acb6e6b2e3bb0202ad3b2283728797c8f1511a414f3e33868"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -52,5 +55,5 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "d6da9cea895f761823d2a46a16715ec320169566"
+  "player_qualification_source": "85961914e75ca8478fc966a6cecaebdc1a385071"
 }
