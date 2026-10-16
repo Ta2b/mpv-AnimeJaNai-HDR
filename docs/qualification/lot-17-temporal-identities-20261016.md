@@ -33,4 +33,4 @@ Artefacts locaux : `artifacts/performance/lots-20261016/lot-17/` : sources/spec,
 
 ## Livraison
 
-Linux : bibliothèque de production multi-SM finale qualifiée, source `635424e`. Windows : compile/link à vérifier sur cette même source avant pin ; ce n’est pas un essai matériel. Comparaison des exports ABI avant pin. Paquet suivant prévu **3.8.0.48** ; AH-261 reste In Progress jusqu’à publication vérifiée. Le lot suivant commence après push, sans attendre la fin des releases.
+Linux : bibliothèque de production multi-SM finale qualifiée, source `635424e`, SHA `744300945d8adfc72faf13134180dbdbc50b1de59c9b78e01b9d3d4b9e1f9d14`. Windows compile/link AMD/NVIDIA success **38847445122**, même source `635424e`, SDK/player source `f05cf41` ; ce n’est pas un essai matériel. **24 exports ABI identiques**. Pin binaire `a1998637f2c3c243da8b7b9847f66eaaad1958ca`, source player de qualification `0cb5d2b0f6020ad620cf3250796babc7b98fff0e` distincte du source SDK. Paquet **3.8.0.48** poussé ; AH-261 reste In Progress jusqu’à publication vérifiée. AH-13 / lot 18 progresse pendant cette publication, sans attente.
