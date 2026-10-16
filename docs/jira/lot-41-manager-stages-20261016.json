@@ -1,0 +1,28 @@
+{
+  "issue": "AH-302",
+  "parent": "AH-297",
+  "status": "In Progress",
+  "base": "c40496d242beea4f20ae08ee548ef1b10a29f540",
+  "manager_base": "50ff160f534699015f01d4fd8beb8c3f53464a58",
+  "manager_worktree": "/home/ta2b/.animejanai-tools/work/manager-interpolation-stages-20261016",
+  "worktree": "/home/ta2b/.animejanai-tools/work/lot-41-manager-stages-20261016",
+  "start_comment": "10154",
+  "state": "Actual stage editor, persistence and native consumption qualified; Manager source committed and pushed, release3.8.0.73 delivery pending.",
+  "checks": [
+    "headlessUI16assertions+render",
+    "persistence6assertions_beforeInvalidEdit",
+    "invalidEditGuardFinal",
+    "actualManagerGeneratedProfilempvNVDEC4emitted8nativeOwners12/12"
+  ],
+  "limits": [
+    "Only delivered RIFE TensorRT, FRUC CUDA Fast SDR8bit and spatial ONNX TensorRT are selectable native methods",
+    "Other methods and preparation workflows remain backlog tasks, not fake working choices",
+    "Disk readiness is not GPU/driver/color validation; real capabilities negotiated by reader",
+    "First packet-truncated test source lacked known cadence and was explicitly refused; second test saved run verified offline after harness allowed bounded next-burst production, no GPU replay"
+  ],
+  "remaining": [
+    "Publish3.8.0.73; verify publication before Done"
+  ],
+  "manager_source": "e278b865df0db87ce61cb5a8b02dd20ac989825d",
+  "qualification_comment": "10156"
+}

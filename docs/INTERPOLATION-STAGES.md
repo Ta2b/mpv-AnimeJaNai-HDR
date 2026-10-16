@@ -1,7 +1,8 @@
 # Étages d’interpolation ordonnés — Linux NVIDIA
 
 Le lecteur Linux de 3.8.0.72 accepte des étages ordonnés explicites dans
-`animejanai.conf`. L’éditeur Manager est le lot suivant AH-302 ; cette release
+`animejanai.conf`. Le Manager3.8.0.73 (AH-302) ajoute l’éditeur de
+ces étages dans les chaînes des profils personnalisés. Le lecteur3.8.0.72
 livre le raccord natif AH-301. Les profils existants conservent leur chemin,
 Quality et les fractions RIFE (dont5/2). Un schéma strictement équivalent à
 ces réglages emprunte également ce chemin inchangé.
@@ -22,6 +23,20 @@ Limites initiales :16étages, facteur cumulé≤16, pool pixels possédés512MiB
 Méthode/runtime/option non implémentés, SR temporel, HDR PQ/HLG et fractions
 mixtes sont refusés explicitement. Ces limites n’en font pas des choix disponibles.
 Les autres moteurs du comparatif restent des travaux distincts du backlog.
+
+## Utiliser le Manager
+
+Ouvrir un profil personnalisé (ou cloner un profil prédéfini dans un slot
+personnalisé), puis sa chaîne : cocher **Ordered interpolation and upscaling
+stages**. Les réglages RIFE/upscaling existants sont repris sans perte.
+**Add NVIDIA FRUC** ajoute un étage inactif ; renseigner SDK libNvOFFRUC.so,
+son CUDART11 compatible et aji_fruc.fatbin, activer, puis déplacer l’étage
+entre RIFE et SPAN avec les flèches. Choisir×2 pour RIFE et×2 pour FRUC.
+Le Manager affiche24→48→96fps à titre d’exemple de cadence cumulée.
+Les profils/exports gardent les IDs, l’ordre, options et étages désactivés.
+Une erreur de saisie laisse le dernier fichier valide et un diagnostic inline.
+Les autres moteurs deviendront des choix après livraison de leur provider ;
+le catalogue d’intégrations prévues ne prétend pas les exécuter déjà.
 
 ## Exemple : RIFE×2 → FRUC×2 → SPAN
 

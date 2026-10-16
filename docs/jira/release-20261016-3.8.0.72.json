@@ -1,0 +1,170 @@
+{
+  "release": "3.8.0.72",
+  "source": "c40496d242beea4f20ae08ee548ef1b10a29f540",
+  "runs": [
+    {
+      "id": 38958947032,
+      "name": "Release macOS",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38958947032"
+    },
+    {
+      "id": 38958946990,
+      "name": "Release Windows",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38958946990"
+    },
+    {
+      "id": 38958946964,
+      "name": "Release Linux",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38958946964"
+    },
+    {
+      "id": 38958945831,
+      "name": "Build native AMD engine",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38958945831"
+    }
+  ],
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.72",
+  "draft": false,
+  "prerelease": false,
+  "assets": [
+    {
+      "name": "AnimeJaNai-mac-bench.zip",
+      "size": 65636459,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/AnimeJaNai-mac-bench.zip"
+    },
+    {
+      "name": "component-manager-linux-x64.7z",
+      "size": 36075696,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/component-manager-linux-x64.7z"
+    },
+    {
+      "name": "LISEZ-MOI-macOS.txt",
+      "size": 7403,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/LISEZ-MOI-macOS.txt"
+    },
+    {
+      "name": "manifest-linux-x64.json",
+      "size": 2705,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/manifest-linux-x64.json"
+    },
+    {
+      "name": "manifest.json",
+      "size": 1950,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/manifest.json"
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-Setup-3.8.0.72.exe",
+      "size": 260587628,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/mpv-AnimeJaNai-HDR-Setup-3.8.0.72.exe"
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.72-linux-x64.AppImage",
+      "size": 206850552,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/mpv-AnimeJaNai-HDR-v3.8.0.72-linux-x64.AppImage"
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.72-macos-arm64.zip",
+      "size": 177781145,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/mpv-AnimeJaNai-HDR-v3.8.0.72-macos-arm64.zip"
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.72-macos-arm64.zip.sha256",
+      "size": 111,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/mpv-AnimeJaNai-HDR-v3.8.0.72-macos-arm64.zip.sha256"
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-full-package-3.8.0.72.7z.001",
+      "size": 249014774,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/mpv-upscale-2x_animejanai-full-package-3.8.0.72.7z.001"
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.72-linux-x64.7z",
+      "size": 51754449,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/mpv-upscale-2x_animejanai-overlay-3.8.0.72-linux-x64.7z"
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.72.7z",
+      "size": 28846201,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/mpv-upscale-2x_animejanai-overlay-3.8.0.72.7z"
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-v3.8.0.72-linux-x64.tar.zst",
+      "size": 192813654,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/mpv-upscale-2x_animejanai-v3.8.0.72-linux-x64.tar.zst"
+    },
+    {
+      "name": "packs-linux-x64.json",
+      "size": 10702,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/packs-linux-x64.json"
+    },
+    {
+      "name": "packs.json",
+      "size": 863701,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/packs.json"
+    },
+    {
+      "name": "SHA256SUMS",
+      "size": 630,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.72/SHA256SUMS"
+    }
+  ],
+  "publication_verified": true,
+  "linux_ordered_delivery_verified": {
+    "libaji_pipeline.so": {
+      "sha256": "321e52c50c0819642c7539195fb646117d1e81184324a57329447b135fef9280",
+      "bytes": 460688,
+      "matches_qualified": true
+    },
+    "aji_pipeline.fatbin": {
+      "sha256": "912e8c30f67c64c7a9276484323fdd22bc09ca870aaaabecb5cff93a5756e21e",
+      "bytes": 77472,
+      "matches_qualified": true
+    },
+    "libaji_trt.so": {
+      "sha256": "953c8f8f65cf9bf58140d1ad08a543f73b73ee8b9cfb5df506ff30063b92c414",
+      "bytes": 2143888,
+      "matches_qualified": true
+    },
+    "libaji_trt_rtx.so": {
+      "sha256": "953c8f8f65cf9bf58140d1ad08a543f73b73ee8b9cfb5df506ff30063b92c414",
+      "bytes": 2143888,
+      "matches_qualified": true
+    },
+    "libaji_fruc.so": {
+      "sha256": "f320f5cc51f3aeec8385a49896e0aa2e1483c86394763a30610f09f2d5df13c1",
+      "bytes": 65000,
+      "matches_qualified": true
+    },
+    "aji_fruc.fatbin": {
+      "sha256": "f9c8c551aec2ee87cd1b7c3097d8538546b1de0cf8eb9569de43d5853e572469",
+      "bytes": 136232,
+      "matches_qualified": true
+    }
+  },
+  "sdk_runtime_not_in_overlay": true,
+  "updater_requires_ordered_reader": true
+}
