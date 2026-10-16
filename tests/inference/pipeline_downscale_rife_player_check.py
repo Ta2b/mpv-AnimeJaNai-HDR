@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """One short actual mpv/NVDEC ordered-chain check, no engine builds.
-Uses a three-frame source at24000/1001; expects nine output frames and EOF.
+Uses a three-frame source at24000/1001; expects five output frames and EOF.
 Checks native frame durations separately from encoder packet durations.
 """
 import hashlib

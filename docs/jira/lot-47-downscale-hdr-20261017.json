@@ -6,7 +6,7 @@
     "AH-317": "In Progress"
   },
   "backend_source": "8d4ea4e28a660523bf2264dbb56627472400b10a",
-  "binaries_source": "2968000",
+  "binaries_source": "2968000274d7f1cd41e0b1ac027c3f522a19a430",
   "library_sha256": "7d168927c507d5166430b1edd08a713fe4cc93ec17c6045eebae73dbd097fdd3",
   "kernel_sha256": "8a8a3f6917ead46b50cc7d2e8902ac2379018de9d2687c63c89174d0db6e5f15",
   "qualification": [
@@ -14,7 +14,8 @@
     "new percentage2x2 GPU oracle max0codes",
     "RIFE order comparison originals+EOF exact and synthesis differences inspected",
     "single actual NVDEC Area->RIFE capture valid after stored PTS reanalysis",
-    "native percentage/profileHDR guards"
+    "native percentage/profileHDR guards",
+    "four new HDR shared/import/distinct-profile guards"
   ],
   "performance": "Nonconclusive: one valid warm interval per order and candidate timing variability.",
   "release": "3.8.0.78 preparing",
@@ -22,5 +23,10 @@
     "Manager immutable delivery",
     "player release publication and artifact verification",
     "actual HDR conversion AH-317 distinct from uniqueness guard"
-  ]
+  ],
+  "manager_source": "df4e7f31058016567916df23cf51f99a5b8c13de",
+  "jira_comments": {
+    "AH-315": "10172",
+    "AH-323": "10173"
+  }
 }

@@ -47,3 +47,9 @@ Modulefinal ajoute seulement des gardes de configuration aux pixels qualifiés ;
 kernel et TensorRT identiques aux comparaisons. Autres matériels/API et sortieHDR
 physique non qualifiés. AH-315 et AH-323 restent In Progress jusqu’à livraison
 vérifiée de.78 ; conversionHDR réelle reste AH-317, installationNvTrueHDR AH-318.
+
+
+Quatre gardes d’import/contrat supplémentaires passent : deuxHDR dans une chaîne,
+deuxchaînesHDR dans un profil, import dupliqué conservé et sauvegarde refusée,
+unHDR dans chacun de deuxprofils distincts accepté. Aucun ancien contrôleUI rejoué.
+Managerdf4e7f3 publié (workflow38976374521 success, quatreassets immuables).
