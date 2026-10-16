@@ -1,6 +1,6 @@
 # Reprise du travail — état au 14 octobre 2026
 
-Point courant : **3.8.0.72 publiée / AH-301 Done**. Manager AH-302 implémenté/qualifié ;.73 Linux publiée, Windows échouée sur asset Manager absent. Source Manager2cc424c et binaires Win/Linux/Mac désormais publiés (38962517292 success) ; **.74 corrective poussée**, AH-302 reste In Progress jusqu’à livraison complète. **AH-313 In Progress** : workflow GMFSS Fortuna préparé, contrat CPU commencé, pas encore d’exécuteur/UI livré.
+Point courant : **3.8.0.74 publiée, trois workflows success/17assets ; AH-302 Done**. Source64f2512, Manager2cc424c ; composant Windows byte-exact vérifié. **AH-314 In Progress** : simplification UI qualifiée, Managerf5e2a0f en publication38966813166. **AH-315 In Progress** : étage downscale indépendant en implémentation. AH-316 importSDK et AH-317 HDR explicite To Do. **AH-313 In Progress** : GMFSS checkpoints472637b/1048b2a, ni qualification finale ni livraison prétendue.
 
 ## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
 
