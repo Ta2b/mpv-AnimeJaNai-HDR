@@ -772,6 +772,7 @@ void load_rife(Context &c)
                 InterpolatorRequest moving = request;
                 moving.models_dir = made.parent_path().string();
                 moving.model = made.stem().string();
+                moving.motion_only = moving.provider == "cpu";
                 // Provider-compiled caches must inherit the source identity too.
                 moving.cache_dir = made.parent_path().string();
                 std::unique_ptr<Interpolator> candidate = make_interpolator(moving);

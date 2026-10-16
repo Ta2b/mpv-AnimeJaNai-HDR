@@ -14,6 +14,8 @@ AjiFixedShape aji_onnx_fixed_rank4_input(const std::vector<char> &model,
 // Content-qualified RIFE4.26 image/flow graphs only. Keep weights and all
 // unrelated nodes/metadata; expose native FLOAT activations between explicit casts.
 bool aji_onnx_cpu_activations(const std::vector<char> &model, std::vector<char> *out, size_t *count);
+bool aji_onnx_prepare_cpu_rife(const std::vector<char> &model, bool activations, bool motion,
+    std::vector<char> *out, size_t *count, bool *motion_only, std::string *why);
 
 // RIFE's picture is warp(img0, flow0) * mask + warp(img1, flow1) * (1 - mask), nothing else.
 // With the flow ([1, 4, H, W], in pixels: channels 0-1 towards img0, 2-3 towards img1) and the

@@ -104,15 +104,9 @@ std::string output_entry(const std::string &name, int elem_type)
 
 } // namespace
 
-bool aji_onnx_cpu_activations(const std::vector<char> &model, std::vector<char> *out, size_t *count)
+static bool cpu_activations_impl(const std::vector<char> &model, std::vector<char> *out, size_t *count)
 {
-    *count = 0;
-    aji::identity::Sha256 hash; hash.update(model.data(),model.size());
-    const std::string digest = hash.hex();
-    // Full graph and inline weights, including the exact export recipe. New
-    // models/exports stay on the reference route until their own qualification.
-    if (digest != "fd6b06538898c9a94d20f0fe55febceadbcde5ad64952240733b7275ef4c9d59"
-        && digest != "4d93a8a394cc1a1dd20d7efc2fcbace769f289dd655d0f76f941f533ffbbc216") return false;
+    *count=0;
     auto field = [](uint32_t number,const std::string &value) {
         std::string s;put_varint(s,((uint64_t)number<<3)|2);put_varint(s,value.size());return s+value;
     };
@@ -162,6 +156,92 @@ bool aji_onnx_cpu_activations(const std::vector<char> &model, std::vector<char> 
     result.append((const char *)end_graph,(size_t)(top.end-end_graph));
     std::string opset=field(1,"aji.cpu");put_varint(opset,16);put_varint(opset,1);result+=field(8,opset);
     out->assign(result.begin(),result.end());return true;
+}
+
+static bool prune_cpu_motion_nodes(const std::vector<char> &model,std::vector<char> *out,std::string *why)
+{
+    // Only called after the complete known RIFE content check. These graphs
+    // are flat, deterministic tensor graphs: no If/Loop/Scan or captured inputs.
+    const auto *base=(const uint8_t *)model.data();Reader top{base,base+model.size()};
+    uint32_t f;const uint8_t *d;size_t l;
+    const uint8_t *graph=nullptr,*graph_start=nullptr,*graph_after=nullptr;size_t length=0;
+    while(top.p<top.end) {
+        const auto *start=top.p;if(!top.next(&f,&d,&l))return false;
+        if(f==7 && d) {graph=d;length=l;graph_start=start;graph_after=top.p;}
+    }
+    if(!graph)return false;
+    struct Dependency {std::vector<std::string> inputs,outputs;};
+    std::vector<Dependency> nodes;std::vector<std::string> needed;
+    Reader read{graph,graph+length};
+    while(read.p<read.end) {
+        if(!read.next(&f,&d,&l))return false;
+        if(f==1 && d) {
+            Dependency node;Reader r{d,d+l};uint32_t k;const uint8_t *v;size_t n;
+            while(r.next(&k,&v,&n))if(v) {
+                if(k==1 && n)node.inputs.emplace_back((const char *)v,n);
+                else if(k==2 && n)node.outputs.emplace_back((const char *)v,n);
+                else if(k==4) {
+                    const std::string op((const char *)v,n);
+                    if(op=="If" || op=="Loop" || op=="Scan") {*why="CPU motion pruning requires a flat graph";return false;}
+                }
+            }
+            if(!r.ok)return false;nodes.push_back(std::move(node));
+        } else if(f==12 && d) {
+            Reader info{d,d+l};uint32_t k;const uint8_t *v;size_t n;
+            while(info.next(&k,&v,&n))if(k==1 && v && n)needed.emplace_back((const char *)v,n);
+            if(!info.ok)return false;
+        }
+    }
+    if(needed.size()!=2)return false;
+    std::map<std::string,size_t> producers;
+    for(size_t i=0;i<nodes.size();++i)for(const auto &name:nodes[i].outputs)
+        if(!producers.emplace(name,i).second)return false;
+    std::vector<bool> keep(nodes.size(),false);
+    while(!needed.empty()) {
+        auto name=std::move(needed.back());needed.pop_back();
+        const auto found=producers.find(name);
+        if(found==producers.end() || keep[found->second])continue;
+        const size_t i=found->second;keep[i]=true;
+        needed.insert(needed.end(),nodes[i].inputs.begin(),nodes[i].inputs.end());
+    }
+    std::string body;size_t i=0;read=Reader{graph,graph+length};
+    while(read.p<read.end) {
+        const auto *start=read.p;if(!read.next(&f,&d,&l))return false;
+        const bool retain=f!=1 || keep[i++];
+        if(retain)body.append((const char *)start,(size_t)(read.p-start));
+    }
+    std::string result((const char *)base,(size_t)(graph_start-base));
+    put_varint(result,58);put_varint(result,body.size());result+=body;
+    result.append((const char *)graph_after,(size_t)(top.end-graph_after));
+    out->assign(result.begin(),result.end());return true;
+}
+
+bool aji_onnx_prepare_cpu_rife(const std::vector<char> &model,bool activations,bool motion,
+    std::vector<char> *out,size_t *count,bool *motion_only,std::string *why)
+{
+    *count=0;*motion_only=false;
+    if(!activations && !motion)return false;
+    aji::identity::Sha256 hash;hash.update(model.data(),model.size());
+    const auto digest=hash.hex();
+    if(digest!="fd6b06538898c9a94d20f0fe55febceadbcde5ad64952240733b7275ef4c9d59"
+        && digest!="4d93a8a394cc1a1dd20d7efc2fcbace769f289dd655d0f76f941f533ffbbc216") {
+        *why="CPU RIFE content is not qualified";return false;
+    }
+    std::vector<char> activated;
+    const bool changed=activations && cpu_activations_impl(model,&activated,count);
+    const auto &graph=changed ? activated : model;
+    std::vector<char> moving;
+    if(motion && aji_onnx_motion_outputs(graph,&moving,why) && prune_cpu_motion_nodes(moving,out,why)) {
+        *motion_only=true;return true;
+    }
+    if(changed) { *out=std::move(activated);return true; }
+    return false;
+}
+
+bool aji_onnx_cpu_activations(const std::vector<char> &model,std::vector<char> *out,size_t *count)
+{
+    bool motion_only=false;std::string why;
+    return aji_onnx_prepare_cpu_rife(model,true,false,out,count,&motion_only,&why);
 }
 
 AjiFixedShape aji_onnx_fixed_rank4_input(const std::vector<char> &model,

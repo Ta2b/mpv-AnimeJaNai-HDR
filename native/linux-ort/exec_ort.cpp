@@ -142,26 +142,33 @@ GraphOptimizationLevel optimization_level(bool precise)
 }
 
 std::unique_ptr<Ort::Session> fixed_session(const std::filesystem::path &path,
-    Ort::SessionOptions &options, const std::string &provider, int channels, int height, int width)
+    Ort::SessionOptions &options, const std::string &provider, int channels, int height, int width,
+    bool request_motion=false, bool *motion_only=nullptr)
 {
+    if(motion_only)*motion_only=false;
     const char *flag=std::getenv("AJI_ORT_SPECIALIZE_SHAPES");
     const bool enabled=!(flag && *flag=='0') && (provider=="cpu" || (flag && *flag=='1'));
-    bool native_cpu=false;
+    bool native_cpu=false,native_motion=false;
 #if ORT_API_VERSION >= 24 && defined(__linux__) && defined(__x86_64__)
     const char *activation_flag=std::getenv("AJI_ORT_CPU_ACTIVATIONS");
-    native_cpu=channels==11 && provider=="cpu" && !(activation_flag && *activation_flag=='0')
+    const bool qualified=channels==11 && provider=="cpu"
         && optimization_level(true)==GraphOptimizationLevel::ORT_ENABLE_ALL
         && std::strcmp(OrtGetApiBase()->GetVersionString(),"1.24.1")==0;
+    native_cpu=qualified && !(activation_flag && *activation_flag=='0');
+    const char *motion_flag=std::getenv("AJI_ORT_CPU_MOTION_ONLY");
+    native_motion=qualified && request_motion && !(motion_flag && *motion_flag=='0');
 #endif
 #if ORT_API_VERSION >= 24
-    if (enabled || native_cpu) {
+    if (enabled || native_cpu || native_motion) {
         std::ifstream in(path,std::ios::binary);
         require(in.good(), "Cannot read ONNX model for input specialization: " + path.string());
         std::vector<char> original((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>()), activated;
         require(!in.bad(), "Incomplete ONNX model for input specialization: " + path.string());
         size_t activation_count=0;
-        bool changed=native_cpu && aji_onnx_cpu_activations(original,&activated,&activation_count);
-        if (changed) {
+        bool prepared_motion=false;std::string preparation_why;
+        bool changed=aji_onnx_prepare_cpu_rife(original,native_cpu,native_motion,&activated,
+            &activation_count,&prepared_motion,&preparation_why);
+        if (changed && activation_count) {
             try { register_cpu_activations(options); }
             catch (const std::exception &e) {
                 std::cerr<<"[aji] CPU activations unavailable; keeping reference graph: "<<e.what()<<'\n';changed=false;
@@ -190,16 +197,20 @@ std::unique_ptr<Ort::Session> fixed_session(const std::filesystem::path &path,
         if (changed) {
             try {
                 auto session=compile(activated,true);
-                std::cerr<<"[aji] ORT CPU native activations: "<<activation_count<<" qualified RIFE nodes\n";
+                require(!prepared_motion || session->GetOutputCount()==2,"Unexpected motion-only output signature");
+                if(motion_only)*motion_only=prepared_motion;
+                if(activation_count)std::cerr<<"[aji] ORT CPU native activations: "<<activation_count<<" qualified RIFE nodes\n";
+                if(prepared_motion)std::cerr<<"[aji] ORT CPU RIFE motion-only: flow/mask outputs, no RGB binding\n";
                 return session;
-            }catch(const Ort::Exception &e) {
-                std::cerr<<"[aji] CPU activation compile failed; keeping reference graph: "<<e.what()<<'\n';
+            }catch(const std::exception &e) {
+                std::cerr<<(prepared_motion ? "[aji] CPU motion compile failed; keeping reference graph: "
+                                           : "[aji] CPU activation compile failed; keeping reference graph: ")<<e.what()<<'\n';
             }
         }
         return compile(original,false);
     }
 #else
-    (void)enabled; (void)native_cpu;
+    (void)enabled; (void)native_cpu; (void)native_motion; (void)request_motion;
 #endif
     options.AddFreeDimensionOverrideByName("height",height);
     options.AddFreeDimensionOverrideByName("width",width);
@@ -447,7 +458,7 @@ public:
             r.model + "-" + std::to_string(pw_) + "x" + std::to_string(ph_), &label, true);
         // Models whose two free dimensions are named (the macOS package names them) get their
         // exact size, which Core ML needs; the others keep their dynamic shape.
-        session_ = fixed_session(path, options, r.provider, 11, ph_, pw_);
+        session_ = fixed_session(path, options, r.provider, 11, ph_, pw_, r.motion_only, &motion_only_);
         Ort::AllocatorWithDefaultOptions allocator;
         require(session_->GetInputCount() == 1 && session_->GetOutputCount() >= 1, "Unexpected RIFE model signature: " + r.model);
         input_ = session_->GetInputNameAllocated(0, allocator).get();
@@ -464,9 +475,10 @@ public:
         half_in_ = in == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
         half_out_ = out == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
         // A model with its motion field and mask as outputs 2 and 3 (onnx_flow.h).
-        if (session_->GetOutputCount() >= 3) {
-            flow_name_ = session_->GetOutputNameAllocated(1, allocator).get();
-            mask_name_ = session_->GetOutputNameAllocated(2, allocator).get();
+        if (motion_only_ || session_->GetOutputCount() >= 3) {
+            const size_t offset=motion_only_ ? 0 : 1;
+            flow_name_ = session_->GetOutputNameAllocated(offset, allocator).get();
+            mask_name_ = session_->GetOutputNameAllocated(offset+1, allocator).get();
         }
 
         const size_t plane = (size_t)pw_ * ph_;
@@ -493,7 +505,7 @@ public:
         // A fixed output shape also allows ORT to write into persistent storage.
         // Only allocation changes: type, padded geometry and output conversion stay identical.
         const char *buffer = std::getenv("AJI_RIFE_OUTPUT_BUFFER");
-        buffered_output_ = !(buffer && *buffer == '0');
+        buffered_output_ = !motion_only_ && !(buffer && *buffer == '0');
         if (buffered_output_) {
             const int64_t output_shape[4] = {1, 3, ph_, pw_};
             if (half_out_) {
@@ -508,7 +520,7 @@ public:
         }
         if (reuse_bindings_ && has_motion()) {
             for (size_t k = 0; k < motion_tensors_.size(); ++k) {
-                const auto type = session_->GetOutputTypeInfo(k + 1).GetTensorTypeAndShapeInfo().GetElementType();
+                const auto type = session_->GetOutputTypeInfo(k + (motion_only_ ? 0 : 1)).GetTensorTypeAndShapeInfo().GetElementType();
                 require(supported(type), "RIFE motion tensors must be float or half float: " + r.model);
                 const size_t count = (k == 0 ? 4 : 1) * plane;
                 const int64_t dims[4] = {1, k == 0 ? 4 : 1, ph_, pw_};
@@ -567,6 +579,7 @@ public:
     void run(const uint8_t *a, ptrdiff_t a_stride, const uint8_t *b, ptrdiff_t b_stride, double t,
              uint8_t *out, ptrdiff_t out_stride) override
     {
+        require(!motion_only_,"This interpolator exposes only flow/mask, not an RGB output");
         const size_t plane = (size_t)pw_ * ph_;
         double began = profile_ ? now_ms() : 0;
         prepare(a, a_stride, b, b_stride, t, began);
@@ -716,6 +729,7 @@ private:
     Ort::Value output_tensor_{nullptr};
     std::string flow_name_, mask_name_;
     bool reuse_bindings_ = false;
+    bool motion_only_ = false;
     std::array<std::vector<uint16_t>, 2> motion_halves_;
     std::array<std::vector<float>, 2> motion_floats_;
     std::array<Ort::Value, 2> motion_tensors_{Ort::Value{nullptr}, Ort::Value{nullptr}};

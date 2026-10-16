@@ -94,6 +94,7 @@ struct InterpolatorRequest {
     std::string cache_dir;
     int width = 0, height = 0;      // of the pictures
     bool profile = false;         // separate CPU preparation / ORT run / output timings
+    bool motion_only = false;     // explicit flow/mask consumer; keep full image otherwise
 };
 
 class Interpolator {

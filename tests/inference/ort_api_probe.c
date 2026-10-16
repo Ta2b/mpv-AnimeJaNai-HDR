@@ -26,6 +26,10 @@ static OrtSessionOptions *capture_options(const OrtSessionOptions *options, cons
     if (real_api->CloneSessionOptions(options,&copy)) abort();
     char path[4096]; capture_path(path,folder,"optimized",index,"onnx");
     if (real_api->SetOptimizedModelFilePath(copy,path)) abort();
+    if (getenv("AJI_TEST_ORT_PROFILE_ALL")) {
+        capture_path(path,folder,"profile",index,"trace");
+        if (real_api->EnableProfiling(copy,path)) abort();
+    }
     // The Quality probe creates SPAN then RIFE on each configure. This test
     // hook isolates newly exposed RIFE fusions, without changing production.
     const char *disabled = getenv("AJI_TEST_ORT_RIFE_DISABLE");
@@ -68,6 +72,17 @@ static OrtStatus *ORT_API_CALL create_file(const OrtEnv *env, const ORTCHAR_T *p
     real_api->ReleaseSessionOptions(copy);
     if (!s) capture_shapes(*out,folder,index);
     return s;
+}
+
+static void ORT_API_CALL release_session(OrtSession *session)
+{
+    if (session && getenv("AJI_TEST_ORT_PROFILE_ALL")) {
+        OrtAllocator *allocator=NULL;char *file=NULL;
+        if (real_api->GetAllocatorWithDefaultOptions(&allocator)
+            || real_api->SessionEndProfiling(session,allocator,&file)) abort();
+        allocator->Free(allocator,file);
+    }
+    real_api->ReleaseSession(session);
 }
 static OrtStatus *ORT_API_CALL create_array(const OrtEnv *env, const void *bytes, size_t size,
     const OrtSessionOptions *options, OrtSession **out)
@@ -142,6 +157,7 @@ static void initialize(void)
     memcpy(&wrapped, real_api, sizeof(wrapped));
     wrapped.CreateSession = create_file;
     wrapped.CreateSessionFromArray = create_array;
+    wrapped.ReleaseSession = release_session;
     wrapped.CreateCpuMemoryInfo = cpu_memory;
     wrapped.CreateTensorWithDataAsOrtValue = tensor;
     wrapped.GetTensorTypeAndShape = shape;
