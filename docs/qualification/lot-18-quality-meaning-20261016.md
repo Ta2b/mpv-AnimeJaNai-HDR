@@ -20,4 +20,4 @@ Artefacts : `artifacts/performance/lots-20261016/lot-18/` : sources de probe iso
 
 ## Livraison
 
-Source player partagée à pousser puis épingler dans le Manager, publication immuable et livraison .49 à vérifier. AH-13 reste In Progress jusque-là. AH-12/AH-14 restent ouverts pour le verrouillage global et le contrat de précision ; ces travaux distincts ne sont pas déclarés implémentés par la clarification.
+Source player partagée `c1217ca`, Manager `50ff160f534699015f01d4fd8beb8c3f53464a58` : workflow **38848948867 success**, quatre assets uploaded dans la release immuable `hdr-50ff160f534699015f01d4fd8beb8c3f53464a58`. Livraison player **3.8.0.49** poussée avec ce pin ; AH-13 reste In Progress jusqu’à vérification des trois plateformes/assets. AH-12/AH-14 restent ouverts pour le verrouillage global et le contrat de précision ; ces travaux distincts ne sont pas déclarés implémentés par la clarification. Le travail reprend sur la décision de migration AH-242 après le push, sans attendre la release.
