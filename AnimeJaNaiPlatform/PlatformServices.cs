@@ -401,9 +401,12 @@ public static class InterpolationPipeline
     {
         if(plan.Stages.Count>MaxStages)throw new InvalidDataException("Too many pipeline stages");
         if(plan.Stages.Count(s=>s.Kind=="hdr")>1)throw new InvalidDataException("Only one HDR conversion stage is allowed per profile.");
+        bool afterHdr=false;
         var ids=new HashSet<string>(StringComparer.Ordinal);
         foreach(var s in plan.Stages)
         {
+            if(s.Enabled&&afterHdr)throw new InvalidDataException("HDR must be the last active stage; the following providers currently require SDR.");
+            if(s.Enabled&&s.Kind=="hdr"&&s.Method=="nvidia-truehdr")afterHdr=true;
             if(!Regex.IsMatch(s.Id,@"^[A-Za-z0-9_-]{1,64}$")||!ids.Add(s.Id))throw new InvalidDataException("Stage IDs must be stable, distinct identifiers");
             foreach(string token in new[] {s.Kind,s.Method,s.Runtime})
                 if(!Regex.IsMatch(token,@"^[a-z0-9_-]{1,64}$"))throw new InvalidDataException("Stage kind/method/runtime must be explicit identifiers");
