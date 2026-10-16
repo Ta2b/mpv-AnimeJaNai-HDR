@@ -8,10 +8,15 @@ extern "C" {
 #endif
 #define AJI_PIPELINE_MAX_OUTPUTS 16
 enum aji_pipeline_status { AJI_PIPELINE_LEGACY=1 };
-enum aji_pipeline_create_flags { AJI_PIPELINE_ALLOW_FAST=1 };
+enum aji_pipeline_features { AJI_PIPELINE_FEATURE_AREA_DOWNSCALE=1, AJI_PIPELINE_FEATURE_TRUEHDR=2 };
+/* Static reader features, no CUDA initialization or pixel work. */
+uint64_t aji_pipeline_features_v1(void);
+enum aji_pipeline_create_flags { AJI_PIPELINE_ALLOW_FAST=1, AJI_PIPELINE_ALLOW_COLOR_CHANGE=2 };
+enum aji_pipeline_cap_flags { AJI_PIPELINE_COLOR_CHANGE=4 };
 enum aji_pipeline_request_flags { AJI_PIPELINE_EOF=2 };
 enum aji_pipeline_output_flags { AJI_PIPELINE_ORIGINAL=1, AJI_PIPELINE_RIFE=2,
-    AJI_PIPELINE_FRUC=4, AJI_PIPELINE_REPEATED=8, AJI_PIPELINE_UPSCALED=16 };
+    AJI_PIPELINE_FRUC=4, AJI_PIPELINE_REPEATED=8, AJI_PIPELINE_UPSCALED=16,
+    AJI_PIPELINE_RESIZED=32, AJI_PIPELINE_HDR=64 };
 typedef struct aji_pipeline_create_v1_params {
     uint32_t struct_size,version,width,height,device_index,slot,capacity,flags;
     uint64_t generation;
@@ -71,6 +76,13 @@ typedef struct aji_pipeline_stats_v1 {
  */
 int aji_pipeline_create_v1(const aji_pipeline_create_v1_params *,void **,char *,size_t);
 int aji_pipeline_query_v1(void *,aji_pipeline_caps_v1 *,size_t);
+/* Optional color-aware client extension. Outputs untouched on failure; peak
+ * is the SDK target, not measured content metadata. Peak0 means native HDR is
+ * preserved by an HDR-only chain, so retain its existing HDR metadata.
+ * Success advertises policy,
+ * frames are released only after successful pixel processing. Older clients
+ * without ALLOW_COLOR_CHANGE explicitly reject an HDR stage. */
+int aji_pipeline_output_color_v1(void *,const aji_surface_color_v1 *,aji_surface_color_v1 *,size_t,double *peak);
 int aji_pipeline_submit_v1(void *,const aji_pipeline_submit_v1_request *,uint64_t *);
 int aji_pipeline_complete_v1(void *,uint64_t,uint32_t,aji_pipeline_completion_v1 *,size_t);
 int aji_pipeline_drain_v1(void *,uint32_t);

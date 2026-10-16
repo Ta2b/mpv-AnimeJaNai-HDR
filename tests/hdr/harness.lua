@@ -17,7 +17,7 @@ function H.new(opts)
     return v
   end
   local function notify(name)
-    for _,o in ipairs(S.observers) do if o.name==name or name:sub(1,#o.name+1)==o.name..'/' then o.fn(o.name,getn(o.name)) end end
+    for _,o in ipairs(S.observers) do if o.name==name or name:sub(1,#o.name+1)==o.name..'/' or o.name:sub(1,#name+1)==name..'/' then o.fn(o.name,getn(o.name)) end end
   end
   local function setn(name,v)
     local parts=split(name)
@@ -26,7 +26,7 @@ function H.new(opts)
       for i=2,#parts-1 do t[parts[i]]=t[parts[i]] or {}; t=t[parts[i]] end
       t[parts[#parts]]=v
     end
-    S.sets[#S.sets+1]=name; notify(parts[1])
+    S.sets[#S.sets+1]=name; notify(name)
   end
   S.set=setn
   local mp = {}

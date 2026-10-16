@@ -1,0 +1,77 @@
+--- a/video/filter/vf_animejanai.c
++++ b/video/filter/vf_animejanai.c
+@@ -213,6 +213,7 @@
+     void *handle;
+     int (*create)(const aji_pipeline_create_v1_params *,void **,char *,size_t);
+     int (*query)(void *,aji_pipeline_caps_v1 *,size_t);
++    int (*output_color)(void *,const aji_surface_color_v1 *,aji_surface_color_v1 *,size_t,double *);
+     int (*submit)(void *,const aji_pipeline_submit_v1_request *,uint64_t *);
+     int (*complete)(void *,uint64_t,uint32_t,aji_pipeline_completion_v1 *,size_t);
+     int (*error)(void *,char *,size_t);
+@@ -504,6 +505,8 @@
+     switch (params->color.transfer) {
+     case PL_COLOR_TRC_BT_1886: color.transfer = AJI_SURFACE_TRC_1886; break;
+     case PL_COLOR_TRC_SRGB: color.transfer = AJI_SURFACE_TRC_SRGB; break;
++    case PL_COLOR_TRC_PQ: color.transfer = AJI_SURFACE_TRC_PQ; break;
++    case PL_COLOR_TRC_HLG: color.transfer = AJI_SURFACE_TRC_HLG; break;
+     }
+     return color;
+ }
+@@ -602,6 +605,7 @@
+         PIPE_SYM(submit, "aji_pipeline_submit_v1"); PIPE_SYM(complete, "aji_pipeline_complete_v1");
+         PIPE_SYM(error, "aji_pipeline_last_error_v1"); PIPE_SYM(destroy, "aji_pipeline_destroy_v1");
+         PIPE_SYM(stats, "aji_pipeline_stats_v1_get");
++        p->pipe.output_color = aji_lib_sym(p->pipe.handle, "aji_pipeline_output_color_v1");
+ #undef PIPE_SYM
+     }
+     CUcontext previous; CUdevice device;
+@@ -615,7 +619,8 @@
+     aji_pipeline_create_v1_params params = {
+         .struct_size = sizeof(params), .version = 1,
+         .width = p->params.w, .height = p->params.h, .device_index = device,
+-        .slot = p->pending_slot, .capacity = 1, .flags = 1,
++        .slot = p->pending_slot, .capacity = 1,
++        .flags = AJI_PIPELINE_ALLOW_FAST | (p->pipe.output_color ? AJI_PIPELINE_ALLOW_COLOR_CHANGE : 0),
+         .generation = p->worker_generation, .cuda_context = p->cuda_ctx,
+         .conf = p->path.conf, .model_dir = p->path.model_dir, .rife_dir = p->path.rife_model_dir,
+         .trtexec = p->path.trtexec, .trtexec_env = env,
+@@ -654,6 +659,28 @@
+         p->out_params.hw_subfmt = pixfmt2imgfmt(AV_PIX_FMT_YUV444P16);
+         p->out_params.repr.bits = (struct pl_bit_encoding){.sample_depth=16,.color_depth=16,.bit_shift=0};
+         p->out_params.chroma_location = PL_CHROMA_LEFT; p->out_fmt = AJI_FMT_YUV444P16;
++        if (caps.flags & AJI_PIPELINE_COLOR_CHANGE) {
++            aji_surface_color_v1 input = surface_color(&p->params, surface_format(p->aji_fmt)), output;
++            double peak = 0;
++            if (!p->pipe.output_color || p->pipe.output_color(p->pipeline, &input, &output, sizeof(output), &peak) ||
++                output.matrix != AJI_SURFACE_MATRIX_2020_NC || output.primaries != AJI_SURFACE_PRIM_2020 ||
++                output.component_bits != 16 || !isfinite(peak) || (peak != 0 && (peak < 400 || peak > 2000))) {
++                MP_ERR(vf, "Ordered HDR output color negotiation failed\n"); goto fail;
++            }
++            if (peak == 0) {
++                if ((input.transfer != AJI_SURFACE_TRC_PQ && input.transfer != AJI_SURFACE_TRC_HLG) ||
++                    output.transfer != input.transfer || output.range != input.range) goto fail;
++                MP_VERBOSE(vf, "Ordered HDR-only chain preserves native HDR; conversion bypassed\n");
++            } else {
++                if (output.transfer != AJI_SURFACE_TRC_PQ || output.range != AJI_SURFACE_RANGE_LIMITED) goto fail;
++                p->out_params.repr.sys = PL_COLOR_SYSTEM_BT_2020_NC;
++                p->out_params.repr.levels = PL_COLOR_LEVELS_LIMITED;
++                p->out_params.color.primaries = PL_COLOR_PRIM_BT_2020;
++                p->out_params.color.transfer = PL_COLOR_TRC_PQ;
++                p->out_params.color.hdr = (struct pl_hdr_metadata){.min_luma=0, .max_luma=peak};
++                MP_VERBOSE(vf, "Ordered TrueHDR output: PQ / BT.2020, target %.0f nits; frames require successful SDK completion\n", peak);
++            }
++        }
+         MP_VERBOSE(vf, "Ordered GPU pipeline active: %u stages, x%u, %ux%u, %s\n", caps.stage_count, caps.factor,
+             caps.width, caps.height, caps.flags&AJI_INTERPOLATOR_FAST ? "Fast" : "Quality");
+     }
+--- a/video/out/vo_lavc.c
++++ b/video/out/vo_lavc.c
+@@ -110,6 +110,8 @@
+     encoder->pix_fmt = pix_fmt;
+     encoder->colorspace = pl_system_to_av(params->repr.sys);
+     encoder->color_range = pl_levels_to_av(params->repr.levels);
++    encoder->color_primaries = pl_primaries_to_av(params->color.primaries);
++    encoder->color_trc = pl_transfer_to_av(params->color.transfer);
+ 
+     AVRational tb;
+ 

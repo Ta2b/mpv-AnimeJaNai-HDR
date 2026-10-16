@@ -53,3 +53,6 @@ Quatre gardes d’import/contrat supplémentaires passent : deuxHDR dans une cha
 deuxchaînesHDR dans un profil, import dupliqué conservé et sauvegarde refusée,
 unHDR dans chacun de deuxprofils distincts accepté. Aucun ancien contrôleUI rejoué.
 Managerdf4e7f3 publié (workflow38976374521 success, quatreassets immuables).
+
+
+Livraison17octobre : .78 vérifiée, trois workflows success,17assets ; Manager exact et module/fatbin dans l’overlayLinux identiques aux SHA qualifiés. AH-315 et AH-323 Done, commentaires10176/10177. HDR réel reste AH-317.

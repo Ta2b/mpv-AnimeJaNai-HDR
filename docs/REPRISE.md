@@ -1,6 +1,6 @@
 # Reprise du travail — état au 14 octobre 2026
 
-Point courant : **.78 en livraison : Downscale séparé et garde unHDR/profil qualifiés, AH-315/AH-323 In Progress jusqu’à publication vérifiée**. Source préparée lot47, Managerdf4e7f3 immuable vérifié, backend8d4ea4e, binaires2968000. Comparaison RIFE1080/720 fonctionnelle, originaux exacts ; gainFPS non concluant (temps variables), compromis de détails explicite. **AH-317 HDR réel en cours** : SDKMaxine/TrueHDR est présent dans/usr/local/VideoFX ; une référence réelle gradient720p a réussi avec ses dépendancesCUDA12/TRT10. .77 diagnosticFRUC/Manager6a781fd : Win/macOS success, Linux publish en cours au dernier contrôle, AH-320 encoreIP. .76/AH-316/AH-319 Done ; .75/AH-314 Done. GMFSS et autres tickets ouverts préservés. Aucun média utilisateur téléversé.
+Point courant17octobre : **.78 publiée, AH-315 et AH-323 Done** : Downscale séparé et unHDR/profil, trois workflows success,17assets, Manager/module/kernel vérifiés. **.77 publiée, AH-320 Done** : diagnosticSDKFRUC et avertissement ; mitigationAH-322 ouverte. **AH-317 In Progress, lot48/.79 en préparation** : HDR réel SDKMaxine installé, référence indépendante et pipeline exacts, RIFE/FRUC→TrueHDR réels, nativeHDRseul inchangé,14 contrôles Manager et10 contrôleur réussis. Managerf69589d7 publié, quatre assets immuables vérifiés ; backend9f2541e3, binairesf638d002. Voir docs/qualification/lot-48-hdr-stage-20261017.md. AH-318 importSDK reste distinct. Aucun média utilisateur téléversé.
 
 ## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
 

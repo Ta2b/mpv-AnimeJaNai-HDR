@@ -1,8 +1,8 @@
 # Étages d’interpolation ordonnés — Linux NVIDIA
 
 Le lecteur Linux accepte des étages ordonnés explicites dans `animejanai.conf`.
-Le Manager livré avec3.8.0.76 propose des catégories fixes et l’import du SDK
-FRUC. Les profils existants conservent leur chemin, Quality et les fractions
+Le Manager propose quatre catégories fixes et l’import du SDK FRUC.
+Downscale indépendant livré en3.8.0.78 ; HDRréel ajouté en3.8.0.79. Les profils existants conservent leur chemin, Quality et les fractions
 RIFE (dont5/2). Un schéma strictement équivalent à ces réglages emprunte
 également ce chemin inchangé.
 
@@ -20,8 +20,9 @@ RIFE (dont5/2). Un schéma strictement équivalent à ces réglages emprunte
 Les facteurs temporels se multiplient : RIFE×2 puis FRUC×2 =×4.
 Limites initiales :16étages, facteur cumulé≤16, pool pixels possédés512MiB
 (hors espace de travail interne TRT/SDK). Un étage désactivé est conservé.
-Méthode/runtime/option non implémentés, SR temporel, HDR PQ/HLG et fractions
-mixtes sont refusés explicitement. Ces limites n’en font pas des choix disponibles.
+Méthode/runtime/option non implémentés, SR temporel et fractions mixtes sont
+refusés explicitement. Les moteurs actuels restentSDR ; seuleunechaîneHDR
+seule préserve une sourcePQ/HLGBT2020 sansreconversion. Ces limites n’en font pas des choix disponibles.
 Les autres moteurs du comparatif restent des travaux distincts du backlog.
 
 ## Utiliser le Manager
@@ -39,10 +40,17 @@ Activer l’étage, le déplacer entre RIFE et SPAN avec les flèches, puis choi
 Les modes Quality/Fast concernent RIFE ; FRUC n’offre pas de modeQuality.
 
 Les ajouts **Upscale**, **Downscale** et **HDR** sont des catégories distinctes.
-Le choix de technologie d’un étage reste limité à sa catégorie. Downscale/HDR
-restent grisés dans3.8.0.76 en attendant leurs providers. L’ordre affiché est
-l’ordre réel ; un resize historique attaché à un upscaler s’exécute juste avant
-cet upscaler. Il ne réduit donc pas la résolution d’un interpolateur placé avant.
+Le choix de technologie reste limité à sa catégorie. Downscale utiliseArea,
+avec hauteurplafond ou pourcentage ; placé avantRIFE, il réduit réellement sa
+résolution. Les réglages deréduction sont absents des nouveaux étagesUpscale.
+Un resize historique reste exact tant que l’action «Move imported resize into
+Downscale» n’est pas utilisée ; celle-ci garde sa position et annonceArea.
+HDR est disponible sousLinuxNVIDIA avecleSDKMaxineCore+TrueHDRinstallé et le
+lecteurcompatible, unseulétage sur toutleprofil (inactifscompris). Il est le
+dernierétageactif, aprèslesmoteursSDR ; paramètres propres et ordrevisible réel.
+AjouterHDR masque les ancienscontrôlesglobaux deconversion ; retirerHDR ne
+lesréactivepas. Lesprofilsnonmigrés gardentleurcomportementhistorique. SDKabsent,
+HDRrestégrisé ; l’assistantd’importCore/feature est suivi dansAH-318.
 Les profils/exports gardent les IDs, l’ordre, options et étages désactivés.
 Une erreur de saisie laisse le dernier fichier valide et un diagnostic inline.
 Les autres moteurs deviendront des choix après livraison de leur provider ;
@@ -103,8 +111,8 @@ Le lanceur fournit les chemins des modules propres au lecteur. FRUC exige un
 `kernel_fatbin` explicite et son CUDART11 compatible : ne jamais renommer
 CUDART13 en11. SDK et pilotes suivent leurs propres conditions et compatibilités.
 La chaîne mixte conserve sa cadence déclarée ; la synchronisation écran
-continue pour les anciens profils/étages équivalents. Le marquage TrueHDR du
-chemin historique est réservé à ce dernier, pas à la synthèse mixte SDR.
+continue pour les anciens profils/étages équivalents. La conversionHDR mixte exigeunétageTrueHDR explicite : requête seule ne
+retaguejamaisdespixelSDR ; seulslespixelconvertisavecsuccès sontannoncésPQ.
 
 ## Qualification et diagnostic
 
@@ -129,3 +137,10 @@ avec le SDK en RGBA et NV12, sans lecteur ni shader : blocs/trous sévères dans
 la lumière synthétisée, sources propres. Changer de format ne corrige pas ce
 cas. Voir docs/qualification/lot-46-fruc-quality-20261016.md. Aucun remède
 universel ni qualité supérieure à OpticalFlow brut n’est établi.
+
+
+TrueHDR : SDRBT709→RGBA8SDK→RGB10A2PQBT2020→YUV444P16limité. LeSDKreçoit8bits,
+sortie10bitseffectifs ; pic400..2000nits configuré, sansMaxCLLinventé. UnHDRseul
+sursourceHDRpréservepixels et métadonnées. SourceSDKinstallée parutilisateur,
+aucune redistribution. Voir qualification/lot-48-hdr-stage-20261017.md ;
+affichageHDRphysique et autresmatériels/API nonqualifiés.

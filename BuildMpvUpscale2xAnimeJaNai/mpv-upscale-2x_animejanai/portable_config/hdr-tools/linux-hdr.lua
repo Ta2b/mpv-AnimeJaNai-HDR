@@ -38,9 +38,17 @@ local function apply(kind,enabled)
     output()
     local confirmed=enabled and native('option-info/target-colorspace-hint-strict')~=nil and options.linux_hdr_output~='sdr' and native('video-target-params/gamma')=='pq'
     -- TrueHDR applied inside the engine (linux-playback.lua): frames arrive as PQ / BT.2020.
-    local truehdr=native('user-data/animejanai-truehdr')==true
-    local backend=truehdr and 'rtx' or options.hdr_conversion and 'mpv' or 'none'
-    state=grade.plan(options,{vendor=hw.vendor,backend=backend,source=kind,output_hdr=confirmed,truehdr=truehdr,
+    local configured=native('user-data/animejanai-pipeline-configured')
+    local owned=type(configured)=='table' and configured.hdr_stage_controlled
+    local out=native('video-out-params') or {}
+    local staged=owned and configured.hdr and configured.hdr.method=='nvidia-truehdr'
+        and out.gamma=='pq' and out.primaries=='bt.2020' and kind=='sdr' or false
+    mp.set_property_native('user-data/animejanai-pipeline-hdr',staged)
+    local truehdr=native('user-data/animejanai-truehdr')==true or staged
+    local effective=options
+    if owned then effective={};for k,v in pairs(options) do effective[k]=v end;effective.hdr_conversion=false end
+    local backend=truehdr and 'rtx' or effective.hdr_conversion and 'mpv' or 'none'
+    state=grade.plan(effective,{vendor=hw.vendor,backend=backend,source=kind,output_hdr=confirmed,truehdr=truehdr,
         target_gamma=native('video-target-params/gamma'),target_peak=native('video-target-params/max-luma'),
         enabled=choice~='off',original=original},choice=='natural' and grade.presets.natural or nil)
     for _,key in ipairs(grade.render_keys) do
@@ -69,7 +77,7 @@ local function report()
     local out=native('video-out-params') or {}
     local function rate(name,unit) local v=tonumber(native(name));return v and v>0 and string.format('%.3f %s',v,unit) or 'indisponible' end
     -- What really runs: the engine marks its TrueHDR output, and a failed filter is reported as such.
-    local truehdr=native('user-data/animejanai-truehdr')==true
+    local truehdr=native('user-data/animejanai-truehdr')==true or native('user-data/animejanai-pipeline-hdr')==true
     local filter='aucun'
     for _,f in ipairs(native('vf') or {}) do if f.label=='aji' then filter=f.enabled and 'AnimeJaNai' or 'AnimeJaNai (desactive)' end end
     local colors=color.describe(native('video-dec-params'),native('video-params'),native('vf'),truehdr)
@@ -115,7 +123,7 @@ mp.register_event('file-loaded',function() loaded=true;schedule() end)
 mp.register_event('start-file',function() loaded=false;calibration=false;reconcile() end)
 mp.register_event('end-file',function() loaded=false;calibration=false;reconcile() end)
 mp.register_event('shutdown',function() loaded=false;calibration=false;if pending then pending:kill() end end)
-for _,name in ipairs({'video-dec-params','video-params','video-target-params','glsl-shaders','display-names','user-data/animejanai-truehdr'}) do
+for _,name in ipairs({'video-dec-params','video-params','video-out-params','user-data/animejanai-pipeline-configured','video-target-params','glsl-shaders','display-names','user-data/animejanai-truehdr'}) do
     mp.observe_property(name,'native',schedule)
 end
 mp.register_script_message('animejanai-reload-options',function()

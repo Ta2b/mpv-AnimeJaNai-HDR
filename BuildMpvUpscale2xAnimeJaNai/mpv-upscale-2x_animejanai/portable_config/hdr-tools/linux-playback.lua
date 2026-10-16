@@ -128,7 +128,7 @@ local function select(value, preload)
     end
     local list=mp.get_property_native('vf') or {}
     local index
-    local hdr_wanted=wanted>0 and stage_wanted() and selected_route.legacy_equivalent
+    local hdr_wanted=wanted>0 and stage_wanted() and selected_route.legacy_equivalent and not selected_route.hdr_stage_controlled
     for i,f in ipairs(list) do if f.label=='aji' then index=i end end
     if wanted==0 then
         if index then table.remove(list,index);mp.set_property_native('vf',tag(list,false)) end
@@ -185,7 +185,7 @@ local function select(value, preload)
     if wanted==0 then decoder(hw.vendor=='nvidia' and 'nvdec' or 'auto-safe') end
     mp.set_property_native('user-data/animejanai-active-slot',slot)
     local route=pipeline_route(slot)
-    mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and route.explicit and route or nil)
+    mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and (route.explicit or route.hdr_stage_controlled) and route or nil)
     local description='cadence originale'
     if slot>0 and route.explicit and not route.legacy_equivalent then
         description=string.format('Chaine configuree x%s/%s',route.factor_num or '?',route.factor_den or '?')

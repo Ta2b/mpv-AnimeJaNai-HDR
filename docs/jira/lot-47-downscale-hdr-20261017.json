@@ -1,8 +1,8 @@
 {
   "lot": 47,
   "tickets": {
-    "AH-315": "In Progress",
-    "AH-323": "In Progress",
+    "AH-315": "Done",
+    "AH-323": "Done",
     "AH-317": "In Progress"
   },
   "backend_source": "8d4ea4e28a660523bf2264dbb56627472400b10a",
@@ -18,15 +18,17 @@
     "four new HDR shared/import/distinct-profile guards"
   ],
   "performance": "Nonconclusive: one valid warm interval per order and candidate timing variability.",
-  "release": "3.8.0.78 preparing",
+  "release": "3.8.0.78 verified",
   "remaining": [
-    "Manager immutable delivery",
-    "player release publication and artifact verification",
     "actual HDR conversion AH-317 distinct from uniqueness guard"
   ],
   "manager_source": "df4e7f31058016567916df23cf51f99a5b8c13de",
   "jira_comments": {
     "AH-315": "10172",
     "AH-323": "10173"
+  },
+  "delivery_comments": {
+    "AH-315": "10176",
+    "AH-323": "10177"
   }
 }

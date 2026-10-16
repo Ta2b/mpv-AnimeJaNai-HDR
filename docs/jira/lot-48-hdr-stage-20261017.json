@@ -1,0 +1,67 @@
+{
+  "lot": 48,
+  "tickets": {
+    "AH-317": "In Progress"
+  },
+  "backend_source": "9f2541e3dee1f159800b3a20c0e0729adc18491b",
+  "manager_source": "f69589d7656ba5237cd29784e0c49f5106ff156b",
+  "binaries_source": "f638d0023d019efd2188cecb748238d4b00ef344",
+  "library_sha256": "d85dbb438c1129a2f2acd80abc3d3c3d4b293f0ce7db5e14c4d1b7acd9e38ff5",
+  "kernel_sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+  "reference": "lot-48/truehdr-reference",
+  "qualifications": [
+    "native-default/summary.json",
+    "native-hdr-bypass/summary.json",
+    "player/mpv.log",
+    "combined/summary.json",
+    "ui/summary.json",
+    "controller/summary.json",
+    "launcher/summary.json",
+    "config-check.log",
+    "installer-stack/patch-check.log"
+  ],
+  "performance": "Functional HDR integration, no FPS improvement claimed.",
+  "limits": [
+    "physical HDR display not exercised",
+    "other GPU/API not exercised",
+    "Windows/macOS HDR stage unavailable",
+    "Matroska exported duration limitation distinct from exact native playback"
+  ],
+  "release": "3.8.0.79 preparing",
+  "manager_delivery": {
+    "source": "f69589d7656ba5237cd29784e0c49f5106ff156b",
+    "run": 38982628105,
+    "conclusion": "success",
+    "tag": "hdr-f69589d7656ba5237cd29784e0c49f5106ff156b",
+    "url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/tag/hdr-f69589d7656ba5237cd29784e0c49f5106ff156b",
+    "assets": [
+      {
+        "name": "AnimeJaNaiManager-HDR-linux-x64.tar.zst",
+        "size": 44303732,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-f69589d7656ba5237cd29784e0c49f5106ff156b/AnimeJaNaiManager-HDR-linux-x64.tar.zst"
+      },
+      {
+        "name": "AnimeJaNaiManager-HDR-macos-arm64.zip",
+        "size": 46755012,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-f69589d7656ba5237cd29784e0c49f5106ff156b/AnimeJaNaiManager-HDR-macos-arm64.zip"
+      },
+      {
+        "name": "AnimeJaNaiManager-HDR-x64.zip",
+        "size": 49004265,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-f69589d7656ba5237cd29784e0c49f5106ff156b/AnimeJaNaiManager-HDR-x64.zip"
+      },
+      {
+        "name": "AnimeJaNaiManager-HDR.exe",
+        "size": 99495539,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-f69589d7656ba5237cd29784e0c49f5106ff156b/AnimeJaNaiManager-HDR.exe"
+      }
+    ]
+  },
+  "jira_comments": {
+    "qualification": "10178"
+  }
+}

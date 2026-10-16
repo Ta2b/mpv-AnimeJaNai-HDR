@@ -1,6 +1,6 @@
 -- Pure launch policy for ordered stages. Actual execution/capabilities belong
--- to the native module. An explicit mixed chain owns its factors and emits SDR;
--- do not retag it as TrueHDR or rewrite only its legacy compatibility keys.
+-- to the native module. Explicit chains own cadence and HDR stage requests;
+-- only successful native pixel conversion can establish actual HDR output.
 local M = {}
 local function trim(s) return (s or ''):match('^%s*(.-)%s*$') end
 local function parse(text)
@@ -78,6 +78,12 @@ function M.resolve(text,slot,w,h,fps)
     local all=parse(text);local sec=all['slot_'..tostring(slot)]
     if not sec then return {explicit=false,legacy_equivalent=true} end
     local chains=ids(sec,'chain_','_');local selected
+    local hdr_owned=enabled(sec.hdr_stage_controlled)
+    for _,i in ipairs(chains) do local cp='chain_'..i..'_'
+        for j=1,math.min(16,number(sec,cp..'stage_count',0)) do
+            if sec[cp..'stage_'..j..'_kind']=='hdr' then hdr_owned=true end
+        end
+    end
     w,h,fps=tonumber(w),tonumber(h),tonumber(fps)
     if w and h and fps and w>0 and h>0 and fps>0 then
         for _,i in ipairs(chains) do local p='chain_'..i..'_'
@@ -90,20 +96,22 @@ function M.resolve(text,slot,w,h,fps)
         -- Defer HDR for a potentially mixed rule; legacy-only banks unchanged.
         for _,i in ipairs(chains) do local p='chain_'..i..'_'
             if sec[p..'pipeline_version'] and not legacy(sec,i,all.global or {}) then
-                return {explicit=true,legacy_equivalent=false,unknown=true}
+                return {explicit=true,legacy_equivalent=false,unknown=true,hdr_stage_controlled=hdr_owned}
             end
         end
-        return {explicit=false,legacy_equivalent=true}
+        return {explicit=false,legacy_equivalent=true,hdr_stage_controlled=hdr_owned}
     end
-    if not selected then return {explicit=false,legacy_equivalent=true} end
+    if not selected then return {explicit=false,legacy_equivalent=true,hdr_stage_controlled=hdr_owned} end
     local p='chain_'..selected..'_';local explicit=sec[p..'pipeline_version']~=nil
     local equivalent=not explicit or legacy(sec,selected,all.global or {})
-    local route={explicit=explicit,legacy_equivalent=equivalent,chain=selected,factor_num=1,factor_den=1,stages={}}
+    local route={explicit=explicit,legacy_equivalent=equivalent,chain=selected,factor_num=1,factor_den=1,stages={},hdr_stage_controlled=hdr_owned}
     if explicit then for i=1,math.min(16,number(sec,p..'stage_count',0)) do local sp=p..'stage_'..i..'_'
         if enabled(sec[sp..'enabled'] or 'yes') and sec[sp..'kind']=='interpolate' then
             local n,d=number(sec,sp..'factor_numerator',1),number(sec,sp..'factor_denominator',1)
             route.stages[#route.stages+1]={method=sec[sp..'method'],numerator=n,denominator=d}
             route.factor_num=route.factor_num*n;route.factor_den=route.factor_den*d
+        elseif enabled(sec[sp..'enabled'] or 'yes') and sec[sp..'kind']=='hdr' then
+            route.hdr={method=sec[sp..'method'],runtime=sec[sp..'runtime'],peak=number(sec,sp..'peak',1000)}
         end
     end end
     if not explicit and enabled(sec[p..'rife']) then
@@ -125,7 +133,8 @@ function M.sync_rewrite(text,p,q,rewrite_legacy)
         end
     end end
     local rewritten,changed=rewrite_legacy(text,p,q);local lines,section,seen={},nil,{}
-    for line in (rewritten..'\n'):gmatch('([^\n]*)\n') do
+    for source_line in (rewritten..'\n'):gmatch('([^\n]*)\n') do
+        local line=source_line
         local name=line:match('^%s*%[([^%]]+)%]');if name then section=trim(name):lower();seen[section]=seen[section] or {} end
         local key=line:match('^%s*([^=%s]+)%s*=');local target=section and key and replacements[section] and replacements[section][key:lower()]
         if target then local value=key..'='..tostring(target);changed=changed or line~=value;line=value;seen[section][key:lower()]=true end
