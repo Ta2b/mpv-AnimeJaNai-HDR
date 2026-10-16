@@ -32,6 +32,6 @@ Artefacts : `artifacts/performance/lots-20261016/lot-20/` : builds séparés, un
 
 ## Livraison et reste explicite
 
-Source commun livré Linux/macOS avec la prochaine release .52 ; compilation CI des autres moteurs/OS ne constitue pas leur qualification matérielle. Le pin GPU spécialisé et ses DLL Windows restent ceux de .50 : la DLL AMD/Windows consomme encore le player source épinglé de son workflow backend. Son intégration des nouveaux workers puis sa qualification, ainsi que GPU/ANE/AMD natifs, sont **AH-263**, qui reste To Do. Le parent AH-59 demeure In Progress.
+Source commun qualifié `4790be0`, livré Linux/macOS avec la release **3.8.0.52** poussée ; compilation CI des autres moteurs/OS ne constitue pas leur qualification matérielle. Le pin GPU spécialisé et ses DLL Windows restent ceux de .50 : la DLL AMD/Windows consomme encore le player source épinglé de son workflow backend. Son intégration des nouveaux workers puis sa qualification, ainsi que GPU/ANE/AMD natifs, sont **AH-263**, qui reste To Do. Le parent AH-59 demeure In Progress.
 
 AH-262 clôt seulement l’intégration source partagée et sa qualification réelle Linux CPU, après publication vérifiée. Aucun essai Apple/AMD/Windows ni bénéfice sur ces matériels inventé. La source partagée compilée macOS apporte le changement, mais son essai natif reste ouvert. Aucun nouveau modèle ni accélération sans bénéfice établi ajouté.
