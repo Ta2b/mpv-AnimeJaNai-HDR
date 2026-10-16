@@ -23,6 +23,7 @@
 #include "../common/stats_snapshot.h"
 #include "../common/source_identity.h"
 #include "../common/surface_validation.h"
+#include "../common/surface_queue.h"
 #include <sstream>
 #include <chrono>
 #include <cmath>
@@ -239,6 +240,9 @@ struct Context {
     uint64_t count = 0, full_frames = 0;
     double total_ms = 0, model_ms = 0, last_model_ms = 0, full_ms = 0;
     std::deque<double> recent;
+    uint64_t surface_ticket_next=1;
+    // Declared last so its worker drains before any model/pixel state dies.
+    std::unique_ptr<aji::surface::SurfaceQueue> surface_queue;
 };
 
 // The bank's [global] backend names the engine; AJI_ORT_PROVIDER overrides it (tests).
@@ -1223,6 +1227,28 @@ static bool cpu_surfaces_supported(const Context &c)
 #endif
 }
 
+static bool async_owned(const Context &c) {return c.surface_queue && !c.surface_queue->on_worker();}
+
+struct SurfaceViews {aji::surface::HostView previous,current,output;};
+static SurfaceViews validate_surface_frames(const Context &c,const aji_surface_v1 *previous,
+    const aji_surface_v1 *current,double t,const aji_surface_v1 *output)
+{
+    using namespace aji::surface;
+    check(t>=0 && t<=1,"Invalid surface timestep");
+    SurfaceViews v;v.current=host(current,c.width,c.height,false);
+    v.output=host(output,c.plan.width,c.plan.height,true);
+    check(same_color(*current,*output),"Surface output color/orientation differs from source");
+    check(!overlaps(v.current,v.output),"Surface input/output views overlap");
+    if(previous) {
+        v.previous=host(previous,c.width,c.height,false);
+        check(same_color(*previous,*current),"Surface pair color/orientation differs");
+        check(!overlaps(v.previous,v.output),"Surface previous/output views overlap");
+        check(!previous->generation || !current->generation || previous->generation==current->generation,
+            "Surface pair generations differ");
+    }
+    return v;
+}
+
 AJI_ORT_EXPORT int aji_surface_query_v1(void *context,uint32_t version,aji_surface_caps_v1 *out,size_t size)
 {
     if(!context || !out || size<sizeof(*out))return AJI_SURFACE_INVALID;
@@ -1239,24 +1265,14 @@ AJI_ORT_EXPORT int aji_surface_process_v1(void *context,const aji_surface_v1 *pr
 {
     if(!context)return AJI_SURFACE_INVALID;
     auto &c=*(Context *)context;
+    if(async_owned(c))return AJI_SURFACE_ASYNC_BUSY;
     // Every attempted call consumes the legacy one-shot hint as well.
     c.pending_ids={};c.active_ids={};
     if(!cpu_surfaces_supported(c))return AJI_SURFACE_UNSUPPORTED;
     try {
         using namespace aji::surface;
-        check(t>=0 && t<=1,"Invalid surface timestep");
-        const auto b=host(current,c.width,c.height,false);
-        const auto dst=host(output,c.plan.width,c.plan.height,true);
-        check(same_color(*current,*output),"Surface output color/orientation differs from source");
-        check(!overlaps(b,dst),"Surface input/output views overlap");
-        HostView a;
-        if(previous) {
-            a=host(previous,c.width,c.height,false);
-            check(same_color(*previous,*current),"Surface pair color/orientation differs");
-            check(!overlaps(a,dst),"Surface previous/output views overlap");
-            check(!previous->generation || !current->generation || previous->generation==current->generation,
-                "Surface pair generations differ");
-        }
+        const auto views=validate_surface_frames(c,previous,current,t,output);
+        const auto &a=views.previous,&b=views.current,&dst=views.output;
         const auto key=signature(*current,b);
         if(!c.surface_valid || c.surface_signature!=key) {
             invalidate_surface_results(c);c.surface_signature=key;c.surface_valid=true;
@@ -1279,6 +1295,87 @@ AJI_ORT_EXPORT int aji_surface_process_v1(void *context,const aji_surface_v1 *pr
     }
 }
 
+AJI_ORT_EXPORT int aji_surface_async_query_v1(void *context,uint32_t version,aji_surface_async_caps_v1 *out,size_t size)
+{
+    if(!context || !out || size<sizeof(*out))return AJI_SURFACE_INVALID;
+    if(version!=1 || !cpu_surfaces_supported(*(Context *)context))return AJI_SURFACE_UNSUPPORTED;
+    *out={};out->struct_size=sizeof(*out);out->version=1;out->max_capacity=64;
+    out->owner_callbacks_required=1;out->dependency_mask=1ull<<AJI_SURFACE_DEP_NONE;
+    out->device_kind=AJI_RESOURCE_HOST;return AJI_SURFACE_OK;
+}
+
+AJI_ORT_EXPORT int aji_surface_async_enable_v1(void *context,uint32_t capacity)
+{
+    if(!context || !capacity || capacity>64)return AJI_SURFACE_INVALID;
+    auto &c=*(Context *)context;
+    if(!cpu_surfaces_supported(c))return AJI_SURFACE_UNSUPPORTED;
+    if(c.surface_queue)return AJI_SURFACE_ASYNC_BUSY;
+    try {
+        c.surface_queue=std::make_unique<aji::surface::SurfaceQueue>(capacity,c.surface_ticket_next,
+            [&c](const aji::surface::QueuedSurfaces &job) {
+                auto a=job.previous,b=job.current,out=job.output;
+                // Queue owns the original callbacks. The synchronous adapter
+                // borrows these snapshots, avoiding a second retain/release.
+                for(auto *d:{&a,&b,&out}) {d->retain=nullptr;d->release=nullptr;d->owner=nullptr;}
+                aji::surface::QueueResult result;
+                result.status=aji_surface_process_v1(&c,job.has_previous?&a:nullptr,&b,job.timestep,&out);
+                if(result.status)std::snprintf(result.message.data(),result.message.size(),"%s",c.error.c_str());
+                return result;
+            });
+        return AJI_SURFACE_OK;
+    }catch(const std::exception &e) {publish_error(c,e);return AJI_SURFACE_ENGINE_ERROR;}
+}
+
+AJI_ORT_EXPORT int aji_surface_submit_v1(void *context,const aji_surface_submit_v1_request *request,uint64_t *ticket)
+{
+    if(!ticket)return AJI_SURFACE_INVALID;
+    *ticket=0;
+    if(!context || !request || request->struct_size<sizeof(*request) || request->version!=1
+        || (request->flags&~AJI_SURFACE_BORROW_UNTIL_COMPLETE))return AJI_SURFACE_INVALID;
+    auto &c=*(Context *)context;
+    if(!c.surface_queue)return AJI_SURFACE_UNSUPPORTED;
+    if(request->dependency_count || request->execution_queue)return AJI_SURFACE_UNSUPPORTED;
+    try {
+        validate_surface_frames(c,request->previous,request->current,request->timestep,request->output);
+        const bool borrow=request->flags&AJI_SURFACE_BORROW_UNTIL_COMPLETE;
+        for(const auto *d:{request->previous,request->current,request->output})
+            aji::surface::check(!d || d->retain || borrow,"Async surfaces require owners or an explicit lifetime promise");
+        aji::surface::QueuedSurfaces job;
+        job.has_previous=request->previous!=nullptr;
+        if(job.has_previous)job.previous=*request->previous;
+        job.current=*request->current;job.output=*request->output;job.timestep=request->timestep;
+        return c.surface_queue->submit(job,ticket);
+    }catch(const aji::surface::Unsupported &) {return AJI_SURFACE_UNSUPPORTED;}
+    catch(const std::exception &) {return AJI_SURFACE_INVALID;}
+}
+
+AJI_ORT_EXPORT int aji_surface_complete_v1(void *context,uint64_t ticket,uint32_t flags,aji_surface_completion_v1 *out,size_t size)
+{
+    if(!context || !out || size<sizeof(*out) || (flags&~AJI_SURFACE_CONSUME_RESULT))return AJI_SURFACE_INVALID;
+    auto &c=*(Context *)context;
+    if(!c.surface_queue)return AJI_SURFACE_UNSUPPORTED;
+    return c.surface_queue->complete(ticket,flags,out);
+}
+
+AJI_ORT_EXPORT int aji_surface_drain_v1(void *context,uint32_t flags)
+{
+    if(!context || (flags&~(AJI_SURFACE_CANCEL_QUEUED|AJI_SURFACE_DROP_RESULTS)))return AJI_SURFACE_INVALID;
+    auto &c=*(Context *)context;
+    if(!c.surface_queue || c.surface_queue->on_worker())return AJI_SURFACE_UNSUPPORTED;
+    c.surface_queue->drain(flags);
+    invalidate_surface_results(c);c.surface_valid=false;
+    c.surface_queue->resume();return AJI_SURFACE_OK;
+}
+
+AJI_ORT_EXPORT int aji_surface_async_disable_v1(void *context)
+{
+    if(!context)return AJI_SURFACE_INVALID;
+    auto &c=*(Context *)context;
+    if(c.surface_queue && c.surface_queue->on_worker())return AJI_SURFACE_UNSUPPORTED;
+    if(c.surface_queue)c.surface_queue->shutdown(); // keep pointer stable while worker calls back
+    c.surface_queue.reset();invalidate_surface_results(c);c.surface_valid=false;return AJI_SURFACE_OK;
+}
+
 AJI_ORT_EXPORT aji_vk_context *aji_vk_create(const char *conf, const char *models, const char *rife,
                                              const char *device, const char *stats, int slot)
 {
@@ -1294,6 +1391,7 @@ AJI_ORT_EXPORT aji_vk_context *aji_vk_create(const char *conf, const char *model
 AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int height, double fps, aji_vk_plan *plan)
 {
     auto &c = *(Context *)context;
+    if(async_owned(c))return -1;
     c.surface_configured=false;
     try {
         require(width > 0 && height > 0 && width <= 16384 && height <= 16384, "Invalid source dimensions");
@@ -1342,6 +1440,7 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
                                   unsigned char *output, ptrdiff_t output_stride)
 {
     auto &c = *(Context *)context;
+    if(async_owned(c))return -1;
     if(!c.surface_dispatch && c.surface_valid) {invalidate_surface_results(c);c.surface_valid=false;}
     c.active_ids = c.pending_ids; c.pending_ids = {};
     try {
@@ -1379,6 +1478,7 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
 AJI_ORT_EXPORT int aji_vk_upcoming(aji_vk_context *context, const unsigned char *const *frames, const ptrdiff_t *strides, int count)
 {
     auto &c = *(Context *)context;
+    if(async_owned(c))return 0;
     c.upcoming.clear(); c.upcoming_stride.clear();
     for (int k = 0; k < count && frames && strides; k++) {
         if (!frames[k]) break;
@@ -1392,13 +1492,17 @@ AJI_ORT_EXPORT int aji_vk_upcoming(aji_vk_context *context, const unsigned char 
 
 AJI_ORT_EXPORT void aji_vk_source_ids(aji_vk_context *context, uint64_t generation, uint64_t previous, uint64_t current)
 {
-    if (context) { auto &c = *(Context *)context; c.pending_ids = c.id_tracker.accept(generation, previous, current); }
+    if (context) { auto &c = *(Context *)context;if(async_owned(c))return; c.pending_ids = c.id_tracker.accept(generation, previous, current); }
 }
-AJI_ORT_EXPORT const char *aji_vk_error(aji_vk_context *c) { return c ? ((Context *)c)->error.c_str() : create_error.c_str(); }
+AJI_ORT_EXPORT const char *aji_vk_error(aji_vk_context *c) {
+    if(c && async_owned(*(Context *)c))return "Async surface queue owns this context; inspect the ticket completion";
+    return c ? ((Context *)c)->error.c_str() : create_error.c_str();
+}
 AJI_ORT_EXPORT const char *aji_vk_stats_snapshot(aji_vk_context *context)
 {
     if (!context) return "";
     auto &c = *(Context *)context;
+    if(async_owned(c))return nullptr;
     try { c.stats_text = format_stats(c); return c.stats_text.c_str(); }
     catch (...) { return nullptr; }
 }
@@ -1406,6 +1510,8 @@ AJI_ORT_EXPORT void aji_vk_destroy(aji_vk_context *context)
 {
     if (!context) return;
     auto &c = *(Context *)context;
+    if(c.surface_queue)c.surface_queue->shutdown();
+    c.surface_queue.reset();
     if (c.error.empty()) c.stats_state = "stopped";
     publish_stats(c, true);
     delete &c;
