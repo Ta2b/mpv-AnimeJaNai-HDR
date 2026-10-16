@@ -29,12 +29,14 @@ enum aji_surface_range { AJI_SURFACE_RANGE_UNKNOWN=0, AJI_SURFACE_RANGE_FULL=1,
 enum aji_surface_siting { AJI_SURFACE_SITING_UNKNOWN=0, AJI_SURFACE_SITING_LEFT=1,
     AJI_SURFACE_SITING_CENTER=2, AJI_SURFACE_SITING_TOPLEFT=3 };
 enum aji_surface_quantization { AJI_SURFACE_QUANT_UNKNOWN=0,
-    AJI_SURFACE_QUANT_REFERENCE_RGB8=1, AJI_SURFACE_QUANT_HIGH_DEPTH=2 };
+    AJI_SURFACE_QUANT_REFERENCE_RGB8=1, AJI_SURFACE_QUANT_HIGH_DEPTH=2,
+    AJI_SURFACE_QUANT_REFERENCE_NATIVE_YUV=3 };
 enum aji_surface_dither { AJI_SURFACE_DITHER_UNKNOWN=0, AJI_SURFACE_DITHER_NONE=1,
     AJI_SURFACE_DITHER_ORDERED=2, AJI_SURFACE_DITHER_BLUE_NOISE=3 };
 enum aji_surface_cap_flags { AJI_SURFACE_SYNC=1, AJI_SURFACE_BORROWED_CALL=2,
     AJI_SURFACE_OWNER_CALLBACKS=4, AJI_SURFACE_HOST_ROI=8,
-    AJI_SURFACE_PRESERVES_DESCRIPTORS=16 };
+    AJI_SURFACE_PRESERVES_DESCRIPTORS=16, AJI_SURFACE_CUDA_ROI=32,
+    AJI_SURFACE_SPATIAL=64, AJI_SURFACE_RIFE=128 };
 enum aji_surface_time_flags { AJI_SURFACE_HAS_PTS=1, AJI_SURFACE_HAS_DURATION=2 };
 
 typedef struct aji_surface_rect_v1 { int32_t x,y,width,height; } aji_surface_rect_v1;
@@ -73,7 +75,14 @@ typedef struct aji_surface_caps_v1 {
     uint32_t max_planes,negative_stride,device_kind,device_index;
 } aji_surface_caps_v1;
 
-/* Resolve these optional symbols on the selected engine module. Query after
+/* CUDA Linux v1 accepts native NV12/P010/YUV444P16 SDR on the configured
+ * context, positive strides and chroma-aligned crop, reference-native YUV
+ * quantization with no added dither. SPATIAL/RIFE flags describe the configured
+ * standard chain; temporal/pre-resize/RTX configurations are refused. Source
+ * identities are used only within one call, and all derived pair identities are
+ * invalidated on entry/exit, including when mixing with ABI9. No host staging.
+ *
+ * Resolve these optional symbols on the selected engine module. Query after
  * successful configure; unsupported version/provider/format is never an implicit convert.
  * Short/null capability outputs are untouched. Capability success describes an
  * implemented route, not qualification of all models, colors or hardware.
