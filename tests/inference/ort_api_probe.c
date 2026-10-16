@@ -26,6 +26,13 @@ static OrtSessionOptions *capture_options(const OrtSessionOptions *options, cons
     if (real_api->CloneSessionOptions(options,&copy)) abort();
     char path[4096]; capture_path(path,folder,"optimized",index,"onnx");
     if (real_api->SetOptimizedModelFilePath(copy,path)) abort();
+    // The Quality probe creates SPAN then RIFE on each configure. This test
+    // hook isolates newly exposed RIFE fusions, without changing production.
+    const char *disabled = getenv("AJI_TEST_ORT_RIFE_DISABLE");
+    if (disabled && *disabled && index % 2 == 1
+        && real_api->AddSessionConfigEntry(copy,"optimization.disable_specified_optimizers",disabled)) abort();
+    const char *custom = getenv("AJI_TEST_ORT_OP_LIBRARY");
+    if (custom && *custom && index % 2 == 1 && real_api->RegisterCustomOpsLibrary_V2(copy,custom)) abort();
     return copy;
 }
 static void capture_shapes(OrtSession *session, const char *folder, uint64_t index)
@@ -65,6 +72,9 @@ static OrtStatus *ORT_API_CALL create_file(const OrtEnv *env, const ORTCHAR_T *p
 static OrtStatus *ORT_API_CALL create_array(const OrtEnv *env, const void *bytes, size_t size,
     const OrtSessionOptions *options, OrtSession **out)
 {
+    if (getenv("AJI_TEST_ORT_ACTIVATION_COMPILE_FAIL")
+        && memmem(bytes,size,"AjiLeakyReluF32",strlen("AjiLeakyReluF32")))
+        return real_api->CreateStatus(ORT_FAIL,"injected CPU activation compilation failure");
     const char *folder = getenv("AJI_TEST_ORT_CAPTURE");
     if (!folder || !*folder) return real_api->CreateSessionFromArray(env,bytes,size,options,out);
     const uint64_t index = atomic_fetch_add(&capture_index,1);

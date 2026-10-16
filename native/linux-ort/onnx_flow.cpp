@@ -5,6 +5,7 @@
  * graph's outputs. Every other byte, the weights included, is copied as it is.
  */
 #include "onnx_flow.h"
+#include "../common/content_identity.h"
 
 #include <cstdint>
 #include <map>
@@ -102,6 +103,66 @@ std::string output_entry(const std::string &name, int elem_type)
 }
 
 } // namespace
+
+bool aji_onnx_cpu_activations(const std::vector<char> &model, std::vector<char> *out, size_t *count)
+{
+    *count = 0;
+    aji::identity::Sha256 hash; hash.update(model.data(),model.size());
+    const std::string digest = hash.hex();
+    // Full graph and inline weights, including the exact export recipe. New
+    // models/exports stay on the reference route until their own qualification.
+    if (digest != "fd6b06538898c9a94d20f0fe55febceadbcde5ad64952240733b7275ef4c9d59"
+        && digest != "4d93a8a394cc1a1dd20d7efc2fcbace769f289dd655d0f76f941f533ffbbc216") return false;
+    auto field = [](uint32_t number,const std::string &value) {
+        std::string s;put_varint(s,((uint64_t)number<<3)|2);put_varint(s,value.size());return s+value;
+    };
+    const auto *base = (const uint8_t *)model.data();
+    Reader top{base,base+model.size()};uint32_t f;const uint8_t *d;size_t l;
+    const uint8_t *graph=nullptr,*start_graph=nullptr,*end_graph=nullptr;size_t graph_len=0;
+    while (top.p<top.end) {
+        const auto *start=top.p;if(!top.next(&f,&d,&l))return false;
+        if(f==7 && d) {graph=d;graph_len=l;start_graph=start;end_graph=top.p;}
+    }
+    if(!graph)return false;
+    Reader g{graph,graph+graph_len};std::string changed;
+    while(g.p<g.end) {
+        const auto *start=g.p;if(!g.next(&f,&d,&l))return false;
+        if(f!=1 || !d) {changed.append((const char *)start,(size_t)(g.p-start));continue;}
+        Reader node{d,d+l};uint32_t k;const uint8_t *v;size_t z;std::string op,input,output;
+        while(node.next(&k,&v,&z))if(v) {
+            if(k==4)op.assign((const char *)v,z);
+            else if(k==1)input.assign((const char *)v,z);
+            else if(k==2)output.assign((const char *)v,z);
+        }
+        if(!node.ok)return false;
+        if(op!="LeakyRelu") {changed.append((const char *)start,(size_t)(g.p-start));continue;}
+        const std::string prefix="__aji_cpu_leaky_"+std::to_string(*count);
+        const std::string in=prefix+"_float_in",out_name=prefix+"_float_out";
+        // Cast attributes: AttributeProto{name="to",i=TYPE,type=INT}.
+        auto cast = [&](const std::string &from,const std::string &to,const std::string &name,int type) {
+            std::string attribute=field(1,"to");put_varint(attribute,24);put_varint(attribute,type);
+            put_varint(attribute,160);put_varint(attribute,2);
+            return field(1,field(1,from)+field(2,to)+field(3,name)+field(4,"Cast")+field(5,attribute));
+        };
+        changed+=cast(input,in,prefix+"_cast_in",1);
+        std::string native;node=Reader{d,d+l};bool domain=false;
+        while(node.p<node.end) {
+            const auto *part=node.p;if(!node.next(&k,&v,&z))return false;
+            if(k==1)native+=field(1,in);
+            else if(k==2)native+=field(2,out_name);
+            else if(k==4)native+=field(4,"AjiLeakyReluF32");
+            else if(k==7) {native+=field(7,"aji.cpu");domain=true;}
+            else native.append((const char *)part,(size_t)(node.p-part));
+        }
+        if(!domain)native+=field(7,"aji.cpu");
+        changed+=field(1,native);changed+=cast(out_name,output,prefix+"_cast_out",10);++*count;
+    }
+    if(*count!=53)return false;
+    std::string result((const char *)base,(size_t)(start_graph-base));result+=field(7,changed);
+    result.append((const char *)end_graph,(size_t)(top.end-end_graph));
+    std::string opset=field(1,"aji.cpu");put_varint(opset,16);put_varint(opset,1);result+=field(8,opset);
+    out->assign(result.begin(),result.end());return true;
+}
 
 AjiFixedShape aji_onnx_fixed_rank4_input(const std::vector<char> &model,
     const std::array<int64_t, 4> &expected, std::vector<char> *out, std::string *why)

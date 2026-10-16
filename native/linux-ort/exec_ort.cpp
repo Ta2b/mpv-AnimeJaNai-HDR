@@ -2,6 +2,7 @@
 // (OpenVINO), Apple (Core ML) or the CPU. The original ONNX models are used as they are.
 #include "engine.h"
 #include "onnx_flow.h"
+#include "cpu_activations.h"
 #include <onnxruntime_cxx_api.h>
 #include <onnxruntime_session_options_config_keys.h>
 #if defined(__x86_64__) || defined(_M_X64)
@@ -130,34 +131,76 @@ Ort::Env &environment()
     return env;
 }
 
+GraphOptimizationLevel optimization_level(bool precise)
+{
+    const char *forced=std::getenv(precise ? "AJI_ORT_RIFE_OPT" : "AJI_ORT_SPAN_OPT");
+    if (!forced || !*forced) forced=std::getenv("AJI_ORT_OPT");
+    if (!forced || !*forced) return GraphOptimizationLevel::ORT_ENABLE_ALL;
+    const int n=std::atoi(forced);
+    return n<=0 ? GraphOptimizationLevel::ORT_DISABLE_ALL : n==1 ? GraphOptimizationLevel::ORT_ENABLE_BASIC
+        : n==2 ? GraphOptimizationLevel::ORT_ENABLE_EXTENDED : GraphOptimizationLevel::ORT_ENABLE_ALL;
+}
+
 std::unique_ptr<Ort::Session> fixed_session(const std::filesystem::path &path,
     Ort::SessionOptions &options, const std::string &provider, int channels, int height, int width)
 {
-    const char *flag = std::getenv("AJI_ORT_SPECIALIZE_SHAPES");
-    const bool enabled = !(flag && *flag == '0') && (provider == "cpu" || (flag && *flag == '1'));
+    const char *flag=std::getenv("AJI_ORT_SPECIALIZE_SHAPES");
+    const bool enabled=!(flag && *flag=='0') && (provider=="cpu" || (flag && *flag=='1'));
+    bool native_cpu=false;
+#if ORT_API_VERSION >= 24 && defined(__linux__) && defined(__x86_64__)
+    const char *activation_flag=std::getenv("AJI_ORT_CPU_ACTIVATIONS");
+    native_cpu=channels==11 && provider=="cpu" && !(activation_flag && *activation_flag=='0')
+        && optimization_level(true)==GraphOptimizationLevel::ORT_ENABLE_ALL
+        && std::strcmp(OrtGetApiBase()->GetVersionString(),"1.24.1")==0;
+#endif
 #if ORT_API_VERSION >= 24
-    if (enabled) {
+    if (enabled || native_cpu) {
         std::ifstream in(path,std::ios::binary);
         require(in.good(), "Cannot read ONNX model for input specialization: " + path.string());
-        std::vector<char> original((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>()), fixed;
+        std::vector<char> original((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>()), activated;
         require(!in.bad(), "Incomplete ONNX model for input specialization: " + path.string());
-        std::string why;
-        const auto result = aji_onnx_fixed_rank4_input(original,{1,channels,height,width},&fixed,&why);
-        require(result != AjiFixedShape::Invalid, why);
-        if (result == AjiFixedShape::Specialized) {
-            // ONNX is loaded synchronously from the edited metadata. Resolve all
-            // external initializers relative to the original model, not cwd.
-            const auto folder = std::filesystem::absolute(path).parent_path().string();
-            options.AddConfigEntry(kOrtSessionOptionsModelExternalInitializersFileFolderPath,folder.c_str());
-            return std::make_unique<Ort::Session>(environment(),fixed.data(),fixed.size(),options);
+        size_t activation_count=0;
+        bool changed=native_cpu && aji_onnx_cpu_activations(original,&activated,&activation_count);
+        if (changed) {
+            try { register_cpu_activations(options); }
+            catch (const std::exception &e) {
+                std::cerr<<"[aji] CPU activations unavailable; keeping reference graph: "<<e.what()<<'\n';changed=false;
+            }
         }
-        if (result == AjiFixedShape::Unsupported)
-            std::cerr << "[aji] ORT dynamic input route: " << why << '\n';
+        auto compile=[&](const std::vector<char> &graph,bool transformed) {
+            auto attempt=options.Clone();
+            std::vector<char> fixed;std::string why;
+            const auto result=enabled ? aji_onnx_fixed_rank4_input(graph,{1,channels,height,width},&fixed,&why)
+                                      : AjiFixedShape::Unchanged;
+            require(result!=AjiFixedShape::Invalid,why);
+            if (result==AjiFixedShape::Unsupported)
+                std::cerr<<"[aji] ORT dynamic input route: "<<why<<'\n';
+            if (result!=AjiFixedShape::Specialized) {
+                attempt.AddFreeDimensionOverrideByName("height",height);
+                attempt.AddFreeDimensionOverrideByName("width",width);
+            }
+            if (result==AjiFixedShape::Specialized || transformed) {
+                const auto folder=std::filesystem::absolute(path).parent_path().string();
+                attempt.AddConfigEntry(kOrtSessionOptionsModelExternalInitializersFileFolderPath,folder.c_str());
+                const auto &bytes=result==AjiFixedShape::Specialized ? fixed : graph;
+                return std::make_unique<Ort::Session>(environment(),bytes.data(),bytes.size(),attempt);
+            }
+            return std::make_unique<Ort::Session>(environment(),path.c_str(),attempt);
+        };
+        if (changed) {
+            try {
+                auto session=compile(activated,true);
+                std::cerr<<"[aji] ORT CPU native activations: "<<activation_count<<" qualified RIFE nodes\n";
+                return session;
+            }catch(const Ort::Exception &e) {
+                std::cerr<<"[aji] CPU activation compile failed; keeping reference graph: "<<e.what()<<'\n';
+            }
+        }
+        return compile(original,false);
     }
 #else
-    (void)enabled;
+    (void)enabled; (void)native_cpu;
 #endif
-    // Dynamic escape route for ablation, older SDKs and unsupported contracts.
     options.AddFreeDimensionOverrideByName("height",height);
     options.AddFreeDimensionOverrideByName("width",width);
     return std::make_unique<Ort::Session>(environment(),path.c_str(),options);
@@ -175,17 +218,7 @@ Ort::SessionOptions provider_options(const std::string &provider, const std::str
     Ort::SessionOptions options;
     // ONNX Runtime's optimisation must stay on: it folds the shape arithmetic of the models once
     // the input size is fixed. AJI_ORT_OPT=0..3 (none, basic, extended, all) is for trials.
-    GraphOptimizationLevel level = GraphOptimizationLevel::ORT_ENABLE_ALL;
-    // A RIFE trial must not also change SPAN's layout/optimizer. The global
-    // override remains the fallback, with the identical default level.
-    const char *forced = std::getenv(precise ? "AJI_ORT_RIFE_OPT" : "AJI_ORT_SPAN_OPT");
-    if (!forced || !*forced) forced = std::getenv("AJI_ORT_OPT");
-    if (forced && *forced) {
-        const int n = std::atoi(forced);
-        level = n <= 0 ? GraphOptimizationLevel::ORT_DISABLE_ALL : n == 1 ? GraphOptimizationLevel::ORT_ENABLE_BASIC
-              : n == 2 ? GraphOptimizationLevel::ORT_ENABLE_EXTENDED : GraphOptimizationLevel::ORT_ENABLE_ALL;
-    }
-    options.SetGraphOptimizationLevel(level);
+    options.SetGraphOptimizationLevel(optimization_level(precise));
     // AJI_ORT_LOG=0..4 (verbose .. fatal): ONNX Runtime's own messages, e.g. which nodes a provider takes.
     if (const char *log = std::getenv("AJI_ORT_LOG"); log && *log) options.SetLogSeverityLevel(std::atoi(log));
     if (provider == "migraphx") {
