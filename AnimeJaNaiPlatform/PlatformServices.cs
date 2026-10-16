@@ -12,6 +12,17 @@ namespace AnimeJaNai.Platform;
 
 // Shared by the player CLI and the Manager through its pinned PlatformSource.
 // Describes implemented paths, never a claim that a particular GPU was tested.
+public static class QualitySemantics
+{
+    public const string Spatial = "Spatial preset Quality selects an upscaling model/chain. It does not select temporal RIFE policy or lock the entire playback chain.";
+    public const string Temporal = "Full RIFE (Quality): a complete RIFE prediction per intermediate frame, with the configured upscale and cut rules. Fast: supported motion/source reuse and approximate shortcuts can change contours or motion. Both retain execution optimizations; availability depends on the backend.";
+    public const string GlobalLock = "Global fidelity lock is not available yet. Temporal Quality alone does not freeze model selection, resolution, final scaler, interpolation factor, HDR or external frame generation.";
+    public const string Retiming = "Held-drawing retiming spreads motion over the duration of a held drawing. It changes the chosen temporal rendering, is separate from ensemble, and is ignored by temporal Quality. Restart playback after changing it.";
+    public const string EnsemblePrecision = "Ensemble selects a different RIFE model when supported; it is independent of temporal Quality/Fast. FP16 model weights do not establish operator or accumulator precision, nor equal output between backends. Temporal Quality does not change the model's precision policy.";
+    public static string CanonicalTemporal(string? value) =>
+        (value ?? "").Trim().ToLowerInvariant() is "old" or "quality" ? "quality" : "fast";
+}
+
 public static class BackendCapabilities
 {
     public const string OpenVino = "Experimental OpenVINO / ONNX Runtime inference for Intel GPUs: spatial ONNX upscaling and the shared ONNX RIFE path. Requires a compatible OpenVINO provider, supported operators and ONNX RIFE models; SDR sources. Provider availability is checked during playback.";
@@ -23,6 +34,9 @@ public static class BackendCapabilities
         source = "AnimeJaNaiPlatform/PlatformServices.cs:BackendCapabilities",
         openvino = OpenVino, ncnn_vulkan = NcnnVulkan, tensorrt = TensorRt,
         vulkan_presentation = VulkanPresentation,
+        quality_semantics = new { spatial = QualitySemantics.Spatial, temporal = QualitySemantics.Temporal,
+            global_lock = QualitySemantics.GlobalLock, retiming = QualitySemantics.Retiming,
+            ensemble_precision = QualitySemantics.EnsemblePrecision, aliases = new { old = "quality", @new = "fast" } },
         qualification = "Implemented paths; library/provider/model availability and native hardware qualification are separate evidence."
     };
 }
