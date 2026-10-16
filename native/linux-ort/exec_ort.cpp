@@ -218,9 +218,9 @@ std::unique_ptr<Ort::Session> fixed_session(const std::filesystem::path &path,
 }
 
 // Session options for a provider and a device. `cache_tag` names the folder of the models Core ML
-// compiles; `label` receives what the statistics show. `precise`: no half-float sums in the GPU
-// convolutions (a model that computes positions, as RIFE does its motion, loses more to them
-// than a model that computes colours).
+// compiles; `label` receives what the statistics show. `precise` disables the
+// permission for reduced-precision GPU accumulation, not a proof of actual
+// accumulator precision. RIFE coordinates and sampling need separate qualification.
 Ort::SessionOptions provider_options(const std::string &provider, const std::string &device_name,
                                      const std::string &cache_dir, const std::string &cache_tag, std::string *label_out,
                                      bool precise = false)
@@ -254,8 +254,9 @@ Ort::SessionOptions provider_options(const std::string &provider, const std::str
         const std::string units = device == "gpu" ? "CPUAndGPU" : device == "ane" || device == "npu" ? "CPUAndNeuralEngine"
             : device == "cpu" ? "CPUOnly" : "ALL";
         // FastPrediction: Core ML spends longer preparing the model to make each prediction
-        // faster. Low-precision accumulation: half-float sums in the GPU convolutions, the
-        // precision the models already use. Both can be turned off for a comparison:
+        // faster. Low-precision GPU accumulation is permitted for SPAN and
+        // disallowed for RIFE unless explicitly overridden. FP16 model tensors
+        // do not prove FP16 accumulator suitability. Compare with:
         // AJI_ORT_COREML="SpecializationStrategy=Default;AllowLowPrecisionAccumulationOnGPU=0".
         std::unordered_map<std::string, std::string> coreml{
             {"ModelFormat", "MLProgram"}, {"MLComputeUnits", units}, {"RequireStaticInputShapes", "1"},

@@ -1,5 +1,10 @@
 # Optimisation des moteurs et de RIFE — analyse du 13 octobre 2026
 
+Contrat courant des types de tenseurs, accumulateurs, arrondis et options :
+[précision par opérateur et par moteur](CONTRAT-PRECISION-MOTEURS.md).
+L'outil associé inventorie les graphes sans les exécuter ; les poids FP16 ne
+prouvent pas une accumulation FP16 admissible ni une identité entre moteurs.
+
 ## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
 
 **[3.8.0.31 disponible sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.31)** :

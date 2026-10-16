@@ -257,7 +257,8 @@ void load_steps(Context &c) {
         Step step; step.conf=model; step.net=std::make_unique<ncnn::Net>();
         step.net->opt.use_vulkan_compute=true;
         step.net->opt.use_fp16_storage=true;
-        // Shipped FP16 SPAN weights; validate GPU output against ONNX Runtime.
+        // FP16 arithmetic is an explicit runtime choice, not implied by FP16
+        // weights. Validate its GPU output separately against the reference.
         step.net->opt.use_fp16_arithmetic=true;
         step.net->opt.num_threads=2;
         // NCNN computes 3x3 convolutions through Winograd transforms by default. On a GPU whose

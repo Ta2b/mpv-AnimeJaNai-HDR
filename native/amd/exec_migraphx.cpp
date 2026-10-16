@@ -1,5 +1,6 @@
 // Native MIGraphX executor: no ORT partitioning or CPU inference fallback.
-// The unchanged ONNX graph determines every tensor's precision. HIP handles
+// Preserve ONNX tensor element types; this does not establish accumulator
+// precision inside provider kernels. HIP handles
 // RGB packing, RIFE grids, cropping and warping on the same explicit stream.
 #include "engine.h"
 #include "hip_kernels.h"

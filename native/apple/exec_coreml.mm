@@ -92,8 +92,10 @@ public:
             NSURL *url = [NSURL fileURLWithPath:@(compiled.string().c_str())];
             MLModelConfiguration *configuration = [[MLModelConfiguration alloc] init];
             configuration.computeUnits = units;
-            // Half-float sums in the GPU convolutions: the precision the model already uses.
-            // AJI_COREML_PRECISE=1 keeps single-float sums (for a comparison).
+            // Permit lower-precision GPU accumulation by default; FP16 weights
+            // do not establish the accumulator type or numerical equivalence.
+            // AJI_COREML_PRECISE=1 disables that permission for comparison. The
+            // actual kernel precision still needs native qualification.
             const char *precise = std::getenv("AJI_COREML_PRECISE");
             configuration.allowLowPrecisionAccumulationOnGPU = !(precise && *precise == '1');
             if (@available(macOS 14.4, *)) {
