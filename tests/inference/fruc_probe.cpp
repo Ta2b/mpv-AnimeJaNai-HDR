@@ -70,6 +70,8 @@ int main(int argc, char **argv) {
         const size_t frames = size_t(length) / bytes;
         input.seekg(0);
         std::string prefix(argv[6]);
+        if (std::filesystem::weakly_canonical(argv[2]) == std::filesystem::weakly_canonical(prefix + ".rgba"))
+            throw std::runtime_error("Input and output must be different files");
         if (std::ifstream(prefix + ".json")) throw std::runtime_error("Receipt already exists; inspect it instead of repeating");
         std::ofstream output(prefix + ".rgba", std::ios::binary);
         std::ofstream receipt(prefix + ".partial.json");

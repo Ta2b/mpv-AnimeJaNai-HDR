@@ -1,5 +1,7 @@
 # Reprise du travail — état au 14 octobre 2026
 
+Point lot39 : provider FRUC CUDA natif implémenté et qualifié fonctionnellement sur Linux/RTX4070Ti (worker borné, événements/owners/seek/erreur, GPU→SPAN). Reproductibilité pixel exacte du SDK non concluante, y compris dans le prototype inchangé ; Fast SDR8bits expérimental, Quality préservée. Release3.8.0.71 en préparation ; AH-296/AH-300 In Progress jusqu’à publication. Runtime ordonné AH-301 puis Manager AH-302 restent la suite immédiate. [Rapport natif](qualification/lot-39-fruc-native-20261016.md).
+
 ## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
 
 **[3.8.0.31 disponible sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.31)** :

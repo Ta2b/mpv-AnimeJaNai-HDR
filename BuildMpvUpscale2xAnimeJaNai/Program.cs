@@ -791,6 +791,20 @@ void InstallSpecializedInference()
         if (!File.Exists(path)) throw new FileNotFoundException("Incomplete specialized GPU bundle", path);
         File.Copy(path, Path.Combine(inferencePath, name), true);
     }
+    // Optional provider: our code/kernels only. NVIDIA's FRUC SDK/runtime is
+    // installed separately by the user and never inferred or bundled here.
+    if (!plat.IsWindows && record.RootElement.TryGetProperty("fruc_provider", out var fruc))
+    {
+        foreach (var name in new[] { "libaji_fruc.so", "aji_fruc.fatbin", "FRUC-README.md" })
+        {
+            var path = Path.Combine(source, name);
+            if (!File.Exists(path)) throw new FileNotFoundException("Incomplete optional FRUC provider", path);
+            var expected = fruc.GetProperty("sha256").GetProperty(name).GetString();
+            var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
+            if (actual != expected) throw new InvalidDataException("FRUC provider hash mismatch: " + name);
+            File.Copy(path, Path.Combine(inferencePath, name), true);
+        }
+    }
 }
 
 void InstallAnimeJaNaiCore()
@@ -1032,7 +1046,7 @@ void WriteVersionAndManifest()
     var specializedTrt = plat.IsWindows ? "aji_trt_rtx.dll" : "libaji_trt_rtx.so";
     if (File.Exists(Path.Combine(inferencePath, specializedTrt)))
         overlayPaths.Add("animejanai/inference/" + specializedTrt);
-    foreach (var name in new[] { "aji_migraphx.dll", "AMD-README.md", "GPU-SOURCE.json", "GPU-INFERENCE-NOTICES.txt" })
+    foreach (var name in new[] { "aji_migraphx.dll", "AMD-README.md", "GPU-SOURCE.json", "GPU-INFERENCE-NOTICES.txt", "libaji_fruc.so", "aji_fruc.fatbin", "FRUC-README.md" })
         if (File.Exists(Path.Combine(inferencePath, name)))
             overlayPaths.Add("animejanai/inference/" + name);
     overlayPaths.Add("portable_config/scripts");
