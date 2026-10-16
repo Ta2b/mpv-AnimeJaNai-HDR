@@ -80,5 +80,27 @@
       "player_qualification_source": "afe9136bf25173bd8db4899bbc66a4e703a14ba8",
       "validation": "Linux RTX4070Ti SM8.9 CUDA13.4/TRT11.3 Surface RIFE4.26+SPAN native NV12: exact pair cache off/on, six phase outputs identical. Measured burst source preparations3->1 and Fast source upscales6->2; Fast CUDA interval19.761->6.873ms. Quality GPU timing nonconclusive (<1%), but final burst fence record/export15.431->0.915ms with full predictions preserved. Generation/color/ROI/legacy/zero IDs/drain/disable/error recovery qualified; owners/descriptors/padding safe. No universal FPS/HDR/physical-device-loss claim. Applies optional Surface route; existing mpv ABI9 unchanged. Windows bundle unchanged d00ed919/652fbc6."
     }
-  ]
+  ],
+  "fruc_provider": {
+    "backend_source": "f8da50a014fbf020bc3027e9bafc13feebb6323e",
+    "api": "aji_interpolator_v1 + aji_fruc_create_v1",
+    "sha256": {
+      "libaji_fruc.so": "f320f5cc51f3aeec8385a49896e0aa2e1483c86394763a30610f09f2d5df13c1",
+      "aji_fruc.fatbin": "f9c8c551aec2ee87cd1b7c3097d8538546b1de0cf8eb9569de43d5853e572469",
+      "FRUC-README.md": "6554d0c88fc7a0bebf7327bf932e9d78b8a4a858b1d0afd299c89070bf5df1d4"
+    },
+    "sdk_external": true,
+    "fast_opt_in": true,
+    "qualified": "Linux RTX4070Ti SDR; exact SDK pixel repeatability nonconclusive; no Windows/HDR/other hardware qualification",
+    "cuda_architectures": [
+      75,
+      80,
+      86,
+      89,
+      90,
+      100,
+      120,
+      "PTX120"
+    ]
+  }
 }
