@@ -283,3 +283,157 @@ public static class PlatformServices
         finally { if (File.Exists(tmp)) File.Delete(tmp); }
     }
 }
+
+// Ordered data contract shared with the Manager. Execution availability is
+// checked separately by the selected runtime; reading a method never claims it
+// is installed. An explicit pipeline is authoritative, never silently flattened
+// back into the historical single-RIFE settings.
+public static class InterpolationPipeline
+{
+    public const int Version = 1;
+    public const int MaxStages = 16;
+    public readonly record struct Rational
+    {
+        public long Numerator { get; }
+        public long Denominator { get; }
+        public Rational(long numerator, long denominator)
+        {
+            if (numerator <= 0 || denominator <= 0) throw new InvalidDataException("Cadence/factors must be positive fractions");
+            long a=numerator,b=denominator;
+            while(b!=0) { long r=a%b; a=b; b=r; }
+            Numerator=numerator/a; Denominator=denominator/a;
+        }
+        public Rational Multiply(Rational other)
+        {
+            if(Numerator<=0||Denominator<=0||other.Numerator<=0||other.Denominator<=0)
+                throw new InvalidDataException("Invalid cadence fraction");
+            var n=(System.Numerics.BigInteger)Numerator*other.Numerator;
+            var d=(System.Numerics.BigInteger)Denominator*other.Denominator;
+            var gcd=System.Numerics.BigInteger.GreatestCommonDivisor(n,d);n/=gcd;d/=gcd;
+            if(n>long.MaxValue || d>long.MaxValue)throw new InvalidDataException("Cumulative cadence exceeds the rational timestamp range");
+            return new Rational((long)n,(long)d);
+        }
+        public override string ToString() => $"{Numerator}/{Denominator}";
+    }
+    public sealed record Stage(string Id,string Kind,string Method,string Runtime,bool Enabled,
+        string Model,Rational Factor,string Policy,IReadOnlyDictionary<string,string> Options);
+    public sealed record Plan(bool MigratedLegacy,IReadOnlyList<Stage> Stages)
+    {
+        public Rational OutputCadence(Rational source) => Stages.Where(s=>s.Enabled&&s.Kind=="interpolate")
+            .Aggregate(source,(f,s)=>f.Multiply(s.Factor));
+        public bool IsFast => Stages.Any(s=>s.Enabled&&s.Kind=="interpolate"&&s.Policy=="fast");
+    }
+    private static readonly HashSet<string> Fields = new(StringComparer.OrdinalIgnoreCase) {
+        "id","kind","method","runtime","enabled","model","factor_numerator","factor_denominator","policy"
+    };
+    private static string Key(int chain) => chain>0 ? $"chain_{chain}_" : throw new InvalidDataException("Chain number must be positive");
+    private static string Value(IReadOnlyDictionary<string,string> values,string key,string fallback="") =>
+        values.TryGetValue(key,out var v) ? v.Trim() : fallback;
+    private static long Integer(string value,string key)
+    {
+        if(!long.TryParse(value,System.Globalization.NumberStyles.None,System.Globalization.CultureInfo.InvariantCulture,out long n))
+            throw new InvalidDataException($"Invalid integer: {key}");
+        return n;
+    }
+    private static bool Yes(string value,string key)
+    {
+        return value.ToLowerInvariant() switch { "yes" => true,"no" => false,_=>throw new InvalidDataException($"Expected yes/no: {key}") };
+    }
+    public static Plan Read(IReadOnlyDictionary<string,string> section,int chain,string backend="tensorrt",string temporalPolicy="fast")
+    {
+        var values=new Dictionary<string,string>(StringComparer.Ordinal);
+        foreach(var kv in section)values[kv.Key.ToLowerInvariant()]=kv.Value;
+        string prefix=Key(chain),version=Value(values,prefix+"pipeline_version");
+        if(version.Length==0)
+        {
+            if(values.Keys.Any(k=>k.StartsWith(prefix+"stage_",StringComparison.Ordinal)))
+                throw new InvalidDataException("Stage keys require an explicit pipeline_version");
+            return Migrate(values,chain,backend,temporalPolicy);
+        }
+        if(Integer(version,"pipeline_version")!=Version)throw new InvalidDataException("Unsupported interpolation pipeline version; preserve the original profile");
+        long count=Integer(Value(values,prefix+"stage_count"),"stage_count");
+        if(count<0||count>MaxStages)throw new InvalidDataException($"Pipeline supports at most {MaxStages} ordered stages");
+        var stages=new List<Stage>();
+        for(int i=1;i<=count;i++)
+        {
+            string p=$"{prefix}stage_{i}_";
+            var options=values.Where(k=>k.Key.StartsWith(p,StringComparison.Ordinal)&&!Fields.Contains(k.Key[p.Length..]))
+                .ToDictionary(k=>k.Key[p.Length..],k=>k.Value,StringComparer.Ordinal);
+            stages.Add(new Stage(Value(values,p+"id"),Value(values,p+"kind").ToLowerInvariant(),
+                Value(values,p+"method").ToLowerInvariant(),Value(values,p+"runtime").ToLowerInvariant(),
+                Yes(Value(values,p+"enabled","yes"),p+"enabled"),Value(values,p+"model"),
+                new Rational(Integer(Value(values,p+"factor_numerator","1"),p+"factor_numerator"),
+                    Integer(Value(values,p+"factor_denominator","1"),p+"factor_denominator")),
+                Value(values,p+"policy","quality").ToLowerInvariant(),options));
+        }
+        var plan=new Plan(false,stages);Validate(plan);return plan;
+    }
+    private static Plan Migrate(IReadOnlyDictionary<string,string> values,int chain,string backend,string policy)
+    {
+        string prefix=Key(chain);var stages=new List<Stage>();
+        string modelPrefix=prefix+"model_";
+        var indices=values.Keys.Select(k=>Regex.Match(k,"^"+Regex.Escape(modelPrefix)+@"([1-9][0-9]*)_name$"))
+            .Where(m=>m.Success).Select(m=>int.Parse(m.Groups[1].Value,System.Globalization.CultureInfo.InvariantCulture)).Order().ToArray();
+        foreach(int i in indices)
+        {
+            string p=$"{modelPrefix}{i}_",name=Value(values,p+"name");if(name.Length==0)continue;
+            var options=values.Where(k=>k.Key.StartsWith(p,StringComparison.Ordinal)&&k.Key!=p+"name")
+                .ToDictionary(k=>k.Key[p.Length..],k=>k.Value,StringComparer.Ordinal);
+            stages.Add(new Stage($"legacy-model-{i}","upscale","onnx",backend.ToLowerInvariant(),true,name,new Rational(1,1),"quality",options));
+        }
+        if(Yes(Value(values,prefix+"rife","no"),prefix+"rife"))
+        {
+            var options=new Dictionary<string,string>(StringComparer.Ordinal) {
+                ["ensemble"]=Value(values,prefix+"rife_ensemble","no"),
+                ["scene_detect_threshold"]=Value(values,prefix+"rife_scene_detect_threshold","0.150")
+            };
+            var rife=new Stage("legacy-rife","interpolate","rife",backend.ToLowerInvariant(),true,
+                Value(values,prefix+"rife_model","414"),
+                new Rational(Integer(Value(values,prefix+"rife_factor_numerator","1"),prefix+"rife_factor_numerator"),
+                    Integer(Value(values,prefix+"rife_factor_denominator","1"),prefix+"rife_factor_denominator")),
+                QualitySemantics.CanonicalTemporal(policy),options);
+            if(Yes(Value(values,prefix+"rife_before_upscale","yes"),prefix+"rife_before_upscale"))stages.Insert(0,rife);
+            else stages.Add(rife);
+        }
+        var plan=new Plan(true,stages);Validate(plan);return plan;
+    }
+    public static void Validate(Plan plan)
+    {
+        if(plan.Stages.Count>MaxStages)throw new InvalidDataException("Too many pipeline stages");
+        var ids=new HashSet<string>(StringComparer.Ordinal);
+        foreach(var s in plan.Stages)
+        {
+            if(!Regex.IsMatch(s.Id,@"^[A-Za-z0-9_-]{1,64}$")||!ids.Add(s.Id))throw new InvalidDataException("Stage IDs must be stable, distinct identifiers");
+            foreach(string token in new[] {s.Kind,s.Method,s.Runtime})
+                if(!Regex.IsMatch(token,@"^[a-z0-9_-]{1,64}$"))throw new InvalidDataException("Stage kind/method/runtime must be explicit identifiers");
+            if(s.Factor.Numerator<=0||s.Factor.Denominator<=0)throw new InvalidDataException("Invalid stage factor");
+            if(s.Kind!="interpolate"&&s.Factor!=new Rational(1,1))throw new InvalidDataException("Only interpolation stages multiply cadence");
+            if(s.Kind=="interpolate"&&s.Factor.Numerator<s.Factor.Denominator)throw new InvalidDataException("Interpolation factor cannot reduce cadence");
+            if(s.Policy is not ("quality" or "fast"))throw new InvalidDataException("Explicit quality/fast policy required");
+            if(s.Model.Contains('\n')||s.Model.Contains('\r'))throw new InvalidDataException("Invalid model name");
+            foreach(var pair in s.Options)
+                if(Fields.Contains(pair.Key)||!Regex.IsMatch(pair.Key,@"^[a-z0-9_]{1,80}$")||pair.Value.Contains('\n')||pair.Value.Contains('\r'))
+                    throw new InvalidDataException("Invalid stage option");
+        }
+        // Verify cumulative arithmetic without imposing a model/hardware speed claim.
+        plan.OutputCadence(new Rational(1,1));
+    }
+    public static IReadOnlyDictionary<string,string> Write(Plan plan,int chain)
+    {
+        Validate(plan);string prefix=Key(chain);var result=new Dictionary<string,string>(StringComparer.Ordinal) {
+            [prefix+"pipeline_version"]=Version.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            [prefix+"stage_count"]=plan.Stages.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        };
+        for(int i=0;i<plan.Stages.Count;i++)
+        {
+            var s=plan.Stages[i];string p=$"{prefix}stage_{i+1}_";
+            foreach(var kv in new Dictionary<string,string> {
+                ["id"]=s.Id,["kind"]=s.Kind,["method"]=s.Method,["runtime"]=s.Runtime,["enabled"]=s.Enabled?"yes":"no",
+                ["model"]=s.Model,["factor_numerator"]=s.Factor.Numerator.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["factor_denominator"]=s.Factor.Denominator.ToString(System.Globalization.CultureInfo.InvariantCulture),["policy"]=s.Policy
+            })result[p+kv.Key]=kv.Value;
+            foreach(var kv in s.Options.OrderBy(k=>k.Key,StringComparer.Ordinal))result[p+kv.Key]=kv.Value;
+        }
+        return result;
+    }
+}
