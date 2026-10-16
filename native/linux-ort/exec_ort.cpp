@@ -1,7 +1,9 @@
 // Executor: ONNX Runtime with the provider of the GPU vendor. AMD (MIGraphX, on ROCm), Intel
 // (OpenVINO), Apple (Core ML) or the CPU. The original ONNX models are used as they are.
 #include "engine.h"
+#include "onnx_flow.h"
 #include <onnxruntime_cxx_api.h>
+#include <onnxruntime_session_options_config_keys.h>
 #if defined(__x86_64__) || defined(_M_X64)
 #include <immintrin.h>
 #define AJI_F16C 1
@@ -11,6 +13,8 @@
 #include <array>
 #include <chrono>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <unordered_map>
 
 namespace aji {
@@ -126,6 +130,39 @@ Ort::Env &environment()
     return env;
 }
 
+std::unique_ptr<Ort::Session> fixed_session(const std::filesystem::path &path,
+    Ort::SessionOptions &options, const std::string &provider, int channels, int height, int width)
+{
+    const char *flag = std::getenv("AJI_ORT_SPECIALIZE_SHAPES");
+    const bool enabled = !(flag && *flag == '0') && (provider == "cpu" || (flag && *flag == '1'));
+#if ORT_API_VERSION >= 24
+    if (enabled) {
+        std::ifstream in(path,std::ios::binary);
+        require(in.good(), "Cannot read ONNX model for input specialization: " + path.string());
+        std::vector<char> original((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>()), fixed;
+        require(!in.bad(), "Incomplete ONNX model for input specialization: " + path.string());
+        std::string why;
+        const auto result = aji_onnx_fixed_rank4_input(original,{1,channels,height,width},&fixed,&why);
+        require(result != AjiFixedShape::Invalid, why);
+        if (result == AjiFixedShape::Specialized) {
+            // ONNX is loaded synchronously from the edited metadata. Resolve all
+            // external initializers relative to the original model, not cwd.
+            const auto folder = std::filesystem::absolute(path).parent_path().string();
+            options.AddConfigEntry(kOrtSessionOptionsModelExternalInitializersFileFolderPath,folder.c_str());
+            return std::make_unique<Ort::Session>(environment(),fixed.data(),fixed.size(),options);
+        }
+        if (result == AjiFixedShape::Unsupported)
+            std::cerr << "[aji] ORT dynamic input route: " << why << '\n';
+    }
+#else
+    (void)enabled;
+#endif
+    // Dynamic escape route for ablation, older SDKs and unsupported contracts.
+    options.AddFreeDimensionOverrideByName("height",height);
+    options.AddFreeDimensionOverrideByName("width",width);
+    return std::make_unique<Ort::Session>(environment(),path.c_str(),options);
+}
+
 // Session options for a provider and a device. `cache_tag` names the folder of the models Core ML
 // compiles; `label` receives what the statistics show. `precise`: no half-float sums in the GPU
 // convolutions (a model that computes positions, as RIFE does its motion, loses more to them
@@ -216,9 +253,7 @@ public:
                                                        std::to_string(w_) + "x" + std::to_string(h_), &label);
         // Every model gets its exact input size: the OpenVINO provider rejects the dynamic-shape
         // graph ("the graph is not acyclic"), and a static shape lets every provider compile once.
-        options.AddFreeDimensionOverrideByName("height", h_);
-        options.AddFreeDimensionOverrideByName("width", w_);
-        session_ = std::make_unique<Ort::Session>(environment(), path.c_str(), options);
+        session_ = fixed_session(path, options, r.provider, 3, h_, w_);
         Ort::AllocatorWithDefaultOptions allocator;
         require(session_->GetInputCount() == 1 && session_->GetOutputCount() >= 1, "Unexpected model signature: " + r.model);
         input_ = session_->GetInputNameAllocated(0, allocator).get();
@@ -375,9 +410,7 @@ public:
             r.model + "-" + std::to_string(pw_) + "x" + std::to_string(ph_), &label, true);
         // Models whose two free dimensions are named (the macOS package names them) get their
         // exact size, which Core ML needs; the others keep their dynamic shape.
-        options.AddFreeDimensionOverrideByName("height", ph_);
-        options.AddFreeDimensionOverrideByName("width", pw_);
-        session_ = std::make_unique<Ort::Session>(environment(), path.c_str(), options);
+        session_ = fixed_session(path, options, r.provider, 11, ph_, pw_);
         Ort::AllocatorWithDefaultOptions allocator;
         require(session_->GetInputCount() == 1 && session_->GetOutputCount() >= 1, "Unexpected RIFE model signature: " + r.model);
         input_ = session_->GetInputNameAllocated(0, allocator).get();

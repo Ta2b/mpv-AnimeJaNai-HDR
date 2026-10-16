@@ -16,6 +16,7 @@ struct Reader {
     const uint8_t *p, *end;
     bool ok = true;
     uint64_t scalar = 0;
+    unsigned wire = 0;
 
     uint64_t varint()
     {
@@ -41,7 +42,8 @@ struct Reader {
         if (!tag) { ok = false; return false; }
         *field = (uint32_t)(tag >> 3);
         scalar = 0;
-        switch (tag & 7) {
+        wire = (unsigned)(tag & 7);
+        switch (wire) {
         case 0: scalar = varint(); break;
         case 1: if (end - p < 8) ok = false; else p += 8; break;
         case 5: if (end - p < 4) ok = false; else p += 4; break;
@@ -100,6 +102,88 @@ std::string output_entry(const std::string &name, int elem_type)
 }
 
 } // namespace
+
+AjiFixedShape aji_onnx_fixed_rank4_input(const std::vector<char> &model,
+    const std::array<int64_t, 4> &expected, std::vector<char> *out, std::string *why)
+{
+    struct Field { const uint8_t *start = nullptr, *data = nullptr, *after = nullptr; size_t len = 0; };
+    // Locate a singular nested message, rejecting duplicate/malformed metadata.
+    auto find = [](const uint8_t *p, size_t n, uint32_t wanted, Field *hit) {
+        Reader r{p, p+n}; uint32_t f; const uint8_t *d; size_t l;
+        while (r.p < r.end) {
+            const uint8_t *start = r.p;
+            if (!r.next(&f,&d,&l)) return false;
+            if (f == wanted) {
+                if (hit->start || !d) return false;
+                *hit = {start,d,r.p,l};
+            }
+        }
+        return r.ok && hit->start;
+    };
+    auto replace = [](const uint8_t *p, size_t n, const Field &f, uint32_t number, const std::string &body) {
+        std::string s((const char *)p,(size_t)(f.start-p));
+        put_varint(s,((uint64_t)number<<3)|2); put_varint(s,body.size()); s += body;
+        s.append((const char *)f.after,(size_t)(p+n-f.after)); return s;
+    };
+    auto invalid = [&](const char *reason) { *why = reason; return AjiFixedShape::Invalid; };
+    if (model.empty()) return invalid("Empty ONNX model");
+    const auto *base = (const uint8_t *)model.data();
+    Field graph, input, type, tensor, shape;
+    if (!find(base,model.size(),7,&graph)) return invalid("Missing/ambiguous ONNX graph");
+    if (!find(graph.data,graph.len,11,&input)) {
+        *why = "requires a single graph input"; return AjiFixedShape::Unsupported;
+    }
+    if (!find(input.data,input.len,2,&type) || !find(type.data,type.len,1,&tensor)
+        || !find(tensor.data,tensor.len,2,&shape)) {
+        *why = "requires tensor input shape metadata"; return AjiFixedShape::Unsupported;
+    }
+    Reader rank_reader{shape.data,shape.data+shape.len}; uint32_t f; const uint8_t *d; size_t l;
+    size_t rank = 0;
+    while (rank_reader.next(&f,&d,&l)) if (f == 1) ++rank;
+    if (!rank_reader.ok) return invalid("Malformed ONNX input shape");
+    if (rank != expected.size()) { *why = "requires rank-4 input"; return AjiFixedShape::Unsupported; }
+    Reader r{shape.data,shape.data+shape.len};
+    std::string fixed; size_t axis = 0; bool changed = false;
+    std::map<std::string,int64_t> symbols;
+    while (r.p < r.end) {
+        const uint8_t *start = r.p;
+        if (!r.next(&f,&d,&l)) return invalid("Malformed ONNX input shape");
+        if (f != 1) { fixed.append((const char *)start,(size_t)(r.p-start)); continue; }
+        if (!d || axis >= expected.size()) { *why = "requires rank-4 input"; return AjiFixedShape::Unsupported; }
+        if (expected[axis] <= 0) return invalid("Expected input dimension must be positive");
+        Reader dim{d,d+l}; uint32_t k; const uint8_t *v; size_t z;
+        bool value_seen = false, symbol_seen = false; uint64_t value = 0; std::string symbol, rest;
+        while (dim.p < dim.end) {
+            const uint8_t *part = dim.p;
+            if (!dim.next(&k,&v,&z)) return invalid("Malformed ONNX input dimension");
+            if (k == 1) {
+                if (dim.wire != 0 || value_seen || symbol_seen) return invalid("Ambiguous ONNX input dimension");
+                value_seen = true; value = dim.scalar;
+            } else if (k == 2) {
+                if (!v || value_seen || symbol_seen) return invalid("Ambiguous ONNX input symbol");
+                symbol_seen = true; symbol.assign((const char *)v,z);
+            } else rest.append((const char *)part,(size_t)(dim.p-part));
+        }
+        const bool positive = value_seen && value > 0 && value <= INT64_MAX;
+        if (positive && value != (uint64_t)expected[axis]) return invalid("Fixed ONNX input dimension conflicts with executor geometry");
+        if (!symbol.empty()) {
+            const auto item = symbols.emplace(symbol,expected[axis]);
+            if (!item.second && item.first->second != expected[axis]) return invalid("ONNX input symbol requires conflicting known dimensions");
+        }
+        changed = changed || !positive;
+        std::string dimension(1,(char)0x08); put_varint(dimension,(uint64_t)expected[axis]); dimension += rest;
+        put_varint(fixed,10); put_varint(fixed,dimension.size()); fixed += dimension; ++axis;
+    }
+    if (axis != expected.size()) { *why = "requires rank-4 input"; return AjiFixedShape::Unsupported; }
+    if (!changed) { *why = "input already fixed"; return AjiFixedShape::Unchanged; }
+    const auto new_tensor = replace(tensor.data,tensor.len,shape,2,fixed);
+    const auto new_type = replace(type.data,type.len,tensor,1,new_tensor);
+    const auto new_input = replace(input.data,input.len,type,2,new_type);
+    const auto new_graph = replace(graph.data,graph.len,input,11,new_input);
+    const auto result = replace(base,model.size(),graph,7,new_graph);
+    out->assign(result.begin(),result.end()); *why = "rank-4 input fixed by axis";
+    return AjiFixedShape::Specialized;
+}
 
 bool aji_onnx_external_locations(const std::vector<char> &model, std::vector<std::string> *locations,
                                   std::string *why)

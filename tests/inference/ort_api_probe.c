@@ -13,6 +13,69 @@ static const OrtApi *real_api;
 static OrtApi wrapped;
 static pthread_once_t once = PTHREAD_ONCE_INIT;
 static _Atomic uint64_t counters[6];
+static _Atomic uint64_t capture_index;
+
+// Optional shape/graph evidence for specialization trials; configure-time only.
+static void capture_path(char out[4096], const char *folder, const char *kind, uint64_t index, const char *extension)
+{
+    if (snprintf(out,4096,"%s/%s-%llu.%s",folder,kind,(unsigned long long)index,extension) >= 4096) abort();
+}
+static OrtSessionOptions *capture_options(const OrtSessionOptions *options, const char *folder, uint64_t index)
+{
+    OrtSessionOptions *copy = NULL;
+    if (real_api->CloneSessionOptions(options,&copy)) abort();
+    char path[4096]; capture_path(path,folder,"optimized",index,"onnx");
+    if (real_api->SetOptimizedModelFilePath(copy,path)) abort();
+    return copy;
+}
+static void capture_shapes(OrtSession *session, const char *folder, uint64_t index)
+{
+    char path[4096]; capture_path(path,folder,"shapes",index,"txt");
+    FILE *out = fopen(path,"w"); if (!out) abort();
+    size_t count = 0; if (real_api->SessionGetInputCount(session,&count)) abort();
+    for (size_t i = 0; i < count; ++i) {
+        OrtTypeInfo *info = NULL; const OrtTensorTypeAndShapeInfo *tensor_info = NULL;
+        size_t rank = 0; int64_t dims[8];
+        if (real_api->SessionGetInputTypeInfo(session,i,&info)
+            || real_api->CastTypeInfoToTensorInfo(info,&tensor_info)
+            || real_api->GetDimensionsCount(tensor_info,&rank) || rank > 8
+            || real_api->GetDimensions(tensor_info,dims,rank)) abort();
+        for (size_t k = 0; k < rank; ++k) fprintf(out,"%lld%s",(long long)dims[k],k+1==rank?"\n":" ");
+        real_api->ReleaseTypeInfo(info);
+    }
+    if (fclose(out)) abort();
+}
+static OrtStatus *ORT_API_CALL create_file(const OrtEnv *env, const ORTCHAR_T *path,
+    const OrtSessionOptions *options, OrtSession **out)
+{
+    const char *folder = getenv("AJI_TEST_ORT_CAPTURE");
+    if (!folder || !*folder) return real_api->CreateSession(env,path,options,out);
+    const uint64_t index = atomic_fetch_add(&capture_index,1);
+    char dest[4096]; capture_path(dest,folder,"input",index,"onnx");
+    FILE *in = fopen(path,"rb"), *file = fopen(dest,"wb"); if (!in || !file) abort();
+    char bytes[8192]; size_t n;
+    while ((n=fread(bytes,1,sizeof(bytes),in)) != 0) if (fwrite(bytes,1,n,file) != n) abort();
+    if (ferror(in) || fclose(in) || fclose(file)) abort();
+    OrtSessionOptions *copy = capture_options(options,folder,index);
+    OrtStatus *s = real_api->CreateSession(env,path,copy,out);
+    real_api->ReleaseSessionOptions(copy);
+    if (!s) capture_shapes(*out,folder,index);
+    return s;
+}
+static OrtStatus *ORT_API_CALL create_array(const OrtEnv *env, const void *bytes, size_t size,
+    const OrtSessionOptions *options, OrtSession **out)
+{
+    const char *folder = getenv("AJI_TEST_ORT_CAPTURE");
+    if (!folder || !*folder) return real_api->CreateSessionFromArray(env,bytes,size,options,out);
+    const uint64_t index = atomic_fetch_add(&capture_index,1);
+    char path[4096]; capture_path(path,folder,"input",index,"onnx");
+    FILE *file = fopen(path,"wb"); if (!file || fwrite(bytes,1,size,file) != size || fclose(file)) abort();
+    OrtSessionOptions *copy = capture_options(options,folder,index);
+    OrtStatus *s = real_api->CreateSessionFromArray(env,bytes,size,copy,out);
+    real_api->ReleaseSessionOptions(copy);
+    if (!s) capture_shapes(*out,folder,index);
+    return s;
+}
 
 static OrtStatus *ORT_API_CALL cpu_memory(enum OrtAllocatorType type, enum OrtMemType mem, OrtMemoryInfo **out)
 {
@@ -67,6 +130,8 @@ static void initialize(void)
     base = entry(); real_api = base->GetApi(ORT_API_VERSION);
     if (!real_api) abort();
     memcpy(&wrapped, real_api, sizeof(wrapped));
+    wrapped.CreateSession = create_file;
+    wrapped.CreateSessionFromArray = create_array;
     wrapped.CreateCpuMemoryInfo = cpu_memory;
     wrapped.CreateTensorWithDataAsOrtValue = tensor;
     wrapped.GetTensorTypeAndShape = shape;

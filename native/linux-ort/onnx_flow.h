@@ -3,6 +3,14 @@
 
 #include <string>
 #include <vector>
+#include <array>
+#include <cstdint>
+
+enum class AjiFixedShape { Unchanged, Specialized, Unsupported, Invalid };
+// Only graph-input type/shape metadata is edited. Nodes, weights, outputs and
+// external locations retain their exact bytes. No guessed layout or symbol name.
+AjiFixedShape aji_onnx_fixed_rank4_input(const std::vector<char> &model,
+    const std::array<int64_t, 4> &shape, std::vector<char> *out, std::string *why);
 
 // RIFE's picture is warp(img0, flow0) * mask + warp(img1, flow1) * (1 - mask), nothing else.
 // With the flow ([1, 4, H, W], in pixels: channels 0-1 towards img0, 2-3 towards img1) and the
