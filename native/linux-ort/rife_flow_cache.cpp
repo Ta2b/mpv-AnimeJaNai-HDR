@@ -32,7 +32,7 @@ fs::path temporary(const fs::path &parent, const std::string &prefix)
 }
 struct Stage {
     fs::path path;
-    ~Stage() { std::error_code error; fs::remove_all(path,error); }
+    ~Stage() { cache::cleanup_stage(path); }
 };
 std::vector<identity::File> cache_files(const fs::path &directory, const std::vector<std::string> &locations)
 {
@@ -72,6 +72,8 @@ fs::path cached_rife_flow(const fs::path &source, const fs::path &cache)
     const std::string key = source_key(graph,weights);
     const fs::path parent = cache / "rife-flow-v2", destination = parent / key;
     fs::create_directories(parent);
+    if (valid(destination,locations) && !cache::has_owned_stages(parent,".part-","flow:"+key))
+        return destination / graph_name;
     cache::KeyLock lock(parent / (key + ".key-lock"));
     cache::recover_owned_stages(parent, ".part-", "flow:" + key);
     if (valid(destination,locations)) return destination / graph_name;
@@ -92,12 +94,12 @@ fs::path cached_rife_flow(const fs::path &source, const fs::path &cache)
     {
         std::ofstream out(data/graph_name,std::ios::binary);
         out.write(flow.data(),(std::streamsize)flow.size()); out.close();
-        if (!out) throw std::runtime_error("Cannot write RIFE flow graph");
+        if (!out) throw cache::io_error("write RIFE flow graph",data/graph_name);
     }
     const std::string digest = identity::files(version,cache_files(data,locations));
     {
         std::ofstream stamp(data/"ready.sha256"); stamp << digest << '\n'; stamp.close();
-        if (!stamp) throw std::runtime_error("Cannot write RIFE flow cache identity");
+        if (!stamp) throw cache::io_error("write RIFE flow cache identity",data/"ready.sha256");
     }
     if (!valid(data,locations)) throw std::runtime_error("Incomplete RIFE staged export");
 

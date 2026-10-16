@@ -29,6 +29,7 @@ for name, args, rest in [
     ('aji_flush', [ptr, ptr], C.c_uint64), ('aji_wait', [ptr, C.c_uint64], C.c_int),
     ('aji_destroy', [C.POINTER(ptr)], None), ('aji_last_error', [ptr], C.c_char_p),
     ('aji_current_log', [ptr], C.c_char_p),
+    ('aji_poll', [ptr], C.c_int),
 ]:
     f = getattr(lib, name); f.argtypes = args; f.restype = rest
 for name, args in [('cudaMalloc', [C.POINTER(ptr), C.c_size_t]), ('cudaFree', [ptr]),
@@ -58,12 +59,26 @@ try:
     if s.get('require_motion'):
         result['active_configuration'] = lib.aji_current_log(context).decode()
         assert 'Motion applied to the upscaled pictures' in result['active_configuration'], result
-    if s.get('async_build'):
+    if s.get('async_probe') and status==0:
+        deadline=time.monotonic()+20
+        while not lib.aji_poll(context):
+            assert time.monotonic()<deadline,'build timeout'
+            time.sleep(.005)
+        result['poll_error']=lib.aji_last_error(context).decode()
+        status=lib.aji_configure(context,128,72,24,C.byref(ow),C.byref(oh))
+        result['reload_status']=status
+        result['current_log']=lib.aji_current_log(context).decode()
+        if status==0 and 'FAILED' not in result['current_log'] and s.get('observe_second_call'):
+            calls=Path(s['observe_second_call'])
+            while len(list(calls.glob('*.json')))<2:
+                assert time.monotonic()<deadline,'second build not observed'
+                time.sleep(.005)
+    elif s.get('async_build'):
         assert status == 0
         out.with_suffix('.waiting').touch(); wait_file(s['quit'])
         started = time.perf_counter(); lib.aji_destroy(C.byref(context))
         result['destroy_seconds'] = time.perf_counter()-started
-    elif status == 1:
+    if status == 1:
         assert cuda.cudaStreamCreate(C.byref(stream)) == 0
         def allocate(w, h):
             f = Frame(width=w, height=h, format=1, matrix=2, range=1, siting=1)
@@ -87,6 +102,9 @@ try:
             planes.append(plane)
         np.save(out.with_suffix('.npy'), np.concatenate(planes))
         result['engines']={f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in Path(s['models']).glob('aji-v2-*.engine')}
+    result['active_status']=status
+    result['final_error']=lib.aji_last_error(context).decode() if context else ''
+    result['engine_sizes']={f.name:f.stat().st_size for f in Path(s['models']).glob('aji-v2-*.engine')}
     out.with_suffix('.json').write_text(json.dumps(result,indent=2)+'\n')
 finally:
     if context: lib.aji_destroy(C.byref(context))

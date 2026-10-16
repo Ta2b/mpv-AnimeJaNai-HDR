@@ -16,6 +16,7 @@
 static ssize_t (*real_write)(int, const void *, size_t);
 static ssize_t (*real_writev)(int, const struct iovec *, int);
 static int paused;
+static int fault_fd = -1, fault_errno;
 static int target(int fd, char *path)
 {
     const char *root = getenv("AJI_INTERRUPT_ROOT"), *name = getenv("AJI_INTERRUPT_FILE");
@@ -32,6 +33,11 @@ static ssize_t stop_write(int fd, const void *data, size_t size, const char *pat
 {
     paused = 1;
     ssize_t n = real_write(fd, data, size < 64 ? size : 64);
+    const char *injected = getenv("AJI_INJECT_ERRNO");
+    if (injected) {
+        fault_fd = fd; fault_errno = atoi(injected);
+        return n; // the next write reports the injected error after a real partial write
+    }
     const char *marker = getenv("AJI_INTERRUPT_READY");
     int signal_fd = open(marker, O_WRONLY | O_CREAT | O_TRUNC, 0600);
     if (signal_fd >= 0) {
@@ -45,6 +51,7 @@ static ssize_t stop_write(int fd, const void *data, size_t size, const char *pat
 }
 ssize_t write(int fd, const void *data, size_t size)
 {
+    if (fd == fault_fd) { errno = fault_errno; return -1; }
     if (!real_write) real_write = dlsym(RTLD_NEXT, "write");
     char path[PATH_MAX];
     if (size && target(fd, path)) return stop_write(fd, data, size, path);
@@ -52,6 +59,7 @@ ssize_t write(int fd, const void *data, size_t size)
 }
 ssize_t writev(int fd, const struct iovec *iov, int count)
 {
+    if (fd == fault_fd) { errno = fault_errno; return -1; }
     if (!real_write) real_write = dlsym(RTLD_NEXT, "write");
     if (!real_writev) real_writev = dlsym(RTLD_NEXT, "writev");
     char path[PATH_MAX];

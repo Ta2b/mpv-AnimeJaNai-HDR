@@ -1,4 +1,5 @@
 #pragma once
+#include "cache_io.h"
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -9,7 +10,7 @@ inline void mark_stage(const std::filesystem::path &folder, const std::string &k
 {
     std::ofstream file(folder / ".aji-stage-owner", std::ios::binary);
     file << "aji-stage-owner-v1\n" << key << '\n'; file.close();
-    if (!file) throw std::runtime_error("Cannot record cache staging ownership");
+    if (!file) throw io_error("record cache staging ownership",folder/".aji-stage-owner");
 }
 inline bool owns_stage(const std::filesystem::path &folder, const std::string &key)
 {
@@ -36,6 +37,9 @@ inline void recover_owned_stages(const std::filesystem::path &parent, const std:
 {
     for (const auto &entry : std::filesystem::directory_iterator(parent))
         if (entry.path().filename().u8string().rfind(prefix, 0) == 0 && owns_stage(entry.path(), key))
-            std::filesystem::remove_all(entry.path());
+        {
+            std::string why;
+            if (!cleanup_stage(entry.path(),&why)) throw std::runtime_error(why);
+        }
 }
 }
