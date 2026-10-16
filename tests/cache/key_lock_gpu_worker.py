@@ -4,6 +4,7 @@ import ctypes as C
 import hashlib
 import json
 import os
+import shutil
 from pathlib import Path
 import sys
 import time
@@ -30,6 +31,9 @@ for name, args, rest in [
     ('aji_destroy', [C.POINTER(ptr)], None), ('aji_last_error', [ptr], C.c_char_p),
     ('aji_current_log', [ptr], C.c_char_p),
     ('aji_poll', [ptr], C.c_int),
+    ('aji_temporal_radius', [ptr], C.c_int),
+    ('aji_ingest', [ptr,C.POINTER(Frame),C.c_uint64,ptr],C.c_int),
+    ('aji_infer_seq', [ptr,C.c_uint64,C.POINTER(Frame),ptr],C.c_int),
 ]:
     f = getattr(lib, name); f.argtypes = args; f.restype = rest
 for name, args in [('cudaMalloc', [C.POINTER(ptr), C.c_size_t]), ('cudaFree', [ptr]),
@@ -56,6 +60,19 @@ try:
     status = lib.aji_configure(context, 128, 72, 24, C.byref(ow), C.byref(oh))
     result = {'configure_status': status, 'configure_seconds': time.perf_counter()-started,
               'error': lib.aji_last_error(context).decode()}
+    result['initial_radius']=lib.aji_temporal_radius(context)
+    def replace_model(replacement):
+        target=Path(s['replacement_target']);stamp=target.stat();data=Path(replacement).read_bytes()
+        assert len(data)==stamp.st_size, 'fixture must preserve size'
+        target.write_bytes(data);os.utime(target,ns=(stamp.st_atime_ns,stamp.st_mtime_ns))
+        assert target.stat().st_mtime_ns==stamp.st_mtime_ns
+    if s.get('model_replacement') and status==1:
+        replace_model(s['model_replacement'])
+        status=lib.aji_configure(context,128,72,24,C.byref(ow),C.byref(oh))
+        result['reconfigured_status']=status;result['reconfigured_radius']=lib.aji_temporal_radius(context)
+        result['reconfigured_error']=lib.aji_last_error(context).decode()
+        result['reconfigured_log']=lib.aji_current_log(context).decode()
+        out.with_suffix('.checkpoint.json').write_text(json.dumps(result,indent=2)+'\n')
     if s.get('require_motion'):
         result['active_configuration'] = lib.aji_current_log(context).decode()
         assert 'Motion applied to the upscaled pictures' in result['active_configuration'], result
@@ -93,7 +110,11 @@ try:
             assert cuda.cudaMemcpy(source.plane[i],chunk.ctypes.data,chunk.nbytes,1)==0
             pos += chunk.nbytes
         assert cuda.cudaStreamSynchronize(None)==0
-        assert lib.aji_infer(context,C.byref(source),C.byref(target),stream)==0
+        if lib.aji_temporal_radius(context)>0:
+            assert lib.aji_ingest(context,C.byref(source),0,stream)==0
+            assert lib.aji_infer_seq(context,0,C.byref(target),stream)==0
+        else:
+            assert lib.aji_infer(context,C.byref(source),C.byref(target),stream)==0
         assert lib.aji_wait(context,lib.aji_flush(context,stream))==0
         planes = []
         for i, rows in enumerate((oh.value,oh.value//2)):
@@ -104,6 +125,10 @@ try:
         result['engines']={f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in Path(s['models']).glob('aji-v[23]-*.engine')}
     result['active_status']=status
     result['final_error']=lib.aji_last_error(context).decode() if context else ''
+    if s.get('post_model_replacement') and status==1:
+        replace_model(s['post_model_replacement'])
+        result['post_reconfigure_status']=lib.aji_configure(context,128,72,24,C.byref(ow),C.byref(oh))
+        result['post_reconfigure_error']=lib.aji_last_error(context).decode()
     result['engine_sizes']={f.name:f.stat().st_size for f in Path(s['models']).glob('aji-v[23]-*.engine')}
     out.with_suffix('.json').write_text(json.dumps(result,indent=2)+'\n')
 finally:

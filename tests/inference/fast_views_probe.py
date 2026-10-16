@@ -139,7 +139,7 @@ try:
         lib.aji_temporal_reset(context)
         record('unchanged-pair', cached, infer(*sources[:2]))
 
-    if not quality and not s.get('remaining_only'):
+    if not quality and not s.get('remaining_only') and not s.get('only_unchanged_pair'):
         for field, value in [('range', 2), ('matrix', 1)]:
             reset(); infer(*sources[:2], instant=.25)
             for f in [*sources[:2], mid]: setattr(f, field, value)
