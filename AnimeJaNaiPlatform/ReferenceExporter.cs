@@ -1,16 +1,97 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.IO.Pipes;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AnimeJaNai.Platform;
 
 // On demand only. No set_property, pause, reconfiguration or inference command.
 public static class ReferenceExporter
 {
+    public sealed record Session(string Endpoint, string MediaPath, string FilterJson, string SlotJson)
+    {
+        public string Label => $"{Path.GetFileName(MediaPath)} — profile {SlotJson} — {Endpoint}";
+        public bool SameSelection(Session other) => Endpoint == other.Endpoint && MediaPath == other.MediaPath
+            && FilterJson == other.FilterJson && SlotJson == other.SlotJson;
+    }
+    public sealed record SessionSearch(Session[] Sessions, string[] Errors);
+
+    public static IEnumerable<string> DiscoverEndpoints()
+    {
+        var endpoints = new HashSet<string>(StringComparer.Ordinal);
+        string? explicitPath = Environment.GetEnvironmentVariable("ANIMEJANAI_IPC_PATH");
+        if (!string.IsNullOrWhiteSpace(explicitPath)) endpoints.Add(explicitPath);
+        if (OperatingSystem.IsWindows()) endpoints.Add("mpvpipe");
+        else
+        {
+            var roots = new[] { Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR"),
+                Environment.GetEnvironmentVariable("TMPDIR"), Path.GetTempPath() };
+            foreach (string root in roots.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct()!)
+                try
+                {
+                    foreach (string dir in Directory.EnumerateDirectories(root, "animejanai-hdr.*"))
+                    {
+                        string socket = Path.Combine(dir, "mpv.sock");
+                        if (File.Exists(socket)) endpoints.Add(socket);
+                    }
+                    foreach (string socket in Directory.EnumerateFiles(root, "animejanai-mpv-*.sock"))
+                        endpoints.Add(socket);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        }
+        return endpoints.Order(StringComparer.Ordinal).Take(64);
+    }
+
+    public static async Task<SessionSearch> FindSessions(IEnumerable<string> endpoints)
+    {
+        var results = await Task.WhenAll(endpoints.Distinct(StringComparer.Ordinal).Take(64).Select(async endpoint =>
+        {
+            try
+            {
+                using var ipc = await Ipc.Connect(endpoint);
+                var path = await ipc.Command("get_property", "path");
+                var vf = await ipc.Command("get_property", "vf");
+                var slot = await ipc.Command("get_property", "user-data/animejanai-active-slot");
+                if (path.error != "success" || path.data.ValueKind != JsonValueKind.String)
+                    throw new InvalidOperationException("No loaded video");
+                if (vf.error != "success") throw new InvalidOperationException("Cannot read active filter chain");
+                return (session: new Session(endpoint, path.data.GetString()!, vf.data.GetRawText(),
+                    slot.error == "success" ? slot.data.GetRawText() : "null"), error: (string?)null);
+            }
+            catch (Exception e) when (e is IOException or SocketException or OperationCanceledException or InvalidOperationException)
+            { return (session: (Session?)null, error: $"{endpoint}: {e.Message}"); }
+        }));
+        return new(results.Where(r => r.session != null).Select(r => r.session!).ToArray(),
+            results.Where(r => r.error != null).Select(r => r.error!).ToArray());
+    }
+
+    // Check the user's selected media/chain against the captured session, not the editor's unsaved profile.
+    public static async Task<object> CaptureSelected(string root, Session selected)
+    {
+        object report = await Capture(root, selected.Endpoint);
+        var json = JsonSerializer.SerializeToElement(report);
+        var observed = json.GetProperty("observed_properties");
+        string slot = observed.TryGetProperty("user-data/animejanai-active-slot", out var value)
+            ? value.GetRawText() : "null";
+        if (!json.GetProperty("consistent_observed_state").GetBoolean()
+            || observed.GetProperty("path").GetString() != selected.MediaPath
+            || observed.GetProperty("vf").GetRawText() != selected.FilterJson || slot != selected.SlotJson)
+            throw new InvalidOperationException("Playback or profile changed. Refresh sessions and select the video again; no report was written.");
+        var result = json.EnumerateObject().ToDictionary(p => p.Name, p => (object)p.Value.Clone());
+        result["manager_selection"] = new { endpoint = selected.Endpoint, media_path = selected.MediaPath,
+            active_slot = slot, selected_filter = selected.FilterJson };
+        return result;
+    }
+
     static readonly string[] Properties = [
         "path", "playlist-pos", "time-pos", "pause", "vf", "video-params", "video-dec-params",
         "video-out-params", "video-target-params", "container-fps", "estimated-vf-fps", "display-fps",

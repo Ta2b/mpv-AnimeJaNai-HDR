@@ -2,6 +2,14 @@
 
 Disponible à partir de 3.8.0.33. À la demande, le lecteur exporte un JSON qui rassemble les propriétés mpv observées, les paramètres réels du filtre, le fichier de configuration pointé par ce filtre, le runtime et les empreintes SHA-256 des fichiers des répertoires de modèles/exports. Aucun preset ne sert à deviner ces informations.
 
+## Depuis le Manager
+
+L’onglet **Reference** permet de rafraîchir les sessions ouvertes, de choisir la vidéo puis **Export reference JSON…** et une destination locale. Avec plusieurs lecteurs, la sélection est explicite. Le rapport décrit la chaîne active du lecteur choisi ; les changements non enregistrés dans l’éditeur ne sont pas appliqués. Si le média, le profil ou la chaîne ont changé depuis la sélection, rafraîchir puis sélectionner de nouveau. Un fichier existant est conservé ; choisir un nouveau nom.
+
+La découverte utilise `ANIMEJANAI_IPC_PATH`, le pipe Windows livré et les sockets créés par les lanceurs Linux/macOS. Un lecteur personnalisé doit rendre son endpoint disponible par cette variable. Une session absente/inaccessible est signalée dans l’onglet. Les limites du rapport restent celles de l’export CLI : aucune preuve de poids déjà chargés ou de précision effective n’est ajoutée par l’interface. L’export natif Windows/macOS reste à qualifier dans AH-237.
+
+## Depuis le lecteur ou la CLI
+
 Dans la console mpv :
 
 ```text
