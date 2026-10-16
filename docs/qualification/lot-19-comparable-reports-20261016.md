@@ -21,4 +21,4 @@ Artefacts dans `artifacts/performance/lots-20261016/lot-19/`, dont traces before
 
 Le collecteur reste responsable des mesures brutes, identités réellement chargées, capteurs et observation de présentation. L’exporteur ne vérifie pas indépendamment leurs déclarations ; ces limites restent visibles dans chaque JSON. Une courte série ne prouve ni la stabilité du débit ni celle de la température. Les collecteurs/placements natifs restent leurs tickets d’instrumentation, sans être déclarés livrés ici.
 
-Source/outil dans l’archive source du projet, commande Python documentée ; aucun ajout de dépendance au runtime du lecteur. Release du lot prévue .51, après push et qualification ; AH-25 reste In Progress jusqu’à vérification de la publication complète.
+Source/outil qualifié `05427c2` dans l’archive source du projet, commande Python documentée ; aucun ajout de dépendance au runtime du lecteur. Release du lot **3.8.0.51** poussée ; AH-25 reste In Progress jusqu’à vérification de la publication complète. Le lot suivant commence après push, sans attendre la release.
