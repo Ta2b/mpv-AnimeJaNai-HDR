@@ -177,7 +177,8 @@ jobs:
       - name: Build the Manager, the assembler, the platform helper and the updater
         run: |
           dotnet publish manager/AnimeJaNaiConfEditor/AnimeJaNaiConfEditor.csproj -c Release -r linux-x64 --self-contained true \
-            -p:PlatformSource="$GITHUB_WORKSPACE/AnimeJaNaiPlatform/PlatformServices.cs" -o manager-publish
+            -p:PlatformSource="$GITHUB_WORKSPACE/AnimeJaNaiPlatform/PlatformServices.cs" \
+            -p:ReferenceExporterSource="$GITHUB_WORKSPACE/AnimeJaNaiPlatform/ReferenceExporter.cs" -o manager-publish
           mv manager-publish/AnimeJaNaiManager manager-publish/AnimeJaNaiManager-HDR
           echo "MANAGER_HDR_LOCAL=$GITHUB_WORKSPACE/manager-publish" >> "$GITHUB_ENV"
           dotnet publish BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj -c Release -o publish
