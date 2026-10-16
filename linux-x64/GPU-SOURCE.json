@@ -1,9 +1,9 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "861ab52efda5f1313bd39b8e15053b6d3c31f130",
+  "backend_source": "79e8aa48e0c776e8335c2430d538426ed3b0a506",
   "player_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
-  "validation": "Linux RTX4070Ti CUDA13.4/TRT11.3 optional terminal completion wakeup integrated into spatial mpv producer. NVDEC pause reserve3 with bounded job slots3;12NV12 outputs+PTS and one default YUV444P16 output exact off/on, EOF. Controlled200ms fence withholding: IPC195.54->36.98ms with pending owners; NOT a real GPU/FPS speed claim. Seek correct, terminal failure discarded, owners28/28 and20/20 live0 at shutdown; older module explicit legacy fallback. Default CUDA target selection fixed before project compiler detection; final multi-SM build12+1 outputs rechecked against saved references after compilation-target correction. .text/fatbin unchanged by packaging RPATH. Other API/HW/HDR/real device-loss unqualified; Windows bundle unchanged d00ed919/652fbc6.",
+  "validation": "Linux RTX4070Ti ordered RIFE2->FRUC2->SPAN: correct 9 frames, PTS/durations/EOF; exact common RIFE/SPAN median under final TRT module; 6 legacy fractional outputs and PTS exact absent/equivalent v1. Queue/owners/cancel/reset/controlled-error and cancellable pending model build qualified. TRT CUDA fatbin exact prior binary. No FPS, HDR synthesis, other-HW/API or physical-presentation claim.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -49,12 +49,13 @@
     "full-native-surface-source-keys",
     "optional-native-surface-cache-counters",
     "terminal-native-surface-wakeup",
-    "portable-cuda-target-default"
+    "portable-cuda-target-default",
+    "optional-typed-async-build-status"
   ],
   "sha256": {
     "libaji.so": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
-    "libaji_trt.so": "20c29cdbdc34461a94e1cb746dd456334df7c6bb55d13f1d929b60be973389c7",
-    "libaji_trt_rtx.so": "20c29cdbdc34461a94e1cb746dd456334df7c6bb55d13f1d929b60be973389c7"
+    "libaji_trt.so": "953c8f8f65cf9bf58140d1ad08a543f73b73ee8b9cfb5df506ff30063b92c414",
+    "libaji_trt_rtx.so": "953c8f8f65cf9bf58140d1ad08a543f73b73ee8b9cfb5df506ff30063b92c414"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -79,6 +80,11 @@
       "backend_source": "7e9c87137e77046e5c521e635634bfdef751a277",
       "player_qualification_source": "afe9136bf25173bd8db4899bbc66a4e703a14ba8",
       "validation": "Linux RTX4070Ti SM8.9 CUDA13.4/TRT11.3 Surface RIFE4.26+SPAN native NV12: exact pair cache off/on, six phase outputs identical. Measured burst source preparations3->1 and Fast source upscales6->2; Fast CUDA interval19.761->6.873ms. Quality GPU timing nonconclusive (<1%), but final burst fence record/export15.431->0.915ms with full predictions preserved. Generation/color/ROI/legacy/zero IDs/drain/disable/error recovery qualified; owners/descriptors/padding safe. No universal FPS/HDR/physical-device-loss claim. Applies optional Surface route; existing mpv ABI9 unchanged. Windows bundle unchanged d00ed919/652fbc6."
+    },
+    {
+      "backend_source": "861ab52efda5f1313bd39b8e15053b6d3c31f130",
+      "player_qualification_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
+      "validation": "Linux RTX4070Ti CUDA13.4/TRT11.3 optional terminal completion wakeup integrated into spatial mpv producer. NVDEC pause reserve3 with bounded job slots3;12NV12 outputs+PTS and one default YUV444P16 output exact off/on, EOF. Controlled200ms fence withholding: IPC195.54->36.98ms with pending owners; NOT a real GPU/FPS speed claim. Seek correct, terminal failure discarded, owners28/28 and20/20 live0 at shutdown; older module explicit legacy fallback. Default CUDA target selection fixed before project compiler detection; final multi-SM build12+1 outputs rechecked against saved references after compilation-target correction. .text/fatbin unchanged by packaging RPATH. Other API/HW/HDR/real device-loss unqualified; Windows bundle unchanged d00ed919/652fbc6."
     }
   ],
   "fruc_provider": {
@@ -92,6 +98,29 @@
     "sdk_external": true,
     "fast_opt_in": true,
     "qualified": "Linux RTX4070Ti SDR; exact SDK pixel repeatability nonconclusive; no Windows/HDR/other hardware qualification",
+    "cuda_architectures": [
+      75,
+      80,
+      86,
+      89,
+      90,
+      100,
+      120,
+      "PTX120"
+    ]
+  },
+  "ordered_pipeline": {
+    "backend_source": "35c0049ffd2977fe196a34bbbd3b051647486c4d",
+    "api": "aji_pipeline_v1",
+    "sha256": {
+      "libaji_pipeline.so": "321e52c50c0819642c7539195fb646117d1e81184324a57329447b135fef9280",
+      "aji_pipeline.fatbin": "912e8c30f67c64c7a9276484323fdd22bc09ca870aaaabecb5cff93a5756e21e",
+      "PIPELINE-README.md": "6f084c8d85e476122b75bd8e4ab96af0ac11177e2f99f8fd21a6bdb7ddaf30b1"
+    },
+    "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
+    "explicit_opt_in": true,
+    "sdk_external": true,
+    "qualified": "Linux RTX4070Ti SDR, native RIFE2->FRUC2->spatial SPAN; only actual supported stage capabilities; Fast FRUC8bit, no Quality equivalence",
     "cuda_architectures": [
       75,
       80,
