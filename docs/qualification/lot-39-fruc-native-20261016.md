@@ -107,6 +107,6 @@ Windows inchangé ; aucun poids supplémentaire redistribué.
 Artefacts privés : `artifacts/performance/lots-20261016/lot-39/`, reçus lifecycle
 et YUV-SPAN, observations RGB/alpha initial exclu, contrôle d'entrées et contrôle
 prototype limité, captures et logs. Packaging C# compilé sans warning/erreur.
-Release3.8.0.71 prévue pour AH-296 et AH-300 ; Jira reste In Progress tant que
-publication non vérifiée. Chaîne complète du lecteur AH-301 et éditeur Manager
+Release3.8.0.71 publiée, trois plateformes success et quinze assets ; module/fatbin
+de l’overlay Linux téléchargé identiques aux fichiers qualifiés. AH-296/AH-300 Done. Chaîne complète du lecteur AH-301 et éditeur Manager
 AH-302 restent à faire ; aucune option FRUC du Manager prétendue livrée ici.

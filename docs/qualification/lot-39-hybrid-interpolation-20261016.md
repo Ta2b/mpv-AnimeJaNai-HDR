@@ -79,4 +79,5 @@ RIFE donne2.432s pour sa nouvelle exécution, distinct du coût de ses prédicti
 
 Raccord GPU borné AH-296 et runtime ordonné AH-301 restent à implémenter ;
 éditeur Manager AH-302 préparé en worktree isolé, interface non encore livrée.
-AH-300 reste In Progress jusqu'à rapport/client livrés par release vérifiée.
+AH-300 Done après livraison vérifiée du rapport/client dans release3.8.0.71 ;
+trois plateformes success, quinze assets. AH-301 In Progress, Manager AH-302 à faire.

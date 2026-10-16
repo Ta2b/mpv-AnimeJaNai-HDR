@@ -1,6 +1,6 @@
 # Reprise du travail — état au 14 octobre 2026
 
-Point lot39 : provider FRUC CUDA natif implémenté et qualifié fonctionnellement sur Linux/RTX4070Ti (worker borné, événements/owners/seek/erreur, GPU→SPAN). Reproductibilité pixel exacte du SDK non concluante, y compris dans le prototype inchangé ; Fast SDR8bits expérimental, Quality préservée. Release3.8.0.71 en préparation ; AH-296/AH-300 In Progress jusqu’à publication. Runtime ordonné AH-301 puis Manager AH-302 restent la suite immédiate. [Rapport natif](qualification/lot-39-fruc-native-20261016.md).
+Point courant : **3.8.0.71 publiée, AH-296 et AH-300 Done** (trois plateformes success, quinze assets ; module/fatbin dans l’overlay Linux identiques aux fichiers qualifiés). Provider FRUC Fast SDR8bits natif livré ; reproductibilité exacte du SDK non concluante, Quality préservée. **AH-301 In Progress**, lot40 : schéma ordonné v1 et migration/cadences rationnelles implémentés et contrôlés sur CPU (2628bab), exécuteur lecteur encore à réaliser ; Manager AH-302 ensuite. [Rapport natif](qualification/lot-39-fruc-native-20261016.md), [suivi lot40](jira/lot-40-ordered-interpolation-20261016.json).
 
 ## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
 
