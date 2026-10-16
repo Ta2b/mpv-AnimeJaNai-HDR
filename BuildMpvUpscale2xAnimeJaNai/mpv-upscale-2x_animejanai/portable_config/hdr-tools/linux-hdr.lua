@@ -3,6 +3,7 @@ local mp = require 'mp'
 local utils = require 'mp.utils'
 local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.lua'}))
 local grade = dofile(mp.command_native({'expand-path','~~/hdr-tools/hdr-grade.lua'}))
+local color = dofile(mp.command_native({'expand-path','~~/hdr-tools/inference-color.lua'}))
 local options = policy.options()
 local hw = policy.detect(mp,utils,options)
 local original = {}
@@ -71,6 +72,8 @@ local function report()
     local truehdr=native('user-data/animejanai-truehdr')==true
     local filter='aucun'
     for _,f in ipairs(native('vf') or {}) do if f.label=='aji' then filter=f.enabled and 'AnimeJaNai' or 'AnimeJaNai (desactive)' end end
+    local colors=color.describe(native('video-dec-params'),native('video-params'),native('vf'),truehdr)
+    mp.set_property_native('user-data/animejanai-color-contract',colors)
     local lines={
         (h.platform=='macos' and 'macOS' or 'Linux / Wayland')..' | GPU inference : '..h.name,
         'GPU ecran (connecteurs PCI) : '..table.concat(h.display_pci or {},', '),
@@ -80,6 +83,8 @@ local function report()
             or 'Ecran HDR : verification physique requise ; activer HDR dans le bureau (GNOME, KDE) avant de choisir PQ.',
         'Sortie video (apres filtres) : '..tostring(out.w or '?')..'x'..tostring(out.h or '?')..' | '..rate('estimated-vf-fps','images/s')..' (estime)',
         'Source : '..rate('container-fps','images/s')..' | ecran : '..rate('display-fps','Hz'),
+        colors.source_line,
+        colors.boundary_line,
         'Grading : '..state.mode..' | comparaison : '..choice,
         'Filtre : '..filter..' | conversion SDR -> HDR : '..(truehdr and 'TrueHDR (moteur)' or options.hdr_conversion and 'mpv' or 'desactivee'),
         'Profil : '..tostring(native('user-data/animejanai-active-slot') or 0)..' | '..tostring(native('user-data/animejanai-interpolation') or 'cadence originale'),

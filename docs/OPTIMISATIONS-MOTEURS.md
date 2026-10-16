@@ -4,6 +4,8 @@ Contrat courant des types de tenseurs, accumulateurs, arrondis et options :
 [précision par opérateur et par moteur](CONTRAT-PRECISION-MOTEURS.md).
 L'outil associé inventorie les graphes sans les exécuter ; les poids FP16 ne
 prouvent pas une accumulation FP16 admissible ni une identité entre moteurs.
+Les frontières SDR/RGB24, YUV16/FP16 et HDR aval sont décrites dans le
+[contrat couleur et profondeur](CONTRAT-COULEUR-PROFONDEUR.md).
 
 ## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
 
