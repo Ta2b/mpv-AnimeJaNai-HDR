@@ -11,3 +11,5 @@ Linux targeted coordination and fidelity qualification; Windows compile/link onl
 
 Linux cache recovery backend: 694537a6dada3c0aec11947cdc5a6bda86c2c91b
 Interrupted-write recovery qualified on Linux; Windows compile/link only.
+
+Cache storage integrity: backend 650c2a71f5c8bca8cfa52805e0db1c17dad8aa67, Windows compile/link run 38836161283; Linux targeted native qualification, EDQUOT fault injection explicitly.

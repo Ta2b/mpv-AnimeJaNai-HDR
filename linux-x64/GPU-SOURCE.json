@@ -1,17 +1,17 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "694537a6dada3c0aec11947cdc5a6bda86c2c91b",
+  "backend_source": "650c2a71f5c8bca8cfa52805e0db1c17dad8aa67",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "694537a6dada3c0aec11947cdc5a6bda86c2c91b",
-    "GITHUB_RUN_ID": "38827967813",
+    "GITHUB_SHA": "650c2a71f5c8bca8cfa52805e0db1c17dad8aa67",
+    "GITHUB_RUN_ID": "38836161283",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Linux RTX4070Ti/TRT11.3: flow/snapshot/TRT/motion interrupted-write recovery, owned orphans removed, references/unknown stages preserved, builder dies with parent, recovered bytes/output exact on tested cases. Windows compile/link only. No FPS claim.",
+  "validation": "Linux RTX4070Ti/TRT11.3: actual ENOSPC tmpfs and Unix permissions, native EDQUOT fault injection, read-only references, corrupt/partial publication rejected, async failure latch/reopen recovery; reference bytes/output exact on tested cases. Windows compile/link only. No FPS claim.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -28,12 +28,16 @@
     "coordinated-fast-motion-export",
     "owned-cache-stage-recovery",
     "model-data-metadata-separation",
-    "linux-builder-parent-death"
+    "linux-builder-parent-death",
+    "actionable-cache-storage-errors",
+    "read-only-complete-caches",
+    "validate-plan-before-publication",
+    "latched-async-build-errors"
   ],
   "sha256": {
     "libaji.so": "c79eb7cfc4be4aecc207664636c906cea4c0de1b68287aac1a71b992a52a7dd2",
-    "libaji_trt.so": "2279177a0854aa26dd98682b2058fb52e5fed8716ef426bc1143d762f64b4bad",
-    "libaji_trt_rtx.so": "2279177a0854aa26dd98682b2058fb52e5fed8716ef426bc1143d762f64b4bad"
+    "libaji_trt.so": "1feffed7390245ff6d3d25ad8d9e11d29bbce816f950c4fa80678d596f51585e",
+    "libaji_trt_rtx.so": "1feffed7390245ff6d3d25ad8d9e11d29bbce816f950c4fa80678d596f51585e"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -48,5 +52,5 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "0efe178b2e39f487403701f3db9b3c2fed736a55"
+  "player_qualification_source": "d6da9cea895f761823d2a46a16715ec320169566"
 }

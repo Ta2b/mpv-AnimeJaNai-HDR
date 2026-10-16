@@ -1,17 +1,17 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "694537a6dada3c0aec11947cdc5a6bda86c2c91b",
+  "backend_source": "650c2a71f5c8bca8cfa52805e0db1c17dad8aa67",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "694537a6dada3c0aec11947cdc5a6bda86c2c91b",
-    "GITHUB_RUN_ID": "38827967813",
+    "GITHUB_SHA": "650c2a71f5c8bca8cfa52805e0db1c17dad8aa67",
+    "GITHUB_RUN_ID": "38836161283",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Linux RTX4070Ti/TRT11.3: flow/snapshot/TRT/motion interrupted-write recovery, owned orphans removed, references/unknown stages preserved, builder dies with parent, recovered bytes/output exact on tested cases. Windows compile/link only. No FPS claim.",
+  "validation": "Linux RTX4070Ti/TRT11.3: actual ENOSPC tmpfs and Unix permissions, native EDQUOT fault injection, read-only references, corrupt/partial publication rejected, async failure latch/reopen recovery; reference bytes/output exact on tested cases. Windows compile/link only. No FPS claim.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -28,14 +28,18 @@
     "coordinated-fast-motion-export",
     "owned-cache-stage-recovery",
     "model-data-metadata-separation",
-    "linux-builder-parent-death"
+    "linux-builder-parent-death",
+    "actionable-cache-storage-errors",
+    "read-only-complete-caches",
+    "validate-plan-before-publication",
+    "latched-async-build-errors"
   ],
   "sha256": {
-    "aji.dll": "8cdac6b2f03ebe3eb15ff7a140a0c205c927140ccd316128f05ab3cb86b528d4",
-    "aji_dml.dll": "33e11855ffdf454abc23c3a375e961a5c04adc1d3926d5c2d2f189150097bd9d",
-    "aji_migraphx.dll": "745432f191df95c42cd98ad9cb6ad3a43e94b3a4af8f2145961053e8c30328e3",
-    "aji_trt.dll": "cc43530c27df0e9eb1548d072f34ee58063a36b9a76e7e3392dea5e744f42e7d",
-    "aji_trt_rtx.dll": "cc43530c27df0e9eb1548d072f34ee58063a36b9a76e7e3392dea5e744f42e7d"
+    "aji.dll": "79fbaf902778995c918954e127428ca98bfbd0eab283317ae19985260d36e534",
+    "aji_dml.dll": "170edad11c17cbb42cc5a872a82b5cb3cfedd6c920119a0936a00198949e3de1",
+    "aji_migraphx.dll": "9cbba0af959059c649e88600ad05cd7ba600df7e321dac973da0397d55cd2e03",
+    "aji_trt.dll": "d6ed0c889b2728d6d956001e591f9a85bc8100c1a7f316d6bc8da8e9f99a1ed6",
+    "aji_trt_rtx.dll": "d6ed0c889b2728d6d956001e591f9a85bc8100c1a7f316d6bc8da8e9f99a1ed6"
   },
-  "player_qualification_source": "0efe178b2e39f487403701f3db9b3c2fed736a55"
+  "player_qualification_source": "d6da9cea895f761823d2a46a16715ec320169566"
 }
