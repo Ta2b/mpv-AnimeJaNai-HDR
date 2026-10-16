@@ -16,6 +16,38 @@
 namespace aji {
 namespace {
 
+bool reuse_ort_bindings(const std::string &provider)
+{
+    const char *value = std::getenv("AJI_ORT_REUSE_BINDINGS");
+    // CPU is qualified here. Other providers keep their existing path until
+    // native qualification; an explicit 1 permits a targeted provider trial.
+    if (value && *value == '0') return false;
+    return provider == "cpu" || (value && *value == '1');
+}
+
+// ORT 1.24 can lend a tensor's shape without creating an owned metadata handle
+// or a shape vector. The view is used only while that OrtValue remains alive.
+struct TensorView {
+    ONNXTensorElementDataType type{};
+    const int64_t *dims = nullptr;
+    size_t rank = 0;
+    std::vector<int64_t> owned;
+    TensorView(const Ort::Value &value, bool reuse)
+    {
+#if ORT_API_VERSION >= 24
+        if (reuse) {
+            Ort::ThrowOnError(Ort::GetApi().GetTensorElementTypeAndShapeDataReference(value, &type, &dims, &rank));
+            return;
+        }
+#endif
+        auto info = value.GetTensorTypeAndShapeInfo();
+        owned = info.GetShape(); type = info.GetElementType();
+        dims = owned.data(); rank = owned.size();
+    }
+    TensorView(const TensorView &) = delete;
+    TensorView &operator=(const TensorView &) = delete;
+};
+
 #if !defined(AJI_F16C)
 // Half-float conversion through the compiler's 16-bit float type (ARM: vectorised by clang).
 void floats_to_halves(const float *src, uint16_t *dst, size_t count)
@@ -168,6 +200,7 @@ class OrtExecutor : public Executor {
 public:
     explicit OrtExecutor(const ExecutorRequest &r) : w_(r.width), h_(r.height)
     {
+        reuse_bindings_ = reuse_ort_bindings(r.provider);
         std::filesystem::path path = std::filesystem::path(r.models_dir) / (r.model + ".onnx");
         require(std::filesystem::is_regular_file(path), "Model not found: " + r.model + ".onnx");
         // Core ML: the variant whose pixel-unshuffle is one convolution (fuse_unshuffle.py), so
@@ -197,6 +230,24 @@ public:
         require(supported(in) && supported(out), "Model tensors must be float or half float: " + r.model);
         half_in_ = in == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
         half_out_ = out == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
+        if (reuse_bindings_) {
+            const size_t count = (size_t)3 * w_ * h_;
+            const int64_t shape[4] = {1, 3, h_, w_}, output_shape[4] = {1, 3, 2 * (int64_t)h_, 2 * (int64_t)w_};
+            if (half_in_) {
+                halves_.resize(count);
+                input_tensor_ = Ort::Value::CreateTensor(memory_, halves_.data(), count * sizeof(uint16_t), shape, 4, in);
+            } else {
+                floats_.resize(count);
+                input_tensor_ = Ort::Value::CreateTensor<float>(memory_, floats_.data(), count, shape, 4);
+            }
+            if (half_out_) {
+                output_halves_.resize(4 * count);
+                output_tensor_ = Ort::Value::CreateTensor(memory_, output_halves_.data(), 4 * count * sizeof(uint16_t), output_shape, 4, out);
+            } else {
+                output_floats_.resize(4 * count);
+                output_tensor_ = Ort::Value::CreateTensor<float>(memory_, output_floats_.data(), 4 * count, output_shape, 4);
+            }
+        }
     }
 
     void run(const Job &job) override
@@ -204,7 +255,8 @@ public:
         const int w = w_, h = h_;
         const int64_t shape[4] = {1, 3, h, w};
         const size_t plane = (size_t)w * h, count = 3 * plane;
-        Ort::MemoryInfo memory = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+        Ort::MemoryInfo memory{nullptr};
+        if (!reuse_bindings_) memory = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
         Ort::Value input{nullptr};
         const uint8_t *pixels = job.in;
         const ptrdiff_t stride = job.in_stride;
@@ -224,7 +276,7 @@ public:
                 }
             };
             if (job.spread) parallel((size_t)h, 64, body); else body((size_t)0, (size_t)h);
-            input = Ort::Value::CreateTensor(memory, halves_.data(), count * sizeof(uint16_t), shape, 4,
+            if (!reuse_bindings_) input = Ort::Value::CreateTensor(memory, halves_.data(), count * sizeof(uint16_t), shape, 4,
                                              ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16);
         } else {
             floats_.resize(count);
@@ -241,25 +293,33 @@ public:
                 }
             };
             if (job.spread) parallel((size_t)h, 64, body); else body((size_t)0, (size_t)h);
-            input = Ort::Value::CreateTensor<float>(memory, floats_.data(), count, shape, 4);
+            if (!reuse_bindings_) input = Ort::Value::CreateTensor<float>(memory, floats_.data(), count, shape, 4);
         }
         const char *input_names[1] = {input_.c_str()}, *output_names[1] = {output_.c_str()};
-        auto outputs = session_->Run(Ort::RunOptions{nullptr}, input_names, &input, 1, output_names, 1);
-        auto dims = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
-        require(dims.size() == 4 && dims[1] == 3 && dims[2] == 2 * (int64_t)h && dims[3] == 2 * (int64_t)w,
+        std::vector<Ort::Value> allocated;
+        if (reuse_bindings_)
+            session_->Run(Ort::RunOptions{nullptr}, input_names, &input_tensor_, 1, output_names, &output_tensor_, 1);
+        else allocated = session_->Run(Ort::RunOptions{nullptr}, input_names, &input, 1, output_names, 1);
+        const Ort::Value &result = reuse_bindings_ ? output_tensor_ : allocated[0];
+        const TensorView view(result, reuse_bindings_);
+        require(view.rank == 4 && view.dims[1] == 3 && view.dims[2] == 2 * (int64_t)h && view.dims[3] == 2 * (int64_t)w,
                 "Model inference returned an unexpected shape");
 
         // The wanted region of the doubled window, planar half or single floats, to RGB24.
         const int ow = 2 * w;
         const size_t out_plane = (size_t)ow * 2 * h;
         const bool half = half_out_;
-        const uint16_t *hs = half ? outputs[0].GetTensorData<uint16_t>() : nullptr;
-        const float *fs = half ? nullptr : outputs[0].GetTensorData<float>();
+        const uint16_t *hs = half ? result.GetTensorData<uint16_t>() : nullptr;
+        const float *fs = half ? nullptr : result.GetTensorData<float>();
         const int cx = job.crop_x, cy = job.crop_y, cw = job.crop_w;
         uint8_t *out = job.out;
         const ptrdiff_t out_stride = job.out_stride;
+        const bool reuse = reuse_bindings_;
         auto write = [=](size_t begin, size_t end) {
-            std::vector<float> line((size_t)3 * cw);
+            thread_local std::vector<float> kept_line;
+            std::vector<float> temporary_line;
+            auto &line = reuse ? kept_line : temporary_line;
+            if (!reuse || half) line.resize((size_t)3 * cw);
             for (size_t y = begin; y < end; y++) {
                 const size_t source = (y + cy) * ow + cx;
                 const float *r, *g, *b;
@@ -288,6 +348,11 @@ private:
     bool half_in_ = false, half_out_ = false;
     std::vector<uint16_t> halves_;
     std::vector<float> floats_;
+    bool reuse_bindings_ = false;
+    Ort::MemoryInfo memory_{Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault)};
+    std::vector<uint16_t> output_halves_;
+    std::vector<float> output_floats_;
+    Ort::Value input_tensor_{nullptr}, output_tensor_{nullptr};
 };
 
 
@@ -298,6 +363,7 @@ class OrtInterpolator : public Interpolator {
 public:
     explicit OrtInterpolator(const InterpolatorRequest &r) : w_(r.width), h_(r.height), profile_(r.profile)
     {
+        reuse_bindings_ = reuse_ort_bindings(r.provider);
         const std::filesystem::path path = std::filesystem::path(r.models_dir) / (r.model + ".onnx");
         require(std::filesystem::is_regular_file(path), "RIFE model not found: " + r.model + ".onnx");
         // The models take sizes that are multiples of 64. The picture is centred in the padded
@@ -370,6 +436,22 @@ public:
                     output_floats_.size(), output_shape, 4);
             }
         }
+        if (reuse_bindings_ && has_motion()) {
+            for (size_t k = 0; k < motion_tensors_.size(); ++k) {
+                const auto type = session_->GetOutputTypeInfo(k + 1).GetTensorTypeAndShapeInfo().GetElementType();
+                require(supported(type), "RIFE motion tensors must be float or half float: " + r.model);
+                const size_t count = (k == 0 ? 4 : 1) * plane;
+                const int64_t dims[4] = {1, k == 0 ? 4 : 1, ph_, pw_};
+                if (type == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16) {
+                    motion_halves_[k].resize(count);
+                    motion_tensors_[k] = Ort::Value::CreateTensor(memory_, motion_halves_[k].data(),
+                        count * sizeof(uint16_t), dims, 4, type);
+                } else {
+                    motion_floats_[k].resize(count);
+                    motion_tensors_[k] = Ort::Value::CreateTensor<float>(memory_, motion_floats_[k].data(), count, dims, 4);
+                }
+            }
+        }
     }
 
     bool has_motion() const override { return !flow_name_.empty(); }
@@ -381,15 +463,18 @@ public:
         double began = profile_ ? now_ms() : 0;
         prepare(a, a_stride, b, b_stride, t, began);
         const char *input_names[1] = {input_.c_str()}, *output_names[2] = {flow_name_.c_str(), mask_name_.c_str()};
-        std::vector<Ort::Value> got = session_->Run(Ort::RunOptions{nullptr}, input_names, &input_tensor_, 1, output_names, 2);
+        std::vector<Ort::Value> got;
+        if (reuse_bindings_)
+            session_->Run(Ort::RunOptions{nullptr}, input_names, &input_tensor_, 1, output_names, motion_tensors_.data(), 2);
+        else got = session_->Run(Ort::RunOptions{nullptr}, input_names, &input_tensor_, 1, output_names, 2);
         if (profile_) { const double inferred = now_ms(); timing.inference_ms += inferred - began; began = inferred; }
         const size_t plane = (size_t)pw_ * ph_, area = (size_t)w_ * h_;
         flow.resize(4 * area);
         mask.resize(area);
         auto take = [&](const Ort::Value &v, int planes, float *dst) {
-            const auto dims = v.GetTensorTypeAndShapeInfo().GetShape();
-            require(dims.size() == 4 && dims[1] == planes && dims[2] == ph_ && dims[3] == pw_, "RIFE motion of an unexpected shape");
-            const bool half = v.GetTensorTypeAndShapeInfo().GetElementType() == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
+            const TensorView view(v, reuse_bindings_);
+            require(view.rank == 4 && view.dims[1] == planes && view.dims[2] == ph_ && view.dims[3] == pw_, "RIFE motion of an unexpected shape");
+            const bool half = view.type == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16;
             const uint16_t *hs = half ? v.GetTensorData<uint16_t>() : nullptr;
             const float *fs = half ? nullptr : v.GetTensorData<float>();
             const size_t rows = (size_t)h_;
@@ -404,8 +489,8 @@ public:
                 }
             });
         };
-        take(got[0], 4, flow.data());
-        take(got[1], 1, mask.data());
+        take(reuse_bindings_ ? motion_tensors_[0] : got[0], 4, flow.data());
+        take(reuse_bindings_ ? motion_tensors_[1] : got[1], 1, mask.data());
         if (profile_) { timing.output_ms += now_ms() - began; ++timing.runs; }
     }
 
@@ -467,8 +552,8 @@ private:
             timing.inference_ms += inferred - began; began = inferred;
         }
         const Ort::Value &result = buffered_output_ ? output_tensor_ : allocated[0];
-        auto dims = result.GetTensorTypeAndShapeInfo().GetShape();
-        require(dims.size() == 4 && dims[1] == 3 && dims[2] == ph_ && dims[3] == pw_, "RIFE returned an unexpected shape");
+        const TensorView view(result, reuse_bindings_);
+        require(view.rank == 4 && view.dims[1] == 3 && view.dims[2] == ph_ && view.dims[3] == pw_, "RIFE returned an unexpected shape");
 
         // The picture inside the padded result, planar half or single floats, to RGB24.
         const bool half = half_out_;
@@ -560,6 +645,10 @@ private:
     std::vector<float> output_floats_;
     Ort::Value output_tensor_{nullptr};
     std::string flow_name_, mask_name_;
+    bool reuse_bindings_ = false;
+    std::array<std::vector<uint16_t>, 2> motion_halves_;
+    std::array<std::vector<float>, 2> motion_floats_;
+    std::array<Ort::Value, 2> motion_tensors_{Ort::Value{nullptr}, Ort::Value{nullptr}};
 };
 } // namespace
 
