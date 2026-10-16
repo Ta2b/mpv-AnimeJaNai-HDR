@@ -21,3 +21,5 @@ Program cache contract v3: backend df489209a9758149f0e8e580539ebdc50c2ae577, Win
 2026-10-16: frozen complete motion source and versioned export; identical complete v3 ONNX program retains plan, zero builders/output difference in Linux qualification. Independent plan rebuild equivalence remains nonconclusive; no FPS/native Windows claim. Backend 66fcd9ded3310d009c5402e1a9f43900da59a690.
 
 2026-10-16: optional CUDA module compatibility probe v1 (backend 652fbc6bdd3a9d815367deeb2df65538636705dc), Linux kernel/device/context qualified; Windows compile/link only. Does not qualify models/operators/plans or change rendered pixels.
+
+2026-10-16: optional terminal CUDA Surface notification (backend861ab52efda5f1313bd39b8e15053b6d3c31f130), spatial mpv integration qualified on Linux/NVDEC; exact NV12/4:4:4 outputs, controlled responsiveness and ownership/seek/error cleanup. Portable CUDA default corrected; no universal FPS/native Windows qualification.

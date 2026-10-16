@@ -1,9 +1,9 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "7e9c87137e77046e5c521e635634bfdef751a277",
-  "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
-  "validation": "Linux RTX4070Ti SM8.9 CUDA13.4/TRT11.3 Surface RIFE4.26+SPAN native NV12: exact pair cache off/on, six phase outputs identical. Measured burst source preparations3->1 and Fast source upscales6->2; Fast CUDA interval19.761->6.873ms. Quality GPU timing nonconclusive (<1%), but final burst fence record/export15.431->0.915ms with full predictions preserved. Generation/color/ROI/legacy/zero IDs/drain/disable/error recovery qualified; owners/descriptors/padding safe. No universal FPS/HDR/physical-device-loss claim. Applies optional Surface route; existing mpv ABI9 unchanged. Windows bundle unchanged d00ed919/652fbc6.",
+  "backend_source": "861ab52efda5f1313bd39b8e15053b6d3c31f130",
+  "player_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
+  "validation": "Linux RTX4070Ti CUDA13.4/TRT11.3 optional terminal completion wakeup integrated into spatial mpv producer. NVDEC pause reserve3 with bounded job slots3;12NV12 outputs+PTS and one default YUV444P16 output exact off/on, EOF. Controlled200ms fence withholding: IPC195.54->36.98ms with pending owners; NOT a real GPU/FPS speed claim. Seek correct, terminal failure discarded, owners28/28 and20/20 live0 at shutdown; older module explicit legacy fallback. Default CUDA target selection fixed before project compiler detection; final multi-SM build12+1 outputs rechecked against saved references after compilation-target correction. .text/fatbin unchanged by packaging RPATH. Other API/HW/HDR/real device-loss unqualified; Windows bundle unchanged d00ed919/652fbc6.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -47,12 +47,14 @@
     "optional-dispatcher-async-surface-forwarding",
     "exact-bounded-cuda-surface-pair-cache",
     "full-native-surface-source-keys",
-    "optional-native-surface-cache-counters"
+    "optional-native-surface-cache-counters",
+    "terminal-native-surface-wakeup",
+    "portable-cuda-target-default"
   ],
   "sha256": {
-    "libaji.so": "0deb1ae80e065db458036a1b086e099c0afb090a6efdf5b7670dd008c00de8ae",
-    "libaji_trt.so": "88f57943ac6a189c514c641acd92d5a4e0740b3f285f96f396354351b9ac7d9b",
-    "libaji_trt_rtx.so": "88f57943ac6a189c514c641acd92d5a4e0740b3f285f96f396354351b9ac7d9b"
+    "libaji.so": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+    "libaji_trt.so": "20c29cdbdc34461a94e1cb746dd456334df7c6bb55d13f1d929b60be973389c7",
+    "libaji_trt_rtx.so": "20c29cdbdc34461a94e1cb746dd456334df7c6bb55d13f1d929b60be973389c7"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -67,9 +69,16 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "afe9136bf25173bd8db4899bbc66a4e703a14ba8",
+  "player_qualification_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
   "windows_bundle_unchanged": {
     "binary_pin": "d00ed919d8337a89b68f519f1ab1ce71e68a8628",
     "backend_source": "652fbc6bdd3a9d815367deeb2df65538636705dc"
-  }
+  },
+  "prior_qualifications": [
+    {
+      "backend_source": "7e9c87137e77046e5c521e635634bfdef751a277",
+      "player_qualification_source": "afe9136bf25173bd8db4899bbc66a4e703a14ba8",
+      "validation": "Linux RTX4070Ti SM8.9 CUDA13.4/TRT11.3 Surface RIFE4.26+SPAN native NV12: exact pair cache off/on, six phase outputs identical. Measured burst source preparations3->1 and Fast source upscales6->2; Fast CUDA interval19.761->6.873ms. Quality GPU timing nonconclusive (<1%), but final burst fence record/export15.431->0.915ms with full predictions preserved. Generation/color/ROI/legacy/zero IDs/drain/disable/error recovery qualified; owners/descriptors/padding safe. No universal FPS/HDR/physical-device-loss claim. Applies optional Surface route; existing mpv ABI9 unchanged. Windows bundle unchanged d00ed919/652fbc6."
+    }
+  ]
 }
