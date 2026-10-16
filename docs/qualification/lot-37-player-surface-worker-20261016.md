@@ -1,0 +1,39 @@
+# Lot 37 — Worker Surface CUDA raccordé au lecteur
+
+[AH-290](https://tatoub.atlassian.net/browse/AH-290), sous AH-36. Baseplayer3.8.0.68 `ea24deaf24f9091afcb27b44c7718da9f04f943e`, mpv19c0fcf. Backend `4895edf74c0f6675144ab09413ce1cf03e5c3146`, issu de7e9c871. Périmètre complet de ce sous-ticket : chaînes spatiales standard CUDA Linux réellement négociées. RIFE/temporel/pré-resize/spécialisé et autres clients/API restent AH-291/AH-292 ; parent ouvert.
+
+## Raccord et ownership
+
+Option explicite `surface-worker=yes`, désactivée par défaut. Après configure, le filtre négocie ressources/formats et queue Surface, enregistre un réveil puis active au maximum `queue-depth` jobs (1à4, aussi limité par le backend). Les sources futures et jobs occupés restent bornés indépendamment des résultats prêts du FIFO `prefetch` et de son budget d'octets. Aucune profondeur de réserve ne devient une longue file de commandes GPU.
+
+Submit copie les descripteurs, conserve les owners et retourne sans attendre le modèle. Complete est interrogé sans attente ; Pending ne donne jamais accès aux pixels. Un événement CUDA enregistré sur le stream NVDEC ordonne les lectures du worker. Source et destination gardent des références mp_image/AVBuffer via owners atomiques jusqu'à vraie complétion. Les événements/streams restent vivants jusqu'au drainage. Le client ne transforme pas les images en pixels CPU ; le téléchargement des sinks null/capture est ultérieur, extérieur à la réserve.
+
+Le filtre publie route/raison, capacité et tickets occupés, soumissions, complétions consommées, génération et compteurs d'owners. Un ticket occupé peut déjà être terminé mais pas encore consommé : ne pas l'appeler une commande GPU encore en vol. Hors route worker, son compteur de slots est zéro. Le format, couleur SDR acceptée, géométrie/vue d'inférence complète, orientation et temps du descripteur sont explicites ; le crop d'affichage et les PTS mpv sont conservés comme auparavant. Couleurs/formats/API non négociés suivent la route legacy explicitement diagnostiquée.
+
+Extension backend facultative `aji_surface_set_wakeup_v1`. Callback enregistré/retiré uniquement queue désactivée ; opaque valide jusqu'à Disable. Notification après publication de l'état terminal et libération des owners, sur worker/drain ; elle réveille uniquement le graphe, sans réentrer le contexte. Aucun thread de polling supplémentaire dans le lecteur. Les providers anciens peuvent omettre ce symbole ; Complete reste l'autorité.
+
+Pendant l'ownership worker, aucun poll/configure/flush/hint legacy concurrent. Reset, seek, reconfigure et destruction désactivent la queue, annulent les jobs non démarrés, terminent les lectures/écritures actives et joignent le worker avant de libérer buffers/callbacks. La génération avance et la route est renégociée après reset. Un échec fatal interdit toute nouvelle production/réactivation pendant le retrait du filtre.
+
+## Qualification courte
+
+RTX4070Ti12Go, pilote615.78.08, CUDA13.4/TensorRT11.3, Linux. Même entrée H264/NV12 BT709 limité128×72/12images24fps, SPAN F3 Performance en Quality, RIFE désactivé ; même plan que lot34. Modèle SHA256 `72246eded3aab52f8d1a71613c0a1d900734b358d1820b62eb36f1ed376e1cf4`, plan `9d99b61a93dd78ad4faa477fb64225f85096f8dcc3af95a79e747bdb31c8bf04`.
+
+- **Pause native réelle**, `prefetch=3`, `queue-depth=3` : CUDA/NVDEC/TRT effectifs, position0/pause=true,3images prêtes. Pic3tickets,7soumissions,5complétions consommées et2tickets terminés encore gardés ;14retain/14release, live0. Le worker calcule sans demandes individuelles de présentation.
+- **Ablation qdepth3 off/on** :12images NV12 et PTS exacts, EOF/exit0 ;663552octets SHA256 `9c8453e811384d9765657ed765fda9bd2f9f5ce0aa9aa88bfd025d9cc88a1c1d`, aussi identiques à la référence précédente. Nouveau témoin nécessaire pour la concurrence à trois jobs ; aucun replay du témoin qdepth1. Capture/contrôle0.690/0.641s incluent startup/outils : **FPS non concluant**.
+- **4:4:4 par défaut** : une image native YUV444P16 et son PTS exacts off/on,221184octets SHA256 `595df9d2ae639410ccd86f6d8ff518a7f4503358d9ff815fb206a6a48a8d24d1`.0.639/0.637s descriptifs, aucune promesse FPS ni matrice exhaustive.
+- **Ancien module .65** : worker inactif/raison missing-surface-api, upscale256×144 et réserve CUDA conservés ; fallback ABI9 sans modèle CPU implicite.
+- **Réactivité contrôlée** : shim test-only retenant la complétion d'événement200ms. Réponse IPC pause195.54ms legacy →36.98ms worker ; au retour du worker,4owners sont encore retenus/Complete Pending. Le lecteur peut donc répondre avant la complétion. **C'est une preuve de découplage sous attente imposée, pas une accélération GPU mesurée.** Décodage/allocations/validation driver restent sur le core ; aucune garantie de latence UI universelle.
+- **Seek dans ce candidat**,0.3s : génération2→3, epoch FIFO0→1, pause conservée, nouvelle image exacte au témoin valide déjà acquis (PNG `8bdf4589e8da4054512266e8632b1abd3ea6cac0d8f10f11970f90a6d640ca7b`).28retain/28release/live0 à la fermeture, exit0.
+- **Erreur terminale injectée** après vraie fin d'un événement GPU : Failed signalé, filtre retiré explicitement, sortie NN échouée écartée,20retain/20release/live0, exit0. Aucun reset/perte matérielle GPU provoqué. Aucun nouvel essai après ces conclusions suffisantes.
+
+Diagnostics exclus/corrigés : lien TensorRT absent dans le SDK d'en-têtes (montage du runtime qualifié corrigé, aucun SDK utilisateur modifié), socket Unix de test trop longue (nom court), premier shim employant34 au lieu de600 pour NotReady du runtime13. Ce dernier défaut a aussi révélé une réactivation inutile pendant le retrait après erreur ; état fatal ajouté et erreur contrôlée à nouveau. Le témoin de réactivité acquis a été réutilisé, seul le candidat a été repris. Les mesures invalides n'étayent aucun gain.
+
+## Décision, commandes et livraison
+
+**Conserver opt-in comme prérequis de production autonome** : avance réelle, ownership et contrôle non bloquant établis, pixels/PTS préservés sur ces cas. Aucun gain FPS général ni validation HDR physique/autres GPU/API revendiqués. Les limites plus larges sources/jobs, états média et consommateur GPU restent dans leurs tickets ; le raccord spatial ne termine pas leurs périmètres.
+
+Build backend Release multi-SM75/80/86/89/90/100/120+PTX120 et mpv headless réussis. Headers publics/backend identiques, patch de livraison recréant exactement le filtre compilé vérifié ; cache CI et dépendance mpv incluent les nouveaux headers/patch. Wayland/Vulkan local non qualifiés ; la CI garde sa configuration habituelle. Strata n'a fourni aucun résultat, son endpoint de santé ne répondant pas à la sonde.
+
+Clients : [séquence/4:4:4](../../tests/player/surface_worker_sequence_check.py), [attente/seek/erreur](../../tests/player/surface_worker_control_check.py), [shim test-only](../../tests/player/cuda_completion_gate.c), [pause/compatibilité](../../tests/player/prefetch_prototype_check.py). `python3 ... SPEC.json nv12|444`, `python3 ... SPEC.json` pour contrôle ; spec `mpv,input,conf,models,lib,out,identity_files` (ONNX/plan sélectionnés), plus `gate_library,seek_png_sha256` pour contrôle. Compiler le shim `cc -shared -fPIC -O2 -pthread .../cuda_completion_gate.c -ldl -o gate.so`. Runtime CUDA/TRT dans LD_LIBRARY_PATH ; le client contrôle définit LD_PRELOAD seulement pour ses sous-processus. Pour pause/compatibilité : capacities=[3],queue_depth=3,surface_worker=yes,expect_worker=yes|no et raison attendue. Receipts protègent les cas concluants.
+
+Artefacts `artifacts/performance/lots-20261016/lot-37/` : worker-paused/legacy, séquences/raws/444, responsive-summary, PNG seek, logs erreur/ownership, sources avant patch et builds. Release3.8.0.69 prévue ; binaires Linux nouveaux, Windows/Manager conservés. AH-290 reste In Progress jusqu'à livraison vérifiée.

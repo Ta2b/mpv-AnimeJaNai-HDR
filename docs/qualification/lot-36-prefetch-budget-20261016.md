@@ -38,4 +38,4 @@ Build Release headless réussi ; le patch recrée exactement les trois sources c
 
 [Client ciblé](../../tests/player/prefetch_budget_check.py), `python3 tests/player/prefetch_budget_check.py SPEC.json budget|sequence`. Spec `mpv,input,conf,models,lib,out,reference_dir` ; référence valide du lot34 et bibliothèques CUDA/TensorRT dans LD_LIBRARY_PATH. `budget` réalise seulement les deux quotas et le seek du candidat ; `sequence` compare uniquement le nouveau candidat aux12sorties acquises. Receipts concluants réutilisés. Artefacts `artifacts/performance/lots-20261016/lot-36/` : `budget-{0,65536}.json`, `budget-seek.json`, `sequence-summary.json`, sorties/captures, journaux et sources avant patch.
 
-Release3.8.0.68 à publier ; AH-287 reste In Progress jusqu'à vérification de livraison.
+**3.8.0.68 publiée**, source `ea24deaf24f9091afcb27b44c7718da9f04f943e` ; trois workflows success,15assets uploaded, versions/archive/digest et option/compteurs dans le mpv livré vérifiés. AH-287 **Done**, clôture10127 ; parent AH-39 et compléments ouverts.

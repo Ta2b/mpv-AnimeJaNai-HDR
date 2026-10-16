@@ -20,9 +20,12 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 def arguments(capacity, name):
+    queue_depth = spec.get("queue_depth", 1)
     vf = (f"@aji:animejanai=conf={spec['conf']}:model-dir={spec['models']}:"
-          f"lib={spec['lib']}:trtexec=/bin/false:slot=1:queue-depth=1:"
+          f"lib={spec['lib']}:trtexec=/bin/false:slot=1:queue-depth={queue_depth}:"
           f"output-444=no:passthrough=no:prefetch={capacity}")
+    if 'surface_worker' in spec:
+        vf += ':surface-worker=' + spec['surface_worker']
     return [spec['mpv'], '--no-config', '--load-scripts=no', '--ao=null',
             '--audio=no', '--hwdec=nvdec', '--hwdec-codecs=all',
             '--stop-screensaver=no', f'--log-file={out}/{name}.log', f'--vf={vf}']
@@ -94,6 +97,10 @@ def interactive(capacity, name, seek):
                 assert time.monotonic() < deadline, before
                 time.sleep(.02)
             assert before['pause'] is True and before['hwdec'] == 'nvdec'
+            if 'expect_worker' in spec:
+                assert before['meta']['surface-worker-active'] == spec['expect_worker']
+            if 'expect_reason' in spec:
+                assert before['meta']['surface-worker-reason'] == spec['expect_reason']
             assert (before['video_out']['w'], before['video_out']['h']) == (256, 144)
             result = {'before': before}
             if seek:
@@ -132,7 +139,7 @@ def interactive(capacity, name, seek):
 identity = hashlib.sha256(json.dumps(spec, sort_keys=True).encode() + b''.join(
     Path(spec[key]).read_bytes() for key in ('mpv', 'input', 'conf', 'lib'))).hexdigest()
 results = []
-for capacity in (0, 3):
+for capacity in spec.get("capacities", (0, 3)):
     name = f'{case}-{capacity}'
     receipt = out / (name + '-receipt.json')
     if receipt.exists():

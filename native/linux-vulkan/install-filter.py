@@ -7,6 +7,11 @@ import sys
 root=Path(sys.argv[1]);source=Path(__file__).parent
 for name in ['vf_animejanai_vulkan.c','aji_vulkan.h']:
     shutil.copy2(source/name,root/'video/filter'/name)
+# Pure-C optional Surface ABI headers for the native CUDA worker client.
+surface_headers=root/'video/filter/aji_surface'
+surface_headers.mkdir(exist_ok=True)
+for name in ['surface.h','surface_async.h']:
+    shutil.copy2(source.parent/'common'/name,surface_headers/name)
 edits={
     'filters/user_filters.h':('extern const struct mp_user_filter_entry vf_animejanai;',
         'extern const struct mp_user_filter_entry vf_animejanai;\nextern const struct mp_user_filter_entry vf_animejanai_vulkan;'),

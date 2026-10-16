@@ -88,6 +88,16 @@ int aji_surface_output_fence_v1(void *context,uint64_t ticket,aji_surface_fence_
  * drops results. After draining a seek, derived identities must also be reset.
  * Query/Complete short/null outputs are untouched; missing/retired tickets fail.
  */
+/* Optional terminal-completion notification. Register/clear only while the
+ * queue is disabled; enable/drain/disable remain serial lifecycle operations.
+ * The callback runs after terminal state and owner releases are published, on
+ * the worker or drain thread. It must be thread-safe, nonblocking and must not
+ * reenter this context. It only wakes the client; Complete remains authoritative.
+ * Keep its opaque alive until disable returns, then clear before client teardown.
+ * Providers may omit this optional symbol. No callbacks occur after disable. */
+typedef void (*aji_surface_wakeup_fn)(void *opaque);
+int aji_surface_set_wakeup_v1(void *context,aji_surface_wakeup_fn callback,void *opaque);
+
 int aji_surface_async_query_v1(void *context,uint32_t version,aji_surface_async_caps_v1 *,size_t);
 int aji_surface_async_enable_v1(void *context,uint32_t capacity);
 int aji_surface_submit_v1(void *context,const aji_surface_submit_v1_request *,uint64_t *ticket);

@@ -1,0 +1,496 @@
+--- a/video/filter/vf_animejanai.c
++++ b/video/filter/vf_animejanai.c
+@@ -45,6 +45,9 @@
+  */
+ 
+ #include <stdio.h>
++#include <stdatomic.h>
++#include <stdlib.h>
++#include "aji_surface/surface_async.h"
+ #include <inttypes.h>
+ 
+ #include "config.h"
+@@ -154,6 +157,7 @@
+     int queue_depth;
+     int prefetch;
+     int64_t prefetch_bytes;
++    bool surface_worker;
+ };
+ 
+ #define MAX_DEPTH 4
+@@ -192,6 +196,14 @@
+     const char *(*current_log)(aji_ctx *c);
+     const char *(*last_error)(aji_ctx *c);
+     void (*destroy)(aji_ctx **c);
++    int (*surface_query)(void *, uint32_t, aji_surface_caps_v1 *, size_t);
++    int (*async_query)(void *, uint32_t, aji_surface_async_caps_v1 *, size_t);
++    int (*async_enable)(void *, uint32_t);
++    int (*async_disable)(void *);
++    int (*surface_submit)(void *, const aji_surface_submit_v1_request *, uint64_t *);
++    int (*surface_complete)(void *, uint64_t, uint32_t, aji_surface_completion_v1 *, size_t);
++    int (*surface_drain)(void *, uint32_t);
++    int (*surface_wakeup)(void *, aji_surface_wakeup_fn, void *);
+ };
+ 
+ struct priv {
+@@ -260,6 +272,14 @@
+     } ring[MAX_DEPTH];
+     int ring_n;
+     int depth;
++    bool worker_active, worker_attempted, worker_fatal;
++    const char *worker_reason;
++    uint32_t worker_device;
++    uint64_t worker_generation, worker_sequence;
++    uint64_t worker_submitted, worker_completed, worker_pending_polls;
++    int worker_peak_jobs;
++    atomic_uint worker_live_owners;
++    atomic_uint_fast64_t worker_retains, worker_releases;
+ 
+     // RIFE: outputs live on a uniform grid of num/den times the input
+     // rate (vsmlrt video_player semantics: output j sits at input
+@@ -391,6 +411,157 @@
+     }
+ }
+ 
++// The worker publishes terminal state before this callback; waking a filter is
++// the only graph operation allowed from a foreign thread.
++static void surface_worker_wakeup(void *opaque)
++{
++    mp_filter_wakeup(opaque);
++}
++
++struct surface_frame_owner {
++    atomic_uint refs;
++    struct priv *filter;
++    struct mp_image *image;
++};
++static struct surface_frame_owner *surface_owner_new(struct priv *p, struct mp_image *image)
++{
++    struct surface_frame_owner *owner = malloc(sizeof(*owner));
++    if (!owner) return NULL;
++    atomic_init(&owner->refs, 1);
++    owner->filter = p;
++    owner->image = mp_image_new_ref(image);
++    if (!owner->image) { free(owner); return NULL; }
++    atomic_fetch_add(&p->worker_live_owners, 1);
++    return owner;
++}
++static void surface_owner_drop(struct surface_frame_owner *owner)
++{
++    if (atomic_fetch_sub_explicit(&owner->refs, 1, memory_order_acq_rel) == 1) {
++        atomic_fetch_sub(&owner->filter->worker_live_owners, 1);
++        mp_image_unrefp(&owner->image);
++        free(owner);
++    }
++}
++static void surface_owner_retain(void *opaque)
++{
++    struct surface_frame_owner *owner = opaque;
++    atomic_fetch_add_explicit(&owner->refs, 1, memory_order_relaxed);
++    atomic_fetch_add(&owner->filter->worker_retains, 1);
++}
++static void surface_owner_release(void *opaque)
++{
++    struct surface_frame_owner *owner = opaque;
++    atomic_fetch_add(&owner->filter->worker_releases, 1);
++    surface_owner_drop(owner);
++}
++static int surface_format(int fmt)
++{
++    return fmt == AJI_FMT_NV12 ? AJI_SURFACE_NV12 :
++           fmt == AJI_FMT_P010 ? AJI_SURFACE_P010 :
++           fmt == AJI_FMT_YUV444P16 ? AJI_SURFACE_YUV444P16 : 0;
++}
++static aji_surface_color_v1 surface_color(struct mp_image_params *params, int format)
++{
++    aji_surface_color_v1 color = {
++        .matrix = map_matrix(params) + 1,
++        .range = map_range(params) == AJI_RANGE_FULL ? AJI_SURFACE_RANGE_FULL : AJI_SURFACE_RANGE_LIMITED,
++        .siting = map_siting(params),
++        .component_bits = format == AJI_SURFACE_NV12 ? 8 : format == AJI_SURFACE_P010 ? 10 : 16,
++        .quantization = AJI_SURFACE_QUANT_REFERENCE_NATIVE_YUV,
++        .dither = AJI_SURFACE_DITHER_NONE,
++    };
++    switch (params->color.primaries) {
++    case PL_COLOR_PRIM_BT_709: color.primaries = AJI_SURFACE_PRIM_709; break;
++    case PL_COLOR_PRIM_BT_2020: color.primaries = AJI_SURFACE_PRIM_2020; break;
++    case PL_COLOR_PRIM_DCI_P3:
++    case PL_COLOR_PRIM_DISPLAY_P3: color.primaries = AJI_SURFACE_PRIM_P3; break;
++    case PL_COLOR_PRIM_BT_601_525:
++    case PL_COLOR_PRIM_BT_601_625: color.primaries = AJI_SURFACE_PRIM_601; break;
++    }
++    switch (params->color.transfer) {
++    case PL_COLOR_TRC_BT_1886: color.transfer = AJI_SURFACE_TRC_1886; break;
++    case PL_COLOR_TRC_SRGB: color.transfer = AJI_SURFACE_TRC_SRGB; break;
++    }
++    return color;
++}
++static bool surface_worker_descriptor(struct priv *p, struct mp_image *image,
++                                      int format, struct surface_frame_owner *owner,
++                                      uint64_t sequence, aji_surface_v1 *out)
++{
++    if (!format || image->w <= 0 || image->h <= 0) return false;
++    *out = (aji_surface_v1){
++        .struct_size = sizeof(*out), .version = 1,
++        .resource_kind = AJI_RESOURCE_CUDA, .device_kind = AJI_RESOURCE_CUDA,
++        .device_index = p->worker_device, .device_context = p->cuda_ctx,
++        .format = format, .width = image->w, .height = image->h,
++        .crop = {0, 0, image->w, image->h},
++        .plane_count = format == AJI_SURFACE_YUV444P16 ? 3 : 2,
++        .rotation = image->params.rotate,
++        .color = surface_color(&image->params, format),
++        .sequence = sequence, .generation = p->worker_generation,
++        .owner = owner, .retain = surface_owner_retain, .release = surface_owner_release,
++    };
++    if (image->pts != MP_NOPTS_VALUE && isfinite(image->pts) &&
++        fabs(image->pts) < (double)INT64_MAX / 1000000000) {
++        out->time_flags = AJI_SURFACE_HAS_PTS;
++        out->pts = llrint(image->pts * 1000000000);
++        out->timebase_num = 1; out->timebase_den = 1000000000;
++    }
++    int bpp = format == AJI_SURFACE_NV12 ? 1 : 2;
++    for (int i = 0; i < out->plane_count; i++) {
++        int rows = mp_image_plane_h(image, i);
++        if (!image->planes[i] || image->stride[i] <= 0 || rows <= 0) return false;
++        out->planes[i] = (aji_surface_plane_v1){
++            .data = image->planes[i], .row_stride = image->stride[i],
++            .bytes = (uint64_t)(rows - 1) * image->stride[i] + (uint64_t)image->w * bpp,
++        };
++    }
++    return true;
++}
++static void surface_worker_try_enable(struct mp_filter *vf)
++{
++    struct priv *p = vf->priv;
++    if (p->worker_fatal || p->worker_attempted || !p->opts->surface_worker) return;
++    p->worker_attempted = true;
++    p->worker_reason = "unsupported-chain";
++    if (!p->aji || !p->aji_active || p->is_d3d11 || p->rife_on || p->temporal_r ||
++        p->has_pre_resize || p->drawings) return;
++    p->worker_reason = "missing-surface-api";
++    if (!p->api.surface_query || !p->api.async_query || !p->api.async_enable ||
++        !p->api.async_disable || !p->api.surface_submit || !p->api.surface_complete ||
++        !p->api.surface_drain || !p->api.surface_wakeup) return;
++    p->worker_reason = "decode-events-unavailable";
++    if (!p->decode_evt_ok) return;
++    int input_format = surface_format(p->aji_fmt), output_format = surface_format(p->out_fmt);
++    aji_surface_color_v1 color = surface_color(&p->params, input_format);
++    p->worker_reason = "unsupported-color-format";
++    if (!input_format || !output_format || !color.primaries || !color.transfer ||
++        color.siting != AJI_SURFACE_SITING_LEFT || p->params.rotate < 0 ||
++        p->params.rotate >= 360 || p->params.rotate % 90) return;
++    aji_surface_caps_v1 caps;
++    aji_surface_async_caps_v1 async;
++    p->worker_reason = "capability-negotiation-rejected";
++    if (p->api.surface_query(p->aji, 1, &caps, sizeof(caps)) != AJI_SURFACE_OK ||
++        p->api.async_query(p->aji, 1, &async, sizeof(async)) != AJI_SURFACE_OK ||
++        !(caps.flags & AJI_SURFACE_SPATIAL) || caps.device_kind != AJI_RESOURCE_CUDA ||
++        async.device_kind != AJI_RESOURCE_CUDA || !async.max_capacity ||
++        !(caps.resource_mask & (1ull << AJI_RESOURCE_CUDA)) ||
++        !(caps.format_mask & (1ull << input_format)) || !(caps.format_mask & (1ull << output_format)) ||
++        !(async.dependency_mask & (1ull << AJI_SURFACE_DEP_CUDA_EVENT))) return;
++    p->worker_device = caps.device_index;
++    p->depth = MPMIN(p->depth, async.max_capacity);
++    mp_refqueue_set_refs(p->queue, 0, p->depth - 1);
++    p->worker_reason = "wakeup-registration-rejected";
++    if (p->api.surface_wakeup(p->aji, surface_worker_wakeup, vf) != AJI_SURFACE_OK) return;
++    p->worker_reason = "enable-failed";
++    if (p->api.async_enable(p->aji, p->depth) != AJI_SURFACE_OK) {
++        p->api.surface_wakeup(p->aji, NULL, NULL); return;
++    }
++    p->worker_active = true;
++    p->worker_reason = "active";
++    MP_VERBOSE(vf, "Surface CUDA worker active: %d job slots, native NVDEC dependencies\n", p->depth);
++}
++
+ // Wait until every submitted frame's GPU work completed. The ring entries
+ // stay queued for emission; tickets complete in order, so waiting the
+ // newest covers all.
+@@ -399,6 +570,8 @@
+     struct priv *p = vf->priv;
+     if (!p->ring_n)
+         return true;
++    if (p->worker_active)
++        return p->api.surface_drain(p->aji, 0) == AJI_SURFACE_OK;
+     if (p->api.wait(p->aji, p->ring[p->ring_n - 1].ticket) != AJI_OK) {
+         MP_ERR(vf, "pipeline drain failed: %s\n", p->api.last_error(p->aji));
+         return false;
+@@ -409,7 +582,24 @@
+ static void clear_ring(struct mp_filter *vf)
+ {
+     struct priv *p = vf->priv;
+-    drain_ring(vf);
++    if (p->worker_active) {
++        // Disable cancels queued jobs, finishes active reads/writes and joins
++        // the worker before owners, source frames or wakeup opaque can die.
++        int status = p->api.async_disable(p->aji);
++        p->worker_active = false;
++        if (status != AJI_SURFACE_OK) {
++            MP_ERR(vf, "Surface worker shutdown failed: %d\n", status);
++            p->api.destroy(&p->aji); // destroy also drains; never free live buffers
++            p->worker_fatal = true;
++            mp_filter_internal_mark_failed(vf);
++        } else {
++            p->api.surface_wakeup(p->aji, NULL, NULL);
++        }
++    } else {
++        drain_ring(vf);
++    }
++    p->worker_attempted = false;
++    p->worker_reason = "reset";
+     for (int i = 0; i < p->ring_n; i++)
+         mp_image_unrefp(&p->ring[i].out);
+     p->ring_n = 0;
+@@ -420,6 +610,9 @@
+     struct priv *p = vf->priv;
+     if (!p->aji)
+         return;
++    if (p->worker_active) {
++        p->api.surface_drain(p->aji, 0); return;
++    }
+ 
+     uint64_t ticket = p->api.flush(p->aji, p->stream);
+     if (ticket && p->api.wait(p->aji, ticket) != AJI_OK) {
+@@ -436,6 +629,7 @@
+     // GPU reads of the queued input frames must finish before the
+     // refqueue drops them
+     clear_ring(vf);
++    ++p->worker_generation;
+     // RIFE-first also uses immediate resize/interp work that is not tracked
+     // in the upscaler ring. Drain the backend before releasing frame pools on
+     // seek/reset so old work cannot contend with the post-seek chain.
+@@ -586,6 +780,9 @@
+ static bool configure_aji(struct mp_filter *vf)
+ {
+     struct priv *p = vf->priv;
++    if (p->worker_active) clear_ring(vf);
++    p->worker_attempted = false;
++    ++p->worker_generation;
+ 
+     p->out_params = p->params;
+     p->aji_active = false;
+@@ -722,6 +919,7 @@
+     if (p->drawings)
+         MP_VERBOSE(vf, "RIFE on the drawings' timeline (looking %d frames ahead)\n", DRAWING_LOOK);
+     update_depth(vf);
++    surface_worker_try_enable(vf);
+     MP_VERBOSE(vf, "Configured slot %d: %dx%d -> %dx%d (depth %d)\n",
+                p->cur_slot, p->params.w, p->params.h, ow, oh, p->depth);
+     return true;
+@@ -954,6 +1152,48 @@
+     out->params = p->out_params;
+     out->pts = in->pts;
+ 
++    if (p->worker_active) {
++        struct surface_frame_owner *source = surface_owner_new(p, in);
++        struct surface_frame_owner *destination = surface_owner_new(p, out);
++        aji_surface_v1 input, output;
++        uint64_t identity = ++p->worker_sequence;
++        bool valid = source && destination &&
++            surface_worker_descriptor(p, in, surface_format(p->aji_fmt), source, identity, &input) &&
++            surface_worker_descriptor(p, out, surface_format(p->out_fmt), destination, identity, &output);
++        CUevent event = p->decode_evt[p->decode_evt_next];
++        CUcontext previous;
++        bool pushed = valid && CHECK_CU(p->cu->cuCtxPushCurrent(p->cuda_ctx)) >= 0;
++        if (pushed) {
++            valid = CHECK_CU(p->cu->cuEventRecord(event, p->decode_stream)) >= 0;
++            p->cu->cuCtxPopCurrent(&previous);
++        } else valid = false;
++        uint64_t ticket = 0;
++        int status = AJI_SURFACE_INVALID;
++        if (valid) {
++            aji_surface_submit_v1_request request = {
++                .struct_size = sizeof(request), .version = 1,
++                .current = &input, .output = &output, .timestep = 1,
++                .dependency_count = 1,
++                .dependencies = {{.kind = AJI_SURFACE_DEP_CUDA_EVENT, .event = event}},
++            };
++            status = p->api.surface_submit(p->aji, &request, &ticket);
++        }
++        if (source) surface_owner_drop(source);
++        if (destination) surface_owner_drop(destination);
++        if (status != AJI_SURFACE_OK || !ticket) {
++            MP_ERR(vf, "Surface worker submission failed: %d\n", status);
++            talloc_free(out); return false;
++        }
++        p->decode_evt_next = (p->decode_evt_next + 1) % MAX_DEPTH;
++        p->ring[p->ring_n].src = in;
++        p->ring[p->ring_n].out = out;
++        p->ring[p->ring_n].ticket = ticket;
++        p->ring_n++;
++        p->worker_submitted++;
++        p->worker_peak_jobs = MPMAX(p->worker_peak_jobs, p->ring_n);
++        return true;
++    }
++
+     const int mat = map_matrix(&p->params);
+     const int rng = map_range(&p->params);
+     const int sit = map_siting(&p->params);
+@@ -1063,10 +1303,26 @@
+     mp_assert(p->ring_n > 0);
+     struct mp_image *out = p->ring[0].out;
+     uint64_t ticket = p->ring[0].ticket;
++    if (p->worker_active) {
++        aji_surface_completion_v1 completion;
++        int status = p->api.surface_complete(p->aji, ticket, AJI_SURFACE_CONSUME_RESULT,
++                                             &completion, sizeof(completion));
++        if (status == AJI_SURFACE_OK && completion.state == AJI_SURFACE_PENDING) {
++            p->worker_pending_polls++; return NULL;
++        }
++        if (status != AJI_SURFACE_OK || completion.state != AJI_SURFACE_FINISHED) {
++            MP_ERR(vf, "Surface worker completion failed: %d %s\n",
++                   status == AJI_SURFACE_OK ? completion.status : status,
++                   status == AJI_SURFACE_OK ? completion.message : "invalid ticket");
++            p->worker_fatal = true;
++            mp_filter_internal_mark_failed(vf); return NULL;
++        }
++        p->worker_completed++;
++    }
+     p->ring_n--;
+     memmove(&p->ring[0], &p->ring[1], p->ring_n * sizeof(p->ring[0]));
+ 
+-    if (p->api.wait(p->aji, ticket) != AJI_OK) {
++    if (!p->worker_active && p->api.wait(p->aji, ticket) != AJI_OK) {
+         MP_ERR(vf, "inference wait failed: %s\n", p->api.last_error(p->aji));
+         talloc_free(out);
+         return NULL;
+@@ -1711,6 +1967,7 @@
+ static void vf_animejanai_process(struct mp_filter *vf)
+ {
+     struct priv *p = vf->priv;
++    if (p->worker_fatal) return;
+ 
+     struct mp_image *in_fmt = mp_refqueue_execute_reinit(p->queue);
+     if (in_fmt) {
+@@ -1939,7 +2196,7 @@
+ 
+     // A background engine build finished: reconfigure, and the chain (or
+     // RIFE) activates mid-playback. Until then frames pass through.
+-    if (p->configured && p->aji && p->api.poll(p->aji)) {
++    if (p->configured && p->aji && !p->worker_active && p->api.poll(p->aji)) {
+         MP_VERBOSE(vf, "background engine build finished; reconfiguring\n");
+         av_buffer_unref(&p->hw_pool);
+         if (!configure_aji(vf)) {
+@@ -1964,8 +2221,30 @@
+         return;
+     }
+ 
++    if (p->configured) surface_worker_try_enable(vf);
+     if (!mp_refqueue_can_output(p->queue))
+         return;
++
++    if (p->worker_active) {
++        for (int rel = p->ring_n; p->ring_n < p->depth; rel++) {
++            struct mp_image *source = mp_refqueue_get(p->queue, rel);
++            if (!source) break;
++            if (!submit_frame(vf, source, rel)) {
++                p->worker_fatal = true;
++                mp_filter_internal_mark_failed(vf); return;
++            }
++        }
++        if (!p->ring_n || p->ring[0].src != mp_refqueue_get(p->queue, 0)) {
++            MP_ERR(vf, "Surface worker lost source ordering\n");
++            p->worker_fatal = true;
++            mp_filter_internal_mark_failed(vf); return;
++        }
++        struct mp_image *output = pop_ring(vf);
++        if (!output) return; // terminal notification will wake the graph
++        p->seq0++;
++        mp_refqueue_write_out_pin(p->queue, output);
++        return;
++    }
+ 
+     if (p->rife_on) { // never reset these IDs on seek: recycled surfaces are different frames
+         p->rife_serial = rife_next_identity(p);
+@@ -2186,6 +2465,33 @@
+                                   struct mp_filter_command *cmd)
+ {
+     struct priv *p = vf->priv;
++    if (cmd->type == MP_FILTER_COMMAND_GET_META) {
++        struct mp_tags *tags = talloc_zero(NULL, struct mp_tags);
++        char text[64];
++        mp_tags_set_str(tags, "surface-worker-active", p->worker_active ? "yes" : "no");
++        mp_tags_set_str(tags, "surface-worker-reason", p->worker_reason ? p->worker_reason : "disabled");
++        snprintf(text, sizeof(text), "%d", p->worker_active ? p->depth : 0);
++        mp_tags_set_str(tags, "surface-worker-capacity", text);
++        snprintf(text, sizeof(text), "%d", p->worker_active ? p->ring_n : 0);
++        mp_tags_set_str(tags, "surface-worker-job-slots", text);
++        snprintf(text, sizeof(text), "%d", p->worker_peak_jobs);
++        mp_tags_set_str(tags, "surface-worker-peak-job-slots", text);
++        snprintf(text, sizeof(text), "%"PRIu64, p->worker_generation);
++        mp_tags_set_str(tags, "surface-worker-generation", text);
++        snprintf(text, sizeof(text), "%"PRIu64, p->worker_submitted);
++        mp_tags_set_str(tags, "surface-worker-submitted", text);
++        snprintf(text, sizeof(text), "%"PRIu64, p->worker_completed);
++        mp_tags_set_str(tags, "surface-worker-completed", text);
++        snprintf(text, sizeof(text), "%"PRIu64, p->worker_pending_polls);
++        mp_tags_set_str(tags, "surface-worker-pending-polls", text);
++        snprintf(text, sizeof(text), "%u", atomic_load(&p->worker_live_owners));
++        mp_tags_set_str(tags, "surface-worker-live-owners", text);
++        snprintf(text, sizeof(text), "%"PRIuFAST64, atomic_load(&p->worker_retains));
++        mp_tags_set_str(tags, "surface-worker-retains", text);
++        snprintf(text, sizeof(text), "%"PRIuFAST64, atomic_load(&p->worker_releases));
++        mp_tags_set_str(tags, "surface-worker-releases", text);
++        *(struct mp_tags **)cmd->res = tags; return true;
++    }
+     if (cmd->type != MP_FILTER_COMMAND_TEXT || !cmd->cmd)
+         return false;
+     if (strcmp(cmd->cmd, "poll") == 0) {
+@@ -2217,6 +2523,10 @@
+     struct priv *p = vf->priv;
+ 
+     flush_frames(vf);
++    if (p->opts->surface_worker)
++        MP_VERBOSE(vf, "Surface worker shutdown ownership: live=%u retain=%"PRIuFAST64" release=%"PRIuFAST64"\n",
++            atomic_load(&p->worker_live_owners), atomic_load(&p->worker_retains),
++            atomic_load(&p->worker_releases));
+     talloc_free(p->queue);
+     if (p->aji)
+         p->api.destroy(&p->aji);
+@@ -2287,6 +2597,10 @@
+ 
+     struct priv *p = f->priv;
+     p->opts = talloc_steal(p, options);
++    atomic_init(&p->worker_live_owners, 0);
++    atomic_init(&p->worker_retains, 0);
++    atomic_init(&p->worker_releases, 0);
++    p->worker_generation = 1;
+     p->queue = mp_refqueue_alloc(f);
+     p->cur_slot = p->pending_slot = p->opts->slot;
+ 
+@@ -2358,6 +2672,14 @@
+         p->api.current_log = aji_lib_sym(p->api.handle, "aji_current_log");
+         p->api.last_error = aji_lib_sym(p->api.handle, "aji_last_error");
+         p->api.destroy = aji_lib_sym(p->api.handle, "aji_destroy");
++        p->api.surface_query = aji_lib_sym(p->api.handle, "aji_surface_query_v1");
++        p->api.async_query = aji_lib_sym(p->api.handle, "aji_surface_async_query_v1");
++        p->api.async_enable = aji_lib_sym(p->api.handle, "aji_surface_async_enable_v1");
++        p->api.async_disable = aji_lib_sym(p->api.handle, "aji_surface_async_disable_v1");
++        p->api.surface_submit = aji_lib_sym(p->api.handle, "aji_surface_submit_v1");
++        p->api.surface_complete = aji_lib_sym(p->api.handle, "aji_surface_complete_v1");
++        p->api.surface_drain = aji_lib_sym(p->api.handle, "aji_surface_drain_v1");
++        p->api.surface_wakeup = aji_lib_sym(p->api.handle, "aji_surface_set_wakeup_v1");
+         if (!p->api.create || !p->api.set_slot || !p->api.configure ||
+             !p->api.infer || !p->api.flush || !p->api.done || !p->api.wait ||
+             !p->api.rife_factor || !p->api.infer_rife ||
+@@ -2504,7 +2826,11 @@
+ {
+     struct prefetch_priv *p = f->priv;
+     if (cmd->type == MP_FILTER_COMMAND_GET_META) {
+-        struct mp_tags *tags = talloc_zero(NULL, struct mp_tags);
++        struct mp_tags *tags = NULL;
++        struct mp_filter_command backend_cmd = *cmd;
++        backend_cmd.res = &tags;
++        if (!mp_filter_command(p->backend, &backend_cmd) || !tags)
++            tags = talloc_zero(NULL, struct mp_tags);
+         char text[64];
+         snprintf(text, sizeof(text), "%d", p->capacity);
+         mp_tags_set_str(tags, "prefetch-capacity", text);
+@@ -2599,6 +2925,7 @@
+     {"output-444", OPT_BOOL(output_444)},
+     {"queue-depth", OPT_INT(queue_depth), M_RANGE(1, MAX_DEPTH)},
+     {"prefetch", OPT_INT(prefetch), M_RANGE(0, 64)},
++    {"surface-worker", OPT_BOOL(surface_worker)},
+     {"prefetch-bytes", OPT_BYTE_SIZE(prefetch_bytes), M_RANGE(0, 1099511627776LL)},
+     {0}
+ };
