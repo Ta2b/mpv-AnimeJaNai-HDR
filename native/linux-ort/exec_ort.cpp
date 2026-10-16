@@ -3,6 +3,8 @@
 #include "engine.h"
 #include "onnx_flow.h"
 #include "cpu_activations.h"
+#include "../common/module_probe.h"
+#include "aji_vulkan.h"
 #include <onnxruntime_cxx_api.h>
 #include <onnxruntime_session_options_config_keys.h>
 #if defined(__x86_64__) || defined(_M_X64)
@@ -10,6 +12,7 @@
 #define AJI_F16C 1
 #endif
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
 #include <array>
 #include <chrono>
@@ -748,3 +751,26 @@ std::unique_ptr<Interpolator> make_ort_interpolator(const InterpolatorRequest &r
 }
 
 } // namespace aji
+
+#if defined(_WIN32)
+#define AJI_PROBE_EXPORT extern "C" __declspec(dllexport)
+#else
+#define AJI_PROBE_EXPORT extern "C" __attribute__((visibility("default")))
+#endif
+AJI_PROBE_EXPORT int aji_ort_probe_v1(aji_ort_probe_result_v1 *out,size_t size)
+{
+    if(!out || size<sizeof(*out))return -1;
+    *out={};out->struct_size=sizeof(*out);out->version=1;out->bridge_abi=AJI_VK_ABI;
+#if defined(AJI_F16C)
+    out->required_cpu_features=3; // OS-enabled AVX and hardware F16C, checked by caller.
+#endif
+    std::snprintf(out->ort_version,sizeof(out->ort_version),"%s",OrtGetApiBase()->GetVersionString());
+    // Volatile input ensures the compiled conversion really executes, rather
+    // than folding a known result. No ORT session, allocation or model run.
+    volatile float input=0.5f;const float value=input;uint16_t half=0;
+    aji::floats_to_halves(&value,&half,1);
+    if(half!=0x3800) {
+        std::snprintf(out->message,sizeof(out->message),"Compiled FP16 conversion result mismatch");return -2;
+    }
+    out->checked_conversion=1;return 0;
+}

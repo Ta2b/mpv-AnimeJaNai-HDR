@@ -2,6 +2,13 @@
 
 Les capacités partagées du lecteur et du Manager sont définies dans [`BackendCapabilities`](../AnimeJaNaiPlatform/PlatformServices.cs). Le Manager compile ce même fichier depuis le commit player épinglé par son `player-source-ref.txt` ; le lecteur épingle séparément le Manager par `manager-source-ref.txt`. `AnimeJaNaiPlatform --capabilities` expose ces descriptions. Il s’agit de chemins implémentés, pas d’une certification de chaque API/GPU.
 
+Sur Linux, `AnimeJaNaiPlatform --device-capabilities --root DIR [--cuda-device ORDINAL]`
+charge les modules présents et consomme leurs sondes optionnelles : conversion
+CPU réellement exécutée et kernel CUDA du module livré, périphérique/SM et versions.
+Un module ancien sans sonde reste inconnu ; un fichier présent mais non chargeable
+échoue explicitement. Cela ne qualifie ni les modèles ni leurs opérateurs.
+Voir [la portée et les preuves du lot28](qualification/lot-28-device-caps-20261016.md).
+
 | Choix | Calcul d’inférence | Modèles / limites |
 |---|---|---|
 | TensorRT | CUDA / TensorRT, NVIDIA | ONNX spatial + ONNX RIFE ; précision/profils propres aux graphes |
