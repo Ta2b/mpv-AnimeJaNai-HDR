@@ -39,8 +39,12 @@ def identity(spec, mode):
         files.update(library=spec['library'], conf=spec['conf'])
         if mode == 'span':
             files.update({f'span_input/{i}': p for i, p in enumerate(spec['span_inputs'])})
-    return {'mode': mode, 'width': spec['width'], 'height': spec['height'],
-            'files': {label: digest(p) for label, p in files.items()}}
+    value = {'mode': mode, 'width': spec['width'], 'height': spec['height'],
+             'files': {label: digest(p) for label, p in files.items()}}
+    if spec.get('timesteps', [.5]) != [.5]:
+        assert mode == 'rife', 'Custom phases are implemented only by the native RIFE probe'
+        value['timesteps'] = spec['timesteps']
+    return value
 
 
 def save_rgb(out, index, rgb):
@@ -204,21 +208,28 @@ def native(spec, out, frames, mode):
         calls = []
         if mode == 'rife': upload(a, frames[0].astype(np.float32) / 255)
         sources = range(1, len(frames)) if mode == 'rife' else range(len(spec['span_inputs']))
+        phases = spec.get('timesteps', [.5]) if mode == 'rife' else [None]
+        assert phases and len(set(phases)) == len(phases)
+        if mode == 'rife': assert all(np.isfinite(t) and 0 < t < 1 for t in phases)
         for i in sources:
             rgb = frames[i].astype(np.float32) / 255 if mode == 'rife' else np.load(spec['span_inputs'][i])
             upload(b, rgb); ck(cuda.cudaStreamSynchronize(None))
             if mode == 'rife': lib.aji_rife_begin_pair(ctx, i, i + 1)
-            start = time.perf_counter()
-            if mode == 'rife': status = lib.aji_infer_rife(ctx, C.byref(a), C.byref(b), .5, C.byref(result), None)
-            else: status = lib.aji_infer(ctx, C.byref(b), C.byref(result), None)
-            ck(cuda.cudaStreamSynchronize(None))
-            ms = (time.perf_counter() - start) * 1000
-            assert status == 0, (status, lib.aji_last_error(ctx))
-            index = i - 1 if mode == 'rife' else i
-            save_rgb(out, index, download(result))
-            calls.append({'pair_or_input': index, 'cold': index == 0, 'complete_wall_ms': ms})
+            for phase_index, t in enumerate(phases):
+                start = time.perf_counter()
+                if mode == 'rife': status = lib.aji_infer_rife(ctx, C.byref(a), C.byref(b), t, C.byref(result), None)
+                else: status = lib.aji_infer(ctx, C.byref(b), C.byref(result), None)
+                ck(cuda.cudaStreamSynchronize(None))
+                ms = (time.perf_counter() - start) * 1000
+                assert status == 0, (status, lib.aji_last_error(ctx))
+                index = (i - 1) * len(phases) + phase_index if mode == 'rife' else i
+                save_rgb(out, index, download(result))
+                call = {'pair_or_input': i - 1 if mode == 'rife' else i,
+                        'cold': not calls, 'complete_wall_ms': ms}
+                if mode == 'rife': call['phase'] = t
+                calls.append(call)
+                print(json.dumps(calls[-1]), flush=True)
             if mode == 'rife': a, b = b, a
-            print(json.dumps(calls[-1]), flush=True)
         free_after = C.c_size_t()
         ck(cuda.cudaMemGetInfo(C.byref(free_after), C.byref(total)))
         return {'provider': 'native TensorRT Quality', 'calls': calls, 'outputs': len(calls),
