@@ -176,7 +176,11 @@ Ort::SessionOptions provider_options(const std::string &provider, const std::str
     // ONNX Runtime's optimisation must stay on: it folds the shape arithmetic of the models once
     // the input size is fixed. AJI_ORT_OPT=0..3 (none, basic, extended, all) is for trials.
     GraphOptimizationLevel level = GraphOptimizationLevel::ORT_ENABLE_ALL;
-    if (const char *forced = std::getenv("AJI_ORT_OPT"); forced && *forced) {
+    // A RIFE trial must not also change SPAN's layout/optimizer. The global
+    // override remains the fallback, with the identical default level.
+    const char *forced = std::getenv(precise ? "AJI_ORT_RIFE_OPT" : "AJI_ORT_SPAN_OPT");
+    if (!forced || !*forced) forced = std::getenv("AJI_ORT_OPT");
+    if (forced && *forced) {
         const int n = std::atoi(forced);
         level = n <= 0 ? GraphOptimizationLevel::ORT_DISABLE_ALL : n == 1 ? GraphOptimizationLevel::ORT_ENABLE_BASIC
               : n == 2 ? GraphOptimizationLevel::ORT_ENABLE_EXTENDED : GraphOptimizationLevel::ORT_ENABLE_ALL;
