@@ -48,7 +48,7 @@ def main():
     for name,(args,ret) in sig.items():getattr(cuda,name).argtypes=args;getattr(cuda,name).restype=ret
     def ck(v):
         if v:raise RuntimeError(cuda.cudaGetErrorString(v).decode())
-    libs=[C.CDLL(s[k],mode=os.RTLD_LOCAL) for k in ['before','library']]
+    libs=[C.CDLL(s[k],mode=os.RTLD_LOCAL) for k in (['library'] if s.get('reference_output') else ['before','library'])]
     for lib in libs:
         sig={'aji_create':([C.POINTER(Params)],ptr),'aji_configure':([ptr,C.c_int,C.c_int,C.c_double,ptr,ptr],C.c_int),
             'aji_destroy':([C.POINTER(ptr)],None),'aji_last_error':([ptr],C.c_char_p),
@@ -56,7 +56,7 @@ def main():
             'aji_rife_before_upscale':([ptr],C.c_int),'aji_rife_begin_pair':([ptr,C.c_uint64,C.c_uint64],None),
             'aji_temporal_reset':([ptr],None),'aji_current_log':([ptr],C.c_char_p)}
         for name,(args,ret) in sig.items():getattr(lib,name).argtypes=args;getattr(lib,name).restype=ret
-    lib=libs[1];lib.aji_surface_query_v1.argtypes=[ptr,C.c_uint32,ptr,C.c_size_t]
+    lib=libs[-1];lib.aji_surface_query_v1.argtypes=[ptr,C.c_uint32,ptr,C.c_size_t]
     lib.aji_surface_process_v1.argtypes=[ptr,ptr,ptr,C.c_double,ptr]
     held={};events=[];allocated=[];contexts=[];stream=ptr();results={}
     @ownerfn
@@ -105,19 +105,19 @@ def main():
             ow,oh=C.c_int(),C.c_int();status=module.aji_configure(ctx,w,h,24,C.byref(ow),C.byref(oh))
             assert status==(0 if s.get('rife_only') else 1),(status,module.aji_last_error(ctx));dimensions.append((ow.value,oh.value))
             print(module.aji_current_log(ctx).decode(),flush=True)
-        assert dimensions[0]==dimensions[1];ow,oh=dimensions[0]
-        caps=Caps();assert lib.aji_surface_query_v1(contexts[1],1,C.byref(caps),C.sizeof(caps))==0
+        assert len(set(dimensions))==1;ow,oh=dimensions[-1]
+        caps=Caps();assert lib.aji_surface_query_v1(contexts[-1],1,C.byref(caps),C.sizeof(caps))==0
         assert caps.resource_mask==4 and caps.format_mask==224 and caps.device_kind==2 and caps.max_planes==3
         assert caps.flags&64 and bool(caps.flags&128)==(s['mode']=='rife')
         before=bytes(caps)
-        assert lib.aji_surface_query_v1(contexts[1],2,C.byref(caps),C.sizeof(caps))==-2 and bytes(caps)==before
-        assert lib.aji_surface_query_v1(contexts[1],1,C.byref(caps),1)==-1 and bytes(caps)==before
+        assert lib.aji_surface_query_v1(contexts[-1],2,C.byref(caps),C.sizeof(caps))==-2 and bytes(caps)==before
+        assert lib.aji_surface_query_v1(contexts[-1],1,C.byref(caps),1)==-1 and bytes(caps)==before
         left=allocate(w,h,1,0);right=allocate(w,h,2,1);old=allocate(ow,oh,3,0,True);new=allocate(ow,oh,4,0,True)
         if s.get('error_only'):
             fail=C.CDLL(None).aji_test_cuda_fail_next_allocation;fail.argtypes=[];fail.restype=None
             snapshots=[bytes(x[1]) for x in [left,right,new]];n=len(events);fail()
-            status=lib.aji_surface_process_v1(contexts[1],C.byref(left[1]),C.byref(right[1]),.5,C.byref(new[1]))
-            assert status==-3 and b'CUDA temporary allocation' in lib.aji_last_error(contexts[1])
+            status=lib.aji_surface_process_v1(contexts[-1],C.byref(left[1]),C.byref(right[1]),.5,C.byref(new[1]))
+            assert status==-3 and b'CUDA temporary allocation' in lib.aji_last_error(contexts[-1])
             assert len(events)-n==6 and all(v==0 for v in held.values())
             assert snapshots==[bytes(x[1]) for x in [left,right,new]]
             assert np.all(download(new,True)==0xa5)
@@ -145,9 +145,35 @@ def main():
             assert status==(1 if s.get('expect_scene') else 0),(status,module.aji_last_error(ctx));ck(cuda.cudaStreamSynchronize(stream));old_ms=(time.perf_counter()-start)*1000
             expected=download(ma if s.get('expect_scene') else old,True)
         snapshots=[bytes(x[1]) for x in [left,right,new]];n=len(events)
-        start=time.perf_counter();status=lib.aji_surface_process_v1(contexts[1],C.byref(left[1]) if s['mode']=='rife' else None,
-            C.byref(right[1]),.5 if s['mode']=='rife' else 1,C.byref(new[1]));new_ms=(time.perf_counter()-start)*1000
-        assert status==0,(status,lib.aji_last_error(contexts[1]));actual=download(new,True)
+        if s.get('async_mode'):
+            class Dependency(C.Structure):
+                _fields_=[('kind',C.c_uint32),('reserved',C.c_uint32),('event',ptr),('value',C.c_uint64)]
+            class Request(C.Structure):
+                _fields_=[(n,C.c_uint32) for n in ['struct_size','version','flags','dependency_count']]+[
+                    ('previous',ptr),('current',ptr),('output',ptr),('timestep',C.c_double),('execution_queue',ptr),('dependencies',Dependency*3)]
+            class Completion(C.Structure):
+                _fields_=[(n,C.c_uint32) for n in ['struct_size','version','state','reserved']]+[
+                    ('ticket',C.c_uint64),('status',C.c_int32),('reserved_status',C.c_uint32),('message',C.c_char*256)]
+            lib.aji_surface_async_enable_v1.argtypes=[ptr,C.c_uint32];lib.aji_surface_async_disable_v1.argtypes=[ptr]
+            lib.aji_surface_submit_v1.argtypes=[ptr,ptr,C.POINTER(C.c_uint64)]
+            lib.aji_surface_drain_v1.argtypes=[ptr,C.c_uint32]
+            lib.aji_surface_complete_v1.argtypes=[ptr,C.c_uint64,C.c_uint32,ptr,C.c_size_t]
+            assert lib.aji_surface_async_enable_v1(contexts[-1],2)==0
+            request=Request();request.struct_size=C.sizeof(request);request.version=1
+            request.previous=C.addressof(left[1]) if s['mode']=='rife' else None
+            request.current=C.addressof(right[1]);request.output=C.addressof(new[1]);request.timestep=.5 if s['mode']=='rife' else 1
+            ticket=C.c_uint64();start=time.perf_counter()
+            assert lib.aji_surface_submit_v1(contexts[-1],C.byref(request),C.byref(ticket))==0 and ticket.value
+            submit_ms=(time.perf_counter()-start)*1000
+            assert lib.aji_surface_drain_v1(contexts[-1],0)==0
+            done=Completion();assert lib.aji_surface_complete_v1(contexts[-1],ticket,1,C.byref(done),C.sizeof(done))==0
+            assert done.state==2 and done.status==0,(done.state,done.status,done.message)
+            new_ms=(time.perf_counter()-start)*1000;status=done.status
+            assert lib.aji_surface_async_disable_v1(contexts[-1])==0
+        else:
+            start=time.perf_counter();status=lib.aji_surface_process_v1(contexts[-1],C.byref(left[1]) if s['mode']=='rife' else None,
+                C.byref(right[1]),.5 if s['mode']=='rife' else 1,C.byref(new[1]));new_ms=(time.perf_counter()-start)*1000
+        assert status==0,(status,lib.aji_last_error(contexts[-1]));actual=download(new,True)
         changed=int(np.count_nonzero(expected!=actual));np.savez(out/'pixels.npz',before=expected,after=actual)
         assert not changed,{'changed':changed,'max_delta':int(np.max(np.abs(expected.astype(int)-actual.astype(int))))}
         assert snapshots==[bytes(x[1]) for x in [left,right,new]] and all(x==0 for x in held.values())
@@ -168,17 +194,17 @@ def main():
                 ('unpaired-callback',lambda v:setattr(v,'release',ownerfn()),-1),
                 ('bad-timing',lambda v:setattr(v,'timebase_den',0),-1)]:
                 v=Surface.from_buffer_copy(bytes(right[1]));modify(v);n=len(events)
-                assert lib.aji_surface_process_v1(contexts[1],None,C.byref(v),1,C.byref(new[1]))==code,label
+                assert lib.aji_surface_process_v1(contexts[-1],None,C.byref(v),1,C.byref(new[1]))==code,label
                 assert len(events)==n and np.array_equal(download(new,True),actual);cases.append(label)
-            assert lib.aji_surface_process_v1(contexts[1],None,C.byref(right[1]),float('nan'),C.byref(new[1]))==-1
+            assert lib.aji_surface_process_v1(contexts[-1],None,C.byref(right[1]),float('nan'),C.byref(new[1]))==-1
             # Same geometry as source required for a precise overlap test.
             overlap=Surface.from_buffer_copy(bytes(new[1]));overlap.planes[0]=new[1].planes[1]
-            assert lib.aji_surface_process_v1(contexts[1],None,C.byref(right[1]),1,C.byref(overlap))==-1
-            assert lib.aji_configure(contexts[1],1,h,24,None,None)<0
-            assert lib.aji_surface_query_v1(contexts[1],1,C.byref(caps),C.sizeof(caps))==-2
+            assert lib.aji_surface_process_v1(contexts[-1],None,C.byref(right[1]),1,C.byref(overlap))==-1
+            assert lib.aji_configure(contexts[-1],1,h,24,None,None)<0
+            assert lib.aji_surface_query_v1(contexts[-1],1,C.byref(caps),C.sizeof(caps))==-2
         results=dict(passed=True,changed_bytes=changed,format=fmt,mode=s['mode'],roi_and_padding_exact=True,
             descriptors_unchanged=True,owners_balanced=True,native_gpu_memory=True,negative_cases=cases,
-            before_wall_ms=old_ms,after_wall_ms=new_ms,timing_conclusion='not an FPS benchmark; first-use adapter allocations included')
+            before_wall_ms=old_ms,after_wall_ms=new_ms,async_mode=bool(s.get('async_mode')),submit_ms=submit_ms if s.get('async_mode') else None,timing_conclusion='not an FPS benchmark; first-use adapter allocations included')
         receipt.write_text(json.dumps(results,indent=2)+'\n');print(json.dumps(results))
     finally:
         for module,ctx in zip(libs,contexts):module.aji_destroy(C.byref(ctx))

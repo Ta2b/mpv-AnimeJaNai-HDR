@@ -40,6 +40,28 @@ typedef struct aji_surface_async_caps_v1 {
     uint32_t device_kind,reserved;
 } aji_surface_async_caps_v1;
 
+typedef struct aji_surface_fence_v1_result {
+    uint32_t struct_size,version,kind,reserved;
+    void *event;
+    uint64_t value;
+} aji_surface_fence_v1_result;
+
+/* Optional native output fence. BUSY until the worker has recorded it, then
+ * OK may precede pixel completion. This borrowed event remains valid only until
+ * ticket consumption or result drop/disable. Enqueue the consumer GPU wait
+ * before retiring the ticket. Keep separate consumer references to its buffers.
+ * Failed/cancelled tickets have no usable output. The input event handles and
+ * queue handles supplied to Submit must remain alive until terminal completion;
+ * input events must already have been recorded before Submit (completion may
+ * still be pending). An unrecorded CUDA event does not create a dependency.
+ * owners must also retain dependencies when needed. Input writes already ordered
+ * before these producer events may finish; afterwards inputs stay immutable until
+ * terminal completion. GPU consumers may read outputs after the exported GPU
+ * wait with their own references, even before CPU Complete becomes terminal.
+ * No implicit native import.
+ * CPU providers may omit this optional symbol entirely. */
+int aji_surface_output_fence_v1(void *context,uint64_t ticket,aji_surface_fence_v1_result *,size_t);
+
 /* Enable after successful configure. One queue exclusively owns the context
  * until disable; no concurrent legacy configure/process/hints. Lifecycle calls
  * are serial, Submit/Complete may run concurrently after enable. Context destroy
