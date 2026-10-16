@@ -1,17 +1,17 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "66fcd9ded3310d009c5402e1a9f43900da59a690",
+  "backend_source": "652fbc6bdd3a9d815367deeb2df65538636705dc",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "66fcd9ded3310d009c5402e1a9f43900da59a690",
-    "GITHUB_RUN_ID": "38849407432",
+    "GITHUB_SHA": "652fbc6bdd3a9d815367deeb2df65538636705dc",
+    "GITHUB_RUN_ID": "38874628974",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Linux RTX4070Ti/TRT11.3: complete motion graph/external weights, frozen T3/T5/type classification, static profile fix; final exporter preserves same v3 plan, zero builders and output bytes different. Independent motion rebuild max38/255 remains nonconclusive, not forced for an unchanged v3. Prior temporal-view guards retained. 24 ABI exports identical. Windows compile/link only; no FPS claim.",
+  "validation": "Linux RTX4070Ti SM8.9: real shipped FP16 kernel probe, module/runtime/device data, invalid ordinal, short/null outputs and caller CUDA context preserved. CPU conversion qualified separately in player. Existing C exports preserved plus optional probe. No model inference/FPS claim. Previous unchanged-render qualifications retained, not repeated. Windows compile/link only.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -44,12 +44,13 @@
     "versioned-motion-export-recipe",
     "preserve-identical-v3-onnx-program",
     "content-keyed-temporal-io-classification",
-    "static-temporal-profile-policy"
+    "static-temporal-profile-policy",
+    "optional-versioned-cuda-module-probe"
   ],
   "sha256": {
     "libaji.so": "c79eb7cfc4be4aecc207664636c906cea4c0de1b68287aac1a71b992a52a7dd2",
-    "libaji_trt.so": "072e77951f258cbaf5d6f71d0074d55592e7af90cd3e3b051e7d731c1fe49e68",
-    "libaji_trt_rtx.so": "072e77951f258cbaf5d6f71d0074d55592e7af90cd3e3b051e7d731c1fe49e68"
+    "libaji_trt.so": "febd11f0bcab096f0cd89a4dd18049375bafc398f81b16ab2866f5658abc6387",
+    "libaji_trt_rtx.so": "febd11f0bcab096f0cd89a4dd18049375bafc398f81b16ab2866f5658abc6387"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -64,5 +65,5 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "b2649a3da2088aa0e8bc982f482e08863fd5b418"
+  "player_qualification_source": "a22100c0fc9fb76fcabec01faf67b290cf565424"
 }
