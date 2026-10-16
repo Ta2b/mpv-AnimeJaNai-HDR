@@ -1,0 +1,184 @@
+--- a/filters/f_async_queue.h
++++ b/filters/f_async_queue.h
+@@ -46,6 +46,9 @@
+ // samples buffered in the access filters. mp_async_queue_config.sample_unit is
+ // used to define what "1 sample" means.
+ int64_t mp_async_queue_get_samples(struct mp_async_queue *queue);
++
++// Accounted frame bytes, under the configured per-frame charging policy.
++uint64_t mp_async_queue_get_bytes(struct mp_async_queue *queue);
+ 
+ // Get the total number of frames buffered within the queue itself. Frames
+ // buffered in the access filters are not included.
+@@ -109,6 +112,11 @@
+     // overshot by up to 1 full frame. Clamped to [1, SIZE_MAX/2].
+     int64_t max_bytes;
+ 
++    // Optional pure, thread-safe per-frame byte charge (0 for signaling).
++    // NULL preserves the existing mp_frame_approx_size policy. This measures
++    // queue-owned frames only; the documented one-frame overshoot still applies.
++    uint64_t (*frame_size)(struct mp_frame frame);
++
+     // Defines what a "sample" is; affects the fields below.
+     enum mp_async_queue_sample_unit sample_unit;
+ 
+--- a/filters/f_async_queue.c
++++ b/filters/f_async_queue.c
+@@ -115,7 +115,9 @@
+     mp_assert(dir == 1 || dir == -1);
+ 
+     q->samples_size += dir * frame_get_samples(q, frame);
+-    q->byte_size += dir * mp_frame_approx_size(frame);
++    uint64_t size = q->cfg.frame_size ? q->cfg.frame_size(frame)
++                                    : mp_frame_approx_size(frame);
++    q->byte_size += dir * size;
+ 
+     if (frame.type == MP_FRAME_EOF)
+         q->eof_count += dir;
+@@ -143,7 +145,8 @@
+     cfg.max_samples = MPMAX(cfg.max_samples, 1);
+ 
+     mp_mutex_lock(&q->lock);
+-    bool recompute = q->cfg.sample_unit != cfg.sample_unit;
++    bool recompute = q->cfg.sample_unit != cfg.sample_unit ||
++                     q->cfg.frame_size != cfg.frame_size;
+     q->cfg = cfg;
+     if (recompute)
+         recompute_sizes(q);
+@@ -211,6 +214,15 @@
+     int64_t res = q->samples_size;
+     mp_mutex_unlock(&q->lock);
+     return res;
++}
++
++uint64_t mp_async_queue_get_bytes(struct mp_async_queue *queue)
++{
++    struct async_queue *q = queue->q;
++    mp_mutex_lock(&q->lock);
++    uint64_t result = q->byte_size;
++    mp_mutex_unlock(&q->lock);
++    return result;
+ }
+ 
+ int mp_async_queue_get_frames(struct mp_async_queue *queue)
+--- a/video/filter/vf_animejanai.c
++++ b/video/filter/vf_animejanai.c
+@@ -153,6 +153,7 @@
+     bool output_444;
+     int queue_depth;
+     int prefetch;
++    int64_t prefetch_bytes;
+ };
+ 
+ #define MAX_DEPTH 4
+@@ -2414,11 +2415,43 @@
+     struct mp_filter *backend;
+     struct mp_async_queue *queue;
+     int capacity;
++    int64_t byte_budget;
++    uint64_t last_frame_bytes, max_frame_bytes;
+     bool resume_pending;
+     uint64_t produced, epoch;
+     int last_imgfmt;
+ };
+ struct prefetch_tap { struct prefetch_priv *owner; };
++
++static uint64_t prefetch_add_size(uint64_t a, uint64_t b)
++{
++    const uint64_t limit = INT64_MAX / 4;
++    return a >= limit || b >= limit - a ? limit : a + b;
++}
++
++// CUDA AVBuffer sizes include allocator padding when available. Plane pitches
++// provide a conservative payload fallback for handle-only buffer references.
++// Count owned references conservatively; shared buffers may be charged twice.
++static uint64_t prefetch_frame_size(struct mp_frame frame)
++{
++    if (frame.type != MP_FRAME_VIDEO)
++        return 0;
++    struct mp_image *image = frame.data;
++    uint64_t allocation = sizeof(*image), payload = sizeof(*image);
++    for (int n = 0; n < MP_MAX_PLANES; n++) {
++        if (image->bufs[n])
++            allocation = prefetch_add_size(allocation, image->bufs[n]->size);
++        if (n < image->num_planes && image->planes[n]) {
++            int64_t pitch = image->stride[n];
++            if (pitch < 0) pitch = -pitch;
++            int height = mp_image_plane_h(image, n);
++            if (height > 0)
++                payload = prefetch_add_size(payload, (uint64_t)pitch * height);
++        }
++    }
++    return MPMAX(allocation, payload);
++}
++
+ 
+ static void prefetch_tap_process(struct mp_filter *f)
+ {
+@@ -2431,6 +2464,8 @@
+         struct mp_image *image = frame.data;
+         p->produced++;
+         p->last_imgfmt = image->imgfmt;
++        p->last_frame_bytes = prefetch_frame_size(frame);
++        p->max_frame_bytes = MPMAX(p->max_frame_bytes, p->last_frame_bytes);
+     }
+     mp_pin_in_write(f->ppins[1], frame);
+ }
+@@ -2455,6 +2490,7 @@
+         mp_async_queue_reset(p->queue);
+     p->epoch++;
+     p->last_imgfmt = 0;
++    p->last_frame_bytes = p->max_frame_bytes = 0;
+     p->resume_pending = p->queue != NULL;
+     mp_filter_wakeup(f);
+ }
+@@ -2472,6 +2508,14 @@
+         char text[64];
+         snprintf(text, sizeof(text), "%d", p->capacity);
+         mp_tags_set_str(tags, "prefetch-capacity", text);
++        snprintf(text, sizeof(text), "%"PRId64, p->byte_budget);
++        mp_tags_set_str(tags, "prefetch-budget-bytes", text);
++        snprintf(text, sizeof(text), "%"PRIu64, p->queue ? mp_async_queue_get_bytes(p->queue) : 0);
++        mp_tags_set_str(tags, "prefetch-reserved-bytes", text);
++        snprintf(text, sizeof(text), "%"PRIu64, p->last_frame_bytes);
++        mp_tags_set_str(tags, "prefetch-last-frame-bytes", text);
++        snprintf(text, sizeof(text), "%"PRIu64, p->max_frame_bytes);
++        mp_tags_set_str(tags, "prefetch-max-frame-bytes", text);
+         snprintf(text, sizeof(text), "%"PRId64, p->queue ? mp_async_queue_get_samples(p->queue) : 0);
+         mp_tags_set_str(tags, "prefetch-ready", text);
+         snprintf(text, sizeof(text), "%"PRIu64, p->produced);
+@@ -2504,6 +2548,7 @@
+     if (!f) { talloc_free(options); return NULL; }
+     struct prefetch_priv *p = f->priv;
+     p->capacity = opts->prefetch;
++    p->byte_budget = opts->prefetch_bytes;
+     if (p->capacity)
+         p->queue = talloc_steal(p, mp_async_queue_create());
+     mp_filter_add_pin(f, MP_PIN_IN, "in");
+@@ -2522,7 +2567,9 @@
+         struct mp_filter *reader = mp_async_queue_create_filter(f, MP_PIN_OUT, p->queue);
+         if (!writer || !reader) { talloc_free(f); return NULL; }
+         mp_async_queue_set_config(p->queue, (struct mp_async_queue_config){
+-            .max_samples = p->capacity, .max_bytes = INT64_MAX,
++            .max_samples = p->capacity,
++            .max_bytes = p->byte_budget ? p->byte_budget : INT64_MAX,
++            .frame_size = prefetch_frame_size,
+         });
+         mp_pin_connect(writer->pins[0], tap->pins[1]);
+         mp_pin_connect(f->ppins[1], reader->pins[0]);
+@@ -2552,6 +2599,7 @@
+     {"output-444", OPT_BOOL(output_444)},
+     {"queue-depth", OPT_INT(queue_depth), M_RANGE(1, MAX_DEPTH)},
+     {"prefetch", OPT_INT(prefetch), M_RANGE(0, 64)},
++    {"prefetch-bytes", OPT_BYTE_SIZE(prefetch_bytes), M_RANGE(0, 1099511627776LL)},
+     {0}
+ };
+ 
+@@ -2566,6 +2614,7 @@
+             .skip_seek_pre_target = true,
+             .output_444 = true,
+             .queue_depth = 3,
++            .prefetch_bytes = 256LL * 1024 * 1024,
+         },
+         .options = vf_opts_fields,
+     },

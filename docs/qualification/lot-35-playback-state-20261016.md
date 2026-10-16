@@ -40,4 +40,4 @@ Une écriture externe idempotente `set pause=yes` alors que le lecteur est déj�
 
 Commandes : `lua tests/player/playback_state_check.lua "$PWD"`, `lua tests/observability/stats_lua_check.lua "$PWD"` ; [session réelle](../../tests/player/playback_state_runtime_check.py), `python3 tests/player/playback_state_runtime_check.py SPEC.json` avec `mpv,input,out`, référence .66 fixée, receipts protégeant les essais concluants. Artefacts `artifacts/performance/lots-20261016/lot-35/`, `before-result.json`, `on-result.json`, `runtime-summary.json`, journaux et configuration temporaire. Aucun service Strata modifié ; aucune inférence déléguée.
 
-Release3.8.0.67 à publier ; AH-285 reste In Progress jusqu'à vérification de livraison.
+**3.8.0.67 publiée**, source `3f09cd036a218d600fd285c74924d9e8a069d530` ; trois workflows success,15assets uploaded et versions vérifiées. Overlay/digest et sources livrées identiques au contrôle Linux ; bindings d’intention présents. AH-285 **Done**, clôture10124 ; parent AH-37/AH-286 ouverts.
