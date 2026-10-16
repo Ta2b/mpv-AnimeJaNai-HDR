@@ -110,17 +110,17 @@
     ]
   },
   "ordered_pipeline": {
-    "backend_source": "8d4ea4e28a660523bf2264dbb56627472400b10a",
+    "backend_source": "9f2541e3dee1f159800b3a20c0e0729adc18491b",
     "api": "aji_pipeline_v1",
     "sha256": {
-      "libaji_pipeline.so": "7d168927c507d5166430b1edd08a713fe4cc93ec17c6045eebae73dbd097fdd3",
-      "aji_pipeline.fatbin": "8a8a3f6917ead46b50cc7d2e8902ac2379018de9d2687c63c89174d0db6e5f15",
-      "PIPELINE-README.md": "5a688f9c4fee00034c6d78101bd22da357daf7d38598a30f6e3d45224ff1874e"
+      "libaji_pipeline.so": "d85dbb438c1129a2f2acd80abc3d3c3d4b293f0ce7db5e14c4d1b7acd9e38ff5",
+      "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "PIPELINE-README.md": "76e673bb594ecdb9d13a186d6bdc8c130377cedb21397abfb01dc1dc7b17bf0e"
     },
     "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
     "explicit_opt_in": true,
     "sdk_external": true,
-    "qualified": "Linux RTX4070Ti SDR, native RIFE2->FRUC2->spatial SPAN; only actual supported stage capabilities; Fast FRUC8bit, no Quality equivalence; Area downscale reference/pixel ownership and actual NVDEC RIFE at720p verified on RTX4070Ti; relative performance nonconclusive due short variable timings",
+    "qualified": "Linux RTX4070Ti SDR, native RIFE2->FRUC2->spatial SPAN; only actual supported stage capabilities; Fast FRUC8bit, no Quality equivalence; Area downscale reference/pixel ownership and actual NVDEC RIFE at720p verified on RTX4070Ti; relative performance nonconclusive due short variable timings; TrueHDR acquired SDK reference exact native YUV16, reset/owners/old-reader/color checked, actual NVDEC RIFE/FRUC->TrueHDR exact native timeline and export PQ2020, native HDR-only pixels unchanged; physical HDR display not exercised",
     "cuda_architectures": [
       75,
       80,
@@ -131,11 +131,23 @@
       120,
       "PTX120"
     ],
-    "prior_backend_source": "35c0049ffd2977fe196a34bbbd3b051647486c4d",
+    "prior_backend_source": "8d4ea4e28a660523bf2264dbb56627472400b10a",
     "features": [
       "independent-area-downscale",
       "static-reader-feature-query",
-      "one-hdr-stage-per-profile"
-    ]
+      "one-hdr-stage-per-profile",
+      "explicit-truehdr-conversion",
+      "optional-output-color-query",
+      "native-hdr-only-passthrough"
+    ],
+    "sdk_hdr": {
+      "externally_installed": true,
+      "sdk_version": "Maxine VideoFX1.3 + TrueHDR1.2.3",
+      "input": "RGBA8 SDR709",
+      "output": "RGB10A2 PQ2020, canonical limited YUV16",
+      "pixel_workspace_counted": true,
+      "sdk_workspace_counted": false,
+      "reader": "hdr-stage1"
+    }
   }
 }
