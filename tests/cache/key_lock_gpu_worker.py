@@ -47,6 +47,7 @@ def wait_file(path):
 try:
     params = Params(api_version=9, conf_path=os.fsencode(s['conf']), model_dir=os.fsencode(s['models']),
         trtexec=os.fsencode(s['trtexec']), rife_model_dir=os.fsencode(s['rife']) if s.get('rife') else None,
+        trtexec_env=os.fsencode(s['trtexec_env']) if s.get('trtexec_env') else None,
         slot=1, async_build=s.get('async_build', 0), log=C.cast(logger, ptr))
     context = ptr(lib.aji_create(C.byref(params))); assert context
     out.with_suffix('.ready').touch(); wait_file(s['start'])

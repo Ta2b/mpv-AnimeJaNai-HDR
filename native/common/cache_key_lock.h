@@ -18,6 +18,9 @@
 #endif
 
 namespace aji::cache {
+struct KeyLockBusy : std::runtime_error {
+    KeyLockBusy() : std::runtime_error("Cache key lock busy") {}
+};
 // Stable lock files are deliberately never unlinked: replacing the inode
 // would let a third process lock a different file while a waiter owns the old
 // one. Kernel ownership is released on close/process exit, not by a timestamp.
@@ -38,7 +41,8 @@ class KeyLock {
 #endif
     }
 public:
-    explicit KeyLock(const std::filesystem::path &path, const std::atomic<bool> *stop = nullptr)
+    explicit KeyLock(const std::filesystem::path &path, const std::atomic<bool> *stop = nullptr,
+                     bool wait = true)
     {
         try {
 #ifdef _WIN32
@@ -60,6 +64,7 @@ public:
                 if (errno != EWOULDBLOCK && errno != EAGAIN && errno != EINTR)
                     throw std::runtime_error("Cannot acquire cache key lock: " + std::to_string(errno));
 #endif
+                if (!wait) throw KeyLockBusy();
                 std::this_thread::sleep_for(std::chrono::milliseconds(20));
             }
         } catch (...) { close(); throw; }

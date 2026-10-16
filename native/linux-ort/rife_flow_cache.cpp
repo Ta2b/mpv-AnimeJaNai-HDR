@@ -2,6 +2,7 @@
 #include "onnx_flow.h"
 #include "../common/content_identity.h"
 #include "../common/cache_key_lock.h"
+#include "../common/cache_stage_owner.h"
 #include <iostream>
 #include <random>
 
@@ -71,32 +72,34 @@ fs::path cached_rife_flow(const fs::path &source, const fs::path &cache)
     const std::string key = source_key(graph,weights);
     const fs::path parent = cache / "rife-flow-v2", destination = parent / key;
     fs::create_directories(parent);
-    if (valid(destination,locations)) return destination / graph_name;
     cache::KeyLock lock(parent / (key + ".key-lock"));
+    cache::recover_owned_stages(parent, ".part-", "flow:" + key);
     if (valid(destination,locations)) return destination / graph_name;
 
     Stage stage{temporary(parent,".part-")};
+    cache::mark_stage(stage.path, "flow:" + key);
+    const auto data=stage.path/"data";fs::create_directory(data);
     std::vector<char> flow;
     if (!aji_onnx_add_flow_outputs(graph,&flow,&why)) throw std::runtime_error("No RIFE motion output: "+why);
     for (const auto &location : locations) {
-        const fs::path target = stage.path / fs::u8path(location);
+        const fs::path target = data / fs::u8path(location);
         fs::create_directories(target.parent_path());
         fs::copy_file(source.parent_path()/fs::u8path(location),target);
     }
     std::vector<identity::File> staged_weights;
-    for (const auto &location : locations) staged_weights.emplace_back("external/"+location,stage.path/fs::u8path(location));
+    for (const auto &location : locations) staged_weights.emplace_back("external/"+location,data/fs::u8path(location));
     if (source_key(graph,staged_weights) != key) throw std::runtime_error("RIFE weights changed during export");
     {
-        std::ofstream out(stage.path/graph_name,std::ios::binary);
+        std::ofstream out(data/graph_name,std::ios::binary);
         out.write(flow.data(),(std::streamsize)flow.size()); out.close();
         if (!out) throw std::runtime_error("Cannot write RIFE flow graph");
     }
-    const std::string digest = identity::files(version,cache_files(stage.path,locations));
+    const std::string digest = identity::files(version,cache_files(data,locations));
     {
-        std::ofstream stamp(stage.path/"ready.sha256"); stamp << digest << '\n'; stamp.close();
+        std::ofstream stamp(data/"ready.sha256"); stamp << digest << '\n'; stamp.close();
         if (!stamp) throw std::runtime_error("Cannot write RIFE flow cache identity");
     }
-    if (!valid(stage.path,locations)) throw std::runtime_error("Incomplete RIFE staged export");
+    if (!valid(data,locations)) throw std::runtime_error("Incomplete RIFE staged export");
 
     // Another process may have completed the same key while we transformed it.
     if (valid(destination,locations)) return destination / graph_name;
@@ -105,7 +108,7 @@ fs::path cached_rife_flow(const fs::path &source, const fs::path &cache)
         std::error_code error; fs::rename(destination,quarantine/"preserved",error);
         if (error && !valid(destination,locations)) throw std::runtime_error("Cannot preserve damaged RIFE cache: "+error.message());
     }
-    std::error_code error; fs::rename(stage.path,destination,error);
+    std::error_code error; fs::rename(data,destination,error);
     if (error && !valid(destination,locations)) throw std::runtime_error("Cannot publish RIFE flow cache: "+error.message());
     std::cerr << "[aji] RIFE flow export " << version << " content " << key << ": " << destination.string() << '\n';
     return destination / graph_name;
