@@ -32,6 +32,8 @@ if [ -n "$PLATFORM" ]; then
 fi
 mkdir -p "$CONF/hdr-tools" "$CONF/user-shaders"
 cp "$PC/hdr-tools/gpu-policy.lua" "$PC/hdr-tools/hdr-grade.lua" "$PC/hdr-tools/linux-hdr.lua" "$CONF/hdr-tools/"
+cp "$PC/hdr-tools/playback-state.lua" "$CONF/hdr-tools/"
+cp "$PC/scripts/animejanai_playback.lua" "$CONF/scripts/"
 cp "$PC/user-shaders/"*.hook "$CONF/user-shaders/"
 cp "$PC/script-opts/animejanai_hdr_auto.conf" "$CONF/script-opts/animejanai_hdr_auto.conf"
 cp "$HERE/config/script-opts/animejanai_mac.conf" "$CONF/script-opts/"

@@ -33,6 +33,11 @@ local we_paused = false
 local started_at = 0
 local build_name = "?"
 local build_res = "?"
+local build_generation = nil
+local owner = "engine-monitor"
+local function playback_message(command, ...)
+    mp.commandv("script-message-to", "animejanai_playback", command, ...)
+end
 -- stats log content left behind by a failed configure (see the log-message handler below)
 local dead_stats = nil
 
@@ -52,31 +57,38 @@ mp.add_periodic_timer(o.poll_interval, function()
     local b = s ~= nil and dead_stats == nil and
               s:find("Building TensorRT engine", 1, true) ~= nil
 
-    -- the user taking over wins: if they unpause mid-build, stay hands-off
-    if we_paused and not mp.get_property_bool("pause") then
+    -- The shared controller owns automatic holds separately from user intent.
+    local state = mp.get_property_native("user-data/animejanai-playback")
+    if we_paused and state and (state.user_paused or state.manual_override) then
         we_paused = false
     end
 
     if b and not building then
         building = true
         started_at = mp.get_time()
-        if o.auto_pause and not mp.get_property_bool("pause") then
-            mp.set_property_bool("pause", true)
-            we_paused = true
-            msg.info("engine build started; pausing playback")
-        else
-            msg.info("engine build started")
+        local state = mp.get_property_native("user-data/animejanai-playback")
+        if state then
+            build_generation = state.generation
+            we_paused = o.auto_pause and not state.user_paused and not state.manual_override
+            playback_message("aji-playback-hold",owner,"preparation",tostring(build_generation),
+                o.auto_pause and "yes" or "no")
         end
+        msg.info("engine build started" .. (we_paused and "; pausing playback" or ""))
     elseif not b and building then
         building = false
         local failed = s ~= nil and s:find("build FAILED", 1, true) ~= nil
         msg.info(string.format("engine build finished after %ds%s",
             math.floor(mp.get_time() - started_at),
             we_paused and "; resuming playback" or ""))
-        if we_paused then
-            mp.set_property_bool("pause", false)
-            we_paused = false
+        if build_generation then
+            if failed then
+                playback_message("aji-playback-error",owner,"engine-build-failed",tostring(build_generation))
+            else
+                playback_message("aji-playback-release",owner,tostring(build_generation))
+            end
+            build_generation = nil
         end
+        we_paused = false
         if failed then
             local log_path = s and s:match("%(see ([^%)]+)%)") or
                              "the .build.log file next to the model"
@@ -117,8 +129,12 @@ end)
 -- example) disables the filter without rewriting the stats log: its "Building"
 -- line would keep this script paused and counting forever. Stop on mpv's own
 -- error instead, and ignore that stale log until the filter rewrites it.
-mp.enable_messages("warn")
+mp.enable_messages("info")
 mp.register_event("log-message", function(e)
+    -- A new filter may publish the same text as the previous generation.
+    -- Its own configure log is fresh evidence, unlike an unchanged disk read.
+    if e.prefix == "animejanai" and e.text and
+       e.text:find("Building TensorRT engine",1,true) then dead_stats=nil end
     if not building or not e.text then return end
     local reason = e.text:match("configure failed: ([^\r\n]+)")
     if not reason and not e.text:find("Disabling filter aji", 1, true) then
@@ -127,10 +143,17 @@ mp.register_event("log-message", function(e)
     building = false
     dead_stats = read_stats()
     msg.warn("filter failed while an engine build was reported; monitor stopped")
-    if we_paused then
-        mp.set_property_bool("pause", false)
-        we_paused = false
+    if build_generation then
+        playback_message("aji-playback-error",owner,reason or "filter-disabled",tostring(build_generation))
+        build_generation=nil
     end
+    we_paused=false
     mp.osd_message("AnimeJaNai: the filter failed, upscaling is disabled.\n" ..
         (reason or "See the terminal for the cause."), 10)
+end)
+
+-- Never carry a previous file's build observation/hold into a new generation.
+mp.register_event("start-file", function()
+    building=false; we_paused=false; build_generation=nil
+    dead_stats=read_stats()
 end)

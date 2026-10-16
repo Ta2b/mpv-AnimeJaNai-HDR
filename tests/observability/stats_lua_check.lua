@@ -1,7 +1,9 @@
 -- Targeted Lua contracts: visible snapshots refresh, absence does not finish a build.
 local root=assert(arg[1])
 local content=nil
-local timer,key,osd,paused
+local timer,key,osd
+local paused=false
+local control
 local events={}
 local properties={vf='aji'}
 local mp={}
@@ -15,7 +17,15 @@ function mp.add_periodic_timer(interval,fn)
 end
 function mp.add_key_binding(_,_,fn)key=fn end
 function mp.get_time()return 1 end
-function mp.commandv()end
+function mp.commandv(kind,target,command,owner,arg1,arg2)
+ if kind~='script-message-to' or target~='animejanai_playback' then return end
+ if command=='aji-playback-hold' then control:hold(owner,arg1,tonumber(arg2))
+ elseif command=='aji-playback-release' then control:release(owner,tonumber(arg1))
+ elseif command=='aji-playback-error' then control:fail(owner,arg1,tonumber(arg2)) end
+end
+function mp.get_property_native(name)
+ if name=='user-data/animejanai-playback' then return control:snapshot() end
+end
 function mp.enable_messages()end
 function mp.register_event(name,fn)events[name]=fn end
 package.loaded.mp=mp
@@ -34,6 +44,10 @@ assert(not timer.active);key();assert(timer.active and osd:find('Waiting',1,true
 content='Frames: 1\n';timer.fn();assert(osd==content)
 content='Frames: 30\n';timer.fn();assert(osd==content)
 key();assert(not timer.active and osd=='')
+local State=dofile(root..'/BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/playback-state.lua')
+control=State.new({get_pause=function()return paused end,
+ set_pause=function(value) paused=value; control:observe_pause(value) end,
+ publish=function()end})
 content='Building TensorRT engine for model for 128x72\n'
 dofile(scripts..'animejanai_engine_monitor.lua');timer.fn();assert(paused)
 content=nil;timer.fn();assert(paused)
