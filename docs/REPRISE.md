@@ -1,6 +1,6 @@
 # Reprise du travail — état au 14 octobre 2026
 
-Point courant : **3.8.0.72 publiée, AH-301 Done** (trois plateformes success,16assets ; nouveaux modules Linux et dépendance lecteur vérifiés). Chaînes natives RIFE×2→FRUC×2→SPAN qualifiées. **AH-302 In Progress**, éditeur Manager implémenté : UI/configuration et profil généré consommé réellement, livraison.73 prête à pousser. [Lecteur](qualification/lot-40-ordered-interpolation-20261016.md), [suivi Manager](jira/lot-41-manager-stages-20261016.json).
+Point courant : **3.8.0.72 publiée / AH-301 Done**. Manager AH-302 implémenté/qualifié ;.73 Linux publiée, Windows échouée sur asset Manager absent. Source Manager2cc424c et binaires Win/Linux/Mac désormais publiés (38962517292 success) ; **.74 corrective poussée**, AH-302 reste In Progress jusqu’à livraison complète. **AH-313 In Progress** : workflow GMFSS Fortuna préparé, contrat CPU commencé, pas encore d’exécuteur/UI livré.
 
 ## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
 

@@ -83,3 +83,10 @@ qualification interactive/physique. Lecture mixte disponible seulement Linux
 CUDA, limites SDR/Fast/méthodes/facteurs du reader inchangées. Aucun gain FPS,
 aucune équivalence Quality FRUC, aucune garantie universelle annoncés.
 Release3.8.0.73 en préparation ; AH-302 In Progress jusqu’à publication vérifiée.
+
+Correctif de livraison :.73 Linux success, Windows404 car la branche source ne
+déclenchait pas la publication Manager et le pin partagé restait ancien.
+Manager2cc424c corrige uniquement player-source-ref versc40496d ; workflow
+38962517292 success et quatre assets Win/Linux/Mac effectivement publiés.
+UI/calculs inchangés. Release corrective3.8.0.74 référence ces binaires ;
+AH-302 reste In Progress jusqu’à vérification complète. Aucun essai GPU répété.

@@ -7,7 +7,7 @@
   "manager_worktree": "/home/ta2b/.animejanai-tools/work/manager-interpolation-stages-20261016",
   "worktree": "/home/ta2b/.animejanai-tools/work/lot-41-manager-stages-20261016",
   "start_comment": "10154",
-  "state": "Actual stage editor, persistence and native consumption qualified; Manager source committed and pushed, release3.8.0.73 delivery pending.",
+  "state": "Manager source/UI qualified; three-platform immutable Manager release now published. Packaging corrective3.8.0.74 pushing, AH-302 remains In Progress pending full publication.",
   "checks": [
     "headlessUI16assertions+render",
     "persistence6assertions_beforeInvalidEdit",
@@ -21,8 +21,12 @@
     "First packet-truncated test source lacked known cadence and was explicitly refused; second test saved run verified offline after harness allowed bounded next-burst production, no GPU replay"
   ],
   "remaining": [
-    "Publish3.8.0.73; verify publication before Done"
+    "Verify publication3.8.0.74 and packaged Manager before Done"
   ],
-  "manager_source": "e278b865df0db87ce61cb5a8b02dd20ac989825d",
-  "qualification_comment": "10156"
+  "manager_source": "2cc424c6257cf5081154512b9d3da5927a903ea5",
+  "qualification_comment": "10156",
+  "manager_release_verified": true,
+  "release": "3.8.0.74",
+  "prior_release_partial": "3.8.0.73 Linux success, Windows404 Manager asset; Mac depended on same missing immutable Manager",
+  "delivery_fix_comment": "10157"
 }
