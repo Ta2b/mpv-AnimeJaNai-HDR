@@ -32,4 +32,4 @@ Conserver ce prototype opt-in : utilité d'avance réelle établie, ordre/pixels
 
 Preuves : `artifacts/performance/lots-20261016/lot-34/`, `paused-{0,3}.json`, `sequence-summary.json`, `sequence-{0,3}.json`, `seek-{0,3}-result.json`, images/captures, journaux et builds. [Client ciblé](../../tests/player/prefetch_prototype_check.py) : `python3 tests/player/prefetch_prototype_check.py SPEC.json paused|sequence|seek` ; spec `mpv,input,conf,models,lib,out`, runtime CUDA/TensorRT dans LD_LIBRARY_PATH. Receipts concluants réutilisés ; cas12images128×72→256×144.
 
-Release3.8.0.66 à publier ; AH-38 reste In Progress jusqu'à vérification de livraison.
+**3.8.0.66 publiée**, source `ac407bca07771db0bf9da0b4e37ce245fea895cd` ; trois workflows success,15assets uploaded, archive/digest et prototype dans le mpv livré vérifiés. AH-38 **Done**, clôture10122.
