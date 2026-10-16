@@ -35,4 +35,4 @@ Artefacts `artifacts/performance/lots-20261016/lot-11/` : specs par processus av
 
 Conserver : reprise sûre, aucun import partiel, suppression des orphelins dont la propriété est prouvée, arrêt du builder au décès du parent et références intactes. Les anciens temporaires sans preuve sont délibérément conservés. Les API Windows/Apple/providers et le traitement disque/quota restent des périmètres distincts ; aucune qualification de ces API, HDR physique ou épisode prolongé déduite de Linux.
 
-Publication prévue **3.8.0.42** ; builds en arrière-plan, pin binaire et état de publication complétés lors de la livraison.
+Binaire Linux final multi-SM chargé avec le même plan de référence et un snapshot source créé selon le layout final : **0 octet de sortie changé**, 24 exports ABI conservés. SHA-256 `2279177a0854aa26dd98682b2058fb52e5fed8716ef426bc1143d762f64b4bad`. Windows NVIDIA/AMD build `38827967813` success, compilation/linking seulement. Pin `171220010f12298da39acead5269ad439d709bcc`. Publication **3.8.0.42** lancée ; état des assets suivi dans Jira pendant le lot suivant, sans attente inactive.
