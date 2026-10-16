@@ -14,6 +14,8 @@ static OrtApi wrapped;
 static pthread_once_t once = PTHREAD_ONCE_INIT;
 static _Atomic uint64_t counters[6];
 static _Atomic uint64_t capture_index;
+static _Atomic int fail_next_run;
+void aji_test_ort_fail_next_run(void) { atomic_store(&fail_next_run,1); }
 
 // Optional shape/graph evidence for specialization trials; configure-time only.
 static void capture_path(char out[4096], const char *folder, const char *kind, uint64_t index, const char *extension)
@@ -125,6 +127,7 @@ static OrtStatus *ORT_API_CALL run(OrtSession *session, const OrtRunOptions *opt
     const char *const *names, const OrtValue *const *inputs, size_t input_count,
     const char *const *output_names, size_t output_count, OrtValue **outputs)
 {
+    if(atomic_exchange(&fail_next_run,0))return real_api->CreateStatus(ORT_FAIL,"injected surface execution failure");
     for (size_t i = 0; i < output_count; ++i)
         if (!outputs[i]) atomic_fetch_add(&counters[3], 1);
     atomic_fetch_add(&counters[4], 1);

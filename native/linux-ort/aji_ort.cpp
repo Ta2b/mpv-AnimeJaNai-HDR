@@ -22,6 +22,7 @@
 #include "tiles.h"
 #include "../common/stats_snapshot.h"
 #include "../common/source_identity.h"
+#include "../common/surface_validation.h"
 #include <sstream>
 #include <chrono>
 #include <cmath>
@@ -180,6 +181,8 @@ struct Context {
     aji::SourceIds pending_ids, active_ids;
     aji::SourceIdTracker id_tracker;
     uint64_t source_id_hits = 0, source_byte_comparisons = 0;
+    aji::surface::Signature surface_signature{};
+    bool surface_valid=false,surface_dispatch=false,surface_configured=false;
     std::string stats_text, stats_state = "configured";
     double last_frame_ms = 0;
     // Interpolation. Before the upscale (the profile's default): the two source frames are
@@ -1202,6 +1205,80 @@ void publish_error(Context &c, const std::exception &e) {
 
 AJI_ORT_EXPORT uint32_t aji_vk_version(void) { return AJI_VK_ABI; }
 
+static void invalidate_surface_results(Context &c)
+{
+    c.pending_ids={};c.active_ids={};c.id_tracker={};
+    for(auto &e:c.ends) {e.valid=e.has_work=e.has_up=false;e.source_key={};}
+    for(auto &step:c.steps)std::fill(step.known.begin(),step.known.end(),0);
+    c.pair_decision={};c.warp_pair={};c.run_a=c.run_b=0;c.run_held=false;c.run=0;c.spread=0;
+    c.upcoming.clear();c.upcoming_stride.clear();
+}
+
+static bool cpu_surfaces_supported(const Context &c)
+{
+#if defined(__linux__) && defined(__x86_64__)
+    return c.surface_configured && (c.provider=="cpu" || c.slot==0);
+#else
+    (void)c;return false;
+#endif
+}
+
+AJI_ORT_EXPORT int aji_surface_query_v1(void *context,uint32_t version,aji_surface_caps_v1 *out,size_t size)
+{
+    if(!context || !out || size<sizeof(*out))return AJI_SURFACE_INVALID;
+    if(version!=1 || !cpu_surfaces_supported(*(Context *)context))return AJI_SURFACE_UNSUPPORTED;
+    *out={};out->struct_size=sizeof(*out);out->version=1;out->max_dimension=16384;
+    out->flags=AJI_SURFACE_SYNC|AJI_SURFACE_BORROWED_CALL|AJI_SURFACE_OWNER_CALLBACKS
+        |AJI_SURFACE_HOST_ROI|AJI_SURFACE_PRESERVES_DESCRIPTORS;
+    out->resource_mask=1ull<<AJI_RESOURCE_HOST;out->format_mask=1ull<<AJI_SURFACE_RGB8;
+    out->max_planes=1;out->device_kind=AJI_RESOURCE_HOST;return AJI_SURFACE_OK;
+}
+
+AJI_ORT_EXPORT int aji_surface_process_v1(void *context,const aji_surface_v1 *previous,
+    const aji_surface_v1 *current,double t,const aji_surface_v1 *output)
+{
+    if(!context)return AJI_SURFACE_INVALID;
+    auto &c=*(Context *)context;
+    // Every attempted call consumes the legacy one-shot hint as well.
+    c.pending_ids={};c.active_ids={};
+    if(!cpu_surfaces_supported(c))return AJI_SURFACE_UNSUPPORTED;
+    try {
+        using namespace aji::surface;
+        check(t>=0 && t<=1,"Invalid surface timestep");
+        const auto b=host(current,c.width,c.height,false);
+        const auto dst=host(output,c.plan.width,c.plan.height,true);
+        check(same_color(*current,*output),"Surface output color/orientation differs from source");
+        check(!overlaps(b,dst),"Surface input/output views overlap");
+        HostView a;
+        if(previous) {
+            a=host(previous,c.width,c.height,false);
+            check(same_color(*previous,*current),"Surface pair color/orientation differs");
+            check(!overlaps(a,dst),"Surface previous/output views overlap");
+            check(!previous->generation || !current->generation || previous->generation==current->generation,
+                "Surface pair generations differ");
+        }
+        const auto key=signature(*current,b);
+        if(!c.surface_valid || c.surface_signature!=key) {
+            invalidate_surface_results(c);c.surface_signature=key;c.surface_valid=true;
+        }
+        c.upcoming.clear();c.upcoming_stride.clear(); // no borrowed legacy lookahead in this contract
+        // Differing previous/current view layouts use exact byte comparison;
+        // an ID never authenticates a different offset/crop/color by itself.
+        const bool trust=!previous || signature(*previous,a)==key;
+        c.pending_ids=trust ? c.id_tracker.accept(current->generation,previous?previous->sequence:0,current->sequence) : aji::SourceIds{};
+        Owners owners;owners.add(previous);owners.add(current);owners.add(output);
+        c.surface_dispatch=true;
+        const int status=aji_vk_process(context,previous?a.pixels:nullptr,previous?a.stride:0,
+            b.pixels,b.stride,t,dst.pixels,dst.stride);
+        c.surface_dispatch=false;
+        return status==0 ? AJI_SURFACE_OK : AJI_SURFACE_ENGINE_ERROR;
+    } catch(const aji::surface::Unsupported &e) {
+        c.surface_dispatch=false;publish_error(c,e);return AJI_SURFACE_UNSUPPORTED;
+    } catch(const std::exception &e) {
+        c.surface_dispatch=false;publish_error(c,e);return AJI_SURFACE_INVALID;
+    }
+}
+
 AJI_ORT_EXPORT aji_vk_context *aji_vk_create(const char *conf, const char *models, const char *rife,
                                              const char *device, const char *stats, int slot)
 {
@@ -1217,10 +1294,12 @@ AJI_ORT_EXPORT aji_vk_context *aji_vk_create(const char *conf, const char *model
 AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int height, double fps, aji_vk_plan *plan)
 {
     auto &c = *(Context *)context;
+    c.surface_configured=false;
     try {
         require(width > 0 && height > 0 && width <= 16384 && height <= 16384, "Invalid source dimensions");
         require(width % 2 == 0 && height % 2 == 0, "Spatial profiles require even source dimensions");
         c.pending_ids = {}; c.active_ids = {}; c.id_tracker = {};
+        c.surface_valid=false;c.surface_dispatch=false;
         c.source_id_hits = c.source_byte_comparisons = 0;
         c.error.clear(); c.stats_state = "configured"; c.last_frame_ms = 0;
         c.steps.clear(); c.width = width; c.height = height; c.rife_skipped = false;
@@ -1229,7 +1308,7 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
         c.upcoming.clear(); c.upcoming_stride.clear();
         c.interval_ms = fps > 1 ? 1000.0 / fps : 41.7;
         c.plan = {width, height, 1, 1, 0};
-        if (c.slot == 0) { *plan = c.plan; publish_stats(c, true); return 0; }
+        if (c.slot == 0) { *plan = c.plan; publish_stats(c, true); c.surface_configured=true;return 0; }
         AjiConf conf; std::string error;
         require(aji_conf_load(c.conf.c_str(), &conf, &error), error);
         c.provider = wanted_provider(conf);
@@ -1244,7 +1323,7 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
                 c.chain = chain; matched = true; break;
             }
         }
-        if (!matched) { *plan = c.plan; publish_stats(c, true); return 0; }
+        if (!matched) { *plan = c.plan; publish_stats(c, true); c.surface_configured=true;return 0; }
         load_steps(c, width, height);
         require(!c.steps.empty(), "This engine needs at least one upscale model in the profile");
         load_rife(c);
@@ -1253,6 +1332,7 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
         if (c.rife) { c.plan.numerator = c.chain.rife_factor_num; c.plan.denominator = c.chain.rife_factor_den; }
         *plan = c.plan;
         publish_stats(c, true);
+        c.surface_configured=true;
         return 0;
     } catch (const std::exception &e) { publish_error(c, e); return -1; }
 }
@@ -1262,6 +1342,7 @@ AJI_ORT_EXPORT int aji_vk_process(aji_vk_context *context, const unsigned char *
                                   unsigned char *output, ptrdiff_t output_stride)
 {
     auto &c = *(Context *)context;
+    if(!c.surface_dispatch && c.surface_valid) {invalidate_surface_results(c);c.surface_valid=false;}
     c.active_ids = c.pending_ids; c.pending_ids = {};
     try {
         const double start = now_ms();
