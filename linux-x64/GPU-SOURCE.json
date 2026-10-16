@@ -1,9 +1,9 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "df7e02e7bd3f4d274986946d2e5a04e905d7a454",
+  "backend_source": "3fcb6e4de075907388e44d6e46096290082770ec",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
-  "validation": "Linux RTX4070Ti SM8.9 CUDA13.4/TRT11.3: nine exact native-YUV outputs across spatial NV12/P010/YUV444P16, RIFE Quality/Fast before upscale, Quality after upscale/scene, dispatcher and RIFE-only. ROI/padding/descriptors/owners, invalid device/resource/extent/color and allocation error before model execution qualified. Optional symbols negotiated, legacy backend fallback qualified. No FPS/HDR/universal-hardware claim. Windows bundle unchanged from d00ed919/652fbc6, not rebuilt or qualified by this Linux-only lot.",
+  "validation": "Linux RTX4070Ti SM8.9 CUDA13.4/TRT11.3: controlled GPU producer/output events and consumer chaining, pending until owner release, bounded queue/results, queued descriptor/dependency snapshots, monotone tickets, cancel/drain/destroy and injected completed-event failure with latched errors. Two Quality/Fast worker outputs exact against lot31 references, no reference reruns. No neural inference for contract tests. No FPS/HDR/actual-device-loss/universal claim. Windows bundle unchanged from d00ed919/652fbc6; this is a Linux-only delivery.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -40,12 +40,16 @@
     "optional-versioned-cuda-module-probe",
     "optional-versioned-cuda-yuv-surfaces",
     "optional-dispatcher-surface-forwarding",
-    "synchronous-surface-owner-drain"
+    "synchronous-surface-owner-drain",
+    "bounded-cuda-surface-submit-complete",
+    "native-cuda-surface-input-output-events",
+    "deferred-native-surface-errors",
+    "optional-dispatcher-async-surface-forwarding"
   ],
   "sha256": {
-    "libaji.so": "0fd69ff3f46eea180970129b0df6fcd95e955d4d3c44b61438f9280c4b9668d1",
-    "libaji_trt.so": "63e262eda121be81b9fbcffcd4fbea3aedea4981da5809301fe632775dcf2d79",
-    "libaji_trt_rtx.so": "63e262eda121be81b9fbcffcd4fbea3aedea4981da5809301fe632775dcf2d79"
+    "libaji.so": "0989a5ff2e91e817b55894e05204c62193f2acb0876e4fe9efd9cec54a5ed492",
+    "libaji_trt.so": "140d6b2857c5f0d1768c294d7f7bf62b2dac13d77e9c7dd066f55315f2409339",
+    "libaji_trt_rtx.so": "140d6b2857c5f0d1768c294d7f7bf62b2dac13d77e9c7dd066f55315f2409339"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -60,7 +64,7 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "a4e88c8c114385f41113e9ac047db3f894df3c87",
+  "player_qualification_source": "60e480bfdf07f2e2c022e079be3ea8c716dd4c0a",
   "windows_bundle_unchanged": {
     "binary_pin": "d00ed919d8337a89b68f519f1ab1ce71e68a8628",
     "backend_source": "652fbc6bdd3a9d815367deeb2df65538636705dc"
