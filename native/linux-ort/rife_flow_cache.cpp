@@ -1,6 +1,7 @@
 #include "rife_flow_cache.h"
 #include "onnx_flow.h"
 #include "../common/content_identity.h"
+#include "../common/program_identity.h"
 #include "../common/cache_key_lock.h"
 #include "../common/cache_stage_owner.h"
 #include <iostream>
@@ -17,9 +18,12 @@ constexpr const char *graph_name = "rife.flow.onnx";
 std::string source_key(const std::vector<char> &graph, const std::vector<identity::File> &weights)
 {
     identity::Sha256 hash;
-    hash.text(version); hash.integer(graph.size()); hash.update(graph.data(),graph.size());
+    hash.text("onnx-source-v2"); hash.integer(graph.size()); hash.update(graph.data(),graph.size());
     hash.text(identity::files("onnx-external-weights-v1",weights));
-    return hash.hex();
+    identity::Program p;
+    p.source_scheme = "onnx-source-v2"; p.source_digest = hash.hex();
+    p.converter = "rife-flow-outputs"; p.converter_version = 2;
+    return identity::program_key(std::move(p));
 }
 fs::path temporary(const fs::path &parent, const std::string &prefix)
 {
@@ -70,7 +74,7 @@ fs::path cached_rife_flow(const fs::path &source, const fs::path &cache)
         weights.emplace_back("external/"+location,source.parent_path()/relative);
     }
     const std::string key = source_key(graph,weights);
-    const fs::path parent = cache / "rife-flow-v2", destination = parent / key;
+    const fs::path parent = cache / "rife-flow-v3", destination = parent / key;
     fs::create_directories(parent);
     if (valid(destination,locations) && !cache::has_owned_stages(parent,".part-","flow:"+key))
         return destination / graph_name;

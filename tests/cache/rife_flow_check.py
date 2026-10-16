@@ -47,7 +47,7 @@ assert onnx.load(new_graph,load_external_data=False).producer_version=='new grap
 # Corrupt bytes, not just absence: exporter must preserve and replace the damaged entry.
 correct=new_graph.read_bytes();new_graph.write_bytes(b'corrupt')
 repaired,diagnostic=run(source,cache);assert Path(repaired).read_bytes()==correct
-assert any(f.read_bytes()==b'corrupt' for f in (cache/'rife-flow-v2').glob('.invalid-*/preserved/rife.flow.onnx'))
+assert any(f.read_bytes()==b'corrupt' for f in (cache/'rife-flow-v3').glob('.invalid-*/preserved/rife.flow.onnx'))
 assert 'rife-flow-outputs-v2' in diagnostic
 warm_stamp=Path(repaired).stat().st_mtime_ns;warm,_=run(source,cache)
 assert warm==repaired and Path(warm).stat().st_mtime_ns==warm_stamp

@@ -101,10 +101,10 @@ try:
             assert cuda.cudaMemcpy(plane.ctypes.data,target.plane[i],plane.nbytes,2)==0
             planes.append(plane)
         np.save(out.with_suffix('.npy'), np.concatenate(planes))
-        result['engines']={f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in Path(s['models']).glob('aji-v2-*.engine')}
+        result['engines']={f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in Path(s['models']).glob('aji-v[23]-*.engine')}
     result['active_status']=status
     result['final_error']=lib.aji_last_error(context).decode() if context else ''
-    result['engine_sizes']={f.name:f.stat().st_size for f in Path(s['models']).glob('aji-v2-*.engine')}
+    result['engine_sizes']={f.name:f.stat().st_size for f in Path(s['models']).glob('aji-v[23]-*.engine')}
     out.with_suffix('.json').write_text(json.dumps(result,indent=2)+'\n')
 finally:
     if context: lib.aji_destroy(C.byref(context))
