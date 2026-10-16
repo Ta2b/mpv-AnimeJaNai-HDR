@@ -1,0 +1,26 @@
+{
+  "lot": 45,
+  "tickets": {
+    "AH-316": "In Progress",
+    "AH-319": "In Progress"
+  },
+  "manager_source": "98c8d27f0efcc7e8b2240ec1dd103457eb9d6b76",
+  "manager_run": 38971467600,
+  "qualification": [
+    "real SDK ZIP:16 assertions",
+    "category/UI:9 assertions",
+    "new SDK safety guards:2 assertions",
+    "fresh-process native provider setup/query/destroy"
+  ],
+  "import_ms": 482.9863,
+  "native_setup_ms": 120.590302,
+  "video_arithmetic_changed": false,
+  "release": "3.8.0.76 preparing",
+  "jira_comments": {
+    "AH-316": "10164",
+    "AH-319": "10165"
+  },
+  "remaining": [
+    "verify complete player release"
+  ]
+}

@@ -1,6 +1,6 @@
 # Reprise du travail — état au 14 octobre 2026
 
-Point courant : **3.8.0.74 publiée, trois workflows success/17assets ; AH-302 Done**. Source64f2512, Manager2cc424c ; composant Windows byte-exact vérifié. **AH-314 In Progress** : simplification UI qualifiée, Managerf5e2a0f en publication38966813166. **AH-315 In Progress** : étage downscale indépendant en implémentation. AH-316 importSDK et AH-317 HDR explicite To Do. **AH-313 In Progress** : GMFSS checkpoints472637b/1048b2a, ni qualification finale ni livraison prétendue.
+Point courant : **3.8.0.75 publiée, trois workflows success/17assets ; AH-314 Done**. Sourcefe36094, Managerf5e2a0f ; EXE+3DLL Windows byte-exact vérifiés. **AH-315 In Progress** : downscale CUDA624ff49/Managerd5e7cc4 qualifiés sur kernel/lecteur/UI ; comparaison RIFE et livraison restantes. **AH-316 In Progress** : assistant importZIP FRUC en implémentation. AH-317 HDR explicite et AH-318 importNvTrueHDR To Do. **AH-313 In Progress** : GMFSS checkpoints472637b/1048b2a, qualification/livraison encore incomplètes.
 
 ## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
 

@@ -1,16 +1,17 @@
 {
   "lot": 43,
   "tickets": {
-    "AH-314": "In Progress",
+    "AH-314": "Done",
     "AH-315": "In Progress",
-    "AH-316": "To Do",
+    "AH-316": "In Progress",
     "AH-317": "To Do"
   },
   "manager_source": "f5e2a0fd9ad7576f285b67bce17499a10cc2e5ca",
   "manager_run": 38966813166,
   "qualification": "8 actual UI/config assertions pass; frame inspected; interface only, no video trial required",
-  "release": "pending managed binary publication",
+  "release": "3.8.0.75",
   "jira_comments": {
     "AH-314": "10160"
-  }
+  },
+  "publication_verified": true
 }

@@ -1,0 +1,32 @@
+{
+  "source": "98c8d27f0efcc7e8b2240ec1dd103457eb9d6b76",
+  "run": 38971467600,
+  "url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/tag/hdr-98c8d27f0efcc7e8b2240ec1dd103457eb9d6b76",
+  "assets": [
+    {
+      "name": "AnimeJaNaiManager-HDR-linux-x64.tar.zst",
+      "size": 44319289,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-98c8d27f0efcc7e8b2240ec1dd103457eb9d6b76/AnimeJaNaiManager-HDR-linux-x64.tar.zst"
+    },
+    {
+      "name": "AnimeJaNaiManager-HDR-macos-arm64.zip",
+      "size": 46746793,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-98c8d27f0efcc7e8b2240ec1dd103457eb9d6b76/AnimeJaNaiManager-HDR-macos-arm64.zip"
+    },
+    {
+      "name": "AnimeJaNaiManager-HDR-x64.zip",
+      "size": 48997940,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-98c8d27f0efcc7e8b2240ec1dd103457eb9d6b76/AnimeJaNaiManager-HDR-x64.zip"
+    },
+    {
+      "name": "AnimeJaNaiManager-HDR.exe",
+      "size": 99470963,
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-98c8d27f0efcc7e8b2240ec1dd103457eb9d6b76/AnimeJaNaiManager-HDR.exe"
+    }
+  ],
+  "publication_verified": true
+}
