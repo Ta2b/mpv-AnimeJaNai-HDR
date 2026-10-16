@@ -400,6 +400,7 @@ public static class InterpolationPipeline
     public static void Validate(Plan plan)
     {
         if(plan.Stages.Count>MaxStages)throw new InvalidDataException("Too many pipeline stages");
+        if(plan.Stages.Count(s=>s.Kind=="hdr")>1)throw new InvalidDataException("Only one HDR conversion stage is allowed per profile.");
         var ids=new HashSet<string>(StringComparer.Ordinal);
         foreach(var s in plan.Stages)
         {
@@ -417,6 +418,12 @@ public static class InterpolationPipeline
         }
         // Verify cumulative arithmetic without imposing a model/hardware speed claim.
         plan.OutputCadence(new Rational(1,1));
+    }
+    public static void ValidateProfile(IEnumerable<Plan> chains)
+    {
+        int hdr=0;
+        foreach(var chain in chains) {Validate(chain);hdr+=chain.Stages.Count(s=>s.Kind=="hdr");}
+        if(hdr>1)throw new InvalidDataException("Only one HDR conversion stage is allowed per profile, across all its chains.");
     }
     public static IReadOnlyDictionary<string,string> Write(Plan plan,int chain)
     {
