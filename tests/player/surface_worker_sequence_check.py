@@ -30,12 +30,13 @@ for worker in ['no','yes']:
  with open(art/(name+'-stdout.log'),'wb') as f:r=subprocess.run(args,stdout=f,stderr=subprocess.STDOUT,timeout=20)
  assert r.returncode==0,(name,r.returncode)
  probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0','-show_streams','-show_frames','-of','json',str(output)]))
- raw=art/(name+'.nv12')
+ raw=art/(name+'.raw')
  subprocess.run(['ffmpeg','-v','error','-y','-i',str(output),'-pix_fmt',rawformat,'-f','rawvideo',str(raw)],check=True)
  data=raw.read_bytes();size=frame_size
  frames=[{'pts':f['pts'],'time_base':probe['streams'][0]['time_base'],'sha256':hashlib.sha256(data[i*size:(i+1)*size]).hexdigest()} for i,f in enumerate(probe['frames'])]
  assert len(frames)==frame_count and len(data)==frame_count*size,(len(frames),len(data))
  assert probe['streams'][0]['width']==256 and probe['streams'][0]['height']==144
+ assert probe['streams'][0]['pix_fmt']==rawformat
  log=(art/(name+'.log')).read_text();assert 'Decoder format: 128x72 [0:1] cuda[nv12]' in log and 'backend: TensorRT' in log
  if worker=='yes':assert 'Surface CUDA worker active: 3 job slots' in log
  result={'worker':worker,'capacity':capacity,'duration_s':time.monotonic()-t,'frames':frames,'raw_sha256':hashlib.sha256(data).hexdigest(),'args':args,'returncode':r.returncode,'width':256,'height':144}
