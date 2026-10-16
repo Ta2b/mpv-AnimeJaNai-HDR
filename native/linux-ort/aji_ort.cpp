@@ -32,6 +32,7 @@
 #include <fstream>
 #include <iomanip>
 #include <mutex>
+#include "submission_worker.h"
 
 #if defined(AJI_ORT_STATIC)
 // Linked into a test program: the header's plain declarations apply.
@@ -122,6 +123,7 @@ Settings read_settings(const std::string &conf)
 
 struct Worker {
     std::unique_ptr<Executor> executor;
+    std::unique_ptr<SubmissionWorker> submission;
     double pace_ms = 0;        // recent time for one tile, 0 = not known yet
     double total_ms = 0;       // tiles after the first one (the first includes compilation)
     uint64_t tiles = 0;
@@ -184,6 +186,8 @@ struct Context {
     // interpolated at the size the first model takes, and the result is upscaled like a frame.
     // After: the two upscaled frames are interpolated.
     std::unique_ptr<Interpolator> rife;
+    // Separate from tile lanes: this producer may wait for nested tile work.
+    std::unique_ptr<SubmissionWorker> following_source;
     bool rife_before = true;
     int rife_w = 0, rife_h = 0;
     std::string rife_model, rife_note;
@@ -549,10 +553,19 @@ double run_tiles(const TilePlan &plan, std::vector<Worker> &workers, const std::
             if (!took_one) { std::lock_guard<std::mutex> guard(lock); worker.idle++; }
         } catch (const std::exception &e) { errors[me] = e.what(); }
     };
-    std::vector<std::thread> threads;
-    for (size_t i = 1; i < workers.size(); i++) threads.emplace_back(work, i);
-    work(0);
-    for (auto &t : threads) t.join();
+    std::vector<std::future<void>> tasks;
+    std::exception_ptr failure;
+    try {
+        tasks.reserve(workers.size());
+        for (size_t i = 1; i < workers.size(); i++) {
+            if (!workers[i].submission) workers[i].submission = std::make_unique<SubmissionWorker>();
+            tasks.push_back(workers[i].submission->submit([&, i] { work(i); }));
+        }
+        work(0);
+    } catch (...) { failure = std::current_exception(); }
+    for (auto &task : tasks) task.wait(); // all stack-owned buffers stay alive
+    if (failure) std::rethrow_exception(failure);
+    for (auto &task : tasks) task.get();
     for (const auto &error : errors) require(error.empty(), error);
     // The fastest device never declines, so the queue is empty here; were the paces ever to tie
     // in a way that leaves tiles, the first device finishes them.
@@ -1006,13 +1019,15 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
         const std::vector<uint8_t> &wa = work_of(c, a), &wb = work_of(c, *next);
         const ptrdiff_t stride = (ptrdiff_t)c.rife_w * 3;
         // The following source frame is upscaled while RIFE runs (they need nothing of each other).
-        std::thread following;
+        std::future<void> following;
         std::string failure;
         bool following_whole = false;
-        if (!next->has_up)
-            following = std::thread([&] {
+        if (!next->has_up) {
+            if (!c.following_source) c.following_source = std::make_unique<SubmissionWorker>();
+            following = c.following_source->submit([&] {
                 try { up_of(c, *next, &following_whole); } catch (const std::exception &e) { failure = e.what(); }
             });
+        }
         auto &W = c.warp_pair;
         const bool many = (double)c.chain.rife_factor_num / c.chain.rife_factor_den > 3.0 + 1e-9;
         auto motion = [&](double at, bool summarize = true) {
@@ -1037,8 +1052,8 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
             } else if (!W.single) {
                 motion(instant, false);
             }
-        } catch (...) { if (following.joinable()) following.join(); throw; }
-        if (following.joinable()) following.join();
+        } catch (...) { if (following.valid()) following.wait(); throw; }
+        if (following.valid()) following.get();
         require(failure.empty(), failure);
         bool whole_a = false;
         const std::vector<uint8_t> &ua = up_of(c, a, &whole_a), &ub = up_of(c, *next, &following_whole);
@@ -1059,19 +1074,21 @@ bool interpolate(Context &c, const uint8_t *previous, ptrdiff_t previous_stride,
         // different processors a source frame then costs the longer of the two plus one
         // upscale, instead of their sum plus one upscale. AJI_RIFE_PARALLEL=0 for a comparison.
         static const bool together = [] { const char *v = std::getenv("AJI_RIFE_PARALLEL"); return !(v && *v == '0'); }();
-        std::thread following;
+        std::future<void> following;
         std::string failure;
         bool following_whole = false;
-        if (together && !next->has_up)
-            following = std::thread([&] {
+        if (together && !next->has_up) {
+            if (!c.following_source) c.following_source = std::make_unique<SubmissionWorker>();
+            following = c.following_source->submit([&] {
                 try { up_of(c, *next, &following_whole); } catch (const std::exception &e) { failure = e.what(); }
             });
+        }
         try {
             c.rife->run(wa.data(), stride, wb.data(), stride, instant, c.between.data(), stride);
-        } catch (...) { if (following.joinable()) following.join(); throw; }
-        if (following.joinable()) {
+        } catch (...) { if (following.valid()) following.wait(); throw; }
+        if (following.valid()) {
             const double wait = c.rife_profiled ? now_ms() : 0;
-            following.join();
+            following.get();
             if (c.rife_profiled) c.rife_wait_ms += now_ms() - wait;
         }
         require(failure.empty(), failure);
