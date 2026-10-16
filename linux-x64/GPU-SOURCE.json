@@ -1,17 +1,9 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "652fbc6bdd3a9d815367deeb2df65538636705dc",
+  "backend_source": "df7e02e7bd3f4d274986946d2e5a04e905d7a454",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
-  "windows_build": {
-    "AMD_RESULT": "success",
-    "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "652fbc6bdd3a9d815367deeb2df65538636705dc",
-    "GITHUB_RUN_ID": "38874628974",
-    "GITHUB_RUN_ATTEMPT": "1",
-    "validation": "compilation/linking only; no inference/test/benchmark"
-  },
-  "validation": "Linux RTX4070Ti SM8.9: real shipped FP16 kernel probe, module/runtime/device data, invalid ordinal, short/null outputs and caller CUDA context preserved. CPU conversion qualified separately in player. Existing C exports preserved plus optional probe. No model inference/FPS claim. Previous unchanged-render qualifications retained, not repeated. Windows compile/link only.",
+  "validation": "Linux RTX4070Ti SM8.9 CUDA13.4/TRT11.3: nine exact native-YUV outputs across spatial NV12/P010/YUV444P16, RIFE Quality/Fast before upscale, Quality after upscale/scene, dispatcher and RIFE-only. ROI/padding/descriptors/owners, invalid device/resource/extent/color and allocation error before model execution qualified. Optional symbols negotiated, legacy backend fallback qualified. No FPS/HDR/universal-hardware claim. Windows bundle unchanged from d00ed919/652fbc6, not rebuilt or qualified by this Linux-only lot.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -45,12 +37,15 @@
     "preserve-identical-v3-onnx-program",
     "content-keyed-temporal-io-classification",
     "static-temporal-profile-policy",
-    "optional-versioned-cuda-module-probe"
+    "optional-versioned-cuda-module-probe",
+    "optional-versioned-cuda-yuv-surfaces",
+    "optional-dispatcher-surface-forwarding",
+    "synchronous-surface-owner-drain"
   ],
   "sha256": {
-    "libaji.so": "c79eb7cfc4be4aecc207664636c906cea4c0de1b68287aac1a71b992a52a7dd2",
-    "libaji_trt.so": "febd11f0bcab096f0cd89a4dd18049375bafc398f81b16ab2866f5658abc6387",
-    "libaji_trt_rtx.so": "febd11f0bcab096f0cd89a4dd18049375bafc398f81b16ab2866f5658abc6387"
+    "libaji.so": "0fd69ff3f46eea180970129b0df6fcd95e955d4d3c44b61438f9280c4b9668d1",
+    "libaji_trt.so": "63e262eda121be81b9fbcffcd4fbea3aedea4981da5809301fe632775dcf2d79",
+    "libaji_trt_rtx.so": "63e262eda121be81b9fbcffcd4fbea3aedea4981da5809301fe632775dcf2d79"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -65,5 +60,9 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "a22100c0fc9fb76fcabec01faf67b290cf565424"
+  "player_qualification_source": "a4e88c8c114385f41113e9ac047db3f894df3c87",
+  "windows_bundle_unchanged": {
+    "binary_pin": "d00ed919d8337a89b68f519f1ab1ce71e68a8628",
+    "backend_source": "652fbc6bdd3a9d815367deeb2df65538636705dc"
+  }
 }
