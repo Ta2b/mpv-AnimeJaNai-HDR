@@ -1,17 +1,17 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "62c1c5a7cdc5ae65e77f9e511913aa1e59e95972",
+  "backend_source": "694537a6dada3c0aec11947cdc5a6bda86c2c91b",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "62c1c5a7cdc5ae65e77f9e511913aa1e59e95972",
-    "GITHUB_RUN_ID": "38824878954",
+    "GITHUB_SHA": "694537a6dada3c0aec11947cdc5a6bda86c2c91b",
+    "GITHUB_RUN_ID": "38827967813",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Linux RTX4070Ti/TRT11.3: two real builders coalesced to one; same-plan output exact; failure release, async wait cancellation, motion export and invalid cache repair pass. Windows compile/link only. No steady-state FPS claim.",
+  "validation": "Linux RTX4070Ti/TRT11.3: flow/snapshot/TRT/motion interrupted-write recovery, owned orphans removed, references/unknown stages preserved, builder dies with parent, recovered bytes/output exact on tested cases. Windows compile/link only. No FPS claim.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -25,12 +25,15 @@
     "inference-stream-order",
     "per-key-engine-builder",
     "cancelable-build-lock-waits",
-    "coordinated-fast-motion-export"
+    "coordinated-fast-motion-export",
+    "owned-cache-stage-recovery",
+    "model-data-metadata-separation",
+    "linux-builder-parent-death"
   ],
   "sha256": {
     "libaji.so": "c79eb7cfc4be4aecc207664636c906cea4c0de1b68287aac1a71b992a52a7dd2",
-    "libaji_trt.so": "73fa892f9530d7ddbb4295c271ae97d39a515453b3a8358487ed582a61315234",
-    "libaji_trt_rtx.so": "73fa892f9530d7ddbb4295c271ae97d39a515453b3a8358487ed582a61315234"
+    "libaji_trt.so": "2279177a0854aa26dd98682b2058fb52e5fed8716ef426bc1143d762f64b4bad",
+    "libaji_trt_rtx.so": "2279177a0854aa26dd98682b2058fb52e5fed8716ef426bc1143d762f64b4bad"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -45,5 +48,5 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "11682f1"
+  "player_qualification_source": "0efe178b2e39f487403701f3db9b3c2fed736a55"
 }

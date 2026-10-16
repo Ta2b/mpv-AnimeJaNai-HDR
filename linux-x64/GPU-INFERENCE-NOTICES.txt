@@ -8,3 +8,6 @@ Linux targeted identity/fidelity qualification; Windows compilation/linking only
 
 Per-key builder backend: 62c1c5a7cdc5ae65e77f9e511913aa1e59e95972
 Linux targeted coordination and fidelity qualification; Windows compile/link only.
+
+Linux cache recovery backend: 694537a6dada3c0aec11947cdc5a6bda86c2c91b
+Interrupted-write recovery qualified on Linux; Windows compile/link only.
