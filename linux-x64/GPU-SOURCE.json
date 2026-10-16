@@ -110,17 +110,17 @@
     ]
   },
   "ordered_pipeline": {
-    "backend_source": "35c0049ffd2977fe196a34bbbd3b051647486c4d",
+    "backend_source": "8d4ea4e28a660523bf2264dbb56627472400b10a",
     "api": "aji_pipeline_v1",
     "sha256": {
-      "libaji_pipeline.so": "321e52c50c0819642c7539195fb646117d1e81184324a57329447b135fef9280",
-      "aji_pipeline.fatbin": "912e8c30f67c64c7a9276484323fdd22bc09ca870aaaabecb5cff93a5756e21e",
-      "PIPELINE-README.md": "46cc7bef08612a0574a7b8dc943ab6a8766d71e40bc2d2600cdab01141b34477"
+      "libaji_pipeline.so": "7d168927c507d5166430b1edd08a713fe4cc93ec17c6045eebae73dbd097fdd3",
+      "aji_pipeline.fatbin": "8a8a3f6917ead46b50cc7d2e8902ac2379018de9d2687c63c89174d0db6e5f15",
+      "PIPELINE-README.md": "5a688f9c4fee00034c6d78101bd22da357daf7d38598a30f6e3d45224ff1874e"
     },
     "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
     "explicit_opt_in": true,
     "sdk_external": true,
-    "qualified": "Linux RTX4070Ti SDR, native RIFE2->FRUC2->spatial SPAN; only actual supported stage capabilities; Fast FRUC8bit, no Quality equivalence",
+    "qualified": "Linux RTX4070Ti SDR, native RIFE2->FRUC2->spatial SPAN; only actual supported stage capabilities; Fast FRUC8bit, no Quality equivalence; Area downscale reference/pixel ownership and actual NVDEC RIFE at720p verified on RTX4070Ti; relative performance nonconclusive due short variable timings",
     "cuda_architectures": [
       75,
       80,
@@ -130,6 +130,12 @@
       100,
       120,
       "PTX120"
+    ],
+    "prior_backend_source": "35c0049ffd2977fe196a34bbbd3b051647486c4d",
+    "features": [
+      "independent-area-downscale",
+      "static-reader-feature-query",
+      "one-hdr-stage-per-profile"
     ]
   }
 }

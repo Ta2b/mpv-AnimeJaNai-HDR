@@ -1,7 +1,7 @@
 # Ordered interpolation stages — experimental Linux CUDA
 
 Project-owned libaji_pipeline.so and aji_pipeline.fatbin, backend source
-35c0049ffd2977fe196a34bbbd3b051647486c4d. TRT optional build-status extension
+8d4ea4e28a660523bf2264dbb56627472400b10a. TRT optional build-status extension
 comes from 79e8aa48e0c776e8335c2430d538426ed3b0a506 (same TRT sources at 35c0049).
 No NVIDIA SDK/runtime/headers or model weights are included by this feature.
 
@@ -33,3 +33,16 @@ producer, queue cancel/full, controlled final-copy failure and build cancellatio
 No other hardware/API, physical presentation or HDR synthesis qualification.
 Portable kernels SM75/80/86/89/90/100/120+PTX120; host glibc>=2.38,
 GLIBCXX>=3.4.30 (Ubuntu24 package baseline). Source/report in player lot40.
+
+
+Independent Downscale: resize/area/cuda, target_height32..8192 or exclusive
+integer target_percent1..100. Shrinks only, aspect rounded to the nearest pixel,
+GPU YUV444P16 area integration, no RGB8 conversion or cadence change. Static
+aji_pipeline_features_v1 advertises AREA_DOWNSCALE without GPU initialization.
+At most one HDR stage per profile (all chains, inactive stages included).
+This configuration guard does not implement an HDR conversion provider.
+Qualified: 1080->720 and1080->540 independent area references max0 YUV16 code,
+ROI/owners/EOF; actual NVDEC Area720->RIFE720 five outputs/PTS/durations; original
+endpoints exact across RIFE1080->Area720 and Area720->RIFE720. Synthesized
+contours differ with resolution. Performance qualification remains partial:
+short timings varied; no universal FPS claim. Source/report in player lot47.
