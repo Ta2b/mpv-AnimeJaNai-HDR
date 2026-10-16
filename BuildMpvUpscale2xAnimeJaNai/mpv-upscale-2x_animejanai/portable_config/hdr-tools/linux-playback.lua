@@ -4,6 +4,9 @@ local mp = require 'mp'
 local utils = require 'mp.utils'
 local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.lua'}))
 local sync = dofile(mp.command_native({'expand-path','~~/hdr-tools/rife-sync.lua'}))
+local stages = dofile(mp.command_native({'expand-path','~~/hdr-tools/interpolation-stages.lua'}))
+local media = {}
+local light_scale=false
 local options = policy.options()
 local hw = policy.detect(mp,utils,options)
 local slot,loaded,last_conf,last_default = 0,false,nil,nil
@@ -92,6 +95,9 @@ local function ready()
     mp.set_property_native('user-data/animejanai-hardware',hw)
     return hw.inference_available
 end
+local function pipeline_route(wanted, text)
+    return stages.resolve(text or read(hw.conf_active or hw.conf),wanted,media.w,media.h,media.fps)
+end
 local function select(value, preload)
     local wanted = tonumber(value)
     if not wanted or wanted~=math.floor(wanted) or wanted<0 then return end
@@ -108,12 +114,27 @@ local function select(value, preload)
     if wanted>0 and wanted<1000 and (not bank or not bank.slots[wanted] or bank.slots[wanted].name=='New Profile') then
         mp.osd_message('Profil Linux '..wanted..' vide',4);return
     end
+    local selected_route=pipeline_route(wanted)
+    local mixed=selected_route.explicit and not selected_route.legacy_equivalent
+    if wanted>0 and mixed and hw.backend~='tensorrt' then
+        mp.msg.error('Etages ordonnes indisponibles sur ce backend ; TensorRT/CUDA est requis actuellement.')
+        mp.osd_message('Chaine non prise en charge sur ce moteur. Lecture originale conservee.',6)
+        wanted=0;selected_route=pipeline_route(0);mixed=false
+    elseif wanted>0 and mixed and (not utils.file_info(hw.inference_dir..'/libaji_pipeline.so')
+        or not utils.file_info(hw.inference_dir..'/aji_pipeline.fatbin')) then
+        mp.msg.error('Module de chaine ordonnee absent ; mettre le lecteur et ses moteurs a jour.')
+        mp.osd_message('Module de chaine absent. Lecture originale conservee.',6)
+        wanted=0;selected_route=pipeline_route(0);mixed=false
+    end
     local list=mp.get_property_native('vf') or {}
     local index
+    local hdr_wanted=wanted>0 and stage_wanted() and selected_route.legacy_equivalent
     for i,f in ipairs(list) do if f.label=='aji' then index=i end end
     if wanted==0 then
         if index then table.remove(list,index);mp.set_property_native('vf',tag(list,false)) end
-    elseif index and not preload and hw.backend=='tensorrt' and list[index].name=='animejanai' then
+    elseif index and not preload and hw.backend=='tensorrt' and list[index].name=='animejanai'
+        and hdr_wanted==(mp.get_property_native('user-data/animejanai-truehdr')==true)
+        and (not mixed or list[index].params['pipeline-lib']) then
         local ok,result=pcall(mp.commandv,'vf-command','aji','slot',tostring(wanted))
         if not ok or not result then mp.osd_message('Selection AnimeJaNai impossible',5);return end
         if mp.get_property_native('pause') then mp.command('no-osd seek 0 exact') end
@@ -134,7 +155,17 @@ local function select(value, preload)
             f.params.device=os.getenv('ANIMEJANAI_ORT_DEVICE') or ''
             decoder('no')
         else f.params.trtexec=hw.inference_dir..'/trtexec' end
-        local stage=not vulkan and not ort and stage_wanted()
+        if mixed then
+            -- Forces older filters to reject the unsupported option explicitly,
+            -- instead of silently executing only the legacy RIFE keys.
+            f.params['pipeline-lib']=hw.inference_dir..'/libaji_pipeline.so'
+            f.params['pipeline-kernels']=hw.inference_dir..'/aji_pipeline.fatbin'
+            f.params['fruc-lib']=hw.inference_dir..'/libaji_fruc.so'
+        end
+        local stage=not vulkan and not ort and hdr_wanted
+        if selected_route.explicit and not selected_route.legacy_equivalent and stage_wanted() then
+            mp.msg.info('Cette chaine produit du SDR ; mpv assure la conversion HDR.')
+        end
         -- Same C interface as the dispatcher, loaded directly like aji_trt_rtx.dll on Windows.
         if stage then f.params.lib=hw.inference_dir..'/libaji_trt_rtx.so' end
         write_stage(stage)
@@ -144,24 +175,45 @@ local function select(value, preload)
         if stage and loaded then stage_check=mp.add_timeout(3,confirm_stage) end
     end
     slot=wanted
+    local rate=media.fps and media.fps*(selected_route.factor_num or 1)/(selected_route.factor_den or 1)
+    if slot>0 and options.rife_display_sync and not mixed and rate and rate>=100 and options.rife_light_scale then
+        if mp.get_property('scale')=='ewa_lanczossharp' then mp.set_property('scale','spline36');light_scale=true end
+    elseif light_scale then
+        if mp.get_property('scale')=='spline36' then mp.set_property('scale','ewa_lanczossharp') end
+        light_scale=false
+    end
     if wanted==0 then decoder(hw.vendor=='nvidia' and 'nvdec' or 'auto-safe') end
     mp.set_property_native('user-data/animejanai-active-slot',slot)
-    mp.set_property_native('user-data/animejanai-interpolation',slot>0 and bank and bank.slots[slot]
-        and bank.slots[slot].rife and 'RIFE configure' or 'cadence originale')
+    local route=pipeline_route(slot)
+    mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and route.explicit and route or nil)
+    local description='cadence originale'
+    if slot>0 and route.explicit and not route.legacy_equivalent then
+        description=string.format('Chaine configuree x%s/%s',route.factor_num or '?',route.factor_den or '?')
+    elseif slot>0 and bank and bank.slots[slot] and bank.slots[slot].rife then description='RIFE configure' end
+    mp.set_property_native('user-data/animejanai-interpolation',description)
 end
 mp.add_hook('on_load',-50,function()
+    media={}
+    hw.conf_active=hw.conf
     local bank=policy.read_bank(hw.conf)
     last_conf=read(hw.conf);last_default=bank and bank.default_slot or 0
     select(mp.get_property_native('user-data/animejanai-active-slot') or last_default,true)
 end)
-local light_scale=false
 mp.add_hook('on_preloaded',-50,function()
     hw.conf_active=hw.conf
     local text=read(hw.conf)
     if light_scale and mp.get_property('scale')=='spline36' then mp.set_property('scale','ewa_lanczossharp') end
     light_scale=false
+    media.fps=tonumber((mp.get_property_native('container-fps')))
+    for _,track in ipairs(mp.get_property_native('track-list') or {}) do
+        if track.type=='video' and not track.albumart and not track.image and track.selected~=false then
+            media.fps=media.fps or tonumber(track['demux-fps'])
+            media.w,media.h=tonumber(track['demux-w']),tonumber(track['demux-h']);break
+        end
+    end
+    local route=pipeline_route(slot,text)
     if text and options.rife_display_sync then
-        local fps=tonumber((mp.get_property_native('container-fps')))
+        local fps=media.fps
         if not fps then
             for _,t in ipairs(mp.get_property_native('track-list') or {}) do
                 if t.type=='video' and not t.albumart and not t.image then fps=tonumber(t['demux-fps']);break end
@@ -171,13 +223,10 @@ mp.add_hook('on_preloaded',-50,function()
         if p then
             local runtime=path('~~/../animejanai/animejanai-runtime.conf')
             local f=io.open(runtime,'wb')
-            if f then f:write((sync.rewrite(text,p,q)));f:close();hw.conf_active=runtime end
-            -- At this rate the screen's last enlargement weighs as much as the engine: a lighter
-            -- one, only while the option still holds the managed profile's value.
-            if out>=100 and options.rife_light_scale and mp.get_property('scale')=='ewa_lanczossharp' then
-                mp.set_property('scale','spline36');light_scale=true
-            end
-            mp.set_property_native('user-data/animejanai-rife-sync',string.format('x%d/%d -> %.3f i/s (%d rafraichissements)',p,q,out,n))
+            if f then f:write((stages.sync_rewrite(text,p,q,sync.rewrite)));f:close();hw.conf_active=runtime end
+            mp.set_property_native('user-data/animejanai-rife-sync',route.explicit and not route.legacy_equivalent
+                and 'Cadence explicite des etages conservee'
+                or string.format('x%d/%d -> %.3f i/s (%d rafraichissements)',p,q,out,n))
         else mp.set_property_native('user-data/animejanai-rife-sync','aucun facteur exact : profil conserve') end
     else mp.set_property_native('user-data/animejanai-rife-sync',nil) end
     select(slot,true)

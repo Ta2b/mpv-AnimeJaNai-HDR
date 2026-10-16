@@ -805,6 +805,19 @@ void InstallSpecializedInference()
             File.Copy(path, Path.Combine(inferencePath, name), true);
         }
     }
+    if (!plat.IsWindows && record.RootElement.TryGetProperty("ordered_pipeline", out var pipeline))
+    {
+        foreach (var name in new[] { "libaji_pipeline.so", "aji_pipeline.fatbin", "PIPELINE-README.md" })
+        {
+            var path = Path.Combine(source, name);
+            if (!File.Exists(path)) throw new FileNotFoundException("Incomplete optional ordered pipeline", path);
+            var expected = pipeline.GetProperty("sha256").GetProperty(name).GetString();
+            var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
+            if (actual != expected) throw new InvalidDataException("Ordered pipeline hash mismatch: " + name);
+            File.Copy(path, Path.Combine(inferencePath, name), true);
+        }
+    }
+
 }
 
 void InstallAnimeJaNaiCore()
@@ -1046,7 +1059,7 @@ void WriteVersionAndManifest()
     var specializedTrt = plat.IsWindows ? "aji_trt_rtx.dll" : "libaji_trt_rtx.so";
     if (File.Exists(Path.Combine(inferencePath, specializedTrt)))
         overlayPaths.Add("animejanai/inference/" + specializedTrt);
-    foreach (var name in new[] { "aji_migraphx.dll", "AMD-README.md", "GPU-SOURCE.json", "GPU-INFERENCE-NOTICES.txt", "libaji_fruc.so", "aji_fruc.fatbin", "FRUC-README.md" })
+    foreach (var name in new[] { "aji_migraphx.dll", "AMD-README.md", "GPU-SOURCE.json", "GPU-INFERENCE-NOTICES.txt", "libaji_fruc.so", "aji_fruc.fatbin", "FRUC-README.md", "libaji_pipeline.so", "aji_pipeline.fatbin", "PIPELINE-README.md" })
         if (File.Exists(Path.Combine(inferencePath, name)))
             overlayPaths.Add("animejanai/inference/" + name);
     overlayPaths.Add("portable_config/scripts");
@@ -1073,6 +1086,7 @@ void WriteVersionAndManifest()
         overlayPaths.Add("docs/LINUX-INFERENCE.md");
     }
     overlayPaths.Add("docs/SETTINGS.md");
+    overlayPaths.Add("docs/INTERPOLATION-STAGES.md");
     overlayPaths.AddRange(Directory.GetFiles(installDirectory, "*.so").Select(Path.GetFileName)!);
     // Managed defaults files, overwritten on update. The user-facing
     // mpv.conf/input.conf (which carry these) are preserved (user_preserve).
@@ -1099,7 +1113,7 @@ void WriteVersionAndManifest()
             platform_helper = "1",
             manager_hdr = ManagerHdrRelease,
             mpvfork = plat.IsWindows ? $"{MpvForkVersion}-{MpvForkGitHash}"
-                                     : $"{MpvForkLinuxVersion}-wayland-vulkan-bridge1-wlqueue-compat-quality-fast1-stats-atomic1-source-ids1-prefetch-prototype1-prefetch-budget1-surface-worker1",
+                                     : $"{MpvForkLinuxVersion}-wayland-vulkan-bridge1-wlqueue-compat-quality-fast1-stats-atomic1-source-ids1-prefetch-prototype1-prefetch-budget1-surface-worker1-ordered-pipeline1",
             inference_runtime = $"trt-{TrtVersion}",
             ort_dml = plat.IsWindows ? $"{OrtDmlVersion}+{DirectMLVersion}" : (string?)null,
             sevenzip = SevenZipVersion,

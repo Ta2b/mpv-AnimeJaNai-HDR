@@ -1,0 +1,390 @@
+--- a/video/filter/vf_animejanai.c
++++ b/video/filter/vf_animejanai.c
+@@ -48,6 +48,8 @@
+ #include <stdatomic.h>
+ #include <stdlib.h>
+ #include "aji_surface/surface_async.h"
++#include "aji_surface/pipeline.h"
++#include <libavutil/rational.h>
+ #include <inttypes.h>
+ 
+ #include "config.h"
+@@ -158,6 +160,7 @@
+     int prefetch;
+     int64_t prefetch_bytes;
+     bool surface_worker;
++    char *pipeline_lib, *pipeline_kernels, *fruc_lib;
+ };
+ 
+ #define MAX_DEPTH 4
+@@ -206,6 +209,18 @@
+     int (*surface_wakeup)(void *, aji_surface_wakeup_fn, void *);
+ };
+ 
++struct pipeline_api {
++    void *handle;
++    int (*create)(const aji_pipeline_create_v1_params *,void **,char *,size_t);
++    int (*query)(void *,aji_pipeline_caps_v1 *,size_t);
++    int (*submit)(void *,const aji_pipeline_submit_v1_request *,uint64_t *);
++    int (*complete)(void *,uint64_t,uint32_t,aji_pipeline_completion_v1 *,size_t);
++    int (*error)(void *,char *,size_t);
++    int (*stats)(void *,aji_pipeline_stats_v1 *,size_t);
++    void (*destroy)(void *);
++};
++static void pipeline_stop(struct mp_filter *vf);
++
+ struct priv {
+     struct opts *opts;
+ 
+@@ -213,7 +228,7 @@
+     // opts: the option machinery owns and frees those strings itself.
+     struct {
+         char *conf, *model_dir, *trtexec, *trtexec_libdir, *stats, *engine,
+-             *lib, *rife_model_dir;
++             *lib, *rife_model_dir, *pipeline_lib, *pipeline_kernels, *fruc_lib;
+     } path;
+ 
+     CudaFunctions *cu;
+@@ -244,6 +259,14 @@
+ 
+     AVBufferRef *hw_pool;
+ 
++    struct pipeline_api pipe;
++    void *pipeline;
++    bool pipeline_ready, pipeline_restart;
++    aji_pipeline_caps_v1 pipeline_caps;
++    uint64_t pipeline_ticket, pipeline_source_sequence;
++    CUevent pipeline_event;
++    int pipeline_n;
++    struct mp_image *pipeline_images[AJI_PIPELINE_MAX_OUTPUTS];
+     struct aji_api api;
+     aji_ctx *aji;
+     int aji_fmt;
+@@ -295,7 +318,7 @@
+     int rife_acc;               // next grid point's offset into the
+                                 // current pair, in 1/num units (0, num]
+     struct mp_image *rife_prev; // last upscaled frame (left endpoint)
+-    struct mp_image *outq[8];
++    struct mp_image *outq[AJI_PIPELINE_MAX_OUTPUTS];
+     int outq_n, outq_pos;
+     // Temporal (multi-frame) chains: the engine keeps the frame history and
+     // upscales frame N from N-r..N+r. Frames are numbered by refqueue
+@@ -518,10 +541,190 @@
+     }
+     return true;
+ }
++static struct mp_image *alloc_out(struct mp_filter *vf);
++static bool pipeline_requested(struct priv *p)
++{
++    if (!p->path.conf || p->pending_slot < 1) return false;
++    FILE *file = fopen(p->path.conf, "r");
++    if (!file) return false;
++    char line[8192]; int slot = -1; bool found = false;
++    while (fgets(line, sizeof(line), file)) {
++        char *s = line;
++        while (*s == ' ' || *s == '\t') s++;
++        for (char *c = s; *c; c++) if (*c >= 'A' && *c <= 'Z') *c += 'a' - 'A';
++        if (*s == '[') { slot = -1; sscanf(s, "[slot_%d]", &slot); }
++        if (slot == p->pending_slot && strncmp(s, "chain_", 6) == 0 &&
++            strstr(s, "_pipeline_version") && strchr(s, '=')) { found = true; break; }
++    }
++    fclose(file); return found;
++}
++static char *pipeline_sibling(struct priv *p, const char *name)
++{
++    const char *lib = p->path.lib ? p->path.lib : AJI_DEFAULT_LIB;
++    const char *slash = strrchr(lib, '/');
++    return slash ? talloc_asprintf(p, "%.*s/%s", (int)(slash-lib), lib, name) : talloc_strdup(p, name);
++}
++static void pipeline_stop(struct mp_filter *vf)
++{
++    struct priv *p = vf->priv;
++    if (p->pipeline) { p->pipe.destroy(p->pipeline); p->pipeline = NULL; }
++    for (int i = 0; i < p->pipeline_n; i++) mp_image_unrefp(&p->pipeline_images[i]);
++    p->pipeline_n = 0; p->pipeline_ticket = 0; p->pipeline_ready = false;
++    if (p->pipeline_event && p->cu && p->cuda_ctx &&
++        p->cu->cuCtxPushCurrent(p->cuda_ctx) == CUDA_SUCCESS) {
++        CUcontext previous; p->cu->cuEventDestroy(p->pipeline_event);
++        p->cu->cuCtxPopCurrent(&previous);
++    }
++    p->pipeline_event = NULL;
++}
++static bool pipeline_start(struct mp_filter *vf)
++{
++    struct priv *p = vf->priv;
++    bool had_pipeline = p->pipeline != NULL;
++    bool requested = pipeline_requested(p);
++    pipeline_stop(vf);
++    if (had_pipeline || requested) {
++        for (int i = 0; i < p->outq_n; i++) mp_image_unrefp(&p->outq[p->outq_pos+i]);
++        p->outq_n = p->outq_pos = 0;
++        mp_image_unrefp(&p->rife_prev);
++    }
++    if (!requested) return true;
++    if (p->is_d3d11 || !p->cuda_ctx || !isfinite(p->fps) || p->fps <= 0) {
++        MP_ERR(vf, "Ordered interpolation requires Linux CUDA and a known positive source cadence\n");
++        return false;
++    }
++    if (!p->pipe.handle) {
++        const char *path = p->path.pipeline_lib ? p->path.pipeline_lib : pipeline_sibling(p, "libaji_pipeline.so");
++        p->pipe.handle = aji_lib_open(path);
++        if (!p->pipe.handle) { MP_ERR(vf, "Ordered interpolation module missing: %s: %s\n", path, aji_lib_error()); return false; }
++#define PIPE_SYM(field, name) do { p->pipe.field = aji_lib_sym(p->pipe.handle, name); if (!p->pipe.field) { MP_ERR(vf, "Missing ordered pipeline API: %s\n", name); return false; } } while (0)
++        PIPE_SYM(create, "aji_pipeline_create_v1"); PIPE_SYM(query, "aji_pipeline_query_v1");
++        PIPE_SYM(submit, "aji_pipeline_submit_v1"); PIPE_SYM(complete, "aji_pipeline_complete_v1");
++        PIPE_SYM(error, "aji_pipeline_last_error_v1"); PIPE_SYM(destroy, "aji_pipeline_destroy_v1");
++        PIPE_SYM(stats, "aji_pipeline_stats_v1_get");
++#undef PIPE_SYM
++    }
++    CUcontext previous; CUdevice device;
++    if (CHECK_CU(p->cu->cuCtxPushCurrent(p->cuda_ctx)) < 0) return false;
++    bool ok = CHECK_CU(p->cu->cuCtxGetDevice(&device)) >= 0 &&
++              CHECK_CU(p->cu->cuEventCreate(&p->pipeline_event, CU_EVENT_DISABLE_TIMING)) >= 0;
++    p->cu->cuCtxPopCurrent(&previous); if (!ok) return false;
++    p->worker_device = device;
++    AVRational fps = av_d2q(p->fps, 1000000);
++    char *env = p->path.trtexec_libdir ? talloc_asprintf(p, "LD_LIBRARY_PATH=%s", p->path.trtexec_libdir) : NULL;
++    aji_pipeline_create_v1_params params = {
++        .struct_size = sizeof(params), .version = 1,
++        .width = p->params.w, .height = p->params.h, .device_index = device,
++        .slot = p->pending_slot, .capacity = 1, .flags = 1,
++        .generation = p->worker_generation, .cuda_context = p->cuda_ctx,
++        .conf = p->path.conf, .model_dir = p->path.model_dir, .rife_dir = p->path.rife_model_dir,
++        .trtexec = p->path.trtexec, .trtexec_env = env,
++        .trt_library = pipeline_sibling(p, "libaji_trt.so"),
++        .fruc_library = p->path.fruc_lib ? p->path.fruc_lib : pipeline_sibling(p, "libaji_fruc.so"),
++        .kernel_fatbin = p->path.pipeline_kernels ? p->path.pipeline_kernels : pipeline_sibling(p, "aji_pipeline.fatbin"),
++        .fps_numerator = fps.num, .fps_denominator = fps.den,
++        .wakeup = surface_worker_wakeup, .wakeup_opaque = vf,
++    };
++    char message[1024] = {0};
++    int code = p->pipe.create(&params, &p->pipeline, message, sizeof(message));
++    if (code == AJI_PIPELINE_LEGACY) { pipeline_stop(vf); return true; }
++    if (code) { MP_ERR(vf, "Ordered pipeline rejected: %s (%d)\n", message, code); pipeline_stop(vf); return false; }
++    p->cur_slot = p->pending_slot; p->rife_on = p->rife_first = p->drawings = false;
++    p->has_pre_resize = false; p->temporal_r = 0; p->depth = 1;
++    mp_refqueue_set_refs(p->queue, 0, 1);
++    MP_VERBOSE(vf, "Ordered GPU pipeline initializing on its worker\n"); return true;
++}
++static void pipeline_process(struct mp_filter *vf)
++{
++    struct priv *p = vf->priv;
++    if (!p->pipeline_ready) {
++        aji_pipeline_caps_v1 caps;
++        int status = p->pipe.query(p->pipeline, &caps, sizeof(caps));
++        if (status == AJI_SURFACE_ASYNC_BUSY) return;
++        if (status) {
++            char message[1024]; p->pipe.error(p->pipeline, message, sizeof(message));
++            MP_ERR(vf, "Ordered pipeline initialization failed: %s\n", message); goto fail;
++        }
++        if (caps.factor < 1 || caps.factor > AJI_PIPELINE_MAX_OUTPUTS || caps.output_format != AJI_SURFACE_YUV444P16) goto fail;
++        p->pipeline_caps = caps; p->pipeline_ready = true;
++        double sx = (double)caps.width / p->params.w, sy = (double)caps.height / p->params.h;
++        p->out_params = p->params; p->out_params.w = caps.width; p->out_params.h = caps.height;
++        p->out_params.crop.x0 = lrint(p->params.crop.x0*sx); p->out_params.crop.y0 = lrint(p->params.crop.y0*sy);
++        p->out_params.crop.x1 = lrint(p->params.crop.x1*sx); p->out_params.crop.y1 = lrint(p->params.crop.y1*sy);
++        p->out_params.hw_subfmt = pixfmt2imgfmt(AV_PIX_FMT_YUV444P16);
++        p->out_params.repr.bits = (struct pl_bit_encoding){.sample_depth=16,.color_depth=16,.bit_shift=0};
++        p->out_params.chroma_location = PL_CHROMA_LEFT; p->out_fmt = AJI_FMT_YUV444P16;
++        MP_VERBOSE(vf, "Ordered GPU pipeline active: %u stages, x%u, %ux%u, %s\n", caps.stage_count, caps.factor,
++            caps.width, caps.height, caps.flags&AJI_INTERPOLATOR_FAST ? "Fast" : "Quality");
++    }
++    if (p->pipeline_ticket) {
++        aji_pipeline_completion_v1 done;
++        int status = p->pipe.complete(p->pipeline, p->pipeline_ticket, AJI_SURFACE_CONSUME_RESULT, &done, sizeof(done));
++        if (!status && done.result.state == AJI_SURFACE_PENDING) return;
++        if (status || done.result.state != AJI_SURFACE_FINISHED) {
++            MP_ERR(vf, "Ordered pipeline execution failed: %s (%d)\n", status ? "completion rejected" : done.result.message, status); goto fail;
++        }
++        p->pipeline_ticket = 0;
++        for (int i = 0; i < p->pipeline_n; i++)
++            MP_DBG(vf, "Ordered output pts=%.12f duration=%.12f provenance=%u\n", p->pipeline_images[i]->pts,
++                   p->pipeline_images[i]->pkt_duration, done.output_flags[i]);
++        struct mp_image *first = p->pipeline_images[0]; p->pipeline_images[0] = NULL;
++        for (int i = 1; i < p->pipeline_n; i++) { p->outq[p->outq_n++] = p->pipeline_images[i]; p->pipeline_images[i] = NULL; }
++        p->outq_pos = 0; p->pipeline_n = 0; p->pipeline_source_sequence++; p->worker_completed++;
++        mp_refqueue_write_out_pin(p->queue, first); return;
++    }
++    if (!mp_refqueue_can_output(p->queue)) return;
++    struct mp_image *left = mp_refqueue_get(p->queue, 0), *right = mp_refqueue_get(p->queue, 1);
++    bool eof = right == NULL;
++    if (!left) return;
++    struct surface_frame_owner *owners[2+AJI_PIPELINE_MAX_OUTPUTS] = {0};
++    aji_surface_v1 inputs[2], outputs[AJI_PIPELINE_MAX_OUTPUTS];
++    struct mp_image *sources[2] = {left, right};
++    int input_count = eof ? 1 : 2, count = eof ? 1 : p->pipeline_caps.factor;
++    bool valid = true;
++    for (int i = 0; i < input_count; i++) {
++        owners[i] = surface_owner_new(p, sources[i]);
++        valid = valid && owners[i] && surface_worker_descriptor(p, sources[i], surface_format(p->aji_fmt), owners[i], p->pipeline_source_sequence+i+1, &inputs[i]);
++        if (valid) {
++            double duration = sources[i]->pkt_duration > 0 ? sources[i]->pkt_duration : 1/p->fps;
++            inputs[i].duration = llrint(duration*1000000000); inputs[i].time_flags |= AJI_SURFACE_HAS_DURATION;
++        }
++    }
++    long double interval = valid && !eof ? (long double)inputs[1].pts-inputs[0].pts : valid ? inputs[0].duration : 0;
++    for (int i = 0; i < count && valid; i++) {
++        struct mp_image *out = alloc_out(vf); if (!out) { valid = false; break; }
++        p->pipeline_images[p->pipeline_n++] = out; mp_image_copy_attributes(out, left); out->params = p->out_params;
++        int64_t pts = inputs[0].pts + llroundl(interval*i/count), duration = llroundl(interval/count);
++        out->pts = (double)pts/1000000000; out->pkt_duration = (double)duration/1000000000;
++        out->nominal_fps = p->fps*p->pipeline_caps.factor;
++        owners[2+i] = surface_owner_new(p, out);
++        valid = owners[2+i] && surface_worker_descriptor(p, out, AJI_SURFACE_YUV444P16, owners[2+i], ++p->worker_sequence, &outputs[i]);
++        if (valid) { outputs[i].pts = pts; outputs[i].duration = duration; outputs[i].time_flags = 3; }
++    }
++    aji_pipeline_submit_v1_request request = {
++        .struct_size = sizeof(request), .version = 1, .flags = eof ? AJI_PIPELINE_EOF : 0,
++        .generation = p->worker_generation, .output_count = count,
++        .previous = eof ? NULL : &inputs[0], .current = &inputs[eof ? 0 : 1],
++        .dependency_count = 1, .dependencies = {{.kind=AJI_SURFACE_DEP_CUDA_EVENT,.event=p->pipeline_event}},
++    };
++    for (int i = 0; i < count; i++) request.outputs[i] = &outputs[i];
++    CUcontext previous;
++    if (valid && CHECK_CU(p->cu->cuCtxPushCurrent(p->cuda_ctx)) >= 0) {
++        valid = CHECK_CU(p->cu->cuEventRecord(p->pipeline_event, p->decode_stream)) >= 0;
++        p->cu->cuCtxPopCurrent(&previous);
++    } else valid = false;
++    int status = valid ? p->pipe.submit(p->pipeline, &request, &p->pipeline_ticket) : AJI_SURFACE_INVALID;
++    for (int i = 0; i < 2+AJI_PIPELINE_MAX_OUTPUTS; i++) if (owners[i]) surface_owner_drop(owners[i]);
++    if (status || !p->pipeline_ticket) { MP_ERR(vf, "Ordered pipeline submission rejected (%d): verify native format/color/PTS\n", status); goto fail; }
++    p->worker_submitted++; return;
++fail:
++    pipeline_stop(vf); p->worker_fatal = true; mp_filter_internal_mark_failed(vf);
++}
++
+ static void surface_worker_try_enable(struct mp_filter *vf)
+ {
+     struct priv *p = vf->priv;
+-    if (p->worker_fatal || p->worker_attempted || !p->opts->surface_worker) return;
++    if (p->pipeline || p->worker_fatal || p->worker_attempted || !p->opts->surface_worker) return;
+     p->worker_attempted = true;
+     p->worker_reason = "unsupported-chain";
+     if (!p->aji || !p->aji_active || p->is_d3d11 || p->rife_on || p->temporal_r ||
+@@ -626,6 +829,8 @@
+ static void flush_frames(struct mp_filter *vf)
+ {
+     struct priv *p = vf->priv;
++    p->pipeline_restart |= p->pipeline != NULL;
++    pipeline_stop(vf);
+     // GPU reads of the queued input frames must finish before the
+     // refqueue drops them
+     clear_ring(vf);
+@@ -668,6 +873,7 @@
+ {
+     struct priv *p = vf->priv;
+ 
++    pipeline_stop(vf);
+     // Finish submitted inference before releasing referenced surfaces or objects
+     // created in the old CUDA/D3D device context. clear_ring() waits on the
+     // upscaler ring; drain_backend() also flushes RIFE-first immediate work that
+@@ -736,6 +942,7 @@
+     p->is_d3d11 = false;
+     p->aji_active = false;
+     p->configured = false;
++    p->pipeline_restart = false;
+     p->rife_on = false;
+     p->rife_first = false;
+     p->temporal_r = 0;
+@@ -781,11 +988,14 @@
+ {
+     struct priv *p = vf->priv;
+     if (p->worker_active) clear_ring(vf);
++    p->pipeline_restart = false;
+     p->worker_attempted = false;
+     ++p->worker_generation;
+ 
+     p->out_params = p->params;
+     p->aji_active = false;
++    if (!pipeline_start(vf)) return false;
++    if (p->pipeline) return true;
+     if (!p->aji) {
+         update_depth(vf);
+         return true;
+@@ -2196,13 +2406,18 @@
+ 
+     // A background engine build finished: reconfigure, and the chain (or
+     // RIFE) activates mid-playback. Until then frames pass through.
+-    if (p->configured && p->aji && !p->worker_active && p->api.poll(p->aji)) {
++    if (p->configured && p->aji && !p->pipeline && !p->worker_active && p->api.poll(p->aji)) {
+         MP_VERBOSE(vf, "background engine build finished; reconfiguring\n");
+         av_buffer_unref(&p->hw_pool);
+         if (!configure_aji(vf)) {
+             mp_filter_internal_mark_failed(vf);
+             return;
+         }
++    }
++
++    if (p->configured && p->pipeline_restart) {
++        av_buffer_unref(&p->hw_pool);
++        if (!configure_aji(vf)) { mp_filter_internal_mark_failed(vf); return; }
+     }
+ 
+     // Extra RIFE outputs first: they go straight to the out pin without
+@@ -2221,6 +2436,7 @@
+         return;
+     }
+ 
++    if (p->pipeline) { pipeline_process(vf); return; }
+     if (p->configured) surface_worker_try_enable(vf);
+     if (!mp_refqueue_can_output(p->queue))
+         return;
+@@ -2490,6 +2706,20 @@
+         mp_tags_set_str(tags, "surface-worker-retains", text);
+         snprintf(text, sizeof(text), "%"PRIuFAST64, atomic_load(&p->worker_releases));
+         mp_tags_set_str(tags, "surface-worker-releases", text);
++        mp_tags_set_str(tags, "pipeline-active", p->pipeline ? p->pipeline_ready ? "yes" : "initializing" : "no");
++        snprintf(text, sizeof(text), "%u", p->pipeline ? p->pipeline_caps.factor : 1);
++        mp_tags_set_str(tags, "pipeline-factor", text);
++        if (p->pipeline && p->pipeline_ready && !p->pipeline_ticket) {
++            aji_pipeline_stats_v1 stats;
++            if (p->pipe.stats(p->pipeline, &stats, sizeof(stats)) == 0) {
++                snprintf(text, sizeof(text), "%"PRIu64, stats.rife_predictions); mp_tags_set_str(tags, "pipeline-rife-requests", text);
++                snprintf(text, sizeof(text), "%"PRIu64, stats.fruc_predictions); mp_tags_set_str(tags, "pipeline-fruc-requests", text);
++                snprintf(text, sizeof(text), "%"PRIu64, stats.spatial_predictions); mp_tags_set_str(tags, "pipeline-spatial-requests", text);
++                snprintf(text, sizeof(text), "%"PRIu64, stats.fruc_repetitions); mp_tags_set_str(tags, "pipeline-fruc-repetitions", text);
++                snprintf(text, sizeof(text), "%"PRIu64, stats.peak_pixel_bytes); mp_tags_set_str(tags, "pipeline-peak-pixel-bytes", text);
++                snprintf(text, sizeof(text), "%"PRIu64, stats.cpu_pixel_copies); mp_tags_set_str(tags, "pipeline-cpu-pixel-copies", text);
++            }
++        }
+         *(struct mp_tags **)cmd->res = tags; return true;
+     }
+     if (cmd->type != MP_FILTER_COMMAND_TEXT || !cmd->cmd)
+@@ -2523,7 +2753,7 @@
+     struct priv *p = vf->priv;
+ 
+     flush_frames(vf);
+-    if (p->opts->surface_worker)
++    if (p->opts->surface_worker || p->pipe.handle)
+         MP_VERBOSE(vf, "Surface worker shutdown ownership: live=%u retain=%"PRIuFAST64" release=%"PRIuFAST64"\n",
+             atomic_load(&p->worker_live_owners), atomic_load(&p->worker_retains),
+             atomic_load(&p->worker_releases));
+@@ -2532,6 +2762,8 @@
+         p->api.destroy(&p->aji);
+     if (p->api.handle)
+         aji_lib_close(p->api.handle);
++    if (p->pipe.handle)
++        aji_lib_close(p->pipe.handle);
+     if (p->own_stream && p->cu &&
+         p->cu->cuCtxPushCurrent(p->cuda_ctx) == CUDA_SUCCESS) {
+         CUcontext dummy;
+@@ -2616,6 +2848,9 @@
+         {&p->path.engine, p->opts->engine},
+         {&p->path.lib, p->opts->lib},
+         {&p->path.rife_model_dir, p->opts->rife_model_dir},
++        {&p->path.pipeline_lib, p->opts->pipeline_lib},
++        {&p->path.pipeline_kernels, p->opts->pipeline_kernels},
++        {&p->path.fruc_lib, p->opts->fruc_lib},
+     };
+     for (int i = 0; i < MP_ARRAY_SIZE(path_opts); i++) {
+         if (path_opts[i].src && path_opts[i].src[0])
+@@ -2926,6 +3161,9 @@
+     {"queue-depth", OPT_INT(queue_depth), M_RANGE(1, MAX_DEPTH)},
+     {"prefetch", OPT_INT(prefetch), M_RANGE(0, 64)},
+     {"surface-worker", OPT_BOOL(surface_worker)},
++    {"pipeline-lib", OPT_STRING(pipeline_lib), .flags=M_OPT_FILE},
++    {"pipeline-kernels", OPT_STRING(pipeline_kernels), .flags=M_OPT_FILE},
++    {"fruc-lib", OPT_STRING(fruc_lib), .flags=M_OPT_FILE},
+     {"prefetch-bytes", OPT_BYTE_SIZE(prefetch_bytes), M_RANGE(0, 1099511627776LL)},
+     {0}
+ };

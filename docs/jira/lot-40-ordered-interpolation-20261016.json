@@ -3,6 +3,8 @@
   "parent": "AH-297",
   "status": "In Progress",
   "base": "b6e36cd40b6a0bb177056baf19d8cf53a54e7cc8",
+  "worktree": "/home/ta2b/.animejanai-tools/work/lot-40-ordered-interpolation-20261016",
+  "backend_worktree": "/home/ta2b/.animejanai-tools/work/backend-ordered-interpolation-20261016",
   "backend_base": "f8da50a014fbf020bc3027e9bafc13feebb6323e",
   "start_comment": "10146",
   "contract_comment": "10147",
@@ -12,17 +14,32 @@
     "cpu_migration_cadence_check_passed": true,
     "gpu_tests_required_for_contract_only": false
   },
-  "state": "Ordered stage schema implemented and CPU-qualified. Native pipeline/frame execution not implemented; no Manager UI implemented; full AH-301 remains open.",
+  "state": "Native ordered Linux CUDA reader, legacy parity and launcher implemented and qualified; release3.8.0.72 delivery pending. No Manager UI yet.",
   "remaining": [
-    "Implement actual native ordered reader executor on GPU, preserving legacy Quality arithmetic and using real per-stage capabilities",
-    "Qualify only new affected cadence/PTS/EOF/owners/seek/quality paths, reusing valid references",
-    "Deliver complete AH-301 lot, release then Done; AH-302 actual editor follows"
+    "Publish release3.8.0.72 then verify delivery before Done",
+    "AH-302 actual stage editor is next"
   ],
   "design_findings": [
     "Do not blindly chain independent vf filters with alternating NV12/YUV444 formats: this would trigger per-frame reconfiguration and FRUC requires matching pair formats/colors",
     "Prefer canonical owned GPU YUV444 surfaces internally, using exact/declared native chroma/range conversion, then final common output; no CPU pixel staging",
     "Preserve legacy arithmetic: keep the existing optimized legacy route or group contiguous SR models and the single legacy RIFE rather than inserting new YUV quantizations on migration",
-    "Initial required native composition is RIFE2->FRUC2->sameSPAN; generic input-count/lookahead/spatial phase negotiation must remain distinct from RIFE; refuse unimplemented methods explicitly",
-    "No provider/pipeline native code exists yet in backend-ordered-interpolation worktree; do not claim shared C# schema is runtime consumption"
+    "Initial required native composition is RIFE2->FRUC2->sameSPAN; generic input-count/lookahead/spatial phase negotiation must remain distinct from RIFE; refuse unimplemented methods explicitly"
+  ],
+  "backend_source": "35c0049ffd2977fe196a34bbbd3b051647486c4d",
+  "binary_source": "33c803dcc1dcb57c3753a9c5864ef46957cb7131",
+  "native_comments": [
+    "10150",
+    "10152"
+  ],
+  "qualified": [
+    "nativeGPU",
+    "common-median-f32",
+    "actualmpvNVDEC9outputs",
+    "pause-seek-slot",
+    "asyncQueueCancelError",
+    "pendingBuilderCancel",
+    "actualLegacyFractionPixelPTSParity",
+    "luaLaunchIntegration",
+    "installerPatchDelivery"
   ]
 }

@@ -1,6 +1,6 @@
 # Reprise du travail — état au 14 octobre 2026
 
-Point courant : **3.8.0.71 publiée, AH-296 et AH-300 Done** (trois plateformes success, quinze assets ; module/fatbin dans l’overlay Linux identiques aux fichiers qualifiés). Provider FRUC Fast SDR8bits natif livré ; reproductibilité exacte du SDK non concluante, Quality préservée. **AH-301 In Progress**, lot40 : schéma ordonné v1 et migration/cadences rationnelles implémentés et contrôlés sur CPU (2628bab), exécuteur lecteur encore à réaliser ; Manager AH-302 ensuite. [Rapport natif](qualification/lot-39-fruc-native-20261016.md), [suivi lot40](jira/lot-40-ordered-interpolation-20261016.json).
+Point courant : **3.8.0.71 publiée, AH-296 et AH-300 Done** (trois plateformes success, quinze assets ; module/fatbin dans l’overlay Linux identiques aux fichiers qualifiés). Provider FRUC Fast SDR8bits natif livré ; reproductibilité exacte du SDK non concluante, Quality préservée. **AH-301 In Progress**, lot40 : lecteur CUDA ordonné RIFE×2→FRUC×2→SPAN implémenté et qualifié (cadence/EOF, médiane commune exacte, seek/slots/owners/erreurs, ancien5/2 pixels+PTS exacts), release.72 en préparation ; Manager AH-302 ensuite. [Rapport natif](qualification/lot-39-fruc-native-20261016.md), [suivi lot40](jira/lot-40-ordered-interpolation-20261016.json).
 
 ## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
 

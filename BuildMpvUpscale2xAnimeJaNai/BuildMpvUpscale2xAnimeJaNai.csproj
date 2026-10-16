@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,6 +9,9 @@
 
   <ItemGroup>
     <None Include="..\docs\LINUX*.md" Link="linux-docs\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\docs\INTERPOLATION-STAGES.md" Link="mpv-upscale-2x_animejanai\docs\INTERPOLATION-STAGES.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="..\docs\SETTINGS.md" Link="mpv-upscale-2x_animejanai\docs\SETTINGS.md">
