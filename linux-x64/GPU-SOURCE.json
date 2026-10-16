@@ -1,17 +1,17 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "df489209a9758149f0e8e580539ebdc50c2ae577",
+  "backend_source": "635424ef27356fac94745419e46da48978804702",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "df489209a9758149f0e8e580539ebdc50c2ae577",
-    "GITHUB_RUN_ID": "38839055041",
+    "GITHUB_SHA": "635424ef27356fac94745419e46da48978804702",
+    "GITHUB_RUN_ID": "38847445122",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Portable v3 contract: 16 relevant mutations invalidate, 11 invalid contracts rejected; Linux RTX4070Ti/TRT11.3 real migration preserves v2, one cold builder/zero warm builders, same-plan output exact; independent rebuild max delta 1/255. Windows compile/link only. No FPS claim.",
+  "validation": "Linux RTX4070Ti/TRT11.3 real synthetic rank-5: same plan, one reference builder, complete view/color/order and stream regressions corrected to zero differing bytes; reset and unchanged windows exact. Only failed adjacent-cut case retested after accumulator fix. 24 ABI exports preserved. Windows compile/link only; no FPS or anime temporal model quality claim. Lot14 derived motion changes excluded.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -35,12 +35,16 @@
     "latched-async-build-errors",
     "common-program-key-contract-v3",
     "portable-flow-key-v3",
-    "explicit-builder-environment-key"
+    "explicit-builder-environment-key",
+    "temporal-complete-source-views",
+    "temporal-stream-order",
+    "temporal-adjacent-cut-refresh",
+    "temporal-window-end-clamp"
   ],
   "sha256": {
     "libaji.so": "c79eb7cfc4be4aecc207664636c906cea4c0de1b68287aac1a71b992a52a7dd2",
-    "libaji_trt.so": "9d9e87d50753613acb6e6b2e3bb0202ad3b2283728797c8f1511a414f3e33868",
-    "libaji_trt_rtx.so": "9d9e87d50753613acb6e6b2e3bb0202ad3b2283728797c8f1511a414f3e33868"
+    "libaji_trt.so": "744300945d8adfc72faf13134180dbdbc50b1de59c9b78e01b9d3d4b9e1f9d14",
+    "libaji_trt_rtx.so": "744300945d8adfc72faf13134180dbdbc50b1de59c9b78e01b9d3d4b9e1f9d14"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -55,5 +59,5 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "85961914e75ca8478fc966a6cecaebdc1a385071"
+  "player_qualification_source": "0cb5d2b0f6020ad620cf3250796babc7b98fff0e"
 }

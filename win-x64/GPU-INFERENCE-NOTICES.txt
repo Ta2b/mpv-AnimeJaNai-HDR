@@ -15,3 +15,5 @@ Interrupted-write recovery qualified on Linux; Windows compile/link only.
 Cache storage integrity: backend 650c2a71f5c8bca8cfa52805e0db1c17dad8aa67, Windows compile/link run 38836161283; Linux targeted native qualification, EDQUOT fault injection explicitly.
 
 Program cache contract v3: backend df489209a9758149f0e8e580539ebdc50c2ae577, Windows compile/link run 38839055041; Linux migration and same-plan output exact.
+
+2026-10-16: temporal source views, stream dependencies and adjacent scene metrics corrected (backend 635424ef27356fac94745419e46da48978804702). Linux synthetic rank-5 qualification only; no FPS or native Windows/anime-model quality claim.

@@ -1,17 +1,17 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "df489209a9758149f0e8e580539ebdc50c2ae577",
+  "backend_source": "635424ef27356fac94745419e46da48978804702",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "df489209a9758149f0e8e580539ebdc50c2ae577",
-    "GITHUB_RUN_ID": "38839055041",
+    "GITHUB_SHA": "635424ef27356fac94745419e46da48978804702",
+    "GITHUB_RUN_ID": "38847445122",
     "GITHUB_RUN_ATTEMPT": "1",
     "validation": "compilation/linking only; no inference/test/benchmark"
   },
-  "validation": "Portable v3 contract: 16 relevant mutations invalidate, 11 invalid contracts rejected; Linux RTX4070Ti/TRT11.3 real migration preserves v2, one cold builder/zero warm builders, same-plan output exact; independent rebuild max delta 1/255. Windows compile/link only. No FPS claim.",
+  "validation": "Linux RTX4070Ti/TRT11.3 real synthetic rank-5: same plan, one reference builder, complete view/color/order and stream regressions corrected to zero differing bytes; reset and unchanged windows exact. Only failed adjacent-cut case retested after accumulator fix. 24 ABI exports preserved. Windows compile/link only; no FPS or anime temporal model quality claim. Lot14 derived motion changes excluded.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -35,14 +35,18 @@
     "latched-async-build-errors",
     "common-program-key-contract-v3",
     "portable-flow-key-v3",
-    "explicit-builder-environment-key"
+    "explicit-builder-environment-key",
+    "temporal-complete-source-views",
+    "temporal-stream-order",
+    "temporal-adjacent-cut-refresh",
+    "temporal-window-end-clamp"
   ],
   "sha256": {
-    "aji.dll": "b9c63f24794889d3fe0216d9aabc63b0e65f851b73eeb816ca93731e941748b2",
-    "aji_dml.dll": "174cb6655cc06e1bd600fd8a7f6b96ef24b4c6c7b6dacc26058ab112cabc7738",
-    "aji_migraphx.dll": "d1c0fd0e3bbd75fdbf7612dc076356cb3a9c660cc1ebd233fae6af7f202e182d",
-    "aji_trt.dll": "2a597c2ed65340be6e521acc1f47b049667c4ac839a19fdb1115f13d9028c5fa",
-    "aji_trt_rtx.dll": "2a597c2ed65340be6e521acc1f47b049667c4ac839a19fdb1115f13d9028c5fa"
+    "aji.dll": "06db5f1160390fb2ddad9931e2fb2f7fdcae1572ec92a82c206166d773707c72",
+    "aji_dml.dll": "68b5376b41c23c8a1ed924b9a22c390f660c1c828d003da3d7cf7f7c7bdf50a8",
+    "aji_migraphx.dll": "b8623876d47e2965c167c2558c7b213bff07d222848d953c58097274b1e6b507",
+    "aji_trt.dll": "df1812976a5dc6ffdecd7983cce3be6b59c334857fee4f0fc8dbb90f86bd5df5",
+    "aji_trt_rtx.dll": "df1812976a5dc6ffdecd7983cce3be6b59c334857fee4f0fc8dbb90f86bd5df5"
   },
-  "player_qualification_source": "85961914e75ca8478fc966a6cecaebdc1a385071"
+  "player_qualification_source": "0cb5d2b0f6020ad620cf3250796babc7b98fff0e"
 }
