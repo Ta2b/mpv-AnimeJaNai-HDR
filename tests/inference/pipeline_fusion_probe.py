@@ -42,7 +42,7 @@ def main():
   assert lib.aji_pipeline_output_color_v1(ctx,C.byref(sources[0][0].color),C.byref(color),C.sizeof(color),C.byref(peak))==0
   f.s=dict(width=caps.width,height=caps.height);targets=[f.surface(None,7,100+i,i) for i in range(caps.factor)]
   for v,_ in targets:v.color=color;v.timebase_num=1001;v.timebase_den=96000
-  defer_download=bool(s.get('defer_download',False));target_batches=[targets];all_targets=list(targets);deferred=[]
+  defer_download=bool(s.get('defer_download',False));save_outputs=bool(s.get('save_outputs',True));target_batches=[targets];all_targets=list(targets);deferred=[]
   if defer_download:
    for pair in range(1,len(sources)):
     count=1 if pair==len(sources)-1 else caps.factor
@@ -64,7 +64,8 @@ def main():
    assert done.result.state==2 and done.result.status==0,(done.result.status,done.result.message)
    assert snapshot==[bytes(v[0]) for v in sources+all_targets] and all(x==0 for x in f.held.values())
    for i in range(count):
-    if defer_download:deferred.append(targets[i])
+    if not save_outputs:hashes.append(None) # timing-only run (AH-396): no download, no file
+    elif defer_download:deferred.append(targets[i])
     else:
      pixels=np.asarray(f.download(targets[i]));np.save(out/f'{len(hashes):03d}.npy',pixels)
      hashes.append(hashlib.sha256(pixels.tobytes()).hexdigest())
