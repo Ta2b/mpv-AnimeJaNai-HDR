@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "scope": "production updater methods plus actual managed inventory, CPU temporary directories only",
+  "baseline_failure_reused": "AH334 updater-preserve-proof.json, missing/corrupt replaced profile, valid manifest preserved it; no baseline replay",
+  "copied_production_wrapper_sha256": "dc2ca996c5f647418f72662069450365824f235d3cbc241661c27802c01aa83b",
+  "updater_source_sha256": "171b7515ccbf83383a0c409811989e894d4f2d07a75c0c749da952952b5287d9",
+  "cases": [
+    {
+      "mode": "missing",
+      "passed": true,
+      "source": "completed cases from the initial fixture invocation before its later valid-custom serialization error; states inspected read-only, ApplyOver not replayed",
+      "settings": 7,
+      "new_bank_seeded": true,
+      "managed_program_updated": true,
+      "user_override_preserved": true,
+      "backups_preserved": true
+    },
+    {
+      "mode": "corrupt",
+      "passed": true,
+      "source": "completed cases from the initial fixture invocation before its later valid-custom serialization error; states inspected read-only, ApplyOver not replayed",
+      "settings": 7,
+      "new_bank_seeded": true,
+      "managed_program_updated": true,
+      "user_override_preserved": true,
+      "backups_preserved": true
+    },
+    {
+      "mode": "valid-custom",
+      "settings_preserved_or_seeded": true,
+      "managed_program_updated": true,
+      "override_and_unknown_assets_preserved": true
+    },
+    {
+      "mode": "fresh",
+      "settings_preserved_or_seeded": true,
+      "managed_program_updated": true,
+      "override_and_unknown_assets_preserved": true
+    },
+    {
+      "mode": "linked",
+      "user_links_and_external_data_preserved": true
+    }
+  ],
+  "notes": [
+    "First fixture stopped on invalid JSON escaping in valid-custom test data; product unchanged, only corrected/remaining cases executed again",
+    "Missing/corrupt completed states inspected read-only, ApplyOver not replayed",
+    "Existing regression generator repaired and compiled only; unrelated conclusive cases not replayed",
+    "Windows link/sharing semantics not exercised; portable C# logic compiled per release targets"
+  ]
+}

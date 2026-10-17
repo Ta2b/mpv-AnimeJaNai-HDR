@@ -1277,8 +1277,8 @@ string FindVersionedRoot(string staging)
     return dir ?? staging;
 }
 
-// Copy the freshly-extracted tree over the install. user_preserve paths from the local manifest are
-// never overwritten (relevant only to a full update — the overlay archive doesn't contain them).
+// Copy over the install with an unconditional user-data floor. A readable local
+// manifest may add paths; a missing/corrupt manifest cannot remove protection.
 void ApplyOver(string sourceRoot, string targetRoot, bool overlay)
 {
     var preserve = ReadUserPreserve(Path.Combine(targetRoot, "manifest.json"));
@@ -1314,13 +1314,14 @@ void CopyTree(string srcDir, string dstDir, string sourceRoot, HashSet<string> p
     {
         string rel = NormalizeRel(Path.GetRelativePath(sourceRoot, file));
         if (managedPrograms && AnimeJaNai.Platform.ManagedProgramFiles.IsManaged(rel)) continue;
-        if (IsPreserved(rel, preserve) && File.Exists(Path.Combine(dstDir, Path.GetFileName(file))))
-        {
-            continue;
-        }
         string dst = Path.Combine(dstDir, Path.GetFileName(file));
-        TryDelete(() => { if (File.Exists(dst)) File.SetAttributes(dst, FileAttributes.Normal); });
-        File.Copy(file, dst, true);
+        bool userFile = IsPreserved(rel, preserve);
+        if (userFile && (File.Exists(dst) || Directory.Exists(dst) || new FileInfo(dst).LinkTarget != null))
+            continue;
+        if (!userFile) TryDelete(() => { if (File.Exists(dst)) File.SetAttributes(dst, FileAttributes.Normal); });
+        // Missing user files may be seeded, but never overwrite a save that
+        // appears between the check and the copy (including a dangling link).
+        File.Copy(file, dst, !userFile);
     }
 
     foreach (var sub in Directory.GetDirectories(srcDir))
@@ -1328,11 +1329,16 @@ void CopyTree(string srcDir, string dstDir, string sourceRoot, HashSet<string> p
         string rel = NormalizeRel(Path.GetRelativePath(sourceRoot, sub));
         if (managedPrograms && AnimeJaNai.Platform.ManagedProgramFiles.IsManagedDirectory(rel)) continue;
         // Profile banks are seeded only when missing, including in preserved older trees.
-        if (IsPreserved(rel, preserve) && !rel.StartsWith("portable_config/profiles", StringComparison.OrdinalIgnoreCase))
+        string target = Path.Combine(dstDir, Path.GetFileName(sub));
+        if (IsPreserved(rel, preserve))
         {
-            continue;
+            // Do not follow a user's profile-directory link to seed defaults
+            // outside this install. Existing ordinary banks keep missing-only seeding.
+            if (new DirectoryInfo(target).LinkTarget != null || File.Exists(target)) continue;
+            if (Directory.Exists(target) && !rel.StartsWith("portable_config/profiles", StringComparison.OrdinalIgnoreCase))
+                continue;
         }
-        CopyTree(sub, Path.Combine(dstDir, Path.GetFileName(sub)), sourceRoot, preserve, managedPrograms);
+        CopyTree(sub, target, sourceRoot, preserve, managedPrograms);
     }
 }
 
@@ -1340,7 +1346,7 @@ static bool IsPreserved(string rel, HashSet<string> preserve)
 {
     foreach (var p in preserve)
     {
-        if (rel == p || rel.StartsWith(p + "/", StringComparison.OrdinalIgnoreCase))
+        if (rel.Equals(p, StringComparison.OrdinalIgnoreCase) || rel.StartsWith(p + "/", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
@@ -1352,20 +1358,29 @@ static string NormalizeRel(string rel) => rel.Replace('\\', '/');
 
 static HashSet<string> ReadUserPreserve(string manifestPath)
 {
-    var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    // Stable floor for old/broken installations as well as current manifests.
+    // Program scripts/shaders are handled by the separate managed inventory.
+    var set = new HashSet<string>(new[] {
+        "animejanai/animejanai.conf", "animejanai/currentanimejanai.log",
+        "portable_config/mpv.conf", "portable_config/input.conf", "portable_config/input-user.conf",
+        "portable_config/saved-props.json", "portable_config/settings.xml",
+        "portable_config/screenshots", "portable_config/script-opts", "portable_config/profiles"
+    }, StringComparer.OrdinalIgnoreCase);
     try
     {
         using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
-        if (doc.RootElement.TryGetProperty("user_preserve", out var arr))
+        if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+            doc.RootElement.TryGetProperty("user_preserve", out var arr) && arr.ValueKind == JsonValueKind.Array)
         {
             foreach (var e in arr.EnumerateArray())
             {
+                if (e.ValueKind != JsonValueKind.String) continue;
                 var v = e.GetString();
                 if (!string.IsNullOrEmpty(v)) set.Add(NormalizeRel(v));
             }
         }
     }
-    catch { /* if unreadable, preserve nothing extra — overlay path is unaffected */ }
+    catch { /* The floor remains intact; ApplyAsync already backs up the old manifest/input. */ }
     return set;
 }
 

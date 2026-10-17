@@ -18,7 +18,7 @@ def method(signature):
 methods=[method(s) for s in ('void SyncInputConf()', 'string ReadLocalVersion()',
     'static string ReadManifestString(', 'string? PackVersionMismatch(',
     'Task<Release> GetInstalledReleaseAsync()', 'async Task<Release> GetReleaseAsync(string url)',
-    'async Task<PackIndex> GetPackIndexAsync()', 'void CopyTree(', 'static bool IsPreserved(', 'static void TryDelete(',
+    'async Task<PackIndex> GetPackIndexAsync()', 'async Task<PackIndex?> ReleasePackIndexAsync(', 'PackIndex ParsePackIndex(', 'void CopyTree(', 'static bool IsPreserved(', 'static void TryDelete(',
     # macOS: the application is replaced as a whole.
     'static string? BundleOf(', 'static string? MacBlocked(', 'static bool ChecksumMatches(',
     'static string StagedApp(', 'static void ReplaceBundle(', 'async Task<Release> PagesReleaseAsync(',
@@ -48,7 +48,7 @@ class Production
     { installDir=root; this.handler=handler; isWinRid=windows; platformRid=windows ? "win-x64" : "linux-x64"; }
     HttpClient NewClient() => new HttpClient(handler, disposeHandler:false);
     public void Sync() => SyncInputConf();
-    public void Copy(string source, HashSet<string> preserved) => CopyTree(source, installDir, source, preserved);
+    public void Copy(string source, HashSet<string> preserved) => CopyTree(source, installDir, source, preserved, false);
     public Task<PackIndex> Packs() => GetPackIndexAsync();
     public Task<Release> Latest() => GetLatestReleaseAsync();
     public string? Mismatch(PackIndex index) => PackVersionMismatch(index);
@@ -65,6 +65,7 @@ class Production
 (out/'Production.cs').write_text(wrapper+'\n'.join(methods)+'\n'+latest+'\n}\n'+
     source[source.index('record Release('):],encoding='utf-8')
 (out/'Program.cs').write_bytes((here/'Cases.cs').read_bytes())
+(out/'ManagedProgramFiles.cs').write_bytes((here.parents[1]/'AnimeJaNaiPlatform/ManagedProgramFiles.cs').read_bytes())
 (out/'Checks.csproj').write_text('''<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>
   <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><UseAppHost>false</UseAppHost>
