@@ -129,5 +129,40 @@
     ],
     "scope": "New FRUC guard option/capability/persistence only; no old UI suite or GPU pixels replayed"
   },
-  "release": "3.8.0.81 preparing"
+  "release": "3.8.0.81 publishing",
+  "manager_delivery": {
+    "run": 38991650173,
+    "conclusion": "success",
+    "url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/tag/hdr-2847c79961c0d14241234d2ef8799b399e4b6a9d",
+    "assets": [
+      {
+        "name": "AnimeJaNaiManager-HDR-linux-x64.tar.zst",
+        "size": 44316405,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-2847c79961c0d14241234d2ef8799b399e4b6a9d/AnimeJaNaiManager-HDR-linux-x64.tar.zst"
+      },
+      {
+        "name": "AnimeJaNaiManager-HDR-macos-arm64.zip",
+        "size": 46766212,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-2847c79961c0d14241234d2ef8799b399e4b6a9d/AnimeJaNaiManager-HDR-macos-arm64.zip"
+      },
+      {
+        "name": "AnimeJaNaiManager-HDR-x64.zip",
+        "size": 49015463,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-2847c79961c0d14241234d2ef8799b399e4b6a9d/AnimeJaNaiManager-HDR-x64.zip"
+      },
+      {
+        "name": "AnimeJaNaiManager-HDR.exe",
+        "size": 99532403,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-2847c79961c0d14241234d2ef8799b399e4b6a9d/AnimeJaNaiManager-HDR.exe"
+      }
+    ]
+  },
+  "jira_comments": [
+    "10184",
+    "10185"
+  ]
 }
