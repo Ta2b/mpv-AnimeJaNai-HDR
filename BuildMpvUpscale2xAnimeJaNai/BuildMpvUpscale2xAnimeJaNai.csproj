@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../AnimeJaNaiPlatform/ManagedProgramFiles.cs" Link="ManagedProgramFiles.cs" />
     <None Include="..\tools\interpolation\*.py;..\tools\interpolation\*.json" Link="mpv-upscale-2x_animejanai\animejanai\preparation\%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
     <None Include="..\docs\LINUX*.md" Link="linux-docs\%(Filename)%(Extension)">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -30,6 +31,7 @@
 
   <ItemGroup>
     <Content Include="../windows-mpv-source-ref.txt" Condition="Exists('../windows-mpv-source-ref.txt')" Link="windows-mpv-source-ref.txt" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <Content Include="../installer/linux/legacy-managed-program-files.json" Link="legacy-managed-program-files.json" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     <Content Include="../manager-source-ref.txt" Link="manager-source-ref.txt" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
   </ItemGroup>
 </Project>

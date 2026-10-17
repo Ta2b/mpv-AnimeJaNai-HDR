@@ -100,15 +100,11 @@ if [ ! -f "$VER_DST" ] || ! cmp -s "$VER_SRC" "$VER_DST" 2>/dev/null; then
     cp -f "$VER_SRC" "$VER_DST" 2>/dev/null || true
 fi
 
-for managed in scripts shaders user-scripts user-shaders hdr-tools; do
-    [ -d "$HERE/portable_config/$managed" ] || continue
-    cp -rf "$HERE/portable_config/$managed" "$DATA/portable_config/"
-done
-# Managed preparation programs live with the writable Manager root. Model
-# sources, weights, Python environments and preparation settings remain external.
-if [ -d "$HERE/animejanai/preparation" ]; then
-    mkdir -p "$DATA/animejanai/preparation"
-    cp -f "$HERE/animejanai/preparation/"*.py "$HERE/animejanai/preparation/"*.json "$DATA/animejanai/preparation/"
+# Only files whose bytes still match an owned inventory are replaced/removed.
+# Unknown files and local edits are preserved; the report names conflicts.
+# Older trees without an inventory use the bounded known-source catalogue.
+if ! "$HERE/AnimeJaNaiPlatform" --sync-managed-programs --package-root "$HERE" --root "$DATA" > "$DATA/.managed-program-sync.log" 2>&1; then
+    echo "AnimeJaNai: programme sync incomplete; see $DATA/.managed-program-sync.log" >&2
 fi
 # Converted Vulkan models are managed assets and refresh even at the same version.
 # TensorRT engine files and user banks remain writable and are preserved.

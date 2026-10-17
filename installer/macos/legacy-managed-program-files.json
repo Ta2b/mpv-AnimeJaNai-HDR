@@ -1,0 +1,58 @@
+{
+  "schema": "animejanai.managed-program-files.v1",
+  "source": "f626ceb2154f1b90ff5c4e275e8bb31a969f1bc6",
+  "scope": "macOS packaged programs, known source bytes only",
+  "files": {
+    "portable_config/user-shaders/anime-hdr-calibration.hook": [
+      "80d27fed7a7334c734b7d82dc5e79742e45d609bc62f7050ac62d7431db66437"
+    ],
+    "portable_config/user-shaders/anime-hdr-grade.hook": [
+      "7f7e6cb6032d24d8bc9a9559ee1062bba79d1f9b0e04e9a5b0ac57859b489c2d"
+    ],
+    "portable_config/scripts/animejanai_hdr_mac.lua": [
+      "b7aa9d8f68764b893252c85d79a298e8232808586c5143fd97f64f8ac6d29e42"
+    ],
+    "portable_config/scripts/animejanai_mac.lua": [
+      "38a48c9a7bf37e34ab0a0d10a4a9b69a4f99c3106ea6d9f61e08eddd4fefa035"
+    ],
+    "animejanai/preparation/contract.py": [
+      "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d"
+    ],
+    "animejanai/preparation/engine.py": [
+      "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673"
+    ],
+    "animejanai/preparation/gmfss-fortuna.json": [
+      "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10"
+    ],
+    "animejanai/preparation/worker.py": [
+      "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80"
+    ],
+    "portable_config/scripts/animejanai_reference.lua": [
+      "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d"
+    ],
+    "portable_config/scripts/animejanai_playback.lua": [
+      "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43"
+    ],
+    "portable_config/scripts/animejanai_update.lua": [
+      "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e"
+    ],
+    "portable_config/hdr-tools/gpu-policy.lua": [
+      "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e"
+    ],
+    "portable_config/hdr-tools/hdr-grade.lua": [
+      "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1"
+    ],
+    "portable_config/hdr-tools/linux-hdr.lua": [
+      "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829"
+    ],
+    "portable_config/hdr-tools/interpolation-stages.lua": [
+      "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0"
+    ],
+    "portable_config/hdr-tools/pipeline-hdr.lua": [
+      "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71"
+    ],
+    "portable_config/hdr-tools/playback-state.lua": [
+      "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac"
+    ]
+  }
+}

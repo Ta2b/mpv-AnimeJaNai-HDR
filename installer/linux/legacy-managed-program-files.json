@@ -1,0 +1,115 @@
+{
+  "schema": "animejanai.managed-program-files.v1",
+  "source": "f626ceb2154f1b90ff5c4e275e8bb31a969f1bc6",
+  "scope": "Known source bytes only; generated/unknown legacy files remain preserved",
+  "files": {
+    "portable_config/hdr-tools/detect-gpu.ps1": [
+      "d96a8818b03244d3daae79b5a8c390c01fbefddbe812e67e3ac2153cb8f3b452"
+    ],
+    "portable_config/hdr-tools/gpu-policy.lua": [
+      "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e"
+    ],
+    "portable_config/hdr-tools/hdr-coordinator.exe": [
+      "7d4dcc01292f3ba498346ce74d63495580b0aa9d6bcc74ec541013651c7aae14"
+    ],
+    "portable_config/hdr-tools/hdr-grade.lua": [
+      "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1"
+    ],
+    "portable_config/hdr-tools/inference-color.lua": [
+      "9288f1cd4508ed6f6023657c15054eff9b73756c310f0ec2e35c90e56aa7cbb4"
+    ],
+    "portable_config/hdr-tools/interpolation-stages.lua": [
+      "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0"
+    ],
+    "portable_config/hdr-tools/launch-linux.sh": [
+      "8caa051c7e3d20fd42eda28df0c73391781e3d5b67f41cedd8f34597a5120dd7"
+    ],
+    "portable_config/hdr-tools/linux-hdr.lua": [
+      "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829"
+    ],
+    "portable_config/hdr-tools/linux-playback.lua": [
+      "f11cf7842e3305af6e694b4ba6d70c33a4dbed6702ca3cfa69cdfa30ec5f560f"
+    ],
+    "portable_config/hdr-tools/pipeline-hdr.lua": [
+      "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71"
+    ],
+    "portable_config/hdr-tools/playback-state.lua": [
+      "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac"
+    ],
+    "portable_config/hdr-tools/rife-sync.lua": [
+      "698a92843f96aaed65f408815de454365577d26b35356794161c846c1105a2f5"
+    ],
+    "portable_config/hdr-tools/rtx-stage.lua": [
+      "3b8ae301884c8736f8e05d9f0d303ad8d827d540178ed3fa5c7a6c01bbbbc539"
+    ],
+    "portable_config/hdr-tools/select-profile-bank.ps1": [
+      "f12fcbffb22788592ddf3aa240e58816fc076c91e11953cdfee14f8dd9bf1ad4"
+    ],
+    "portable_config/hdr-tools/sha256.lua": [
+      "609f9c7ef4e16af6ef9f3c9547b79b58d47f722251c4e0be713067024a4a8e1c"
+    ],
+    "portable_config/hdr-tools/user-script-loader.lua": [
+      "afca374ca0cb420e74f2882912353a5e8ed9a250001d305bace41021d030339e"
+    ],
+    "portable_config/scripts/animejanai_backend.lua": [
+      "cdfd498d0e3a714cfb27d39752e6dc7a40787659402fc496c24100c9ceb8ae62"
+    ],
+    "portable_config/scripts/animejanai_engine_monitor.lua": [
+      "e34541dfab046b83ab44a02df3bd9e6711cf897c5eff2f019365e82bfcf63af3"
+    ],
+    "portable_config/scripts/animejanai_playback.lua": [
+      "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43"
+    ],
+    "portable_config/scripts/animejanai_reference.lua": [
+      "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d"
+    ],
+    "portable_config/scripts/animejanai_slot.lua": [
+      "22c92955b2be62be1ea32a92a56df5a6eed5e6f5b68284e79c857884cb642e36"
+    ],
+    "portable_config/scripts/animejanai_update.lua": [
+      "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e"
+    ],
+    "portable_config/scripts/animejanaistats.lua": [
+      "b2bc5c34d0eaf076a591f3f7c493c362c22a6ddc728ce93577b2de2db0023070"
+    ],
+    "portable_config/shaders/noise_static_chroma.hook": [
+      "cfc9c22d38b0195de5596ad681d501cf5fe2e62e24b2ce26f75ad870d198d748"
+    ],
+    "portable_config/shaders/noise_static_luma.hook": [
+      "9544d7e0ce1b31648531ee616ff028a18a6c8ca3eeef690dfdd6ea98c0a2ba31"
+    ],
+    "portable_config/user-scripts/animejanai_backend.lua": [
+      "0d545eb39908661a34905237af63e793146fd545fadf50ce56215c6ecb2f8f45"
+    ],
+    "portable_config/user-scripts/animejanai_hdr_auto.lua": [
+      "910fa8d04db1fdf518be765a60a1754991c405860b9715485ce8f39c1aed56bc"
+    ],
+    "portable_config/user-scripts/animejanai_slot.lua": [
+      "53d6f251e88e6789a83bbfeafe94debdf02d2821c03c108f3fd755d240bd63a6"
+    ],
+    "portable_config/user-scripts/display-info.dll": [
+      "59512ad92c20d32bbfc33ae26fc04dda4fb18a3df872d5c0c52c15c6adaa6383"
+    ],
+    "portable_config/user-scripts/hardware_auto.lua": [
+      "35fc698c0f39b57cbd1274864e788a76f107d4dd6f36764167459ae90ce96805"
+    ],
+    "portable_config/user-shaders/anime-hdr-calibration.hook": [
+      "80d27fed7a7334c734b7d82dc5e79742e45d609bc62f7050ac62d7431db66437"
+    ],
+    "portable_config/user-shaders/anime-hdr-grade.hook": [
+      "7f7e6cb6032d24d8bc9a9559ee1062bba79d1f9b0e04e9a5b0ac57859b489c2d"
+    ],
+    "animejanai/preparation/contract.py": [
+      "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d"
+    ],
+    "animejanai/preparation/engine.py": [
+      "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673"
+    ],
+    "animejanai/preparation/gmfss-fortuna.json": [
+      "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10"
+    ],
+    "animejanai/preparation/worker.py": [
+      "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80"
+    ]
+  }
+}

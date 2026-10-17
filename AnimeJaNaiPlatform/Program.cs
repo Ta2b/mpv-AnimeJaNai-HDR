@@ -7,6 +7,18 @@ try
     int ri = Array.IndexOf(args, "--root");
     if (ri >= 0 && ri + 1 < args.Length) root = Path.GetFullPath(args[ri + 1]);
     string? Get(string key) { int i = Array.IndexOf(args, key); return i >= 0 && i+1 < args.Length ? args[i+1] : null; }
+    if (args.FirstOrDefault() == "--write-managed-program-inventory")
+    {
+        ManagedProgramFiles.WriteInventory(root);
+        Console.WriteLine("{\"written\":true}"); return 0;
+    }
+    if (args.FirstOrDefault() == "--sync-managed-programs")
+    {
+        var report = ManagedProgramFiles.Sync(Get("--package-root")
+            ?? throw new ArgumentException("--package-root is required"), root);
+        Console.WriteLine(JsonSerializer.Serialize(report, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower }));
+        return 0;
+    }
     if (args.FirstOrDefault() == "--save-bank")
     {
         PlatformServices.SaveActiveConfig(root, Get("--expected-hash") ?? "", File.ReadAllBytes(args[1]), Get("--expected-bank"));
