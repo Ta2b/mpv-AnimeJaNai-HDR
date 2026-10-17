@@ -1,0 +1,45 @@
+{
+  "source": "9e03e0c559af3b212382a439224a58d3368fa717",
+  "cases": {
+    "base_off_on": {
+      "pixels_exact": true,
+      "output_sha256": "3f38af37d506b27fc213ff6aa8fd963e80a4404432898ad0a46175daa1809702",
+      "off_stats": "Stats state: running\nBackend: Core ML/CPU + Core ML/CPU\nAnimeJaNai models: 2\nRIFE: off\nOutput: 1024x1024\nFrames: 1\nInference ms: 155.874\nAverage inference ms: 155.874\nModel ms: 155.82\nAverage model ms: 155.82\nAverage conversion ms: 0.054292\nModel total ms: 155.819667\nRecent ms: 155.874\nFull frame ms: 155.874\nResident SPAN eligible: no\nResident SPAN segments: 0\nExecutor host staging bytes: 0\nExecutor explicit readback bytes: 0\nExecutor RGB to BGRA bytes: 983040\nExecutor BGRA to RGB bytes: 3932160\nTiles: 1x1 of 256x256, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nTiles: 1x1 of 512x512, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n",
+      "on_stats": "Stats state: running\nBackend: Core ML/CPU + Core ML/CPU\nAnimeJaNai models: 2\nRIFE: off\nOutput: 1024x1024\nFrames: 1\nInference ms: 156.947\nAverage inference ms: 156.947\nModel ms: 156.945\nAverage model ms: 156.945\nAverage conversion ms: 0.001458\nModel total ms: 156.945167\nRecent ms: 156.947\nFull frame ms: 156.947\nResident SPAN eligible: yes\nResident SPAN segments: 1\nExecutor host staging bytes: 0\nExecutor explicit readback bytes: 0\nExecutor RGB to BGRA bytes: 196608\nExecutor BGRA to RGB bytes: 3145728\nTiles: 1x1 of 256x256, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nTiles: 1x1 of 512x512, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n",
+      "Metal_ablation_independent": true
+    },
+    "short_warm_calls_ms": {
+      "off": [
+        149.81745900013266,
+        148.09520800008613,
+        153.6617080000724
+      ],
+      "on": [
+        149.21687500009284,
+        150.7004169998254,
+        154.19370800009347
+      ]
+    },
+    "resize_fallback": {
+      "pixels_exact": true,
+      "stats": "Stats state: running\nBackend: Core ML/CPU + Core ML/CPU\nAnimeJaNai models: 2\nRIFE: off\nOutput: 512x512\nFrames: 1\nInference ms: 67.9655\nAverage inference ms: 67.9655\nModel ms: 67.7706\nAverage model ms: 67.7706\nAverage conversion ms: 0.194833\nModel total ms: 67.7706249999\nRecent ms: 67.9655\nFull frame ms: 67.9655\nResident SPAN eligible: no\nResident SPAN segments: 0\nExecutor host staging bytes: 0\nExecutor explicit readback bytes: 0\nExecutor RGB to BGRA bytes: 393216\nExecutor BGRA to RGB bytes: 1572864\nTiles: 1x1 of 256x256, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nTiles: 1x1 of 256x256, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n"
+    },
+    "reconfigure": {
+      "pixels_exact": true
+    }
+  },
+  "passed": true,
+  "identity": {
+    "baseline": "61b30d435acb85659927d3e5686cd7e28288efefbf457e79eb6918f761fff478",
+    "candidate": "7816d2a515cee72d8be4236aab946ba20f9117bdb5b887cf92816621d2268a45",
+    "conf": "b6434acdcdeffaa0b5c0c44c32ceeaf589ec8dad8b8418343dfbf884967c94c0",
+    "resize_conf": "1863f3432192557ce666094c0c09a1f0c93dcc2e5f43dfa4a0a8ec435f2eeda1"
+  },
+  "scope": "macOS native CoreML CPU256->512->1024, RGB adapter work only; no claim about GPU/ANE/internal framework copies",
+  "owner_and_error_probe": {
+    "retained_output_not_overwritten": true,
+    "invalid_format_refused": true,
+    "recovered_chain_output_exact": true,
+    "output_sha256": "3f38af37d506b27fc213ff6aa8fd963e80a4404432898ad0a46175daa1809702"
+  }
+}

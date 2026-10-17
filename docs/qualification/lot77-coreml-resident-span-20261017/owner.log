@@ -1,0 +1,5 @@
+[aji] Core ML cache identity: p3-73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 template v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: 73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 generation data-47680-2525834190083-0
+[aji] Core ML cache identity: p3-aa544ac300a90fe53a6d67f2192b4a6cf89d72a2b1cbd05128e6160ce1ccb51d template v2-0de5cb8413b5e032da95817cd27559f85da94b9a07979a106c11f83b4e926d75 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: aa544ac300a90fe53a6d67f2192b4a6cf89d72a2b1cbd05128e6160ce1ccb51d generation data-47680-2526106458666-1
+PASS retained-output-not-overwritten / invalid-format-refused / synchronous-recovery

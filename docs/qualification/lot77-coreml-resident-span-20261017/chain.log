@@ -1,0 +1,66 @@
+[aji] Core ML cache identity: p3-73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 template v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML compiled cache miss: 2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16 content v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7; rebuilding
+[aji] Core ML committed cache: 73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 generation data-47680-2525834190083-0
+[aji] Core ML cache identity: p3-aa544ac300a90fe53a6d67f2192b4a6cf89d72a2b1cbd05128e6160ce1ccb51d template v2-0de5cb8413b5e032da95817cd27559f85da94b9a07979a106c11f83b4e926d75 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML compiled cache miss: 2x_AnimeJaNai_HD_V3.1_Performance_SPANF3_b5f48_unshuffle_fp16 content v2-0de5cb8413b5e032da95817cd27559f85da94b9a07979a106c11f83b4e926d75; rebuilding
+[aji] Core ML committed cache: aa544ac300a90fe53a6d67f2192b4a6cf89d72a2b1cbd05128e6160ce1ccb51d generation data-47680-2526106458666-1
+[aji] Core ML cache identity: p3-73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 template v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: 73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 generation data-47680-2525834190083-0
+[aji] Core ML cache identity: p3-aa544ac300a90fe53a6d67f2192b4a6cf89d72a2b1cbd05128e6160ce1ccb51d template v2-0de5cb8413b5e032da95817cd27559f85da94b9a07979a106c11f83b4e926d75 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: aa544ac300a90fe53a6d67f2192b4a6cf89d72a2b1cbd05128e6160ce1ccb51d generation data-47680-2526106458666-1
+[aji] Core ML cache identity: p3-73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 template v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: 73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 generation data-47680-2525834190083-0
+[aji] Core ML cache identity: p3-aa544ac300a90fe53a6d67f2192b4a6cf89d72a2b1cbd05128e6160ce1ccb51d template v2-0de5cb8413b5e032da95817cd27559f85da94b9a07979a106c11f83b4e926d75 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: aa544ac300a90fe53a6d67f2192b4a6cf89d72a2b1cbd05128e6160ce1ccb51d generation data-47680-2526106458666-1
+[aji] Core ML cache identity: p3-73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 template v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: 73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 generation data-47680-2525834190083-0
+[aji] Core ML cache identity: p3-5ee24f4d832dddcc4b80fe140e2b88271854c568d5559c92c291b105db0b95be template v2-0de5cb8413b5e032da95817cd27559f85da94b9a07979a106c11f83b4e926d75 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML compiled cache miss: 2x_AnimeJaNai_HD_V3.1_Performance_SPANF3_b5f48_unshuffle_fp16 content v2-0de5cb8413b5e032da95817cd27559f85da94b9a07979a106c11f83b4e926d75; rebuilding
+[aji] Core ML committed cache: 5ee24f4d832dddcc4b80fe140e2b88271854c568d5559c92c291b105db0b95be generation data-47680-2527756701083-2
+[aji] Core ML cache identity: p3-73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 template v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: 73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 generation data-47680-2525834190083-0
+[aji] Core ML cache identity: p3-5ee24f4d832dddcc4b80fe140e2b88271854c568d5559c92c291b105db0b95be template v2-0de5cb8413b5e032da95817cd27559f85da94b9a07979a106c11f83b4e926d75 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: 5ee24f4d832dddcc4b80fe140e2b88271854c568d5559c92c291b105db0b95be generation data-47680-2527756701083-2
+[aji] Core ML cache identity: p3-73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 template v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: 73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 generation data-47680-2525834190083-0
+[aji] Core ML cache identity: p3-aa544ac300a90fe53a6d67f2192b4a6cf89d72a2b1cbd05128e6160ce1ccb51d template v2-0de5cb8413b5e032da95817cd27559f85da94b9a07979a106c11f83b4e926d75 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML committed cache: aa544ac300a90fe53a6d67f2192b4a6cf89d72a2b1cbd05128e6160ce1ccb51d generation data-47680-2526106458666-1
+{
+  "source": "9e03e0c559af3b212382a439224a58d3368fa717",
+  "cases": {
+    "base_off_on": {
+      "pixels_exact": true,
+      "output_sha256": "3f38af37d506b27fc213ff6aa8fd963e80a4404432898ad0a46175daa1809702",
+      "off_stats": "Stats state: running\nBackend: Core ML/CPU + Core ML/CPU\nAnimeJaNai models: 2\nRIFE: off\nOutput: 1024x1024\nFrames: 1\nInference ms: 155.874\nAverage inference ms: 155.874\nModel ms: 155.82\nAverage model ms: 155.82\nAverage conversion ms: 0.054292\nModel total ms: 155.819667\nRecent ms: 155.874\nFull frame ms: 155.874\nResident SPAN eligible: no\nResident SPAN segments: 0\nExecutor host staging bytes: 0\nExecutor explicit readback bytes: 0\nExecutor RGB to BGRA bytes: 983040\nExecutor BGRA to RGB bytes: 3932160\nTiles: 1x1 of 256x256, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nTiles: 1x1 of 512x512, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n",
+      "on_stats": "Stats state: running\nBackend: Core ML/CPU + Core ML/CPU\nAnimeJaNai models: 2\nRIFE: off\nOutput: 1024x1024\nFrames: 1\nInference ms: 156.947\nAverage inference ms: 156.947\nModel ms: 156.945\nAverage model ms: 156.945\nAverage conversion ms: 0.001458\nModel total ms: 156.945167\nRecent ms: 156.947\nFull frame ms: 156.947\nResident SPAN eligible: yes\nResident SPAN segments: 1\nExecutor host staging bytes: 0\nExecutor explicit readback bytes: 0\nExecutor RGB to BGRA bytes: 196608\nExecutor BGRA to RGB bytes: 3145728\nTiles: 1x1 of 256x256, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nTiles: 1x1 of 512x512, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n",
+      "Metal_ablation_independent": true
+    },
+    "short_warm_calls_ms": {
+      "off": [
+        149.81745900013266,
+        148.09520800008613,
+        153.6617080000724
+      ],
+      "on": [
+        149.21687500009284,
+        150.7004169998254,
+        154.19370800009347
+      ]
+    },
+    "resize_fallback": {
+      "pixels_exact": true,
+      "stats": "Stats state: running\nBackend: Core ML/CPU + Core ML/CPU\nAnimeJaNai models: 2\nRIFE: off\nOutput: 512x512\nFrames: 1\nInference ms: 67.9655\nAverage inference ms: 67.9655\nModel ms: 67.7706\nAverage model ms: 67.7706\nAverage conversion ms: 0.194833\nModel total ms: 67.7706249999\nRecent ms: 67.9655\nFull frame ms: 67.9655\nResident SPAN eligible: no\nResident SPAN segments: 0\nExecutor host staging bytes: 0\nExecutor explicit readback bytes: 0\nExecutor RGB to BGRA bytes: 393216\nExecutor BGRA to RGB bytes: 1572864\nTiles: 1x1 of 256x256, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nTiles: 1x1 of 256x256, overlap 56 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Core ML/CPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Core ML/CPU: disabled (AJI_COREML_NO_PLAN)\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n"
+    },
+    "reconfigure": {
+      "pixels_exact": true
+    }
+  },
+  "passed": true,
+  "identity": {
+    "baseline": "61b30d435acb85659927d3e5686cd7e28288efefbf457e79eb6918f761fff478",
+    "candidate": "7816d2a515cee72d8be4236aab946ba20f9117bdb5b887cf92816621d2268a45",
+    "conf": "b6434acdcdeffaa0b5c0c44c32ceeaf589ec8dad8b8418343dfbf884967c94c0",
+    "resize_conf": "1863f3432192557ce666094c0c09a1f0c93dcc2e5f43dfa4a0a8ec435f2eeda1"
+  },
+  "scope": "macOS native CoreML CPU256->512->1024, RGB adapter work only; no claim about GPU/ANE/internal framework copies"
+}

@@ -53,3 +53,5 @@ Les contrôles ne sont pas une batterie obligatoire. Revue/compilation suffisent
 In Progress au début du travail effectif ; commentaire de preuve court : versions/SHA, commande ou revue, résultat, limites, décision et lien de livraison. Done seulement après le périmètre complet et la vérification du paquet requis. Découper le reste, garder son parent ouvert. Mettre à jour ETAT-COURANT en remplaçant les faits périmés.
 
 [AH-362 — route ABI9 Linux et configuration immuable](AH-362.md), suite explicite d’AH330 après AH361 ; voir ETAT-COURANT pour le statut de livraison.
+
+[AH-364 — générations transactionnelles CoreML](AH-364.md), tranche d’AH254/AH32, et AH365 — SPAN CoreML résident, tranche d’[AH119](AH-119.md). AH349 est Done après .96, AH335 Done après .97 ; ETAT-COURANT et reçus remplacent les statuts datés du plan initial ci-dessus.
