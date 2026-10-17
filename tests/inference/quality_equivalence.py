@@ -7,6 +7,12 @@ the FP32 reference is not larger than the delivered engine's own error:
     MAX(candidate, fp32)  <= MAX(delivered, fp32) + max_slack    per channel (16-bit units)
 with no non-finite value and the same output count. Outputs are the probe's
 `NNN.npy` (3, H, W) uint16 YUV444P16 files. Exit 0 = equivalent, 2 = not.
+
+Rule v2 (AH-399): when the probe's `summary.json` is present next to the
+delivered and candidate outputs, their timelines (PTS, durations) and output
+flags must be identical, and when the FP32 receipt is present, every pair the
+reference judged a scene cut must be repeated (flag REPEATED) by the candidate
+and no other pair may be.
 """
 import argparse
 import json
@@ -60,6 +66,37 @@ def main():
             agg[k]['mse'] += np.array(e['mse'])
             agg[k]['max'] = [max(x, y) for x, y in zip(agg[k]['max'], e['max'])]
     verdict = {}
+    # Rule v2: timeline, flags and scene decisions from the probe summaries and the FP32 receipt.
+    REPEATED = 8
+    structure = {'timeline_ok': None, 'flags_ok': None, 'scene_ok': None}
+    summaries = {}
+    for k in ('delivered', 'candidate'):
+        path = getattr(a, k) / 'summary.json'
+        if path.exists():
+            summaries[k] = json.loads(path.read_text())
+    if len(summaries) == 2:
+        structure['timeline_ok'] = summaries['delivered'].get('timeline') == summaries['candidate'].get('timeline')
+        structure['flags_ok'] = summaries['delivered'].get('flags') == summaries['candidate'].get('flags')
+        for key in ('timeline_ok', 'flags_ok'):
+            if structure[key] is False:
+                failures.append(f'{key.split("_")[0]} differs between delivered and candidate')
+    receipt_path = a.fp32 / 'receipt.json'
+    if receipt_path.exists() and 'candidate' in summaries:
+        ref = json.loads(receipt_path.read_text())
+        factor, scenes, flags = int(ref.get('factor', 0)), ref.get('scene', []), summaries['candidate'].get('flags', [])
+        if factor > 1 and scenes and flags:
+            ok = True
+            for entry in scenes:
+                pair = int(entry['pair'])
+                for j in range(1, factor):
+                    index = pair * factor + j
+                    if index < len(flags):
+                        repeated = bool(flags[index] & REPEATED)
+                        if repeated != bool(entry['scene']):
+                            ok = False
+            structure['scene_ok'] = ok
+            if not ok:
+                failures.append('scene-cut decisions differ from the FP32 reference')
     if not frames and not failures:
         failures.append('no outputs to compare')
     for k in agg:
@@ -77,7 +114,7 @@ def main():
     def psnr(mse):  # None (JSON null) for an identical channel: Infinity is not valid JSON
         return [float(10 * np.log10(65535.0 ** 2 / m)) if m > 0 else None for m in mse]
     receipt = {
-        'schema': 'animejanai.quality-equivalence.v1', 'ticket': 'AH-370',
+        'schema': 'animejanai.quality-equivalence.v2', 'ticket': 'AH-370/AH-399', 'structure': structure,
         'fp32': str(a.fp32), 'delivered': str(a.delivered), 'candidate': str(a.candidate),
         'outputs_compared': len(frames), 'output_counts': counts, 'rule': {'mse_ratio': a.mse_ratio, 'max_slack_16bit': a.max_slack},
         'aggregate': {k: {'mse': v['mse'], 'max': v['max'], 'psnr_db': psnr(v['mse'])} for k, v in agg.items()},
