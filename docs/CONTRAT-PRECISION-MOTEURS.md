@@ -60,6 +60,16 @@ L'inférence stricte des types/formes du RIFE dynamique original échoue sur des
 
 Pour les prochaines modifications, joindre au ticket le relevé original et, si utile, celui du graphe réellement compilé, les options/versions et les frontières affectées. L'identité de cache inclut ces options lorsqu'elles changent le programme. Un type absent de l'API reste inconnu ; l'implémentation d'un nouveau mode de précision et sa qualification sont des tickets d'optimisation séparés.
 
+## Critère d'équivalence Quality — AH-370
+
+Depuis le 17 octobre 2026, « exact » ne signifie plus identique bit à bit à un plan TensorRT particulier. Une reconstruction TensorRT ordinaire change déjà les tactiques et les bits ; le plan livré est construit au niveau d'optimisation 5, qui choisit les kernels les plus rapides. Le critère est une **équivalence bornée contre une référence FP32** du même algorithme :
+
+- Référence : les mêmes poids promus en FP32 (`tests/inference/ort_fp32_fixture.py`), les mêmes conversions, le même padding et les mêmes quantifications intermédiaires, rejoués par `tests/inference/fp32_reference.py` sur le jeu fixe (paires privées 720p du lot 38, indices 2 à 5, et une mire).
+- Règle (`tests/inference/quality_equivalence.py`) : un candidat reste Quality si, par canal YUV16, `MSE(candidat, FP32) ≤ 1,1 × MSE(livré, FP32)` et `MAX(candidat, FP32) ≤ MAX(livré, FP32) + 16` (seize unités 16 bits, soit un seizième de pas 12 bits), sans valeur non finie, avec le même nombre de sorties, les mêmes PTS et la même décision de coupure de scène.
+- Contrôle visuel d'une paire difficile (contours, occlusion) seulement si l'erreur max dépasse un niveau 10 bits (64 unités).
+
+Ce critère conserve tout ce que Quality promet : prédictions RIFE complètes à chaque instant, modèles de référence, aucun raccourci temporel, aucune baisse de résolution, aucune quantification supplémentaire. Il ne tolère pas une perte : il cesse d'interdire ce que le compilateur fait déjà. Les variantes Fast restent explicites et hors de ce critère.
+
 ## Qualification et fin du ticket
 
 AH-14 livre le contrat, l'inventaire des routes/options et l'outil d'inspection, sans changement de moteur/flux vidéo. Vérifications simples : exécution de l'outil sur les deux modèles livrés et une capture compilée existante, confrontation des Cast/attributs/poids aux protobufs, syntaxePython, liens locaux et diff. Pas de nouveau test vidéo ni de mesure deFPS : utilité = rendre contrôlables les décisions de précision et empêcher les justifications incorrectes. Les commentaires CoreML/NCNN/MIGraphX ambigus sont corrigés, les branches et valeurs exécutées restent identiques.

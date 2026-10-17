@@ -84,6 +84,8 @@ typedef struct aji_surface_cache_stats_v1_result {
     uint64_t rife_preparations,rife_hits,promoted_inputs,fast_upscaled,fast_warped;
 } aji_surface_cache_stats_v1_result;
 int aji_surface_cache_stats_v1(void *context,uint32_t version,aji_surface_cache_stats_v1_result *,size_t);
+/* Optional: lend the caller's CUDA stream to the surface path; NULL restores the private stream (AH-55). */
+int aji_surface_set_stream_v1(void *context,uint32_t version,void *stream);
 
 /* CUDA Linux v1 accepts native NV12/P010/YUV444P16 SDR on the configured
  * context, positive strides and chroma-aligned crop, reference-native YUV

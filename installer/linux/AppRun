@@ -255,9 +255,23 @@ export LD_LIBRARY_PATH="$HERE/mpv:$HERE/animejanai/inference:$INFDATA:$HERE/usr/
 export ANIMEJANAI_MPV="$HERE/mpv/mpv"
 # Downloaded components override image components (the matching runtime/builder share an ABI).
 export ANIMEJANAI_INFERENCE_DIR="$INFDATA"
+# AH-330: a regular file where the image provides a managed module is an old
+# copy (a previous build kept by an update) unless the user declares it with a
+# "<name>.override" marker. Old copies are renamed with a receipt, never deleted,
+# so the engine actually loaded is the one the release declares.
+migrations="$DATA/animejanai/managed-migrations.log"
 for lib in "$HERE/animejanai/inference/"*; do
     [ -e "$lib" ] || continue
     dest="$INFDATA/$(basename "$lib")"
+    if [ -e "$dest" ] && [ ! -L "$dest" ] && [ -f "$lib" ] && [ ! -e "$dest.override" ]; then
+        if ! cmp -s "$lib" "$dest"; then
+            stamp="$(date +%Y%m%d-%H%M%S)"
+            if mv "$dest" "$dest.stale-$stamp.bak"; then
+                printf '%s\t%s\trenamed stale regular file to %s (image provides %s)\n' "$(date -Is)" "$(basename "$dest")" "$(basename "$dest").stale-$stamp.bak" "$(sha256sum "$lib" | cut -c1-16)" >> "$migrations"
+                echo "AnimeJaNai: old local copy of $(basename "$dest") renamed (see $migrations); add $(basename "$dest").override to keep a custom build" >&2
+            fi
+        fi
+    fi
     if [ -L "$dest" ] || [ ! -e "$dest" ]; then ln -sf "$lib" "$dest"; fi
 done
 exec "$HERE/mpv-animejanai" "$@"

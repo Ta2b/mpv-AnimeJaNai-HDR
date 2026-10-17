@@ -95,6 +95,42 @@ local function ready(conf)
     mp.set_property_native('user-data/animejanai-hardware',hw)
     return hw.inference_available
 end
+-- AH-330: provenance of the module the filter will load. Resolved path, whether it
+-- is a managed link, its SHA-256 and the digest the bundle declares, so a stale
+-- local copy can be told from the released engine without guessing.
+local function run_capture(args)
+    local ok,r=pcall(mp.command_native,{name='subprocess',playback_only=false,capture_stdout=true,capture_stderr=true,args=args})
+    if ok and type(r)=='table' and r.status==0 then return (r.stdout or ''):gsub('%s+$','') end
+    return nil
+end
+local function provenance(path)
+    if not path then return nil end
+    local info=utils.file_info(path)
+    if not info then return {path=path,present=false} end
+    local resolved=run_capture({'readlink','-f',path}) or path
+    local digest=run_capture({'sha256sum',resolved});digest=digest and digest:match('^(%x+)')
+    local declared
+    local source=read(hw.inference_dir..'/GPU-SOURCE.json')
+    if source then
+        local ok,parsed=pcall(utils.parse_json,source)
+        if ok and type(parsed)=='table' and type(parsed.sha256)=='table' then declared=parsed.sha256[path:match('([^/]+)$')] end
+    end
+    return {path=path,present=true,resolved=resolved,managed_link=resolved~=path,sha256=digest,declared_sha256=declared,
+        declared_match=(declared==nil) and 'unknown' or (declared==digest)}
+end
+local function publish_provenance(params)
+    local report={engine=provenance(params.lib),pipeline=params['pipeline-lib'] and provenance(params['pipeline-lib']) or nil}
+    if params.lib and params.lib:match('libaji%.so$') then report.backend=provenance(hw.inference_dir..'/libaji_trt.so') end
+    mp.set_property_native('user-data/animejanai-engine-provenance',report)
+    for name,entry in pairs(report) do
+        if entry.present and entry.declared_match==false then
+            mp.msg.warn(string.format('AnimeJaNai %s: %s differs from the released module (%s)',name,entry.resolved,tostring(entry.declared_sha256)))
+            mp.osd_message('Moteur local different de la release : voir le terminal (AH-330).',6)
+        elseif entry.present then
+            mp.msg.info(string.format('AnimeJaNai %s: %s sha256 %s (%s)',name,entry.resolved,tostring(entry.sha256),entry.managed_link and 'managed link' or 'regular file'))
+        end
+    end
+end
 local resolved_cache={}
 local function pipeline_route(wanted, text, conf)
     local source=text or read(conf or hw.conf_active or hw.conf)
@@ -217,6 +253,7 @@ local function select(value, preload)
         write_stage(stage)
         if index then list[index]=f else table.insert(list,1,f) end
         mp.set_property_native('vf',tag(list,stage))
+        publish_provenance(f.params)
         if stage_check then stage_check:kill();stage_check=nil end
         if stage and loaded then stage_check=mp.add_timeout(3,confirm_stage) end
     end
