@@ -48,6 +48,14 @@ edit('cmake/custom_steps.cmake', '''    if("${git_remote_name}" STREQUAL "" AND 
         set(reset "")''')
 edit('cmake/custom_steps.cmake', '$(git -C ${source_dir} rev-parse @{u})',
      '$(git -C ${source_dir} rev-parse ${compare_ref})')
+# c-ares now defaults to coverity_scan. The recipe's manual --depth=1
+# clones only that branch, so its later checkout of main fails. Keep the
+# intended main source at an immutable observed revision and fetch refs
+# with partial objects, without restricting history to the default branch.
+edit('packages/c-ares.cmake','GIT_TAG main',
+     'GIT_TAG f4156c12c8b36f5cb8f8a53658d44b24263c6ad1')
+edit('packages/c-ares.cmake','GIT_CLONE_FLAGS "--depth=1 --filter=tree:0"',
+     'GIT_CLONE_FLAGS "--filter=tree:0"')
 edit('packages/mpv.cmake','GIT_REPOSITORY https://github.com/mpv-player/mpv.git',
      f'GIT_REPOSITORY https://github.com/the-database/mpv.git\n    GIT_TAG {MPV}')
 edit('packages/libass.cmake','GIT_REPOSITORY https://github.com/libass/libass.git',
