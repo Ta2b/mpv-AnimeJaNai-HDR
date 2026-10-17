@@ -1,9 +1,9 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
-  "player_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
-  "validation": "Lot70 Linux RTX4070Ti configured RIFE semantics/error buffers/old Quality refusal/current Quality and Fast/old explicit Fast passed, no video frames or FPS measured. TRT device .nv_fatbin byte-identical to lot62; numeric/source-cache/quality-batch qualification reused. Optional API reports loaded symbol image, not mapped-page hash; build source declaration unknown in portable image without git.",
+  "backend_source": "e70a044b11eff16ca00fb4401fbeb61b77e8ff1c",
+  "player_source": "284604838af737294ffc1183208135987e9079fd",
+  "validation": "Lot A, 17 October 2026 (backend e70a044), Linux RTX4070Ti CUDA13.4/TRT11.3: TRT .nv_fatbin byte-identical to the pinned release (23766330...), host code only: RIFE pair converted with the pair's own matrix/range (709 unchanged), 64-pixel RIFE padding kept (4.26 rounds 736 rows to 768), optional aji_surface_set_stream_v1 (stream lent by the pipeline; drain and pair caches reset; caller-owned batch completion). Dispatcher forwards the new entry point. Lot-55 Quality chain Area->RIFE4.26x4->SPAN Sharp1 Performance 2560x1440: 13 outputs bit-identical to the delivered engine and EQUIVALENT under the AH-370 FP32 rule (Y/U/V PSNR 53.1/68.1/66.7 dB vs FP32, unchanged). No FPS, Windows or other-hardware claim. Review fixes: the inference stream fence is cleared when the stream changes; a lent-stream batch still waits when a descriptor carries owner callbacks.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -57,12 +57,16 @@
     "lazy-fallback-rife-yuv-pads",
     "quality-yuv-staging-copy-elision",
     "optional-synchronous-cuda-surface-batch",
-    "optional-configured-rife-semantics-v1"
+    "optional-configured-rife-semantics-v1",
+    "optional-surface-stream-lend-v1",
+    "rife-pair-source-matrix",
+    "rife-pad-64-required-by-4.26",
+    "dispatcher-stream-forwarding"
   ],
   "sha256": {
-    "libaji.so": "592a828989d3fa40228577bd103374568ef05277df89eb6f467ab965175764c3",
-    "libaji_trt.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
-    "libaji_trt_rtx.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e"
+    "libaji.so": "321e5d48ed9aa8283f646000e180c0f6b3d3835fe525cfbc65286cdd81b0d552",
+    "libaji_trt.so": "46cc27f482826cb3ae18d160394f60c7966f21ad03447cda9b82fd205777cf81",
+    "libaji_trt_rtx.so": "ba367e8ad7a8328005eec342901735e74ec9d86abe1c65baa7885c5dfa4b3c5f"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -77,8 +81,13 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "53e62bb8ad7c5032ac7c923b5e79823d47db4918",
+  "player_qualification_source": "284604838af737294ffc1183208135987e9079fd",
   "prior_qualifications": [
+    {
+      "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+      "player_qualification_source": "53e62bb8ad7c5032ac7c923b5e79823d47db4918",
+      "validation": "Lot70 Linux RTX4070Ti configured RIFE semantics/error buffers/old Quality refusal/current Quality and Fast/old explicit Fast passed, no video frames or FPS measured. TRT device .nv_fatbin byte-identical to lot62; numeric/source-cache/quality-batch qualification reused. Optional API reports loaded symbol image, not mapped-page hash; build source declaration unknown in portable image without git."
+    },
     {
       "backend_source": "7e9c87137e77046e5c521e635634bfdef751a277",
       "player_qualification_source": "afe9136bf25173bd8db4899bbc66a4e703a14ba8",
@@ -116,17 +125,17 @@
     }
   ],
   "ordered_pipeline": {
-    "backend_source": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
+    "backend_source": "e70a044b11eff16ca00fb4401fbeb61b77e8ff1c",
     "api": "aji_pipeline_v1",
     "sha256": {
-      "libaji_pipeline.so": "834ca0a740b92e632b5ea63b07f5da28326d6bd2cc72f67b08ed6a8f6b9b39bc",
+      "libaji_pipeline.so": "12bec49d5379e4c1bcf4da6e8a44e30d64aa07222bab5ebeaf50774955c0548f",
       "aji_pipeline.fatbin": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
-      "PIPELINE-README.md": "b22600caedee5387a50a5c8ec2b79d793162534b9b2f0998363fd9b1dfa169c1"
+      "PIPELINE-README.md": "426a29c603172611e7632483343e4ef3234cec5d9d2c0a907b7a4e1116151237"
     },
     "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
     "explicit_opt_in": true,
     "sdk_external": true,
-    "qualified": "Lot70 Linux RTX4070Ti: old provider Quality-alone refused before create/configure; current Quality4+SPAN fused reports effectiveQuality/flags1 and actual module; currentFast flags2; old explicit Fast accepted with effectiveunknown. Native null/short/version/unconfigured query output untouched. CPU fixture proves dependency symbol cannot certify old engine, and guard precedes configure. No video frame processed or FPS claimed. Device kernels unchanged, prior numeric proofs reused; historical ABI9 path/Windows/macOS not protected by this ticket.",
+    "qualified": "Lot A Linux RTX4070Ti: shared pipeline stream (AH-55) and TrueHDR on the default stream with one host wait for the pack, asynchronous run and event-ordered unpack (AH-372, mode null-async-packwait; the default stream carries only the SDK run so mpv CUDA interop is not delayed by the inference). Lot-55 Quality x4 chain without HDR: 13 outputs bit-identical to the pinned pipeline, host_waits=0 in the trace, warm pair wall 36.1 ms best-of-runs vs 51.1 ms pinned (desktop GPU shared, not a display FPS). Same chain with TrueHDR: outputs bit-identical to the pinned pipeline on 3/3 runs with the default mode, 1/1 legacy, 3/3 null-async-events and 3/3 legacy-nounpackwait; every mode running the SDK on the pipeline stream and null-async without events gave wrong, unstable pixels and is refused without AJI_HDR_UNSAFE_MODES=1. HDR timing inconclusive under desktop load (best 42.6 ms vs 43.3 ms pinned). fatbin unchanged. No physical HDR display, Windows or other-hardware claim.",
     "cuda_architectures": [
       75,
       80,
@@ -137,7 +146,7 @@
       120,
       "PTX120"
     ],
-    "prior_backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+    "prior_backend_source": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
     "features": [
       "independent-area-downscale",
       "static-reader-feature-query",
@@ -155,7 +164,13 @@
       "single-final-copy-batch-wait",
       "synchronous-native-quality-batch",
       "exact-integer-area-three-halves",
-      "required-effective-quality-contract"
+      "required-effective-quality-contract",
+      "shared-pipeline-stream",
+      "one-job-batch-on-shared-stream",
+      "truehdr-stream-modes-selectable",
+      "host-waits-in-trace",
+      "truehdr-default-stream-packwait",
+      "truehdr-unsafe-modes-gated"
     ],
     "sdk_hdr": {
       "externally_installed": true,
@@ -170,6 +185,10 @@
       "nvidia-fruc": "Removed by user request AH-328; enabled legacy stages explicitly rejected, disabled data preserved; ABI fields reserved"
     },
     "prior_qualifications": [
+      {
+        "backend_source": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
+        "qualified": "Lot70 Linux RTX4070Ti: old provider Quality-alone refused before create/configure; current Quality4+SPAN fused reports effectiveQuality/flags1 and actual module; currentFast flags2; old explicit Fast accepted with effectiveunknown. Native null/short/version/unconfigured query output untouched. CPU fixture proves dependency symbol cannot certify old engine, and guard precedes configure. No video frame processed or FPS claimed. Device kernels unchanged, prior numeric proofs reused; historical ABI9 path/Windows/macOS not protected by this ticket."
+      },
       {
         "backend_source": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
         "qualified": "Lot57 Linux RTX4070Ti: FRUC provider/build/assets removed; native RIFE Fast4+SPAN retained 5 exact output hashes, rational PTS/durations/flags, dimensions and request counters against lot55 bundle; same TRT and fatbin. Model-free standalone Spline36 128x72->64x36 canonical YUV444P16 exactly matches established ABI9 resize with unchanged descriptors, padding, owners and cadence. Independent height preserves source aspect with native even-pixel rounding, without the legacy16:9 box; wide and smaller-source configure cases qualified separately. No NV12/P010 legacy-route equivalence, universal FPS or physical HDR claim. Previous Area/TrueHDR/fusion evidence remains historical.",
@@ -187,17 +206,17 @@
       }
     ],
     "prior_targeted_timing_ms": {
-      "before": 18.851991999326856,
-      "after": 17.402252999090706
+      "before": 51.09,
+      "after": 36.12
     },
-    "prior_timing_scope": "Two warmup intervals then three contiguous intervals; short timing observation, not display FPS or universal performance",
+    "prior_timing_scope": "Lot-55 Quality x4 chain without HDR, pipeline_fusion_probe warm pairs, best of runs on a desktop-shared RTX 4070 Ti; not display FPS or universal performance",
     "player_qualification_source": "53e62bb8ad7c5032ac7c923b5e79823d47db4918",
     "module_sources": {
-      "libaji_pipeline.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
+      "libaji_pipeline.so": "e70a044b11eff16ca00fb4401fbeb61b77e8ff1c",
       "aji_pipeline.fatbin": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d"
     },
     "build": {
-      "environment": "Linux GNU16.2.1 / CUDA13.4.92, same pipeline toolchain as lot62",
+      "environment": "Linux GNU16.2.1 / CUDA13.4.92, host toolchain with VideoFX 1.3 headers; TRT and dispatcher in the aji-rtx-build Ubuntu 24 container",
       "elf_glibc_minimum": "2.38",
       "elf_glibcxx_minimum": "3.4.30",
       "local_rpath": false,
@@ -231,10 +250,10 @@
     }
   },
   "module_sources": {
-    "libaji.so": "118c27252240efbb7d980d0e0b8ef358b6d4bc7e",
-    "libaji_trt.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
-    "libaji_trt_rtx.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
-    "libaji_pipeline.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
+    "libaji.so": "e70a044b11eff16ca00fb4401fbeb61b77e8ff1c",
+    "libaji_trt.so": "e70a044b11eff16ca00fb4401fbeb61b77e8ff1c",
+    "libaji_trt_rtx.so": "e70a044b11eff16ca00fb4401fbeb61b77e8ff1c",
+    "libaji_pipeline.so": "e70a044b11eff16ca00fb4401fbeb61b77e8ff1c",
     "aji_pipeline.fatbin": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d"
   },
   "lot58_source_reuse_proof_sha256": "f1deab18488760638525a34402db4eb922e0d170b74fa02451a50ed30f180de6",
@@ -256,9 +275,9 @@
     "numeric_gpu_section_sha256": "23766330f0d82b1a69660abff608b3f0630ea9089f03be755eb4e06830d097cc"
   },
   "dispatcher_quality_contract": {
-    "backend_source": "118c27252240efbb7d980d0e0b8ef358b6d4bc7e",
+    "backend_source": "e70a044b11eff16ca00fb4401fbeb61b77e8ff1c",
     "scope": "Linux only, selected inner-context forwarding; same-image create/configure/infer_rife/semantics, dependent-only symbol rejected",
-    "qualified": "Real DSO fixtures present/absent/dependent-only and bad version/size/null preserve output. Actual reader requested Quality receives effective Quality and inner TRT module path; older Quality refused, older explicit Fast accepted unknown. No numerical algorithm or measured FPS change.",
+    "qualified": "Real DSO fixtures present/absent/dependent-only and bad version/size/null preserve output. Actual reader requested Quality receives effective Quality and inner TRT module path; older Quality refused, older explicit Fast accepted unknown. No numerical algorithm or measured FPS change. Lot A: forwards aji_surface_set_stream_v1 to the inner TRT module; built in the Ubuntu baseline container (GLIBC 2.34).",
     "rpath": false
   }
 }

@@ -81,3 +81,18 @@ symbol path and optional declared source are not a hash of mapped pages.
 Qualification covers initialization/guards, no video replay/FPS gain. Numeric
 GPU sections are identical to prior qualified code. This applies only to the
 ordered CUDA pipeline, not historical ABI9/dispatcher or other OS.
+
+Lot A (AH-55, AH-372, AH-371, AH-373): the pipeline lends its stream to the
+TensorRT engine (aji_surface_set_stream_v1) so canonical conversion, Area,
+inference and output copies are ordered by the GPU; isolated jobs run as a
+one-job batch; the TrueHDR SDK stays on the default stream, which carries nothing else: one
+host wait for the pack, asynchronous run, unpack ordered by event
+(AJI_HDR_STREAM_MODE=null-async-packwait, the default; null-async-events keeps
+no host wait but makes the default stream, shared with mpv's CUDA interop,
+wait for the whole inference). Environment switches, for comparison only: AJI_PIPELINE_SHARED_STREAM=0
+(private streams and host waits), AJI_HDR_STREAM_MODE=legacy or
+AJI_HDR_LEGACY_STREAM=1 (SDK reference: default stream, synchronous run, three
+host waits), AJI_RIFE_MATRIX_709=1 (ignore the pair's colour matrix),
+AJI_RIFE_PAD=16|32|64 (RIFE 4.26 needs 64). Modes that run the SDK on the
+pipeline stream produce wrong pixels with TrueHDR 1.2.3 and are refused unless
+AJI_HDR_UNSAFE_MODES=1 (evidence only).
