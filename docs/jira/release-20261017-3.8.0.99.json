@@ -1,0 +1,46 @@
+{
+  "release": "3.8.0.99",
+  "source": "2582f2c6ccfbc911dfadd0152393a53318add8f5",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39024205745,
+      "headSha": "2582f2c6ccfbc911dfadd0152393a53318add8f5",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39024205775,
+      "headSha": "2582f2c6ccfbc911dfadd0152393a53318add8f5",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39024205774,
+      "headSha": "2582f2c6ccfbc911dfadd0152393a53318add8f5",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    }
+  ],
+  "assets_uploaded": 16,
+  "payload_check": {
+    "passed": true,
+    "archive_sha256": "40a41dd9d2d136c885735fd145563cdadb2d649d9dbf3b02ba18f30546dabd1a",
+    "dylib_sha256": "7816d2a515cee72d8be4236aab946ba20f9117bdb5b887cf92816621d2268a45",
+    "dylib_byte_identical_to_native_qualified": true,
+    "managed_programs": 17,
+    "model_resources_byte_identical": 32,
+    "no_native_replay": true
+  },
+  "native_qualification": 39023928908,
+  "scope": "AH365 CoreML native CPU SPAN chain with host RGB adapters removed between models",
+  "usefulness": "1572864 RGB bytes of intermediate adapter work removed per tested256->512->1024 call; RGB exact. No established CPU time gain from three warm calls.",
+  "qualification_reuse": "Delivered dylib exact to native-qualified candidate; no replay. Metal computation and other-provider paths unchanged, new internal ablation returns former Metal switch.",
+  "limits": [
+    "No GPU/ANE physical or universal FPS claim",
+    "RIFE->SPAN and renderer remain AH119"
+  ]
+}
