@@ -1,0 +1,28 @@
+{
+  "source": "73d9d8f9238d6e343893aeb03832b6cd6a564ec2",
+  "passed": true,
+  "baseline": {
+    "executor_create_ms": "110.132",
+    "first_process_ms": "34.399",
+    "note_before": "0 operations on the GPU, 0 on the Neural Engine, 56 on the CPU",
+    "note_first": "0 operations on the GPU, 0 on the Neural Engine, 56 on the CPU",
+    "note_after": "0 operations on the GPU, 0 on the Neural Engine, 56 on the CPU"
+  },
+  "candidate": {
+    "executor_create_ms": "79.418",
+    "first_process_ms": "45.507",
+    "note_before": "pending (asynchronous compute plan)",
+    "note_first": "pending (asynchronous compute plan)",
+    "note_after": "plan: 0 GPU, 0 Neural Engine, 56 CPU preferred operations (0 unclassified)"
+  },
+  "disabled": {
+    "executor_create_ms": "43.893",
+    "first_process_ms": "34.104",
+    "note_before": "disabled (AJI_COREML_NO_PLAN)",
+    "note_first": "disabled (AJI_COREML_NO_PLAN)",
+    "note_after": "disabled (AJI_COREML_NO_PLAN)"
+  },
+  "pixels_exact": true,
+  "output_sha256": "18dfcc6c44d5a6abeeeb97c2c9e393c9126762ddc34e9da1e72fd806f8843f63",
+  "scope": "Core ML CPU native executor construction/one image/plan, no FPS or GPU/ANE placement claim"
+}
