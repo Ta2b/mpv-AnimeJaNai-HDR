@@ -52,7 +52,22 @@ int main(int argc,char **argv) {
             AVAssetReaderTrackOutput *output=[[AVAssetReaderTrackOutput alloc]initWithTrack:track outputSettings:nil];output.alwaysCopiesSampleData=NO;
             [reader addOutput:output];check([reader startReading],"cannot read compressed samples");
             Decoded picture;Session session;
-            CMSampleBufferRef sample=[output copyNextSampleBuffer];check(sample!=nullptr,"missing compressed sample");
+            auto nextSample=[&]() -> CMSampleBufferRef {
+                for(int skipped=0;skipped<8;++skipped) {
+                    CMSampleBufferRef value=[output copyNextSampleBuffer];
+                    check(value!=nullptr,"missing compressed video sample");
+                    CMFormatDescriptionRef format=CMSampleBufferGetFormatDescription(value);
+                    receipt[@"sample_inspection"]=@{@"valid":@(CMSampleBufferIsValid(value)),@"ready":@(CMSampleBufferDataIsReady(value)),
+                        @"samples":@(CMSampleBufferGetNumSamples(value)),@"bytes":@(CMSampleBufferGetTotalSampleSize(value)),
+                        @"format_present":@(format!=nullptr),@"data_buffer_present":@(CMSampleBufferGetDataBuffer(value)!=nullptr),@"skipped":@(skipped)};
+                    if(format){CFStringRef desc=CFCopyDescription(format);receipt[@"format_description"]=CFBridgingRelease(desc);}save();
+                    if(format&&CMSampleBufferGetNumSamples(value)>0&&CMSampleBufferGetDataBuffer(value))return value;
+                    // An empty edit/marker is not an encoded frame and cannot configure VT.
+                    CFRelease(value);
+                }
+                throw std::runtime_error("No compressed frame after bounded marker scan");
+            };
+            CMSampleBufferRef sample=nextSample();
             VTDecompressionOutputCallbackRecord callback={decoded,&picture};
             NSDictionary *spec=@{(__bridge id)kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder:@YES};
             NSDictionary *attrs=@{(__bridge id)kCVPixelBufferPixelFormatTypeKey:@(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange),
@@ -61,7 +76,7 @@ int main(int argc,char **argv) {
                 (__bridge CFDictionaryRef)spec,(__bridge CFDictionaryRef)attrs,&callback,&session.value);
             NSMutableArray *attempts=[NSMutableArray arrayWithObject:@{@"requirements":@"NV12 IOSurface Metal-compatible; hardware optional",@"status":@(made)}];
             receipt[@"session_create_attempts"]=attempts;
-            receipt[@"format_description"]=[(__bridge id)CMSampleBufferGetFormatDescription(sample) description];save();
+            save();
             if(made!=noErr) {
                 // Diagnose a rejected output constraint separately from codec availability.
                 // Subsequent import checks still require the real decoded NV12 IOSurface.
@@ -121,7 +136,7 @@ int main(int argc,char **argv) {
             check(std::all_of(y.begin(),y.end(),[](uint8_t n){return n==0xa5;})&&std::all_of(uv.begin(),uv.end(),[](uint8_t n){return n==0xa5;}),"refused import wrote a partial result");
             api->stats(context,&stats);check(stats.live_images==0&&stats.imports==1,"refused imports leaked owners or counted success");
             cases[@"refusal_and_error"]=@{@"non_sdr709_fallback":@YES,@"p010_refused":@YES,@"invalid_bounds_refused":@YES,@"output_untouched":@YES,@"live_images":@(stats.live_images)};save();
-            api->reset(context);picture.clear();sample=[output copyNextSampleBuffer];check(sample!=nullptr,"missing second sample after reset");
+            api->reset(context);picture.clear();sample=nextSample();
             status=VTDecompressionSessionDecodeFrame(session.value,sample,0,nullptr,&flags);VTDecompressionSessionWaitForAsynchronousFrames(session.value);source_pts=CMSampleBufferGetPresentationTimeStamp(sample);CFRelease(sample);
             check(status==noErr&&picture.status==noErr&&picture.pixels&&CMTimeCompare(source_pts,picture.pts)==0,"decoder/reset second-frame failure");
             view.generation=2;view.source=2;view.pts=CMTimeGetSeconds(picture.pts);
