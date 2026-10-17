@@ -1,0 +1,131 @@
+name: Qualify VideoToolbox Metal import probe
+on:
+  workflow_dispatch:
+    inputs:
+      filter_only:
+        type: boolean
+        default: false
+      prior_native_run:
+        type: string
+        default: '0'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native:
+    if: ${{ !inputs.filter_only }}
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Native build dependencies
+        run: |
+          brew install ffmpeg
+          curl -fsSL --retry 3 -o ort.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-osx-arm64-1.31.0.tgz
+          mkdir ort-x && tar -xzf ort.tgz -C ort-x
+          header="$(find ort-x -name onnxruntime_cxx_api.h -print -quit)"
+          mv "$(dirname "$(dirname "$header")")" ort
+          git clone --depth 1 --branch v0.11.1 https://github.com/the-database/animejanai-inference.git parser
+      - name: Compile the real engine and native API consumer
+        run: |
+          mkdir results engine
+          cmake -S native/linux-ort -B candidate-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3 -DORT_ROOT="$PWD/ort" -DAJI_SOURCE="$PWD/parser"
+          cmake --build candidate-build --target aji_ort -j 4
+          codesign --force -s - candidate-build/libaji_ort.dylib
+          clang++ -std=c++17 -O2 -fobjc-arc -Wno-deprecated-declarations -mmacosx-version-min=13.3 -Inative/apple \
+            tests/apple/videotoolbox_import_probe.mm -Lcandidate-build -laji_ort \
+            -framework Foundation -framework AVFoundation -framework VideoToolbox -framework CoreVideo -framework CoreMedia -framework Metal -o native-probe
+          codesign --force -s - native-probe
+          cp candidate-build/libaji_ort.dylib engine/
+          cp -L ort/lib/libonnxruntime.1.dylib engine/
+      - name: Generate only three discriminating short inputs
+        run: |
+          for kind in sdr709 sdr601 hdr10; do
+            pixel=yuv420p;prim=bt709;trc=bt709;matrix=bt709
+            if [ "$kind" = sdr601 ]; then prim=smpte170m;trc=smpte170m;matrix=smpte170m;fi
+            if [ "$kind" = hdr10 ]; then pixel=yuv420p10le;prim=bt2020;trc=smpte2084;matrix=bt2020nc;fi
+            ffmpeg -hide_banner -loglevel error -f lavfi -i 'testsrc2=size=256x144:rate=24' -frames:v 3 \
+              -c:v libx265 -pix_fmt "$pixel" -x265-params 'log-level=error:keyint=1:bframes=0:pools=1' -tag:v hvc1 \
+              -color_primaries "$prim" -color_trc "$trc" -colorspace "$matrix" "engine/$kind.mp4"
+          done
+          sw_vers > engine/machine.txt
+          ffmpeg -version | head -3 >> engine/machine.txt
+      - name: Qualify decoded plane import, ownership, refusal and reset once
+        env:
+          DYLD_LIBRARY_PATH: ${{ github.workspace }}/candidate-build:${{ github.workspace }}/ort/lib
+        run: |
+          ./native-probe engine/sdr709.mp4 engine/native-receipt.json > engine/native.log 2>&1
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib,os
+          p=Path('engine/native-receipt.json');r=json.loads(p.read_text());assert r['passed']
+          r['source']=os.environ['GITHUB_SHA']
+          r['module_sha256']=hashlib.sha256(Path('engine/libaji_ort.dylib').read_bytes()).hexdigest()
+          r['header_sha256']=hashlib.sha256(Path('native/apple/nv12_import_probe.h').read_bytes()).hexdigest()
+          p.write_text(json.dumps(r,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-import-engine
+          path: engine/*
+          if-no-files-found: warn
+  filter:
+    needs: native
+    if: ${{ always() && (needs.native.result == 'success' || inputs.filter_only) }}
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        if: ${{ !inputs.filter_only }}
+        with:
+          name: native-import-engine
+          path: engine
+      - name: Reuse the prior conclusive native scope only
+        if: ${{ inputs.filter_only }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR: ${{ inputs.prior_native_run }}
+        run: |
+          [[ "$PRIOR" =~ ^[1-9][0-9]*$ ]]
+          gh run download "$PRIOR" --repo "$GITHUB_REPOSITORY" --name native-import-engine --dir engine
+      - name: Verify native artifact and compile the real mpv consumer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          r=json.loads(Path('engine/native-receipt.json').read_text());assert r['passed']
+          assert r['module_sha256']==hashlib.sha256(Path('engine/libaji_ort.dylib').read_bytes()).hexdigest()
+          assert r['header_sha256']==hashlib.sha256(Path('native/apple/nv12_import_probe.h').read_bytes()).hexdigest()
+          PY
+          brew install meson ninja pkgconf ffmpeg libplacebo libass luajit molten-vk vulkan-loader vulkan-headers little-cms2 uchardet zimg jpeg-turbo
+          bash installer/macos/build-mpv.sh "$RUNNER_TEMP/mpv-import-work" "$PWD/mac-mpv" > mpv-build.log 2>&1
+          codesign --force --deep -s - mac-mpv/mpv.app
+      - name: Qualify real VideoToolbox filter route and two honest fallbacks
+        env:
+          DYLD_LIBRARY_PATH: ${{ github.workspace }}/engine
+        run: |
+          mkdir results
+          brew list --versions ffmpeg libplacebo molten-vk > results/dependencies.txt
+          mac-mpv/mpv.app/Contents/MacOS/mpv --no-config --version > results/mpv-version.txt
+          python tests/apple/videotoolbox_filter_probe.py mac-mpv/mpv.app/Contents/MacOS/mpv "$PWD/engine/libaji_ort.dylib" engine results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: videotoolbox-filter-evidence
+          path: |
+            results/*.json
+            results/*.log
+            results/*.txt
+            mpv-build.log
+            mac-mpv/build-info.txt
+            mac-mpv/gpu-contexts.txt
+          if-no-files-found: warn
