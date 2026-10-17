@@ -18,6 +18,11 @@ local function parse(text)
     end
     return sections
 end
+function M.temporal_policy(text,route)
+    local value=route and route.runtime_policy or (parse(text).global or {}).rife_engine or 'fast'
+    value=value:lower();if value=='old' then value='quality' elseif value=='new' then value='fast' end
+    return (value=='quality' or value=='fast') and value or 'auto'
+end
 local function ids(sec,prefix,suffix)
     local seen,out={},{}
     for key in pairs(sec) do local n=tonumber(key:match('^'..prefix..'(%d+)'..suffix))

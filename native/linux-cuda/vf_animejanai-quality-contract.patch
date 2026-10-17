@@ -1,0 +1,161 @@
+diff --git a/video/filter/vf_animejanai.c b/video/filter/vf_animejanai.c
+index 1a333bbd0..9d44d7296 100644
+--- a/video/filter/vf_animejanai.c
++++ b/video/filter/vf_animejanai.c
+@@ -49,6 +49,7 @@
+ #include <stdlib.h>
+ #include "aji_surface/surface_async.h"
+ #include "aji_surface/pipeline.h"
++#include "aji_surface/quality_contract.h"
+ #include <libavutil/rational.h>
+ #include <inttypes.h>
+ 
+@@ -161,6 +162,7 @@ struct opts {
+     int64_t prefetch_bytes;
+     bool surface_worker;
+     char *pipeline_lib, *pipeline_kernels;
++    int rife_policy; // auto=0, quality=1, fast=2; Fast unknown is explicit.
+ };
+ 
+ #define MAX_DEPTH 4
+@@ -179,6 +181,7 @@ struct aji_api {
+     int (*done)(aji_ctx *c, uint64_t ticket);
+     int (*wait)(aji_ctx *c, uint64_t ticket);
+     int (*rife_factor)(aji_ctx *c, int *num, int *den);
++    int (*rife_semantics)(void *, uint32_t, aji_rife_semantics_v1_result *, size_t);
+     int (*rife_before_upscale)(aji_ctx *c);  // optional (may be NULL)
+     int (*pre_resize)(aji_ctx *c, int *work_w, int *work_h);  // optional
+     int (*resize)(aji_ctx *c, const aji_frame *in, const aji_frame *out,
+@@ -275,6 +278,8 @@ struct priv {
+     bool aji_active;     // a chain/engine is configured; else passthrough copy
+     bool configured;     // saw at least one reinit
+     int cur_slot, pending_slot;
++    aji_rife_semantics_v1_result rife_semantics;
++    const char *rife_semantics_state;
+ 
+     struct mp_refqueue *queue;
+     struct mp_image_params params, out_params;
+@@ -1007,6 +1012,70 @@ static void update_depth(struct mp_filter *vf)
+                          p->drawings ? DRAWING_LOOK : p->depth - 1);
+ }
+ 
++static const char *rife_policy_name(unsigned policy)
++{
++    return policy == AJI_RIFE_POLICY_QUALITY ? "quality" :
++           policy == AJI_RIFE_POLICY_FAST ? "fast" : "auto";
++}
++
++static bool check_rife_contract(struct mp_filter *vf)
++{
++    struct priv *p = vf->priv;
++    if (!p->rife_on) { p->rife_semantics_state = "not-applicable"; return true; }
++#ifdef _WIN32
++    // This patch is installed by the Linux producer only. Do not make a future
++    // Windows source merge silently depend on an unported platform contract.
++    p->rife_semantics_state = "unsupported-platform";
++    return true;
++#else
++    // dlsym also searches dependencies: their contract cannot certify the
++    // selected shim's configuration or pixel implementation.
++    Dl_info engine = {0}, configuration = {0}, pixels = {0}, contract = {0};
++    bool same_image = p->api.rife_semantics &&
++        dladdr((void *)p->api.create, &engine) && engine.dli_fbase &&
++        dladdr((void *)p->api.configure, &configuration) &&
++        dladdr((void *)p->api.infer_rife, &pixels) &&
++        dladdr((void *)p->api.rife_semantics, &contract) &&
++        engine.dli_fbase == configuration.dli_fbase &&
++        engine.dli_fbase == pixels.dli_fbase && engine.dli_fbase == contract.dli_fbase;
++    int status = same_image ?
++        p->api.rife_semantics(p->aji, 1, &p->rife_semantics, sizeof(p->rife_semantics)) : -2;
++    if (status) {
++        memset(&p->rife_semantics, 0, sizeof(p->rife_semantics));
++        Dl_info image = {0};
++        if (dladdr((void *)p->api.create, &image) && image.dli_fname)
++            snprintf(p->rife_semantics.module_path, sizeof(p->rife_semantics.module_path), "%s", image.dli_fname);
++        p->rife_semantics_state = "unknown";
++        if (p->opts->rife_policy == AJI_RIFE_POLICY_FAST) {
++            MP_WARN(vf, "RIFE requested=fast effective=unknown contract=unavailable module=%s\n",
++                    p->rife_semantics.module_path);
++            return true;
++        }
++        p->rife_semantics_state = "failed";
++        MP_ERR(vf, "RIFE %s cannot be verified for loaded module %s (status %d). "
++                   "Update the player and GPU components, then restart. Local files were preserved.\n",
++               rife_policy_name(p->opts->rife_policy), p->rife_semantics.module_path, status);
++        return false;
++    }
++    int checked = aji_rife_semantics_check_v1(&p->rife_semantics, p->opts->rife_policy);
++    if (checked) {
++        p->rife_semantics_state = "failed";
++        MP_ERR(vf, "RIFE requested=%s has invalid or mismatched effective semantics (%d). "
++                   "Update the selected GPU engine; Quality is never replaced with Fast.\n",
++               rife_policy_name(p->opts->rife_policy), checked);
++        // Malformed strings must not be exported by GET_META either.
++        memset(&p->rife_semantics, 0, sizeof(p->rife_semantics));
++        return false;
++    }
++    p->rife_semantics_state = "verified";
++    MP_INFO(vf, "RIFE requested=%s effective=%s contract=v1 flags=%u module=%s declared_source=%s\n",
++            rife_policy_name(p->opts->rife_policy), rife_policy_name(p->rife_semantics.policy),
++            p->rife_semantics.flags, p->rife_semantics.module_path,
++            p->rife_semantics.flags & AJI_RIFE_SOURCE_DECLARED ? p->rife_semantics.source_revision : "unknown");
++    return true;
++#endif
++}
++
+ // (Re)configure the shim for the current stream params and slot. Updates
+ // out_params (and thus the output pool geometry). May block on first-play
+ // engine builds, like the legacy pipeline.
+@@ -1019,9 +1088,11 @@ static bool configure_aji(struct mp_filter *vf)
+     ++p->worker_generation;
+ 
+     p->out_params = p->params;
++    memset(&p->rife_semantics, 0, sizeof(p->rife_semantics));
++    p->rife_semantics_state = "not-configured";
+     p->aji_active = false;
+     if (!pipeline_start(vf)) return false;
+-    if (p->pipeline) return true;
++    if (p->pipeline) { p->rife_semantics_state = "pipeline-managed"; return true; }
+     if (!p->aji) {
+         update_depth(vf);
+         return true;
+@@ -1076,6 +1147,7 @@ static bool configure_aji(struct mp_filter *vf)
+         }
+     }
+     p->rife_acc = p->rife_den;
++    if (!check_rife_contract(vf)) return false;
+ 
+     if (ret == 0) {
+         MP_VERBOSE(vf, "No chain active for %dx%d@%.3f slot %d (passthrough)\n",
+@@ -2710,6 +2782,15 @@ static bool vf_animejanai_command(struct mp_filter *vf,
+     if (cmd->type == MP_FILTER_COMMAND_GET_META) {
+         struct mp_tags *tags = talloc_zero(NULL, struct mp_tags);
+         char text[64];
++        mp_tags_set_str(tags, "rife-policy-requested", rife_policy_name(p->opts->rife_policy));
++        mp_tags_set_str(tags, "rife-semantics-state", p->rife_semantics_state ? p->rife_semantics_state : "not-configured");
++        mp_tags_set_str(tags, "rife-policy-effective", p->rife_semantics_state && !strcmp(p->rife_semantics_state, "verified") ? rife_policy_name(p->rife_semantics.policy) : "unknown");
++        snprintf(text, sizeof(text), "%u", p->rife_semantics.version);
++        mp_tags_set_str(tags, "rife-contract-version", text);
++        snprintf(text, sizeof(text), "%u", p->rife_semantics.flags);
++        mp_tags_set_str(tags, "rife-semantics-flags", text);
++        mp_tags_set_str(tags, "rife-module-observed", p->rife_semantics.module_path);
++        mp_tags_set_str(tags, "rife-source-declared", p->rife_semantics.flags & AJI_RIFE_SOURCE_DECLARED ? p->rife_semantics.source_revision : "unknown");
+         mp_tags_set_str(tags, "surface-worker-active", p->worker_active ? "yes" : "no");
+         mp_tags_set_str(tags, "surface-worker-reason", p->worker_reason ? p->worker_reason : "disabled");
+         snprintf(text, sizeof(text), "%d", p->worker_active ? p->depth : 0);
+@@ -2907,6 +2988,7 @@ static struct mp_filter *vf_animejanai_create_backend(struct mp_filter *parent,
+         p->api.done = aji_lib_sym(p->api.handle, "aji_done");
+         p->api.wait = aji_lib_sym(p->api.handle, "aji_wait");
+         p->api.rife_factor = aji_lib_sym(p->api.handle, "aji_rife_factor");
++        p->api.rife_semantics = aji_lib_sym(p->api.handle, "aji_rife_semantics_v1");
+         // Optional (added without an API_VERSION bump); NULL on older shims,
+         // which then run the default upscale-then-RIFE order.
+         p->api.rife_before_upscale =
+@@ -3178,6 +3260,7 @@ static const m_option_t vf_opts_fields[] = {
+     {"engine", OPT_STRING(engine), .flags = M_OPT_FILE},
+     {"lib", OPT_STRING(lib), .flags = M_OPT_FILE},
+     {"rife-model-dir", OPT_STRING(rife_model_dir), .flags = M_OPT_FILE},
++    {"rife-policy", OPT_CHOICE(rife_policy, {"auto", 0}, {"quality", 1}, {"fast", 2})},
+     {"passthrough", OPT_BOOL(passthrough)},
+     {"skip-seek-pre-target", OPT_BOOL(skip_seek_pre_target)},
+     {"output-444", OPT_BOOL(output_444)},

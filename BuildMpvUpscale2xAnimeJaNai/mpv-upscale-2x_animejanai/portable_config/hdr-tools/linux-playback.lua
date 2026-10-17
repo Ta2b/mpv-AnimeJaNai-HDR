@@ -80,8 +80,8 @@ local function ort_library()
     local native=hw.inference_dir..'/libaji_migraphx_rgb.so'
     return hw.backend=='migraphx' and utils.file_info(native) and native or hw.inference_dir..'/libaji_ort.so'
 end
-local function ready()
-    hw.backend=(policy.read_bank(hw.conf) or {}).backend or 'tensorrt'
+local function ready(conf)
+    hw.backend=(policy.read_bank(conf or hw.conf) or {}).backend or 'tensorrt'
     hw.inference_available = not failed and not hw.bank_conflict and hw.backend=='tensorrt' and hw.vendor=='nvidia' and utils.file_info(hw.inference_dir..'/libaji.so')~=nil
         and utils.file_info(hw.inference_dir..'/libnvinfer.so.11')~=nil
         and utils.file_info(hw.inference_dir..'/libaji_trt.so')~=nil and utils.file_info(hw.inference_dir..'/trtexec')~=nil
@@ -96,18 +96,18 @@ local function ready()
     return hw.inference_available
 end
 local resolved_cache={}
-local function pipeline_route(wanted, text)
-    local source=text or read(hw.conf_active or hw.conf)
+local function pipeline_route(wanted, text, conf)
+    local source=text or read(conf or hw.conf_active or hw.conf)
     local route=stages.resolve(source,wanted,media.w,media.h,media.fps,'linux')
     -- Resolve once per actual profile/rule/configuration. Manager and launcher
     -- consume this same versioned contract; per-frame work stays native.
-    if not text and wanted>0 and route.chain and not route.unknown then
+    if (not text or conf) and wanted>0 and route.chain and not route.unknown then
         local key=tostring(wanted)..':'..tostring(route.chain)..':'..(source or '')
         local resolved=resolved_cache[key]
         if not resolved then
             local helper=path('~~/../AnimeJaNaiPlatform')
             local ok,result=pcall(mp.command_native,{name='subprocess',playback_only=false,capture_stdout=true,capture_stderr=true,
-                args={helper,'--profile-plan','--root',path('~~/..'),'--conf',hw.conf_active or hw.conf,
+                args={helper,'--profile-plan','--root',path('~~/..'),'--conf',conf or hw.conf_active or hw.conf,
                     '--slot',tostring(wanted),'--rule',tostring(route.chain),'--inference-dir',hw.inference_dir}})
             if ok and type(result)=='table' and result.status==0 then resolved=utils.parse_json(result.stdout or '') end
             if resolved and resolved.schema=='animejanai.profile-plan.v1' then
@@ -124,11 +124,23 @@ end
 local function select(value, preload)
     local wanted = tonumber(value)
     if not wanted or wanted~=math.floor(wanted) or wanted<0 then return end
-    local bank=policy.read_bank(hw.conf)
-    local selected_route=pipeline_route(wanted)
+    local selection_conf=hw.conf_active or hw.conf
+    local selected_text=read(selection_conf)
+    if wanted>0 and wanted<1000 then
+        local snapshot,error
+        if selected_text then snapshot,error=runtime.store(selected_text,'source-config')
+        else error='Cannot read the selected profile configuration.' end
+        if snapshot then selection_conf=snapshot
+        else mp.msg.error(tostring(error));mp.osd_message('Configuration temporaire indisponible : '..tostring(error),6);wanted=0 end
+    end
+    -- The bank, resolver and native context consume this same immutable text.
+    -- A direct selection after an edit also gets a new path/context; unchanged
+    -- content still reuses the snapshot and existing slot-switch behavior.
+    local bank=policy.read_bank(selection_conf)
+    local selected_route=pipeline_route(wanted,selected_text,selection_conf)
     if selected_route.error then mp.osd_message(selected_route.error,6);wanted=0;selected_route=pipeline_route(0) end
     if wanted>=1000 then mp.osd_message("Les anciens profils integres ont ete retires. Choisir un profil personnalise.",5);wanted=0;selected_route=pipeline_route(0) end
-    if wanted>0 and not selected_route.inference_empty and not ready() then
+    if wanted>0 and not selected_route.inference_empty and not ready(selection_conf) then
         mp.osd_message(onnxruntime() and 'Moteur ONNX Runtime absent (libaji_ort.so). Lecture normale conservee.'
             or hw.backend=='vulkan' and 'Moteur Vulkan indisponible ou GPU non detecte. Lecture normale conservee.'
             or 'TensorRT indisponible : NVIDIA et composants TensorRT requis. Choisir Vulkan pour AMD.',5)
@@ -148,15 +160,17 @@ local function select(value, preload)
         mp.osd_message('Module de chaine absent. Lecture originale conservee.',6)
         wanted=0;selected_route=pipeline_route(0);mixed=false
     end
-    local effective_conf=hw.conf_active or hw.conf
+    local effective_conf=selection_conf
     if wanted>0 and not selected_route.inference_empty then
-        local prepared,error=runtime.prepare(effective_conf,read(effective_conf),selected_route,wanted)
+        local prepared,error=runtime.prepare(effective_conf,selected_text,selected_route,wanted)
         if not prepared then
             mp.osd_message('Configuration temporaire indisponible : '..tostring(error),6)
             wanted=0;selected_route=pipeline_route(0);mixed=false
         else effective_conf=prepared end
     end
     local list=mp.get_property_native('vf') or {}
+    local requested_policy=stages.temporal_policy(selected_text,selected_route)
+    local legacy_rife=not mixed and (selected_route.factor_num or 1)>(selected_route.factor_den or 1)
     local index
     local hdr_wanted=wanted>0 and stage_wanted() and selected_route.legacy_equivalent and not selected_route.hdr_stage_controlled
     for i,f in ipairs(list) do if f.label=='aji' then index=i end end
@@ -164,6 +178,7 @@ local function select(value, preload)
         if index then table.remove(list,index);mp.set_property_native('vf',tag(list,false)) end
     elseif index and not preload and hw.backend=='tensorrt' and list[index].name=='animejanai'
         and list[index].params.conf==effective_conf
+        and (not legacy_rife or list[index].params['rife-policy']==requested_policy)
         and hdr_wanted==(mp.get_property_native('user-data/animejanai-truehdr')==true)
         and (not mixed or list[index].params['pipeline-lib']) then
         local ok,result=pcall(mp.commandv,'vf-command','aji','slot',tostring(wanted))
@@ -186,6 +201,7 @@ local function select(value, preload)
             f.params.device=os.getenv('ANIMEJANAI_ORT_DEVICE') or ''
             decoder('no')
         else f.params.trtexec=hw.inference_dir..'/trtexec' end
+        if legacy_rife and not vulkan and not ort then f.params['rife-policy']=requested_policy end
         if mixed then
             -- Forces older filters to reject the unsupported option explicitly,
             -- instead of silently executing only the legacy RIFE keys.
@@ -214,7 +230,7 @@ local function select(value, preload)
     end
     if wanted==0 or selected_route.inference_empty then decoder(hw.vendor=='nvidia' and 'nvdec' or 'auto-safe') end
     mp.set_property_native('user-data/animejanai-active-slot',slot)
-    local route=pipeline_route(slot)
+    local route=selected_route -- diagnostics describe the configuration actually loaded
     mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and (route.explicit or route.hdr_stage_controlled) and route or nil)
     local description='cadence originale'
     if slot>0 and route.explicit and not route.legacy_equivalent then

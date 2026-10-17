@@ -8,7 +8,7 @@ L'utilisateur demande de poursuivre les tickets par lots complets, sans attendre
 
 Dernière release vérifiée **3.8.0.92**, source `3bb4bcde605ba78836ac1919ad25aecec7da77db`, [reçu](jira/release-20261017-3.8.0.92.json). Trois CI réussies au SHA exact, tag et15assetsuploaded vérifiés. Overlay Linux modifié téléchargé/digest vérifié :6hashes et32programmes conformes ; pipeline/TRT/alias identiques aux qualifiés. Mac/Windows inchangés réutilisent les qualifications .91/.87 ; pas de vidéo/benchmark ou configurations concluantes répétés.
 
-Manager toujours `f1f85962f8e86e5f37d84501f37f72b6d1780828`. Bundle .91 `9167816cc47c18ad5a29fd3aab66c065b3735f60` : TRT/alias Linuxd5b3446, pipeline identique94324373, fatbin Area3:2 source3447cd8/hash3b8bd671. Sources exactes par module dans GPU-SOURCE.json ; son ancien champ backend_source global est historique.
+Manager toujours `f1f85962f8e86e5f37d84501f37f72b6d1780828`. Bundle .92 `71f271a6c94f2693e8a1a8b550e2f72fd1137f9e` : TRT/alias et pipeline source9d2c717, fatbin Area3:2 source3447cd8. Sources exactes par module dans GPU-SOURCE.json ; son ancien champ backend_source global est historique.
 
 ## Lot vérifié : AH-361, release .92
 
@@ -22,15 +22,17 @@ Tranche explicite sous **AH330** : garantir Quality dans le pipeline CUDA ordonn
 
 Qualification complète : fixtureCPU avec vrais DSOs passée ; native RTX4070Ti : ancienQuality seul refusé, actuelQuality fusionné/flags1, actuelFast/flags2, ancienFast accepté/inconnu ; erreurs CABI sans écriture du buffer. Zéro image vidéo traitée, aucun calculpixel changé ; section deviceTRT byte-identique à .86 et fatbin pipeline identique à .90. Réutiliser les preuves numériques acquises, pas de replay13images/FPS. Build portable sans RPATH local ; pas de nouvelle qualification Windows/AMD/Intel/macOS.
 
-**Livraison .92 vérifiée : AH361 peut être clos.** Ne pas répéter les configurations concluantes sur ces mêmes hashes. AH330 reste ouvert.
+**Livraison .92 vérifiée : AH361 Done (commentaire10285).** Ne pas répéter les configurations concluantes sur ces mêmes hashes. AH330 reste ouvert.
 
 ## Travail actif : AH-362, route historique et snapshot Linux
 
-PLAYER `lot-71-legacy-quality-player-20261017`, backend `lot-71-legacy-quality-backend-20261017`, MPV `lot-71-mpv-legacy-quality-20261017`. Dispatcher sourcee2e82f1 : transfert de sémantique surinnerhandle, fixtureDSOAPIprésente/absente passée. Patch lecteur final ajouté (rife-policy auto/quality/fast, garde aprèsconfigure/avantpixels, GET_META), validateurC passé et vraie sourceMPV syntax-check passée. SnapshotLinux en cours : résolveur et contexte lisent même copie immuable ; fixture de lancement initiale mal placée avant la géométrie demux, correction vers on_preloaded en vérification. Aucun pixel/benchmark nouveau. Pas encore de bundle/livraison AH362. Le rechargement Manager viareload-options recrée déjà le filtre ; ne pas prétendre un défaut généralUI.
+PLAYER `lot-71-legacy-quality-player-20261017`, backend `lot-71-legacy-quality-backend-20261017`, MPV `lot-71-mpv-legacy-quality-20261017`. Dispatcher source118c272 : transfert sur innerhandle et garde de même image ; fixtures DSO API présente/absente/dépendance seule passées. Neuvième patch Linux : rife-policy auto/quality/fast, garde après configure/avant pixels, GET_META ; source C compilée/liée, patch exact sans fuzz. Snapshot immuable : banque, helper, contexte et diagnostic décrivent la même version. Fixture Lua passée ; Manager reload-options recréait déjà le filtre, ne pas prétendre une panne UI générale.
+
+Contrôle natif conclu : dispatcher actuel Quality verified/flags1 et vrai chemin innerTRT ; ancien Quality failed, zéro inférence RIFE et repli MPV original ; ancien Fast explicite accepted/unknown. Aucun calcul vidéo changé ni FPS revendiqué. [Guide](reprise/20261017/AH-362.md), [preuves lot71](qualification/lot71-legacy-quality-20261017/README.md). Bundle6598d4fa1bf4d1b988576d56afa39c72437f35c7 ne change que le dispatcher Linux (hash592a8289) ; TRT/pipeline/kernels/Windows préservés avec leurs sources. .93 à publier puis vérifier lecteur Linux complet/libmpv, marqueur legacy_rife_contract=1, dispatcher et Lua avant Done. AH330 reste ouvert.
 
 ## Autre livraison en cours : AH-344 Windows DirectML
 
-Backend DML exact-pair compilé ; lecteur apparié non livré. Premier producteur39006425781 échoué au nettoyage libass sur HEAD détachée. Correctif `aa49479` : SHA40 préservés, contrôle CMake/Git passé, sauvegarde explicite des dépendances même en échec. **Run39013899609** encore en compilation statique ; vérifier uniquement en fin de tâche indépendante, jamais watch/poll/sommeil d'attente.
+Backend DML exact-pair compilé ; lecteur apparié non livré. Premier producteur39006425781 échoué au nettoyage libass sur HEAD détachée. Correctif `aa49479` : SHA40 préservés, contrôle CMake/Git passé, sauvegarde explicite des dépendances même en échec. Run39013899609 a passé libass mais échoué au clone c-ares : branche par défaut coverity_scan, clone manuel depth1 puis checkout main absent. Correctif32464bc : main épinglé f4156c12 et clone partiel sans depth ; clone/checkout réel passé. **Run39019317771** relancé avec dépendances en cache ; vérifier seulement en fin de tâche, jamais watch/poll/sommeil d’attente.
 
 Producteur : `/home/ta2b/.animejanai-tools/work/lot-66-windows-producer-20261017`. À réussite, vérifier tag `windows-mpv-<SHA complet>`, trois PE/provenance/patch/source, puis créer le pin `windows-mpv-source-ref.txt` et livrer le lot apparié. Les fixtures de collecte/assembleur sont déjà concluantes. Aucun cache DML actif annoncé dans .85 à .92 tant que ce lecteur manque. [Guide AH344](reprise/20261017/AH-344.md).
 
