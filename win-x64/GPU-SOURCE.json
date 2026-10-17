@@ -1,17 +1,16 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "652fbc6bdd3a9d815367deeb2df65538636705dc",
+  "backend_source": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
-    "AMD_RESULT": "success",
     "NVIDIA_RESULT": "success",
-    "GITHUB_SHA": "652fbc6bdd3a9d815367deeb2df65538636705dc",
-    "GITHUB_RUN_ID": "38874628974",
-    "GITHUB_RUN_ATTEMPT": "1",
-    "validation": "compilation/linking only; no inference/test/benchmark"
+    "AMD_RESULT": "not-reused-in-this-bundle",
+    "GITHUB_SHA": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+    "GITHUB_RUN_ID": "39006960500",
+    "validation": "NVIDIA job compiled/linked dispatcher,TRT andDML; no Windows GPU execution. Existing AMD module retained with its original source."
   },
-  "validation": "Linux RTX4070Ti SM8.9: real shipped FP16 kernel probe, module/runtime/device data, invalid ordinal, short/null outputs and caller CUDA context preserved. CPU conversion qualified separately in player. Existing C exports preserved plus optional probe. No model inference/FPS claim. Previous unchanged-render qualifications retained, not repeated. Windows compile/link only.",
+  "validation": "Lot58 Windows: new dispatcher/TRT/DML compiled and linked by NVIDIA job39006960500 after optionalAPI export declaration fix. Fast>3 unused score removed; DML exact pair preparation cached without removing RGB predictions. Paired mpv producer still required to activate DML IDs. No Windows GPU/FPS or display qualification.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -48,11 +47,41 @@
     "optional-versioned-cuda-module-probe"
   ],
   "sha256": {
-    "aji.dll": "965ebb2c04a873c9a4c68b79b2f34b1aa43334fea4b370512cb367d1dbbd76ce",
-    "aji_dml.dll": "03d747ddb4aaf2a6021fde4cfadf67818cfc75b50444a4b62778765eea961b17",
+    "aji.dll": "e83dfd9e1c426abd64be9e94c2869381700c4119caf7aedc9dfc9c413055a66f",
+    "aji_dml.dll": "250c67382413d9fdd308968b565194fc1fb5afe3289368473747a63311059b13",
     "aji_migraphx.dll": "f3128836650a77761b2a5fa6570dc428f8d7bc51980b95f28cd81cef3f391549",
-    "aji_trt.dll": "dba610800b7b696807fed42ca566281c66ef46b0b74870141e59189d8afee217",
-    "aji_trt_rtx.dll": "dba610800b7b696807fed42ca566281c66ef46b0b74870141e59189d8afee217"
+    "aji_trt.dll": "23821e5e186d9a9cdf68b46a52ab47391e63c9848c6c7675be2362b7aa8f703a",
+    "aji_trt_rtx.dll": "23821e5e186d9a9cdf68b46a52ab47391e63c9848c6c7675be2362b7aa8f703a"
   },
-  "player_qualification_source": "a22100c0fc9fb76fcabec01faf67b290cf565424"
+  "player_qualification_source": "a22100c0fc9fb76fcabec01faf67b290cf565424",
+  "prior_qualifications": [
+    {
+      "backend_source": "652fbc6bdd3a9d815367deeb2df65538636705dc",
+      "windows_build": {
+        "AMD_RESULT": "success",
+        "NVIDIA_RESULT": "success",
+        "GITHUB_SHA": "652fbc6bdd3a9d815367deeb2df65538636705dc",
+        "GITHUB_RUN_ID": "38874628974",
+        "GITHUB_RUN_ATTEMPT": "1",
+        "validation": "compilation/linking only; no inference/test/benchmark"
+      },
+      "validation": "Linux RTX4070Ti SM8.9: real shipped FP16 kernel probe, module/runtime/device data, invalid ordinal, short/null outputs and caller CUDA context preserved. CPU conversion qualified separately in player. Existing C exports preserved plus optional probe. No model inference/FPS claim. Previous unchanged-render qualifications retained, not repeated. Windows compile/link only.",
+      "scope": "Historical Windows modules before lot58"
+    }
+  ],
+  "module_sources": {
+    "aji.dll": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+    "aji_trt.dll": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+    "aji_trt_rtx.dll": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+    "aji_dml.dll": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+    "aji_migraphx.dll": "652fbc6bdd3a9d815367deeb2df65538636705dc"
+  },
+  "directml_exact_pair": {
+    "backend_source": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+    "build_run": 39006960500,
+    "compiled": true,
+    "reader_required": "windows-mpv-source-ref.txt with exact-pair1 producer",
+    "reader_delivery": "pending",
+    "gpu_executed": false
+  }
 }

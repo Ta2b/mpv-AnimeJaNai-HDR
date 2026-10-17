@@ -3,7 +3,7 @@
   "tensorrt_version": "11.3.0.99",
   "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
   "player_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
-  "validation": "Lot55 Linux RTX4070Ti: ordered fusion restores Fast4 finished-source warp (short native SPAN interval60.522/58.831ms ->18.298/18.371ms). Quality4, hybrid Q2/F2 and four-link identity/Q2/F2/SPAN pixels and rational timeline exact. Fast2 native fusion rejected; separate block retained, hybrid timing gain nonconclusive. Prefix source cache and generation reset exact. Actual mpv NVDEC1080 -> Area720 -> RIFE4 -> SPAN1440 -> TrueHDR:9outputs, PTS/durations/EOF/owners correct. Complete HDR gain/displayFPS/otherHW unqualified. Portable RPATH relink .text/fatbin exact.",
+  "validation": "Lot58 AH-345: Fast factor>3 skips score memset/reduction/D2H/host scalar wait that did not influence synthesis; CUDA motion event preserves dependency, factors2/3 adaptive and full RGB Quality unchanged. Code/lifetime review and portable Linux compilation; 28 compiled project/build inputs match integrated source61ba627. No new GPU execution or measured FPS claim. Per-module provenance preserves unchanged dispatcher.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -52,12 +52,13 @@
     "portable-cuda-target-default",
     "optional-typed-async-build-status",
     "guarded-adjacent-surface-promotion",
-    "cached-prefix-upscale-endpoints"
+    "cached-prefix-upscale-endpoints",
+    "fast-above-x3-unused-score-elision"
   ],
   "sha256": {
     "libaji.so": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
-    "libaji_trt.so": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
-    "libaji_trt_rtx.so": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713"
+    "libaji_trt.so": "e5216edabcb7885233f8ca014cc0fc6eab3d1608ae57048992cce6a5c8e1a8ff",
+    "libaji_trt_rtx.so": "e5216edabcb7885233f8ca014cc0fc6eab3d1608ae57048992cce6a5c8e1a8ff"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -73,10 +74,6 @@
     ]
   },
   "player_qualification_source": "e5df509c67bd6281d8d9acfa17a4c0317ca4b2c9",
-  "windows_bundle_unchanged": {
-    "binary_pin": "d00ed919d8337a89b68f519f1ab1ce71e68a8628",
-    "backend_source": "652fbc6bdd3a9d815367deeb2df65538636705dc"
-  },
   "prior_qualifications": [
     {
       "backend_source": "7e9c87137e77046e5c521e635634bfdef751a277",
@@ -97,20 +94,25 @@
       "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
       "validation": "Linux RTX4070Ti SDR, native RIFE2->FRUC2->spatial SPAN; only actual supported stage capabilities; Fast FRUC8bit, no Quality equivalence; Area downscale reference/pixel ownership and actual NVDEC RIFE at720p verified on RTX4070Ti; relative performance nonconclusive due short variable timings; TrueHDR acquired SDK reference exact native YUV16, reset/owners/old-reader/color checked, actual NVDEC RIFE/FRUC->TrueHDR exact native timeline and export PQ2020, native HDR-only pixels unchanged; physical HDR display not exercised; lot55 fusion qualification: exact Quality/hybrid/4-link output, reset, actual NVDEC1080-720-1440 HDR timeline; Fast4 local native gain, full HDR performance nonconclusive",
       "scope": "Historical pipeline before FRUC removal; not a current capability declaration"
+    },
+    {
+      "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+      "validation": "Lot55 Linux RTX4070Ti: ordered fusion restores Fast4 finished-source warp (short native SPAN interval60.522/58.831ms ->18.298/18.371ms). Quality4, hybrid Q2/F2 and four-link identity/Q2/F2/SPAN pixels and rational timeline exact. Fast2 native fusion rejected; separate block retained, hybrid timing gain nonconclusive. Prefix source cache and generation reset exact. Actual mpv NVDEC1080 -> Area720 -> RIFE4 -> SPAN1440 -> TrueHDR:9outputs, PTS/durations/EOF/owners correct. Complete HDR gain/displayFPS/otherHW unqualified. Portable RPATH relink .text/fatbin exact.",
+      "scope": "Historical before lot58, not a run of the current binaries"
     }
   ],
   "ordered_pipeline": {
-    "backend_source": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
+    "backend_source": "61ba62753d0bbaa85734b19e7992be946ba92434",
     "api": "aji_pipeline_v1",
     "sha256": {
-      "libaji_pipeline.so": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
+      "libaji_pipeline.so": "4e6574d52363db63cb11d75ae3ed6b560145ccf739939a0b2a8cd1b15bbb2bfc",
       "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
       "PIPELINE-README.md": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc"
     },
     "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
     "explicit_opt_in": true,
     "sdk_external": true,
-    "qualified": "Lot57 Linux RTX4070Ti: FRUC provider/build/assets removed; native RIFE Fast4+SPAN retained 5 exact output hashes, rational PTS/durations/flags, dimensions and request counters against lot55 bundle; same TRT and fatbin. Model-free standalone Spline36 128x72->64x36 canonical YUV444P16 exactly matches established ABI9 resize with unchanged descriptors, padding, owners and cadence. Independent height preserves source aspect with native even-pixel rounding, without the legacy16:9 box; wide and smaller-source configure cases qualified separately. No NV12/P010 legacy-route equivalence, universal FPS or physical HDR claim. Previous Area/TrueHDR/fusion evidence remains historical.",
+    "qualified": "Lot58 AH-346: identical3F plane copies/order on one stream, F final host waits reduced to1, completion and sources/destinations retained through wait; error path drains before owner release.15 compiled project/build inputs match integrated source61ba627, VideoFX TrueHDR retained. Code/lifetime review and build only; no new GPU/FPS measurement. Previous render qualifications are historical, not a run of this binary.",
     "cuda_architectures": [
       75,
       80,
@@ -135,7 +137,8 @@
       "typed-endpoint-reuse",
       "optional-execution-trace",
       "retired-fruc-explicit-incompatibility",
-      "independent-spline36-downscale"
+      "independent-spline36-downscale",
+      "single-final-copy-batch-wait"
     ],
     "sdk_hdr": {
       "externally_installed": true,
@@ -153,6 +156,26 @@
       "before": 18.851991999326856,
       "after": 17.402252999090706
     },
-    "timing_scope": "Two warmup intervals then three contiguous intervals; short timing observation, not display FPS or universal performance"
+    "timing_scope": "Two warmup intervals then three contiguous intervals; short timing observation, not display FPS or universal performance",
+    "prior_qualifications": [
+      {
+        "backend_source": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
+        "qualified": "Lot57 Linux RTX4070Ti: FRUC provider/build/assets removed; native RIFE Fast4+SPAN retained 5 exact output hashes, rational PTS/durations/flags, dimensions and request counters against lot55 bundle; same TRT and fatbin. Model-free standalone Spline36 128x72->64x36 canonical YUV444P16 exactly matches established ABI9 resize with unchanged descriptors, padding, owners and cadence. Independent height preserves source aspect with native even-pixel rounding, without the legacy16:9 box; wide and smaller-source configure cases qualified separately. No NV12/P010 legacy-route equivalence, universal FPS or physical HDR claim. Previous Area/TrueHDR/fusion evidence remains historical.",
+        "scope": "Historical .84 binaries before AH-346"
+      }
+    ]
+  },
+  "module_sources": {
+    "libaji.so": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+    "libaji_trt.so": "61ba62753d0bbaa85734b19e7992be946ba92434",
+    "libaji_trt_rtx.so": "61ba62753d0bbaa85734b19e7992be946ba92434"
+  },
+  "lot58_source_reuse_proof_sha256": "f1deab18488760638525a34402db4eb922e0d170b74fa02451a50ed30f180de6",
+  "windows_current_modules": {
+    "backend_source": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+    "preserved_amd_backend_source": "652fbc6bdd3a9d815367deeb2df65538636705dc",
+    "preserved_modules": [
+      "aji_migraphx.dll"
+    ]
   }
 }
