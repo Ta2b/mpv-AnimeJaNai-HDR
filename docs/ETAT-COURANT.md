@@ -1,89 +1,57 @@
 # État courant — point d’entrée IA
 
-Mis à jour le **17 octobre 2026**. Lire ce fichier et `../AGENTS.md`, puis uniquement le ticket et les contrats nécessaires. Les demandes actuelles de l’utilisateur et Jira réel priment sur les archives. Ne pas réimporter le backlog AH.
+Mis à jour le **17 octobre 2026**. Lire `../AGENTS.md`, puis seulement le ticket et ses contrats utiles. Les demandes récentes et Jira réel priment sur les archives. Projet existant **AH** : https://tatoub.atlassian.net/jira/software/projects/AH/boards/2 ; connexion vérifiée, ne pas réimporter le backlog.
 
-## Mission actuelle : lots complets, cache CoreML et débit Quality
+## Mission et dernière livraison vérifiée
 
-Reprise continue demandée par l'utilisateur. Dernière release vérifiée **3.8.0.91**, source `df180cb60961498f593af392644130e8684fd6f1` ; [reçu](jira/release-20261017-3.8.0.91.json). Trois CI réussies, tag exact et15assetsuploaded. Paquet macOS modifié téléchargé/digest vérifié :10sections__TEXT du dylib identiques au producteur, nouveau codep3 présent ;32ressources modèles et17programmes conformes. Linux/Windows inchangés réutilisent leurs qualifications .90/.87, sans téléchargement/essai répété. AH244/359/358/29 Done .88 ; AH352/321 Done .89 ; AH360 Done .90 ; AH240 livraison .91 vérifiée. Aucun FPS général extrapolé.
+L'utilisateur demande de poursuivre les tickets par lots complets, sans attendre les builds/releases. Aucune pause active. Pas de nouveaux sous-agents ; les précédents ont terminé.
 
-**Done après livraison : AH338/345/346/347/355 (.85), AH354/356 (.86), AH348 (.87).** [Reçu.85](jira/release-20261017-3.8.0.85.json), [reçu.86](jira/release-20261017-3.8.0.86.json). Parents AH329/73/76/121/330 conservent leur portée restante. Le manager reste `f1f85962f8e86e5f37d84501f37f72b6d1780828`, bundleGPU `ff27fba988b75e00c1348195266455ce0992428a`, backendNVIDIA `d5b34469a3aa1cc30f107ba3122699d713de1dca`. Ne pas annoncer le cache exact DML actif : son lecteur apparié reste à livrer.
+Dernière release vérifiée **3.8.0.91**, source `df180cb60961498f593af392644130e8684fd6f1`, [reçu](jira/release-20261017-3.8.0.91.json). Trois CI réussies au SHA exact, tag et15assetsuploaded vérifiés. Paquet macOS modifié téléchargé/digest vérifié :10sections__TEXT du dylib identiques au producteur,32ressources modèles et17programmes conformes. Les payloads Linux/Windows inchangés réutilisent les qualifications .90/.87 ; pas de téléchargement/test répété.
 
-**Lot .88 vérifié — AH359 / AH244 / AH358** : checkout isolé `lot-65-coreml-cache-20261017`. Manifestes déterministes uniquement à la génération, tous les programmes/poids toujours inclus dans le tag V2 ; 32 ressources .86/.87 identiques après normalisation. Qualification native réussie run39013648864, source50c3fd7 : macOS15.7.9 arm64 / Apple M1 virtualisé, CoreML CPU256×256 ; hit réel, normalisation RGB exacte, réexport identique/hit, poids seuls remplacés/rebuild exact au donneur, cache corrompu diagnostiqué puis retry exact, anciennes entrées conservées. [Preuves](qualification/lot65-coreml-cache-20261017/README.md). Pas de FPS ni GPU/ANE qualifiés. Livraison .88 vérifiée ; AH359/244/358 et AH29 Done après livraison vérifiée. AH240/254 restent distincts et ouverts.
+Manager toujours `f1f85962f8e86e5f37d84501f37f72b6d1780828`. Bundle .91 `9167816cc47c18ad5a29fd3aab66c065b3735f60` : TRT/alias Linuxd5b3446, pipeline identique94324373, fatbin Area3:2 source3447cd8/hash3b8bd671. Sources exactes par module dans GPU-SOURCE.json ; son ancien champ backend_source global est historique.
 
-AH358 sousAH76, étude livrée .88 : étude neuronaleSPANB4 intégrée au lot .88, source initiale `b46672b`. Premier comparatifFP16 non exact (8 063 623/11 059 200valeurs, maxabs0,0107422, MSE1,43062e-7) ; direction perceptuelle inconnue, arrêt avant autresimages/benchmark, aucun runtimeB4 activé. AH76 reste ouvert ; poolsAH53/contextesB1concurrents non faits. [Preuve](qualification/lot64-span-batch-20261017/README.md). Livraison du lot vérifiée ; parent AH76 conserve ses autres critères.
+## Travail actif : AH-361, publication .92
 
-AH344 : backend DML compilé ; premier producteur Windowsmpv39006425781 échoué au nettoyage de libass sur HEAD détachée. Correctif `aa49479` dans `lot-66-windows-producer-20261017` : SHA40 préservés, contrôle CMake/Git court passé, dépendances sauvées même en échec. Nouveau producteur39013899609 en cours, ne pas attendre. Aucun pin lecteur ni cacheDML actif annoncé dans .85 à .89 ; finir le lot apparié après succès et vérification.
+Tranche explicite sous **AH330** : garantir Quality dans le pipeline CUDA ordonné et exposer le module réellement chargé. Le parent conserve routes ABI9 historiques, alias TrueHDR, dispatcher/résolveur et autresOS ; ne pas le fermer avec cette tranche.
 
-Le manque de débit Quality4 reste ouvert : fusionactive, RIFE1280×720 et modules.84 réellement mappés dans l'instance contrôlée ; ce n'était pas un retour à l'ancien moteur. AH354 livré : batch natif direct,4→1attentes finales sans second worker/reaper,13sorties/PTS/couleurs exacts et reset/fallback/erreur qualifiés ; observation complète46,4ms encore au-dessus du budget41,7ms. AH356 : encodeur partagé viable sur un modèle/forme (RGBFP16 exact), gain réseau local≈0,656ms/3,15%, aucun raccordruntime ; suite explicite AH357 ToDo. Ne pas annoncer96FPS. Médias/profils privés conservés dans `artifacts/performance/lots-20261017/quality-live-20261017/`, installation utilisateur inchangée.
+- PLAYER : `/home/ta2b/.animejanai-tools/work/lot-70-quality-contract-player-20261017`, branche `tickets/pipeline-quality-contract-20261017`.
+- Backend : `/home/ta2b/.animejanai-tools/work/lot-70-quality-contract-backend-20261017`, source `9d2c717f756c632c9c2d0acc53479fd8690586cb`, remote GitHub Ta2b/animejanai-inference-rtx. Backend utilisateur original intact.
+- Bundle préparé : `/home/ta2b/.animejanai-tools/work/lot-70-quality-binaries-20261017`, pin 71f271a6c94f2693e8a1a8b550e2f72fd1137f9e. Linux TRT/alias `4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e`, pipeline `834ca0a740b92e632b5ea63b07f5da28326d6bd2cc72f67b08ed6a8f6b9b39bc`. Windows/dispatcher/fatbin Area conservés avec leurs propres sources.
 
-Les28guidesJira du relais restent disponibles dans [l’index](reprise/20261017/README.md), complétés parAH354/355. Reprendre seulement ticket/contrats utiles, ne pas réimporter ni refaire les travaux déjà livrés.
+[Guide AH361](reprise/20261017/AH-361.md), [preuves lot70](qualification/lot70-quality-contract-20261017/README.md). CABI optionnel configuré, même image ELF pour create/configure/process/contrat ; un symbole emprunté à une dépendance ne certifie pas le moteur. Quality inconnu refusé avant create/configure ; après configure, policy/flags réels contrôlés. Fast ancien reste accepté avec effectiveunknown. Une ligne par activation, aucun query par image. Source déclarée du binaire unknown (Git absent du build portable), distincte de la provenance et du hash fichier.
 
-- Préserver profils, médias, SDK, modèles, modifications utilisateur et backend d’origine. Sources isolées, chemins explicites dans git add ; jamais git add -A, reset/clean global ou push vers un origin local du backend utilisateur.
-- In Progress au début du travail effectif ; Done après périmètre entier et livraison vérifiée. Les parents partiels restent ouverts ; les reliquats ont leurs propres tickets.
-- Précision utilisateur du17octobre : pas de benchmark systématique. Revue/compilation si l’effet est suffisamment établi ; essai court seulement pour une incertitude réelle ou une mesure revendiquée. Ne pas répéter un résultat concluant. Pour UI/docs/packaging, contrôles simples. Distinguer bénéfice statique, gain attendu et gain mesuré.
-- Quality conserve les prédictions complètes et les frontières numériques de référence. Toute approximation reste Fast explicite. Ne pas forcer la convergence des backends quand leurs besoins diffèrent. Matériel absent : qualification partielle, jamais inventée.
-- Lancer builds/releases puis avancer une tâche indépendante ; consulter leur résultat en fin de tâche. Pas d’attente active ni gh run watch. Strata facultatif, aucun concurrent GPU pendant une mesure.
+Qualification complète : fixtureCPU avec vrais DSOs passée ; native RTX4070Ti : ancienQuality seul refusé, actuelQuality fusionné/flags1, actuelFast/flags2, ancienFast accepté/inconnu ; erreurs CABI sans écriture du buffer. Zéro image vidéo traitée, aucun calculpixel changé ; section deviceTRT byte-identique à .86 et fatbin pipeline identique à .90. Réutiliser les preuves numériques acquises, pas de replay13images/FPS. Build portable sans RPATH local ; pas de nouvelle qualification Windows/AMD/Intel/macOS.
 
-**Lot .90 vérifié — AH360** : checkout backend `lot-68-area-three-halves-20261017`, source3447cd8 ; PLAYER `lot-68-area-player-20261017`. Area3:2 exact par poids entiers (1080→720), compilation et contrôle natif ancien/candidat/oracle entier conclus :2 764 800 valeurs exactes, padding/owners/descripteurs préservés, aucun FPS revendiqué. [Preuve](qualification/lot68-area-three-halves-20261017/README.md). Bundle9167816cc47c18ad5a29fd3aab66c065b3735f60 préparé avec hashes/provenance par module, pipeline.so byte-identique et TRT/Windows inchangés ; fatbin effectivement livré vérifié et troisCIréussies. AH360 Done ; aucune requalification répétée.
+**Prochaine action :** pousser le lot .92, continuer une tâche indépendante, puis contrôler les CI et extraire le payload Linux modifié pour vérifier les mêmes hashes. Done AH361 seulement après cette livraison. Ne pas répéter les configurations concluantes si les binaires sont identiques. AH330 reste ouvert.
 
-**Lot .89 vérifié — AH352 / AH321** : comparaison Area/Spline36 conclue, [preuve unique lot67](qualification/lot67-downscale-comparison-20261017/README.md). Guides/reçus/probe uniquement, moteurs et profils inchangés. Spline36 filtre davantage le damier mais crée des halos, Area sans dépassement ; aucun FPS mesuré. TroisCI et15assets vérifiés,8fichiers modifiés relus depuis le tag distant exact ; [reçu](jira/release-20261017-3.8.0.89.json). AH352 et AH321 peuvent être clos : intégration .84 + conclusion lot67 ; pas de répétition des payloads vidéo inchangés. Le lot comprend aussi le correctif du producteur Windows, sans activer son lecteur encore absent.
+## Autre livraison en cours : AH-344 Windows DirectML
 
-**Lot .91 vérifié — AH240** : checkout `lot-69-coreml-program-key-20261017`. Adoption du contrat commun program-key-v3 pour .mlmodelc : contenu completV2, AJP1/recetteversionnée, formes/typesRGB8, frameworkCoreML observé, buildmacOS etISAcompilateur. Options de chargement (CPU/GPU/ANE, accumulation/hints) restent distinctes car absentes de compileModelAtURL ; aucun déplacement de précision. FixtureCPU passée ; runnatif39015096423 source199133f réussi, CoreML3405.2.1/macOS15.7.9/arm64M1virtualisé CPU : RGBexact baseline/candidat/hit et ancien namespace conservé. [Preuves](qualification/lot69-coreml-program-key-20261017/README.md), [guide](reprise/20261017/AH-240.md). Dylib et livraison .91 vérifiés, AH240 prêtDone ; pas deFPS/GPU/ANE extrapolés. AH254 transactions multi-provider reste distinct et non terminé.
+Backend DML exact-pair compilé ; lecteur apparié non livré. Premier producteur39006425781 échoué au nettoyage libass sur HEAD détachée. Correctif `aa49479` : SHA40 préservés, contrôle CMake/Git passé, sauvegarde explicite des dépendances même en échec. **Run39013899609** encore en compilation statique ; vérifier uniquement en fin de tâche indépendante, jamais watch/poll/sommeil d'attente.
 
-**Travail actif AH361 sous AH330** : checkout PLAYER `lot-70-quality-contract-player-20261017`, backend `lot-70-quality-contract-backend-20261017`, source9d2c717. CABIoptionnel de sémantique RIFE configurée, contrôle de provenance des symboles (même imageELF), refus Quality inconnu avantcreate/configure, Fast ancien expliciteunknown ; diagnosticmodule/policy par activation. FixtureCPU réelle dlsym avec DSOdépendant passée ; pipeline etTRT compilés, contrôle natif du raccord/bundle/livraison restant. Aucun calculpixel modifié, aucun FPS revendiqué. Ce sous-ticket couvre le pipelineCUDA ordonné ; AH330 garde les routes historiques, dispatcher/résolveur et autresOS. Pas de fermeture globale AH330.
+Producteur : `/home/ta2b/.animejanai-tools/work/lot-66-windows-producer-20261017`. À réussite, vérifier tag `windows-mpv-<SHA complet>`, trois PE/provenance/patch/source, puis créer le pin `windows-mpv-source-ref.txt` et livrer le lot apparié. Les fixtures de collecte/assembleur sont déjà concluantes. Aucun cache DML actif annoncé dans .85 à .92 tant que ce lecteur manque. [Guide AH344](reprise/20261017/AH-344.md).
 
-## Référence précédente : 3.8.0.84
+## Tickets terminés récemment et limites
 
-[Release publique](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.84), [reçu principal](jira/release-20261017-3.8.0.84.json), [Linux](jira/release-20261017-3.8.0.84-linux.json), [Windows/macOS](jira/release-20261017-3.8.0.84-windows-macos.json), [qualification Manager](qualification/lot-57-manager-20261017.md), [qualification native](qualification/lot-57-native-fruc-removal-spline36-20261017.md).
+| Livraison vérifiée | Tickets Done et preuve |
+| --- | --- |
+| .85 | AH338/345/346/347/355, [reçu](jira/release-20261017-3.8.0.85.json) : fichiers gérés préservés et suppressions de copies/attentes inutiles. |
+| .86 | AH354/356, [reçu](jira/release-20261017-3.8.0.86.json) : batch Quality natif direct ; étude encodeur RIFE partagée, sans raccord runtime. |
+| .87 | AH348, [reçu](jira/release-20261017-3.8.0.87.json) : diagnostic CoreML asynchrone, première image pendant pending, RGB exact sur CPU. |
+| .88 | AH244/359/358 et parentAH29, [reçu](jira/release-20261017-3.8.0.88.json) : manifestes stables/cycle natif cache ; étude SPANB4 rejetée pour Quality exacte, pas d'activation. |
+| .89 | AH352/321, [reçu](jira/release-20261017-3.8.0.89.json) : compromis Area/Spline36 conclus, deux choix conservés, aucun meilleur universel/FPS inventé. |
+| .90 | AH360, [reçu](jira/release-20261017-3.8.0.90.json) : Area3:2 entier,2 764 800valeurs exactes, pas de gainFPS mesuré. |
+| .91 | AH240, [guide](reprise/20261017/AH-240.md) : identité compilée p3 (poids, formes, recette, framework/OS/ISA), CPU natif exact/hit. AH254 transactions reste distinct. |
 
-Trois workflows réussis au SHA exact, **17 assets publiés**. CI Linux39004574426, Windows39004574310, macOS39004574453. Vérification des digests, contenus modifiés, pins, pipeline Linux, AppRun et Manager. Windows overlay/composant Manager et archive macOS complète vérifiés ; installateur Windows complet non téléchargé. Aucun test vidéo répété lors de ce contrôle de livraison.
+**Manque de débit Quality×4 toujours ouvert** (AH329/208/73/76). Dernière chaîne native complète Area720→RIFE426Quality4+SPAN1440→TrueHDR : environ46,4ms par intervalle, budget41,7ms pour une source24fps. Fusion active et modules .84 réellement mappés dans l'instance contrôlée ; aucun ancien moteur démontré dans cette instance. Ne pas annoncer96FPS ou prétendre que les garde-fous résolvent ce budget. AH357 ToDo : raccord runtime de l'encodeur partagé (étude exacte, gain réseau local≈0,656ms/3,15%, pas de gain lecteur établi). SPANB4 change la première sortie FP16 : étude arrêtée, aucune activation Quality.
 
-| Composant | Référence immuable |
-|---|---|
-| PLAYER/assemblage | `f626ceb2154f1b90ff5c4e275e8bb31a969f1bc6` |
-| Manager | `f1f85962f8e86e5f37d84501f37f72b6d1780828` |
-| Source partagée du producteur Manager | `69aca0b866a8625bb53bc265d308743cd1314269` |
-| Backend NVIDIA Linux | `36f3d94491b51d334dc9420ce6d5192b086b0a8f` |
-| Bundle GPU | `e48fb15b048db5ea39d3becbe9fdede6764f1941` |
+Profils/médias de référence privés dans `artifacts/performance/lots-20261017/quality-live-20261017/`, installation utilisateur inchangée. Le checkout IDE racine est ancien et modifié ; il sert de relais documentaire, jamais de source de release. Copier seulement l'ETAT agent si son contenu correspond à la précédente copie agent ; préserver toute modification utilisateur.
 
-Manager Windows/macOS identique aux assets du producteur épinglé. Manager Linux reconstruit depuis ce pin avec les sources partagées PLAYER (contenu identique entre69aca etf626), identique entre composant et AppImage ; ne pas prétendre identité binaire avec l’archive Manager autonome. Installation/profils utilisateur non modifiés. Une release sur trois OS ne qualifie pas tous les GPUs.
+## Contrats de reprise
 
-Livré : navigation Profils/Préparer/Moteurs et composants/Paramètres ; profils libres, quatre catégories fixes interpolation/upscale/downscale/HDR ; HDRmpv ou TrueHDR, une conversion par profil ; ancien éditeur, trois profils intégrés1001..1003 et doublons retirés ; FRUC retiré avec anciens profils conservés/incompatibilité explicite ; Area/Spline36 indépendant LinuxNVIDIA ; plan partagé et dépendances exactes ; policy RIFE du maillon appliquée via configuration privée ; préparation GMFSS CFR SDR8 CUDA/CuPy. Les six profils de départ propres à macOS ne sont pas annoncés retirés. L’ordre arbitraire reste propre au lecteur LinuxNVIDIA ; les autres moteurs gardent leurs chemins compatibles.
+- Checkouts isolés, fichiers explicites dans git add ; jamais git add -A, reset/clean global ou push au backend utilisateur d'origine. Préserver profils, médias, SDK, modèles et modifications inconnues.
+- In Progress au début ; Done après périmètre complet et livraison vérifiée. Reliquats en sous-tickets explicites ; parents partiels ouverts.
+- Tests courts uniquement pour une incertitude réelle. Réutiliser les preuves concluantes. UI/docs/packaging : contrôles simples ; source/compilation suffit quand l'effet statique est établi. Distinguer suppression de travail, gain attendu et FPS mesuré. Aucune validation matérielle inventée.
+- Quality conserve sa référence ; approximations Fast explicites. Besoins propres à chaque moteur respectés. Matériel/API absent ou bruit : qualification partielle, pas de fauxDone.
+- Lancer builds/releases puis avancer ; consulter à la fin de la tâche. Aucun travail concurrent GPU pendant une mesure. Strata facultatif s'il aide ; non utilisé dans ces lots.
 
-**Done après vérification : AH-313, AH-325, AH-326, AH-328, AH-341, AH-342, AH-343.** Commentaires de preuve10224..10230. AH-224 reste ouvert avec AH-339/AH-353 ; AH-321 reste ouvert avec son reliquat AH-352 (rattaché à AH-297, car Jira ne permet pas de sous-ticket sous un sous-ticket).
-
-Les sources livrées sont dans `/home/ta2b/.animejanai-tools/work/lot-57-manager-ux-20261017` et `manager-ux-20261017`. La copie documentaire racine peut être ancienne et modifiée par l’utilisateur : vérifier pins/status ; ne pas publier son ancien code.
-
-## Tickets restants et livraisons
-
-| Ticket | État exact et prochaine action |
-|---|---|
-| [AH-344](reprise/20261017/AH-344.md) | In Progress. DLL DML compilée ; producteur mpvWindows39006425781 en cours. Finaliser son pin et sa livraison appariée après succès ; cache non activé par .85 seule. |
-| [AH-345](reprise/20261017/AH-345.md) | Done, livré .85. Score Fast>3 inutile retiré, dépendance CUDA conservée ; Aucun nouveau FPS mesuré. |
-| [AH-346](reprise/20261017/AH-346.md) | Done, livré .85. Même3F copies finales, F attentes→1 ; chaîne complète13sorties exactes, TrueHDR conservé. |
-| [AH-330](reprise/20261017/AH-330.md) | In Progress. Garantir Quality avec les bibliothèques réellement chargées, préserver overrides/fichiers utilisateur. Inventaire sur disque ≠ module déjà chargé. |
-| [AH-347](reprise/20261017/AH-347.md) | Done, livré .85. Pads a/b paresseux, pad_o conservé ;11,25Mio évités à720p, pixels Quality exacts. |
-| [AH-208](reprise/20261017/AH-208.md), [AH-329](reprise/20261017/AH-329.md) | In Progress. Parents fusion/Quality ; gardes, diagnostic, références effectives et optimisations exactes. Ne pas refaire les mesures lot55 concluantes. |
-
-Patches et preuves portables : `docs/reprise/20261017/{patches,preuves}` avec manifest SHA. Les candidats temporaires peuvent disparaître ; les patches sont sauvegardés/versionnés. Binaires candidats Linux hors Git dans `/home/ta2b/.animejanai-tools/work/lot-58-engine-handoff-20261017/` avec SHA256.json. **Aucun candidat AH-344/345/346 n’est inclus dans .84.**
-
-## Autres premières tranches explicites
-
-États propres aux premières tranches (ne pas confondre livraison et présence du code) :
-
-- AH-348 sous AH-121 : **Done .87**, diagnostic hors attente critique, qualifié CoreMLCPU ; parent conserve la comparaison GPU/ANE/CPU et autres modèles.
-- AH-349 sous AH-119 : deux SPAN Metal sans retour RGB hôte intermédiaire, frontière RGB8 conservée.
-- AH-350 sous AH-120 : import VideoToolboxNV12SDR709 et ownership Metal ; préparation/rendu restent des tranches séparées.
-- AH-351 sous AH-131 : SPAN→SPAN Vulkan résident, conversions et multiplications de frontière conservées ; RIFE→SPAN distinct.
-- AH-352 sous AH-297 : conclusion sur les compromis Area/Spline36 restant d’AH-321, réutiliser les preuves et ne tester qu’un doute réel.
-- AH-353 sous AH-224 : reliquat macOS du plan canonique AH-339, contrôles CPU/routage proportionnés.
-
-AH-324 (archive TrueHDR originale) reste distinct. AH-333 (HDR avant interpolation) est toujours demandé **pour plus tard** : aucun déplacement sans contrat couleur.
-
-## Repères historiques utiles seulement si nécessaires
-
-Audit global AH-334 clos :333 tickets examinés,171 descriptions révisées, documents condensés ; nettoyage AH-340 livré .83. Voir [audit Jira AH-334](https://tatoub.atlassian.net/browse/AH-334). Les rapports historiques locaux `docs/AUDIT-GLOBAL-2026-10-17.md`, `docs/audit-20261017/repositories.md` et `docs/ARCHIVES.md` restent disponibles dans le workspace initial ; ils ne sont pas nécessaires à ces guides autonomes.
-
-Lot55/.82 AH-331/332 Done : Fast×4→SPAN58,8–60,5→18,3–18,4ms sur LinuxRTX4070Ti sansHDR ; Qualityexact. Hybride Quality×2→Fast×2 et chaîneHDR : pas de gain global établi. Fast×2 conserve sa voie séparée. Ces chiffres ne mesurent ni .84 ni les nouveaux candidats.
-
-Après chaque lot, remplacer les faits périmés ici ; garder les détails dans le ticket et ses reçus. Ne pas empiler plusieurs états courants contradictoires.
+[Guides détaillés](reprise/20261017/README.md) · [Protocole](PROTOCOLE-VALIDATION-FEATURES.md) · [Archives](ARCHIVES.md). Audit global AH334 et nettoyage AH340 déjà clos ; ne pas réimporter/rejouer leurs inventaires. Les catalogues historiques ne sont pas une batterie obligatoire. HDR avant interpolation AH333 reste demandé pour plus tard, sans déplacement implicite.
