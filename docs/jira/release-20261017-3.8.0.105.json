@@ -1,0 +1,118 @@
+{
+  "release": "3.8.0.105",
+  "source": "b82f358540dfadca2f3857e604e2745fcc6d07fe",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39030932351,
+      "name": "Release Linux",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39030932299,
+      "name": "Release Windows",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39030932261,
+      "name": "Release macOS",
+      "status": "completed"
+    }
+  ],
+  "assets_uploaded": 15,
+  "assets": [
+    {
+      "name": "AnimeJaNai-mac-bench.zip",
+      "sha256": "6f757e482612cbffd9fac03f306ae95f9aba564901f3eccd0475c5d87459591e",
+      "size": 65667409
+    },
+    {
+      "name": "LISEZ-MOI-macOS.txt",
+      "sha256": "d4c9510f640f976fa7f1386bfe9621968d21f5f6d7c4f7b520c5394893660a16",
+      "size": 7403
+    },
+    {
+      "name": "manifest-linux-x64.json",
+      "sha256": "ca0f65cafac4a9109e60888646207983a5e6bf82a782dd33052e715657c5baa3",
+      "size": 2620
+    },
+    {
+      "name": "manifest.json",
+      "sha256": "1b6dd3f0a55527e780adb9f74ea7e2486e187b665d97f615b2c3202a33397f1a",
+      "size": 2128
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-Setup-3.8.0.105.exe",
+      "sha256": "e5f1a76f51478c5662891d0272b3210c0d6159a52492f04941875f3f79a20c8b",
+      "size": 260918372
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.105-linux-x64.AppImage",
+      "sha256": "94378bab70c3bd9fe60737d99392555f9c0ba7ae85bfeefeb8ceb519ccbd473e",
+      "size": 207088120
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.105-macos-arm64.zip",
+      "sha256": "fcd31cc813e5f8270a216675c790aa42b8bb2117399affd06a754910738ee53b",
+      "size": 177998706
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.105-macos-arm64.zip.sha256",
+      "sha256": "dd3100da96aa4504d23cd4920169b34918667ba5ef2e97e8d45ac6ee641dfd30",
+      "size": 112
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-full-package-3.8.0.105.7z.001",
+      "sha256": "3e1cff8fe60b8ccff267aafd18b938743c12872b2863235534436a6747090dd0",
+      "size": 249377346
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.105-linux-x64.7z",
+      "sha256": "c85f49b929d1e4011df0367fda96eff9da04a8dd480f4233143d3e9ec36eccfe",
+      "size": 51898090
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.105.7z",
+      "sha256": "69ffbb65879d46fd8c3f185971550d1f22c4248ba10c6d257aea3a0015b77aa6",
+      "size": 28985160
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-v3.8.0.105-linux-x64.tar.zst",
+      "sha256": "765b7833a710385ad243918d0f0a81f512341e62ee7e92be0320921295272b29",
+      "size": 193042975
+    },
+    {
+      "name": "packs-linux-x64.json",
+      "sha256": "91eec1945d583b84a21d11fde61588121ec89217ad8c3bb1b7af4b7e33492acb",
+      "size": 10821
+    },
+    {
+      "name": "packs.json",
+      "sha256": "de923cf02c29adfcc69b108dd20094dd620314144792138052904117c301c647",
+      "size": 863703
+    },
+    {
+      "name": "SHA256SUMS",
+      "sha256": "90025f4dcbec150f1a8f09062f0fa2bd5d38f1c491812fc7a0cd0d38471005cd",
+      "size": 536
+    }
+  ],
+  "scope": "AH357 native shared encoder study conclusively rejected; research tools/proofs only, candidate not shipped",
+  "payload_check": {
+    "source_runtime_and_pins_identical_to_qualified_104": true,
+    "release_tag_exact": true,
+    "published_manifests_downloaded_and_digest_checked": [
+      "manifest-linux-x64.json",
+      "manifest.json",
+      "packs-linux-x64.json"
+    ],
+    "manager_pin_exact": true,
+    "runtime_requalification": "Not repeated: no engine, video, UI or packaging implementation change from .104"
+  },
+  "limits": [
+    "No FPS improvement claimed. Native candidate on failed phase .25; later on-phases/cache/reset/timing not executed."
+  ]
+}

@@ -6,7 +6,11 @@ Mis à jour le **17 octobre 2026**. Lire AGENTS.md, puis seulement le ticket et 
 
 Continuer les tickets par lots complets, sans pause. Après chaque push, avancer sur une tâche indépendante et vérifier les builds à sa fin ; aucun watch/poll/sommeil d’attente. Pas de nouveaux agents. Conserver profils, médias, SDK, modèles et modifications utilisateur ; checkouts isolés, git add explicite, jamais add-A/reset/clean global ni push au backend utilisateur original. Le checkout IDE est ancien et modifié : relais documentaire seulement.
 
-## Livraison courante vérifiée : 3.8.0.104
+## Livraison courante vérifiée : 3.8.0.105
+
+Source `b82f358540dfadca2f3857e604e2745fcc6d07fe`, [reçu .105](jira/release-20261017-3.8.0.105.json). Trois CI réussies, tag exact, 15 assets et digests des manifestes téléchargés vérifiés. **AH357 Done pour décision de rejet complète**, aucun candidat moteur activé. Code runtime et pins strictement identiques à .104.
+
+### .104 et livraisons précédentes
 
 Source `26dea3562f7d9260b0c935d6e25bfb562a152eff`, [reçu .104](jira/release-20261017-3.8.0.104.json). Trois CI release réussies, tag exact et assets vérifiés. Archive Mac SHA25680ab0fc3…,17programmes gérés conformes. Dylibf13aafd1… **identique au module natif et au consommateur mpv qualifiés**, option/lifecycle du filtre présents dans le vrai mpv livré ; défautvideotoolbox-copy conservé.
 
@@ -20,13 +24,21 @@ Source `26dea3562f7d9260b0c935d6e25bfb562a152eff`, [reçu .104](jira/release-202
 
 Pins conservés en .105 : Manager `b69968a8a30cedc83b28820ca14d014abcb36928`, source partagée `97e325efb59e80d2eac7dfc685192052a01d7399`, bundleGPU `dc53e6cacdff59c1f243226d9575b5079bae9c9e`, lecteurWindows `32464bc13260918381537dbb73a5a2e7523c2477`. Module_sources de GPU-SOURCE fait autorité : dispatcherLinux118c272, TRT/alias/pipeline9d2c717, fatbinArea3447cd8 ; WindowsDML/dispatcher/TRTd5b34469 et AMD652fbc6. Ne pas attribuer un SHAglobal à tous les modules.
 
-## Lot en cours de clôture — AH357, encodeur RIFE partagé
+## AH357 conclu — encodeur RIFE partagé rejeté
 
-PLAYER `/home/ta2b/.animejanai-tools/work/lot-83-rife-shared-encoder-player-20261017`, branche tickets/rife426-shared-encoder-runtime-20261017. Backend isolé lot-83-rife-shared-encoder-backend-20261017, candidatlocal82c82959b187288432d3b84b70b8c6a44e7ea0cc depuis118c272. **Candidat rejeté, aucun nouveau binaire moteur à livrer**. .105 contient seulement outils/preuves/documentation ; vérifier livraison avant Done du ticket. [Guide précis](reprise/20261017/AH-357.md), [reçu de rejet](qualification/lot83-rife-encoder-runtime-20261017/native-rejected.json).
+PLAYER `/home/ta2b/.animejanai-tools/work/lot-83-rife-shared-encoder-player-20261017`, branche tickets/rife426-shared-encoder-runtime-20261017. Backend isolé lot-83-rife-shared-encoder-backend-20261017, candidatlocal82c82959b187288432d3b84b70b8c6a44e7ea0cc depuis118c272. **Candidat rejeté, aucun nouveau binaire moteur à livrer**. .105 contient seulement outils/preuves/documentation, livraison vérifiée et décision de rejet complète. [Guide précis](reprise/20261017/AH-357.md), [reçu de rejet](qualification/lot83-rife-encoder-runtime-20261017/native-rejected.json).
 
 Dérivation C++ sans Python, snapshots encoder/head et deuxbindings contrôlés ; opérateurs/poids/IO exacts à l’outilPython étudié. Compilation native et troisplans TRT terminées. Nouveau contrôle ABI9 sur mêmes sources privées720p, mêmes plans et machineRTX4070Ti/TRT11.3 : candidat off exact aux troisphases ; candidaton échoue dès.25,1 053 807/2 764 800valeursuint16 différentes, max88. Arrêt immédiat avant timing, phaseson suivantes/reset/cache/legacy non exécutés. Les graphes séparés/tactiques sont une hypothèse de cause, pas une conclusion vérifiée. Les anciennes preuves réseauAH356 ne qualifient pas ce raccord natif.
 
 Le patch rejeté et son protocole sont versionnés comme recherche, jamais à appliquer en production. Plans/binaires/entrées restent dans lot-83-rife-encoder-proof-20261017. Une reprise éventuelle doit viser seulement le cas.25 échoué après hypothèse concrète ; aucun replayoff/AH356 ni benchmark avant exactitude. La référence livrée4c1074ed… demeure intacte.
+
+## Lot actif prioritaire — AH369, ajout d’étapes dans le Manager
+
+Régression utilisateur reproduite via les vrais boutons Avalonia Headless : menu ouvert, contexte et commande valides, clic Interpolation n’ajoute rien. Le Click ferme le Flyout avant l’exécution de la commande, ce qui détache son binding. Correctif : fermeture différée sur le dispatcher UI.
+
+Manager isolé `/home/ta2b/.animejanai-tools/work/lot-85-manager-add-step-20261017`, branche perf-specialized-manager-add-step-20261017 ; test `tests/AddStepUi` : échec avant, quatre catégories/sélection inactive/fermeture/sauvegarde-rechargement puis gardes HDR unique/plafond16/schéma futur passés après, sans replay. Aucun moteur/vidéo changé. Producteur trois OS lancé ; livraison PLAYER .106 à faire après disponibilité des assets. AH369 In Progress, parent AH224 reste ouvert. PLAYER isolé `lot-85-manager-add-step-player-20261017`.
+
+AH368 In Progress : étude bornée d’ordonnancement Quality RIFE→SPAN, **aucun code ni gain encore**. Checkouts propres lot-84-quality-stage-major-{player,backend}-20261017, backend base118c272 (jamais candidat rejeté82c8). Reprendre après correctif Manager ; lire ticket détaillé. Corriger son chemin de fichier en `include/surface_cuda_state.h` avant implémentation.
 
 ## Problème Quality×4 toujours ouvert
 
