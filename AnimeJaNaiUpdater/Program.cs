@@ -1297,16 +1297,23 @@ void ApplyOver(string sourceRoot, string targetRoot, bool overlay)
         TryDelete(() => File.Move(ownExe, old));
     }
 
-    CopyTree(sourceRoot, targetRoot, sourceRoot, preserve);
+    bool managedPrograms = File.Exists(Path.Combine(sourceRoot, AnimeJaNai.Platform.ManagedProgramFiles.InventoryName));
+    if (managedPrograms)
+    {
+        var report = AnimeJaNai.Platform.ManagedProgramFiles.Sync(sourceRoot, targetRoot, preserve);
+        foreach (string conflict in report.Conflicts) Console.WriteLine("Preserved program override: " + conflict);
+    }
+    CopyTree(sourceRoot, targetRoot, sourceRoot, preserve, managedPrograms);
 }
 
-void CopyTree(string srcDir, string dstDir, string sourceRoot, HashSet<string> preserve)
+void CopyTree(string srcDir, string dstDir, string sourceRoot, HashSet<string> preserve, bool managedPrograms)
 {
     Directory.CreateDirectory(dstDir);
 
     foreach (var file in Directory.GetFiles(srcDir))
     {
         string rel = NormalizeRel(Path.GetRelativePath(sourceRoot, file));
+        if (managedPrograms && AnimeJaNai.Platform.ManagedProgramFiles.IsManaged(rel)) continue;
         if (IsPreserved(rel, preserve) && File.Exists(Path.Combine(dstDir, Path.GetFileName(file))))
         {
             continue;
@@ -1319,12 +1326,13 @@ void CopyTree(string srcDir, string dstDir, string sourceRoot, HashSet<string> p
     foreach (var sub in Directory.GetDirectories(srcDir))
     {
         string rel = NormalizeRel(Path.GetRelativePath(sourceRoot, sub));
+        if (managedPrograms && AnimeJaNai.Platform.ManagedProgramFiles.IsManagedDirectory(rel)) continue;
         // Profile banks are seeded only when missing, including in preserved older trees.
         if (IsPreserved(rel, preserve) && !rel.StartsWith("portable_config/profiles", StringComparison.OrdinalIgnoreCase))
         {
             continue;
         }
-        CopyTree(sub, Path.Combine(dstDir, Path.GetFileName(sub)), sourceRoot, preserve);
+        CopyTree(sub, Path.Combine(dstDir, Path.GetFileName(sub)), sourceRoot, preserve, managedPrograms);
     }
 }
 

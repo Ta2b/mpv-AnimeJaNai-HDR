@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../AnimeJaNaiPlatform/ManagedProgramFiles.cs" Link="ManagedProgramFiles.cs" />
     <!-- Shared with the builder; reused for streamed downloads with progress. -->
     <Compile Include="..\BuildMpvUpscale2xAnimeJaNai\Downloader.cs" Link="Downloader.cs" />
   </ItemGroup>

@@ -20,7 +20,7 @@ cp -R "$MPV_APP" "$APP"
 RES="$APP/Contents/Resources"
 
 # The launcher copies these settings to the user's folder and starts mpv with MPV_HOME.
-CONF="$RES/animejanai-config"
+CONF="$RES/portable_config"
 mkdir -p "$CONF/scripts" "$CONF/script-opts" "$RES/animejanai/inference" "$RES/animejanai/onnx"
 mkdir -p "$RES/animejanai/preparation"
 cp "$HERE/../../tools/interpolation/"*.py "$HERE/../../tools/interpolation/"*.json "$RES/animejanai/preparation/"
@@ -88,6 +88,13 @@ cat > "$RES/manifest.json" <<EOF
   "update_asset_suffix": "-macos-arm64.zip"
 }
 EOF
+
+# Hash the final platform-specific program tree before signing. The writable
+# launcher uses this same relative layout as Linux/Windows (portable_config).
+if [ -n "$PLATFORM" ]; then
+    cp "$HERE/legacy-managed-program-files.json" "$RES/legacy-managed-program-files.json"
+    "$RES/AnimeJaNaiPlatform" --write-managed-program-inventory --root "$RES"
+fi
 
 plist="$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable mpv-animejanai" "$plist"

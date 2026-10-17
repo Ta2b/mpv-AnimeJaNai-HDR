@@ -1042,6 +1042,8 @@ void WriteVersionAndManifest()
     {
         "version.txt",
         "manifest.json",
+        "managed-program-files.json",
+        "legacy-managed-program-files.json",
         plat.Exe("AnimeJaNaiUpdater"),
         "animejanai/benchmarks",
         "animejanai/preparation",
@@ -1328,6 +1330,9 @@ async Task Main()
     InstallPlatformHelper();
     if (!args.Contains("--sdr-only")) WriteThirdPartyNotices();
     WriteLinuxLauncher();
+    AnimeJaNai.Platform.ManagedProgramFiles.WriteInventory(installDirectory);
+    File.Copy(Path.Combine(assemblyDirectory, "legacy-managed-program-files.json"),
+        Path.Combine(installDirectory, "legacy-managed-program-files.json"), true);
     WriteVersionAndManifest();
     if (args.Contains("--packs"))
     {

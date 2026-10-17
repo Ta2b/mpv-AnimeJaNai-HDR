@@ -4,12 +4,15 @@ Uses the real launchers with a fake mpv process; hardware playback is runtime_ch
 """
 from pathlib import Path
 import os
+import shlex
+import sys
 import shutil
 import subprocess
 import tempfile
 
 REPO = Path(__file__).resolve().parents[2]
 LAUNCHER = REPO / 'BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/launch-linux.sh'
+CLI = sys.argv[1:] or ["dotnet", str(REPO / "AnimeJaNaiPlatform/bin/Release/net10.0/AnimeJaNaiPlatform.dll")]
 passed = 0
 def check(name, condition):
     global passed
@@ -35,6 +38,8 @@ with tempfile.TemporaryDirectory(prefix='ajn-package-') as tmp:
         'AnimeJaNaiPlatform': 'helper', 'libSkiaSharp.so': 'native library',
         'animejanai/benchmarks/animejanai_benchmark_all.sh': 'benchmark launcher',
     }.items(): write(path, value)
+    write('AnimeJaNaiPlatform', '#!/bin/sh\nif [ "$1" = "--sync-managed-programs" ]; then exec ' + shlex.join(CLI) + ' "$@"; fi\n')
+    (image / 'AnimeJaNaiPlatform').chmod(0o755)
     write('mpv/mpv', '''#!/bin/sh
 printf '%s\n' "$ANIMEJANAI_ROOT" "$ANIMEJANAI_IPC_PATH" "$ANIMEJANAI_INFERENCE_DIR" > "$AJ_CAPTURE"
 printf '%s\n' "$@" > "$AJ_CAPTURE.args"
@@ -48,7 +53,9 @@ stat -c '%a' "$(dirname "$ANIMEJANAI_IPC_PATH")" >> "$AJ_CAPTURE"
     for name in ('ANIMEJANAI_ROOT', 'ANIMEJANAI_MPV', 'ANIMEJANAI_INFERENCE_DIR'): env.pop(name, None)
     env.update(XDG_DATA_HOME=str(data_home), XDG_RUNTIME_DIR=str(runtime),
         ANIMEJANAI_OFFLINE='1', AJ_CAPTURE=str(base / 'capture'))
-    def launch(): subprocess.run([str(image / 'AppRun')], env=env, check=True, capture_output=True)
+    def launch():
+        subprocess.run([*CLI, '--write-managed-program-inventory', '--root', str(image)], check=True, capture_output=True)
+        subprocess.run([str(image / 'AppRun')], env=env, check=True, capture_output=True)
     launch()
     data = data_home / 'AnimeJaNai-HDR-linux'
     capture = (base / 'capture').read_text().splitlines()

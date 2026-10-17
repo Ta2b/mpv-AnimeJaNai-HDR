@@ -9,16 +9,20 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 RES="$(cd "$HERE/../Resources" && pwd)"
 DATA="$HOME/Library/Application Support/AnimeJaNai"
 CONF="$DATA/portable_config"
-SRC="$RES/animejanai-config"
+SRC="$RES/portable_config"
 mkdir -p "$CONF/script-opts" "$DATA/animejanai" "$HOME/Library/Caches/AnimeJaNai"
-if [ -d "$RES/animejanai/preparation" ]; then
-    mkdir -p "$DATA/animejanai/preparation"
-    cp "$RES/animejanai/preparation/"*.py "$RES/animejanai/preparation/"*.json "$DATA/animejanai/preparation/"
+if [ -x "$RES/AnimeJaNaiPlatform" ] && [ -f "$RES/managed-program-files.json" ]; then
+    if ! "$RES/AnimeJaNaiPlatform" --sync-managed-programs --package-root "$RES" --root "$DATA" > "$DATA/.managed-program-sync.log" 2>&1; then
+        echo "AnimeJaNai: programme sync incomplete; see $DATA/.managed-program-sync.log" >&2
+    fi
+else
+    # Optional helper omitted by a manual package: seed missing programs only.
+    # Never remove a whole directory containing user scripts.
+    for managed in scripts hdr-tools user-shaders; do
+        mkdir -p "$CONF/$managed"
+        cp -Rn "$SRC/$managed/." "$CONF/$managed/"
+    done
 fi
-for managed in scripts hdr-tools user-shaders; do
-    rm -rf "$CONF/$managed"
-    cp -R "$SRC/$managed" "$CONF/$managed"
-done
 for file in mpv.conf script-opts/animejanai_mac.conf script-opts/animejanai_hdr_auto.conf; do
     [ -f "$CONF/$file" ] || cp "$SRC/$file" "$CONF/$file"
 done
