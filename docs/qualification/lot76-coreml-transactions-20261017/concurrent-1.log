@@ -1,0 +1,8 @@
+[aji] Core ML cache identity: p3-73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 template v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7 compiler 3405.2.1 runtime Version 15.7.9 (Build 24G830) host arm64
+[aji] Core ML compiled cache miss: 2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16 content v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7; rebuilding
+[aji] Core ML committed cache: 73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23 generation data-15335-811698162666-0
+executor_create_ms=388.554
+first_process_ms=120.026
+note_before=disabled (AJI_COREML_NO_PLAN)
+note_first=disabled (AJI_COREML_NO_PLAN)
+note_after=disabled (AJI_COREML_NO_PLAN)

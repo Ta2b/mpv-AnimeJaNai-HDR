@@ -52,6 +52,8 @@ def main():
 
     def compiled(content, name=model):
         matching = next(e for e in results["cases"].values() if e["content_tag"] == content and e["model"] == name)
+        if matching.get("generation"):
+            return cache / "native/coreml-tx1" / matching["program_key"] / matching["generation"] / "model.mlmodelc"
         suffix = "p3-" + matching["program_key"] if matching["program_key"] else content
         return cache / "native" / (name + "-256x256-" + suffix) / "model.mlmodelc"
 
@@ -61,12 +63,14 @@ def main():
                                  env={**os.environ, "AJI_COREML_NO_PLAN": "1"}, capture_output=True, text=True)
         (work / (label + ".log")).write_text(process.stdout + process.stderr)
         program_key = re.search(r"Core ML cache identity: p3-([0-9a-f]{64})", process.stderr)
-        evidence = {"returncode": process.returncode, "cache_miss": "compiled cache miss:" in process.stderr,
+        generation = re.search(r"Core ML committed cache: [0-9a-f]{64} generation (data-[0-9-]+)", process.stderr)
+        evidence = {"generation": generation.group(1) if generation else None, "returncode": process.returncode, "cache_miss": "compiled cache miss:" in process.stderr,
                     "content_tag": tag(models, name), "model": name,
                     "program_key": program_key.group(1) if program_key else None}
         results["cases"][label] = evidence
         if fails:
-            assert process.returncode != 0 and "cache cleared, try again" in process.stderr, process.stderr
+            assert process.returncode != 0 and any(message in process.stderr for message in
+                ("cache cleared, try again", "invalid commit retired, data preserved")), process.stderr
         else:
             assert process.returncode == 0, process.stderr
             assert evidence["cache_miss"] == miss, evidence
@@ -112,7 +116,10 @@ def main():
     damaged = compiled(changed_tag)
     shutil.rmtree(damaged); damaged.mkdir()  # A present, invalid compiled cache.
     run("corrupt-cache-diagnostic", normalized, fails=True)
-    assert not damaged.parent.exists(), "the failed current entry was not cleared"
+    if results["cases"]["corrupt-cache-diagnostic"].get("generation"):
+        assert damaged.parent.exists() and not (damaged.parent.parent/"current").exists(), "invalid commit not retired or generation erased"
+    else:
+        assert not damaged.parent.exists(), "the failed legacy entry was not cleared"
     recovered = run("retry-rebuild", normalized)
     assert sha(recovered) == sha(changed)
     assert old_compiled.is_dir() and stable_compiled.is_dir(), "unrelated old entries were removed"

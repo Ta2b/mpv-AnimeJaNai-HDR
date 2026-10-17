@@ -68,13 +68,19 @@ jobs:
           root=Path('results')
           logs={name:(root/(name+'.log')).read_text() for name in ('baseline','candidate','hit')}
           assert 'compiled cache miss:' in logs['baseline'] and 'compiled cache miss:' in logs['candidate']
-          assert 'compiled cache hit:' in logs['hit'] and 'compiled cache miss:' not in logs['hit']
+          assert ('compiled cache hit:' in logs['hit'] or 'Core ML committed cache:' in logs['hit']) and 'compiled cache miss:' not in logs['hit']
           identity=re.search(r'Core ML cache identity: p3-([0-9a-f]{64}) template (v2-[0-9a-f]{64}) compiler (.+) runtime (.+) host (\S+)',logs['candidate'])
           assert identity and identity.group(0) in logs['hit'],logs
           folders=[p for p in Path('cache/native').iterdir() if p.is_dir()]
-          assert len(folders)==2 and sum('-p3-' in p.name for p in folders)==1
+          assert len(folders)==2 and (sum('-p3-' in p.name for p in folders)==1 or (Path('cache/native/coreml-tx1')/identity.group(1)/'current').is_file())
           assert set(Path('results/folders-before-hit.txt').read_text().splitlines())=={'cache/native',*(str(p) for p in folders)}
-          for p in folders:assert (p/'model.mlmodelc').is_dir()
+          for p in folders:
+            if p.name=='coreml-tx1':
+              key=p/identity.group(1);record=(key/'current').read_text().splitlines()
+              assert record[:2]==['aji-coreml-cache-tx1','p3-'+identity.group(1)]
+              assert (key/record[2]/'model.mlmodelc').is_dir()
+              assert ('generation '+record[2]) in logs['hit']
+            else:assert (p/'model.mlmodelc').is_dir()
           result={'source':os.environ['GITHUB_SHA'],'passed':True,'native_hit':True,'old_namespace_preserved':True,
             'program_key':identity.group(1),'template_tag':identity.group(2),'compiler':identity.group(3),
             'runtime':identity.group(4),'host_architecture':identity.group(5),'pixels_exact':True,

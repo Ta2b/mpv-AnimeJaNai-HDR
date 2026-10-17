@@ -1,0 +1,31 @@
+{
+  "source": "ab2d0ea1b60bf165a370293da38461c461b9218f",
+  "scope": "Native CoreML CPU256 transaction protocol, no FPS/GPU/ANE claim",
+  "reference_reused": "AH240/.91 native output",
+  "cases": {
+    "concurrent_cold_and_hit": {
+      "overlap": true,
+      "native_compilations": 1,
+      "two_outputs_exact": true,
+      "generation": "data-15335-811698162666-0",
+      "old_namespace_preserved": true
+    },
+    "killed_builder_recovery": {
+      "native_output_exact": true,
+      "owned_orphan_removed": true,
+      "unowned_and_other_key_preserved": true
+    },
+    "invalid_artifact_repair": {
+      "native_failure_detected": true,
+      "old_generation_preserved": true,
+      "new_generation": "data-15341-812873980041-0",
+      "new_output_exact": true
+    },
+    "readonly_complete_hit": {
+      "native_output_exact": true,
+      "no_compilation": true,
+      "same_generation": true
+    }
+  },
+  "passed": true
+}
