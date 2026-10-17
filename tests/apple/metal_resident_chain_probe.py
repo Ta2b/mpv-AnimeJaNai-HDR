@@ -6,6 +6,8 @@ import ctypes as C
 import hashlib
 import json
 import os
+import re
+import shutil
 from pathlib import Path
 import sys
 import time
@@ -19,7 +21,8 @@ def main():
     s=json.loads(Path(sys.argv[1]).read_text());out=Path(s['output']);out.mkdir(exist_ok=True)
     digest=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
     identity={k:digest(s[k]) for k in ('baseline','candidate','conf','resize_conf')}
-    receipt=out/'receipt.json'
+    error_only='--error-only' in sys.argv[2:]
+    receipt=out/('error-receipt.json' if error_only else 'receipt.json')
     if receipt.exists():
         r=json.loads(receipt.read_text());assert r['passed'] and r['identity']==identity
         print('Matching conclusive receipt; no replay.');return
@@ -37,46 +40,67 @@ def main():
     for y in range(size):
         for x in range(size):
             for k in range(3):source[y*pitch+x*3+k]=(x*3+y*2+k*30+(x//16%2)*60)%256
-    def create(name,resident,conf):
+    def create(name,resident,conf,models=None):
         os.environ['AJI_METAL_RESIDENT_SPAN']='1' if resident else '0';lib=libs[name]
-        ctx=lib.aji_vk_create(os.fsencode(conf),os.fsencode(s['models']),b'',b'gpu',b'',1)
+        ctx=lib.aji_vk_create(os.fsencode(conf),os.fsencode(models or s['models']),b'',b'gpu',b'',1)
         assert ctx,lib.aji_vk_error(None);contexts.append((lib,ctx));plan=Plan()
         assert lib.aji_vk_configure(ctx,size,size,24,C.byref(plan))==0,lib.aji_vk_error(ctx)
         return lib,ctx,plan
-    def run(state):
+    def run(state,success=True):
         lib,ctx,plan=state;row=plan.width*3;stride=row+16
         output=(C.c_ubyte*(stride*plan.height))();C.memset(output,0xa5,C.sizeof(output))
         start=time.perf_counter();status=lib.aji_vk_process(ctx,None,0,source,pitch,1,output,stride);ms=(time.perf_counter()-start)*1000
+        if not success:
+            assert status<0 and bytes(output)==b'\xa5'*C.sizeof(output),lib.aji_vk_error(ctx)
+            return lib.aji_vk_error(ctx).decode()
         assert status==0,lib.aji_vk_error(ctx)
         raw=bytes(output);assert all(raw[y*stride+row:(y+1)*stride]==b'\xa5'*16 for y in range(plan.height))
         return b''.join(raw[y*stride:y*stride+row] for y in range(plan.height)),ms,lib.aji_vk_stats_snapshot(ctx).decode()
     def count(stats,key):return int(next(x.split(': ',1)[1] for x in stats.splitlines() if x.startswith(key+': ')))
     r={'identity':identity,'source_size':[size,size]}
     try:
-        base=create('baseline',False,s['conf']);off=create('candidate',False,s['conf']);on=create('candidate',True,s['conf'])
-        reference,_,_=run(base);a,_,off_stats=run(off);b,_,on_stats=run(on)
-        assert reference==a==b,'First RGB differs; stop before timings'
-        assert 'Resident SPAN eligible: yes\n' in on_stats and count(on_stats,'Resident SPAN segments')==1,on_stats
-        assert count(off_stats,'Resident SPAN segments')==0,off_stats
-        assert count(off_stats,'Executor host staging bytes')==(128*128+256*256)*3
-        assert count(off_stats,'Executor explicit readback bytes')==(256*256+512*512)*3
-        assert count(on_stats,'Executor host staging bytes')==128*128*3
-        assert count(on_stats,'Executor explicit readback bytes')==512*512*3
-        r.update(pixels_exact=True,output_sha256=hashlib.sha256(b).hexdigest(),off_stats=off_stats,on_stats=on_stats)
-        times={'off':[],'on':[]}
-        for _ in range(3):
-            for label,state in [('off',off),('on',on)]:
-                pixels,ms,_stats=run(state);assert pixels==reference;times[label].append(ms)
-        r['full_call_ms']=times
-        old_resize=create('baseline',False,s['resize_conf']);new_resize=create('candidate',True,s['resize_conf'])
-        a,_,_=run(old_resize);b,_,stats=run(new_resize)
-        assert a==b and 'Resident SPAN eligible: no\n' in stats and count(stats,'Resident SPAN segments')==0,stats
-        r['resize_fallback']={'pixels_exact':True,'sha256':hashlib.sha256(b).hexdigest(),'stats':stats}
-        # Reconfiguration drops the former graph/data lifetime and selects the
-        # same resident route again; no replay of the timing or resize case.
-        lib,ctx,plan=on;assert lib.aji_vk_configure(ctx,size,size,24,C.byref(plan))==0,lib.aji_vk_error(ctx)
-        recovered,_,stats=run(on);assert recovered==reference and count(stats,'Resident SPAN segments')==1
-        r['reconfigure_exact']=True
+        if error_only:
+            bad=out/'error-models';bad.mkdir()
+            for file in Path(s['models']).iterdir():shutil.copy2(file,bad/file.name)
+            model=next(line.split('=',1)[1] for line in Path(s['conf']).read_text().splitlines() if line.startswith('chain_1_model_2_name='))
+            param=bad/(model+'.ajm');original=param.read_text()
+            first=next(line.split()[2] for line in original.splitlines() if line.startswith('op '))
+            changed,n=re.subn(r'(?m)^output \d+$','output '+first,original);assert n==1
+            param.write_text(changed)
+            failed=create('candidate',True,s['conf'],bad)
+            error=run(failed,False);assert 'invalid graph output' in error,error
+            param.write_text(original);lib,ctx,plan=failed
+            assert lib.aji_vk_configure(ctx,size,size,24,C.byref(plan))==0,lib.aji_vk_error(ctx)
+            recovered,_,stats=run(failed)
+            assert hashlib.sha256(recovered).hexdigest()==s['reference_output_sha256']
+            assert count(stats,'Resident SPAN segments')==1
+            r.update(controlled_second_graph_error=True,output_untouched=True,reconfigure_exact=True,
+                     output_sha256=hashlib.sha256(recovered).hexdigest(),error=error)
+        else:
+            base=create('baseline',False,s['conf']);off=create('candidate',False,s['conf']);on=create('candidate',True,s['conf'])
+            reference,_,_=run(base);a,_,off_stats=run(off);b,_,on_stats=run(on)
+            assert reference==a==b,'First RGB differs; stop before timings'
+            assert 'Resident SPAN eligible: yes\n' in on_stats and count(on_stats,'Resident SPAN segments')==1,on_stats
+            assert count(off_stats,'Resident SPAN segments')==0,off_stats
+            assert count(off_stats,'Executor host staging bytes')==(128*128+256*256)*3
+            assert count(off_stats,'Executor explicit readback bytes')==(256*256+512*512)*3
+            assert count(on_stats,'Executor host staging bytes')==128*128*3
+            assert count(on_stats,'Executor explicit readback bytes')==512*512*3
+            r.update(pixels_exact=True,output_sha256=hashlib.sha256(b).hexdigest(),off_stats=off_stats,on_stats=on_stats)
+            times={'off':[],'on':[]}
+            for _ in range(3):
+                for label,state in [('off',off),('on',on)]:
+                    pixels,ms,_stats=run(state);assert pixels==reference;times[label].append(ms)
+            r['full_call_ms']=times
+            old_resize=create('baseline',False,s['resize_conf']);new_resize=create('candidate',True,s['resize_conf'])
+            a,_,_=run(old_resize);b,_,stats=run(new_resize)
+            assert a==b and 'Resident SPAN eligible: no\n' in stats and count(stats,'Resident SPAN segments')==0,stats
+            r['resize_fallback']={'pixels_exact':True,'sha256':hashlib.sha256(b).hexdigest(),'stats':stats}
+            # Reconfiguration drops the former graph/data lifetime and selects the
+            # same resident route again; no replay of the timing or resize case.
+            lib,ctx,plan=on;assert lib.aji_vk_configure(ctx,size,size,24,C.byref(plan))==0,lib.aji_vk_error(ctx)
+            recovered,_,stats=run(on);assert recovered==reference and count(stats,'Resident SPAN segments')==1
+            r['reconfigure_exact']=True
     finally:
         for lib,ctx in reversed(contexts):lib.aji_vk_destroy(ctx)
     assert identity=={k:digest(s[k]) for k in identity}

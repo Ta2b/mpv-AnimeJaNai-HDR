@@ -1,8 +1,15 @@
 name: Qualify resident Metal SPAN
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [full, error-only]
+        default: full
+        description: Run the remaining error case without repeating a conclusive ablation
 permissions:
   contents: read
+  actions: read
 jobs:
   resident:
     runs-on: macos-15
@@ -54,10 +61,16 @@ jobs:
           mv "$(dirname "$(dirname "$header")")" ort
           git clone --depth 1 --branch v0.11.1 https://github.com/the-database/animejanai-inference.git parser
       - name: Compile base and candidate with unchanged models and options
+        env:
+          MODE: ${{ inputs.mode }}
         run: |
-          git fetch --no-tags --depth=1 origin c7efddcab20054922ce5a31dea1939adbd51d7e8
-          git worktree add --detach baseline c7efddcab20054922ce5a31dea1939adbd51d7e8
-          for variant in baseline candidate; do
+          variants="candidate"
+          if [ "$MODE" != error-only ]; then
+            git fetch --no-tags --depth=1 origin c7efddcab20054922ce5a31dea1939adbd51d7e8
+            git worktree add --detach baseline c7efddcab20054922ce5a31dea1939adbd51d7e8
+            variants="baseline candidate"
+          fi
+          for variant in $variants; do
             source=native/linux-ort
             [ "$variant" = candidate ] || source=baseline/native/linux-ort
             cmake -S "$source" -B "$variant-build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 \
@@ -65,8 +78,15 @@ jobs:
             cmake --build "$variant-build" --target aji_ort -j 4
             codesign --force -s - "$variant-build/libaji_ort.dylib"
           done
-      - name: Qualify first output before short timing and ineligible fallback
+      - name: Qualify only the requested remaining scope
+        env:
+          MODE: ${{ inputs.mode }}
+          GH_TOKEN: ${{ github.token }}
         run: |
+          if [ "$MODE" = error-only ]; then
+            gh run download 39021246527 --repo "$GITHUB_REPOSITORY" --name metal-resident-span-evidence --dir reference
+          fi
+          shasum -a 256 models/* > results/models.sha256
           python - <<'PY'
           import json,os
           from pathlib import Path
@@ -76,9 +96,16 @@ jobs:
           Path('results/resident.conf').write_text(conf)
           Path('results/resize.conf').write_text(conf+'chain_1_model_2_resize_factor_before_upscale=50\n')
           spec={k:str(Path(v).resolve()) for k,v in {'baseline':'baseline-build/libaji_ort.dylib','candidate':'candidate-build/libaji_ort.dylib','models':'models','conf':'results/resident.conf','resize_conf':'results/resize.conf','output':'results'}.items()}
+          if os.environ.get('MODE')=='error-only':
+            spec['baseline']=spec['candidate']
+            spec['reference_output_sha256']=json.loads(Path('reference/receipt.json').read_text())['output_sha256']
           Path('results/spec.json').write_text(json.dumps(spec,indent=2)+'\n')
           PY
-          python tests/apple/metal_resident_chain_probe.py results/spec.json > results/native.log 2>&1
+          if [ "$MODE" = error-only ]; then
+            python tests/apple/metal_resident_chain_probe.py results/spec.json --error-only > results/native.log 2>&1
+          else
+            python tests/apple/metal_resident_chain_probe.py results/spec.json > results/native.log 2>&1
+          fi
       - name: Preserve evidence even when unavailable or unsuccessful
         if: always()
         uses: actions/upload-artifact@v4
@@ -89,4 +116,5 @@ jobs:
             results/*.json
             results/*.log
             results/*.conf
+            results/*.sha256
           if-no-files-found: warn
