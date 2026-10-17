@@ -30,6 +30,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from coreml_manifest import RECIPE as MANIFEST_RECIPE, normalize_generated_package
 
 import numpy as np
 import onnx
@@ -239,6 +240,9 @@ def build_coreml(ops, weights, out, h, w, package):
     spec_path = Path(package) / 'Data/com.apple.CoreML/model.mlmodel'
     spec = ct.utils.load_spec(str(package))
     spec_path.write_bytes(spec.SerializeToString(deterministic=True))
+    # coremltools generates random manifest UUIDs even for identical resources.
+    # Normalize only this newly saved package, after the deterministic spec write.
+    normalize_generated_package(package)
 
 
 def varint2(value):
@@ -332,6 +336,7 @@ def main():
                 if a.keep_check:
                     a.keep_check.mkdir(parents=True, exist_ok=True)
                 entry['size_fields'] = coreml_for(path, name, a.output, Path(work), a.keep_check)
+                entry['manifest_recipe'] = MANIFEST_RECIPE
             report[name] = entry
             print(name, json.dumps(entry))
     (a.output / 'apple-models.json').write_text(json.dumps(report, indent=2) + '\n')
