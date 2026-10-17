@@ -1,6 +1,6 @@
 # État courant
 
-Mis à jour le **17 octobre 2026, fin de soirée (lot A)**. Lire [AGENTS.md](../AGENTS.md), puis le ticket Jira choisi et les contrats qu'il cite. Jira AH : https://tatoub.atlassian.net/jira/software/projects/AH/boards/2 (connecteur Atlassian à charger en début de session ; sans lui, travailler depuis les exports archivés et le dire).
+Mis à jour le **17 octobre 2026, fin de soirée (lot A livré, tickets audités)**. Lire [AGENTS.md](../AGENTS.md), puis le ticket Jira choisi et les contrats qu'il cite. Jira AH : https://tatoub.atlassian.net/jira/software/projects/AH/boards/2 (connecteur Atlassian à charger en début de session ; sans lui, travailler depuis les exports archivés et le dire).
 
 ## Livré et vérifié
 
@@ -24,13 +24,17 @@ Branche PLAYER `impl/lot-a-20261017` (base `c6fee61`), backend `impl/lot-fidelit
 
 Reste pour ce lot : vérifier la release 3.8.0.107 (trois CI), qualifier AH-371 sur une source 601, mesurer AH-374 en lecture.
 
+## Audit des tickets (17 octobre, fin de soirée)
+
+283 tickets ouverts audités un par un : 203 clos (fusionnés dans leur ticket parapluie avec un commentaire qui le nomme, ou sans voie temps réel), 55 réécrits au format commun (verdict, périmètre, fichiers, étapes, preuve de clôture, gain attendu, modèle d'exécution recommandé), 25 créés le jour même conservés tels quels. Parapluies : AH-377 (programme VFI, catalogue des méthodes), AH-384/385/386/387/82 (objectifs AMD, Intel, Apple, Vulkan, Windows), AH-388 (kernels), AH-389 (modèles), AH-394 (matrice par matériel), AH-396 (banc), AH-329 (budget Quality ×4). Règle d'exécution : Opus 5.5 effort high pour moteur/filtre/interop, Fable 5.1 medium pour Lua/Manager/docs/scripts, Fable 5.1 max pour les études ; revue adversariale seulement avant une release moteur.
+
 ## Cinq lots ouverts (étiquettes Jira)
 
-1. **lot-fidelite** : AH-330 (In Progress, Highest), AH-370 critère d'équivalence FP32, AH-371 matrice couleur RIFE, AH-15/275 couleur.
-2. **lot-quality-x4** : AH-329/208/73/76 (In Progress, Highest), AH-376 rejuger SPAN B4 et encodeur partagé, AH-372 TrueHDR sur stream, AH-373 padding 32, AH-374 deux tickets en vol, AH-74 remise RGB directe, AH-19 trace Nsight, AH-388 kernels. Objectif : ≤ 41 ms par paire sur la chaîne de référence sans perte perceptible.
-3. **lot-manager** : AH-379 Manager v2 et ses sous-tâches AH-380 à AH-383 (parent fonctionnel AH-224).
-4. **vfi-temps-reel** : AH-377 programme VFI anime, AH-375 facteurs fractionnaires, AH-378 harnais de parité RIFE, AH-143 DRBA en priorité 1.
-5. **processus** : AH-391 documentation (In Progress), AH-390 canaux de release, AH-227 fork mpv, AH-228 builds reproductibles et binaires hors Git, AH-394 matrice par matériel.
+1. **lot-fidelite** (lot A livré en 3.8.0.107 : AH-330, 370, 371, 372, 373, 374, 55 Done) : restent AH-15 contrat couleur, AH-11 rapport de session, AH-12 profil verrouillé, AH-16 capacités, AH-397 qualification 601, AH-399 règle v2, AH-212 corpus.
+2. **lot-quality-x4** (suivi AH-329) : AH-396 banc fiable, AH-376 SPAN B4 et encodeur partagé, AH-74 remise directe, AH-395 TrueHDR sans attente, AH-83 interop rendu, AH-77 graphe de paire, AH-201/202 kernels, AH-398 mesure en lecture. Objectif : ≤ 41,7 ms par paire avec HDR (36,1 ms sans HDR aujourd'hui).
+3. **lot-manager** : AH-379 Manager v2 et AH-380 à AH-383, AH-297 validateur de chaînes, AH-140 registre RIFE, AH-37 états de lecture.
+4. **vfi-temps-reel** : AH-377 (porte commune), AH-143 DRBA en priorité 1, AH-141 GMFSS, AH-144/145/158 candidats légers, AH-165 softsplat, AH-375 fractions, AH-378 harnais, AH-180 effets anime, AH-232 Fast v2, AH-193 INT8 Fast, AH-389 distillation.
+5. **processus et robustesse** : AH-227 fork mpv, AH-225/226/336/337 registre et packs, AH-390 canaux, AH-21/23/39/42/43/45 compteurs, réserve, quotas, seek, cadence, erreurs, AH-218 longue durée, AH-28/32 caches, AH-231 découpage, AH-186 sous-titres HDR.
 
 Objectifs matériels à long terme : AH-384 AMD, AH-385 Intel, AH-386 Apple, AH-387 Vulkan, AH-82 Windows.
 

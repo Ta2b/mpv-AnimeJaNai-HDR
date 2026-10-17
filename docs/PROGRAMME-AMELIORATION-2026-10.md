@@ -2,6 +2,8 @@
 
 Écrit le 17 octobre 2026 au soir à partir de [l'audit performances, qualité et Manager](AUDIT-PERFORMANCE-QUALITE-MANAGER-2026-10-17.md). Objectif fixé par l'utilisateur : performances maximales sans perte de qualité, gains de qualité à faible coût, plus de choix d'interpolation, un logiciel plus complet, sur tous les GPU et tous les systèmes. Chaque piste a un ticket Jira ; les gains sont des estimations tant qu'ils ne sont pas mesurés sur le jeu de référence.
 
+> **Mise à jour du 17 octobre, fin de soirée.** L'audit ticket par ticket a fusionné les familles de ce programme dans leurs parapluies Jira (AH-377, AH-384 à AH-388, AH-394, AH-396, AH-329) ; les numéros cités ci-dessous restent valables comme historique, mais l'état vivant est dans Jira et dans [ETAT-COURANT](ETAT-COURANT.md).
+
 ## 1. Étude : interpolation temps réel pour l'anime
 
 ### 1.1 Budgets réels à 24 i/s sur RTX 4070 Ti
