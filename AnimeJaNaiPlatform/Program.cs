@@ -26,6 +26,24 @@ try
         else Console.WriteLine(json);
         return 0;
     }
+    if (args.FirstOrDefault() is "--profile-plan" or "--profile-dependencies" or "--profile-components")
+    {
+        string conf=Get("--conf")??Path.Combine(root,"animejanai","animejanai.conf");
+        string platform=Get("--platform")??(OperatingSystem.IsWindows()?"windows":OperatingSystem.IsMacOS()?"macos":"linux");
+        var context=new ProfileResolver.Context(platform,Get("--backend")??"tensorrt",
+            Get("--inference-dir")??Path.Combine(root,"animejanai","inference"),Path.Combine(root,"animejanai","onnx"),
+            PipelineFeatures:ulong.TryParse(Get("--pipeline-features"),out var features)?features:0);
+        if(Get("--pipeline-features")==null&&platform=="linux")context=context with {PipelineFeatures=ProfileResolver.ReadPipelineFeatures(context.InferenceDirectory)};
+        var plan=ProfileResolver.ResolveConfiguration(File.ReadAllText(conf),context,
+            int.TryParse(Get("--slot"),out int slot)?slot:null,int.TryParse(Get("--rule"),out int rule)?rule:null);
+        if(args[0]=="--profile-components")
+            foreach(var group in plan.Requirements.Where(r=>r.Pack!=null).GroupBy(r=>r.Pack))
+                Console.WriteLine(group.Key+":"+(group.Any(r=>!r.Present)?"missing":"present"));
+        else if(args[0]=="--profile-dependencies")
+            foreach(var pack in plan.Requirements.Where(r=>!r.Present&&r.Pack!=null).Select(r=>r.Pack).Distinct())Console.WriteLine(pack);
+        else Console.WriteLine(JsonSerializer.Serialize(plan,new JsonSerializerOptions {PropertyNamingPolicy=JsonNamingPolicy.SnakeCaseLower}));
+        return 0;
+    }
     object result = args.FirstOrDefault() switch
     {
         "--capabilities" => BackendCapabilities.Describe(),

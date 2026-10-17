@@ -20,7 +20,10 @@ public static class QualitySemantics
     public const string Retiming = "Held-drawing retiming spreads motion over the duration of a held drawing. It changes the chosen temporal rendering, is separate from ensemble, and is ignored by temporal Quality. Restart playback after changing it.";
     public const string EnsemblePrecision = "Ensemble selects a different RIFE model when supported; it is independent of temporal Quality/Fast. FP16 model weights do not establish operator or accumulator precision, nor equal output between backends. Temporal Quality does not change the model's precision policy.";
     public static string CanonicalTemporal(string? value) =>
-        (value ?? "").Trim().ToLowerInvariant() is "old" or "quality" ? "quality" : "fast";
+        (value ?? "").Trim().ToLowerInvariant() switch {
+            "old" or "quality" => "quality", "new" or "fast" => "fast",
+            var unknown => throw new InvalidDataException("Unknown RIFE policy preserved: " + unknown)
+        };
 }
 
 public static class BackendCapabilities
@@ -339,7 +342,7 @@ public static class InterpolationPipeline
     {
         return value.ToLowerInvariant() switch { "yes" => true,"no" => false,_=>throw new InvalidDataException($"Expected yes/no: {key}") };
     }
-    public static Plan Read(IReadOnlyDictionary<string,string> section,int chain,string backend="tensorrt",string temporalPolicy="fast")
+    public static Plan Read(IReadOnlyDictionary<string,string> section,int chain,string backend="tensorrt",string temporalPolicy="fast",Func<string,int>? modelFrames=null,string? platform=null)
     {
         var values=new Dictionary<string,string>(StringComparer.Ordinal);
         foreach(var kv in section)values[kv.Key.ToLowerInvariant()]=kv.Value;
@@ -348,7 +351,7 @@ public static class InterpolationPipeline
         {
             if(values.Keys.Any(k=>k.StartsWith(prefix+"stage_",StringComparison.Ordinal)))
                 throw new InvalidDataException("Stage keys require an explicit pipeline_version");
-            return Migrate(values,chain,backend,temporalPolicy);
+            return Migrate(values,chain,backend,temporalPolicy,modelFrames,platform);
         }
         if(Integer(version,"pipeline_version")!=Version)throw new InvalidDataException("Unsupported interpolation pipeline version; preserve the original profile");
         long count=Integer(Value(values,prefix+"stage_count"),"stage_count");
@@ -366,9 +369,9 @@ public static class InterpolationPipeline
                     Integer(Value(values,p+"factor_denominator","1"),p+"factor_denominator")),
                 Value(values,p+"policy","quality").ToLowerInvariant(),options));
         }
-        var plan=new Plan(false,stages);Validate(plan);return plan;
+        var plan=Normalize(new Plan(false,stages),platform);Validate(plan);return plan;
     }
-    private static Plan Migrate(IReadOnlyDictionary<string,string> values,int chain,string backend,string policy)
+    private static Plan Migrate(IReadOnlyDictionary<string,string> values,int chain,string backend,string policy,Func<string,int>? modelFrames,string? platform)
     {
         string prefix=Key(chain);var stages=new List<Stage>();
         string modelPrefix=prefix+"model_";
@@ -379,6 +382,7 @@ public static class InterpolationPipeline
             string p=$"{modelPrefix}{i}_",name=Value(values,p+"name");if(name.Length==0)continue;
             var options=values.Where(k=>k.Key.StartsWith(p,StringComparison.Ordinal)&&k.Key!=p+"name")
                 .ToDictionary(k=>k.Key[p.Length..],k=>k.Value,StringComparer.Ordinal);
+            if(modelFrames!=null&&Value(options,"frames","0")=="0") {int frames=modelFrames(name);if(frames>1)options["frames"]=frames.ToString(System.Globalization.CultureInfo.InvariantCulture);}
             stages.Add(new Stage($"legacy-model-{i}","upscale","onnx",backend.ToLowerInvariant(),true,name,new Rational(1,1),"quality",options));
         }
         if(Yes(Value(values,prefix+"rife","no"),prefix+"rife"))
@@ -395,7 +399,111 @@ public static class InterpolationPipeline
             if(Yes(Value(values,prefix+"rife_before_upscale","yes"),prefix+"rife_before_upscale"))stages.Insert(0,rife);
             else stages.Add(rife);
         }
-        var plan=new Plan(true,stages);Validate(plan);return plan;
+        var plan=Normalize(new Plan(true,stages),platform);Validate(plan);return plan;
+    }
+    // Split the old attached resize without changing its filter or position.
+    // The old NVIDIA reader hoists the FIRST model's Spline36 resize before
+    // RIFE-before, except for temporal models (which force RIFE-after).
+    public static string HistoricalResizeMethod(string runtime,string? platform=null) =>
+        runtime is "tensorrt" or "directml" || runtime=="migraphx"&&(platform??(OperatingSystem.IsWindows()?"windows":"linux"))=="windows" ? "spline36" : "bilinear";
+    public static Plan Normalize(Plan plan,string? platform=null)
+    {
+        var stages=plan.Stages.ToList();
+        int firstModel=stages.FindIndex(s=>s.Kind=="upscale");
+        int rife=stages.FindIndex(s=>s.Kind=="interpolate"&&s.Method=="rife");
+        bool temporal=stages.Any(s=>s.Kind=="upscale"&&
+            Value(s.Options,"frames","0") is not ("0" or "1"));
+        if(plan.MigratedLegacy&&temporal&&rife>=0&&rife<firstModel)
+        {
+            var stage=stages[rife];stages.RemoveAt(rife);stages.Add(stage);
+            firstModel=stages.FindIndex(s=>s.Kind=="upscale");rife=stages.Count-1;
+        }
+        var output=new List<Stage>();
+        for(int i=0;i<stages.Count;i++)
+        {
+            var stage=stages[i];
+            if(stage.Kind!="upscale"||stage.Method!="onnx") {output.Add(stage);continue;}
+            var options=new Dictionary<string,string>(stage.Options);
+            string height=Value(options,"resize_height_before_upscale","0"),percent=Value(options,"resize_factor_before_upscale","100");
+            bool validHeight=double.TryParse(height,System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out double hv)&&double.IsFinite(hv);
+            bool validPercent=double.TryParse(percent,System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out double pv)&&double.IsFinite(pv);
+            if(!validHeight||!validPercent)throw new InvalidDataException("Invalid legacy resize settings; original profile preserved.");
+            if(hv>0||pv!=100)
+            {
+                string id=stage.Id.Length<=57?stage.Id+"-resize":"resize-"+Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(stage.Id))).ToLowerInvariant()[..32];
+                string origin=(platform??(OperatingSystem.IsWindows()?"windows":OperatingSystem.IsMacOS()?"macos":"linux"))+":"+stage.Runtime;
+                var size=new Dictionary<string,string>{{hv>0?"target_height":"target_percent",hv>0?height:percent},{"legacy_geometry",origin}};
+                var resize=new Stage(id,"resize",HistoricalResizeMethod(stage.Runtime,platform),stage.Runtime,stage.Enabled,"",new(1,1),"quality",size);
+                if(plan.MigratedLegacy&&i==firstModel&&rife>=0&&rife<i&&!temporal)
+                    output.Insert(output.FindIndex(s=>s.Id==stages[rife].Id),resize);
+                else output.Add(resize);
+            }
+            options.Remove("resize_height_before_upscale");options.Remove("resize_factor_before_upscale");
+            output.Add(stage with {Options=options});
+        }
+        return plan with {Stages=output};
+    }
+    // Lossless legacy projection, only where the native reader places resize
+    // exactly here. Other ordered graphs retain independent resize steps.
+    public static Plan InferencePlan(Plan plan)
+    {
+        Validate(plan);
+        var active=plan.Stages.Where(s=>s.Enabled&&!(s.Kind=="hdr"&&
+            (s.Method=="mpv"&&s.Runtime=="gpu-next"||s.Method=="nvidia-truehdr"&&s.Runtime=="rtx-video"))).ToList();
+        var output=new List<Stage>();
+        for(int i=0;i<active.Count;i++)
+        {
+            var stage=active[i];
+            if(stage.Kind=="resize"&&stage.Method is "spline36" or "bilinear"&&stage.Options.TryGetValue("legacy_geometry",out string? geometry)&&
+                stage.Method==HistoricalResizeMethod(stage.Runtime,geometry.Split(':')[0]))
+            {
+                int model=i+1;
+                bool beforeRife=model<active.Count&&active[model].Kind=="interpolate"&&active[model].Method=="rife";
+                if(beforeRife)model++;
+                if(model>=active.Count||active[model].Kind!="upscale"||active[model].Method!="onnx"||active[model].Runtime!=stage.Runtime||
+                    beforeRife&&(i!=0||active[i+1].Runtime!=stage.Runtime||Value(active[model].Options,"frames","0") is not ("0" or "1")))
+                {output.Add(stage);continue;}
+                // An upscaler following RIFE cannot retain its attached resize:
+                // the legacy reader would move it before RIFE.
+                if(!beforeRife&&output.Count==1&&output[0].Kind=="interpolate") {output.Add(stage);continue;}
+                var up=active[model];var options=new Dictionary<string,string>(up.Options);
+                if(stage.Options.TryGetValue("target_height",out string? h))options["resize_height_before_upscale"]=h;
+                else options["resize_factor_before_upscale"]=Value(stage.Options,"target_percent","100");
+                if(beforeRife)output.Add(active[i+1]);
+                output.Add(up with {Options=options});i=model;
+            }
+            else output.Add(stage);
+        }
+        return new(false,output);
+    }
+    public static void ValidateStageOptions(Stage stage)
+    {
+        void Number(string key,double minimum,double maximum,bool integer=false)
+        {
+            if(!stage.Options.TryGetValue(key,out var raw))return;
+            if(!double.TryParse(raw,System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out var n)||
+                !double.IsFinite(n)||n<minimum||n>maximum||integer&&n!=Math.Truncate(n))
+                throw new InvalidDataException($"{key} must be {(integer?"an integer":"a number")} from {minimum} to {maximum}.");
+        }
+        void Flag(string key) {if(stage.Options.TryGetValue(key,out var value)&&value is not ("yes" or "no"))throw new InvalidDataException(key+" must be yes or no.");}
+        if(stage.Method=="rife") {Flag("ensemble");Number("scene_detect_threshold",0,1);}
+        if(stage.Kind=="upscale") {Number("frames",0,64,true);Number("temporal_scene_threshold",0,1);}
+        if(stage.Kind=="resize")
+        {
+            if(stage.Options.ContainsKey("target_height")==stage.Options.ContainsKey("target_percent"))throw new InvalidDataException("Downscale requires one target: height or percentage.");
+            if(stage.Options.TryGetValue("legacy_geometry",out var legacy))
+            {
+                if(!Regex.IsMatch(legacy,@"^(linux|windows|macos):[a-z0-9_-]+$"))throw new InvalidDataException("Invalid legacy sizing identity.");
+                Number("target_height",0.001,double.MaxValue);Number("target_percent",0.001,double.MaxValue);
+            }
+            else {Number("target_height",32,8192,true);Number("target_percent",1,100,true);}
+        }
+        if(stage.Kind=="hdr")
+        {
+            Number("contrast",0,200,true);Number("saturation",0,200,true);Number("middle_gray",10,100,true);
+            if(stage.Method=="mpv") {Flag("mpv_truehdr_look");Number("paper_white",80,400,true);Number("highlights",0,100,true);Number("vibrance",0,80,true);}
+            if(stage.Method=="nvidia-truehdr")Number("peak",400,2000,true);
+        }
     }
     public static void Validate(Plan plan)
     {
@@ -406,7 +514,7 @@ public static class InterpolationPipeline
         foreach(var s in plan.Stages)
         {
             if(s.Enabled&&afterHdr)throw new InvalidDataException("HDR must be the last active stage; the following providers currently require SDR.");
-            if(s.Enabled&&s.Kind=="hdr"&&s.Method=="nvidia-truehdr")afterHdr=true;
+            if(s.Enabled&&s.Kind=="hdr")afterHdr=true;
             if(!Regex.IsMatch(s.Id,@"^[A-Za-z0-9_-]{1,64}$")||!ids.Add(s.Id))throw new InvalidDataException("Stage IDs must be stable, distinct identifiers");
             foreach(string token in new[] {s.Kind,s.Method,s.Runtime})
                 if(!Regex.IsMatch(token,@"^[a-z0-9_-]{1,64}$"))throw new InvalidDataException("Stage kind/method/runtime must be explicit identifiers");
@@ -414,6 +522,7 @@ public static class InterpolationPipeline
             if(s.Kind!="interpolate"&&s.Factor!=new Rational(1,1))throw new InvalidDataException("Only interpolation stages multiply cadence");
             if(s.Kind=="interpolate"&&s.Factor.Numerator<s.Factor.Denominator)throw new InvalidDataException("Interpolation factor cannot reduce cadence");
             if(s.Policy is not ("quality" or "fast"))throw new InvalidDataException("Explicit quality/fast policy required");
+            ValidateStageOptions(s);
             if(s.Model.Contains('\n')||s.Model.Contains('\r'))throw new InvalidDataException("Invalid model name");
             foreach(var pair in s.Options)
                 if(Fields.Contains(pair.Key)||!Regex.IsMatch(pair.Key,@"^[a-z0-9_]{1,80}$")||pair.Value.Contains('\n')||pair.Value.Contains('\r'))
@@ -447,3 +556,396 @@ public static class InterpolationPipeline
         return result;
     }
 }
+
+// Shared resolution evidence for the Manager and launchers. File checks never
+// establish GPU/driver support: the native reader still negotiates execution.
+public static class ProfileResolver
+{
+    public const string Schema = "animejanai.profile-plan.v1";
+    public sealed record Context(string Platform,string Backend,string InferenceDirectory,string ModelsDirectory,
+        string? RifeDirectory=null,ulong PipelineFeatures=0,string TemporalPolicy="fast");
+    public sealed record Requirement(string Kind,string Identity,string Path,bool Present,string? Pack=null);
+    public sealed record ResolvedStage(string Id,string Kind,string Method,string Runtime,string Model,bool Enabled,
+        string Status,string Reason,IReadOnlyList<Requirement> Requirements,int Group,string CadenceMultiplier);
+    public sealed record Result(string Schema,IReadOnlyList<ResolvedStage> Stages,IReadOnlyList<string> Issues,
+        string CadenceMultiplier,bool LegacyCompatible,bool CanExecute,string Qualification);
+    public sealed record Configuration(string Schema,string Backend,int Slot,int? Rule,Result? Plan,
+        IReadOnlyList<Requirement> Requirements,IReadOnlyList<string> Issues);
+    static string Opt(InterpolationPipeline.Stage s,string key,string fallback="")=>s.Options.TryGetValue(key,out var value)?value:fallback;
+    public static bool LegacyCompatible(InterpolationPipeline.Plan plan,Context context)
+    {
+        if(plan.Stages.Any(s=>s.Enabled&&s.Kind=="resize"&&s.Options.ContainsKey("legacy_geometry")&&s.Method!=InterpolationPipeline.HistoricalResizeMethod(s.Runtime,context.Platform)))return false;
+        var stages=InterpolationPipeline.InferencePlan(plan).Stages.ToArray();
+        if(stages.Any(s=>s.Runtime!=context.Backend||s.Kind is not ("upscale" or "interpolate")))return false;
+        var rife=stages.Where(s=>s.Kind=="interpolate").ToArray();
+        if(rife.Length>1||rife.Any(s=>s.Method!="rife"))return false;
+        if(stages.Any(s=>s.Kind=="upscale"&&s.Method!="onnx"))return false;
+        if(rife.Length==1)
+        {
+            int index=Array.IndexOf(stages,rife[0]);
+            if(index!=0&&index!=stages.Length-1)return false;
+        }
+        return true;
+    }
+    [System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)]
+    delegate ulong NativeFeatures();
+    public static ulong ReadPipelineFeatures(string directory)
+    {
+        IntPtr handle=IntPtr.Zero;
+        try
+        {
+            handle=System.Runtime.InteropServices.NativeLibrary.Load(Path.Combine(directory,"libaji_pipeline.so"));
+            return System.Runtime.InteropServices.NativeLibrary.TryGetExport(handle,"aji_pipeline_features_v1",out var symbol)
+                ?System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<NativeFeatures>(symbol)():0;
+        }
+        catch(Exception e) when(e is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException){return 0;}
+        finally {if(handle!=IntPtr.Zero)System.Runtime.InteropServices.NativeLibrary.Free(handle);}
+    }
+    public static string RifeFile(string code,bool ensemble)
+    {
+        if(!Regex.IsMatch(code,@"^[0-9]{2,4}$"))return "";
+        return "rife_v"+code[..1]+"."+(code.Length==2?code.Substring(1,1):code.Substring(1,2))+
+            (code.Length==4&&code.EndsWith('1')?"_lite":"")+(ensemble?"_ensemble":"")+".onnx";
+    }
+    public static Result Resolve(InterpolationPipeline.Plan plan,Context context)
+    {
+        var issues=new List<string>();var output=new List<ResolvedStage>();
+        bool legacy=false;
+        try {InterpolationPipeline.Validate(plan);legacy=LegacyCompatible(plan,context);}
+        catch(InvalidDataException e){issues.Add(e.Message);}
+        var cadence=new InterpolationPipeline.Rational(1,1);int group=0;bool previousInference=false;
+        foreach(var s in plan.Stages)
+        {
+            var requirements=new List<Requirement>();var reasons=new List<string>();
+            void Require(string kind,string name,string path,string? pack=null)
+            {var r=new Requirement(kind,name,path,File.Exists(path),pack);requirements.Add(r);if(!r.Present)reasons.Add("Missing "+kind+": "+name);}
+            bool inference=s.Kind is "interpolate" or "upscale";
+            if(s.Enabled)
+            {
+                if(!inference||!previousInference)group++;
+                previousInference=inference;
+                try {if(s.Kind=="interpolate")cadence=cadence.Multiply(s.Factor);}
+                catch(InvalidDataException e){reasons.Add(e.Message);}
+                if(s.Method=="nvidia-fruc")reasons.Add("FRUC has been removed. This imported step is preserved; disable or remove it explicitly.");
+                else if(s.Method=="mpv"&&s.Kind=="hdr"&&s.Runtime=="gpu-next") { }
+                else if(s.Method=="nvidia-truehdr"&&s.Kind=="hdr"&&s.Runtime=="rtx-video"&&context.Platform=="windows") { }
+                else
+                {
+                    bool ordered=!legacy;
+                    if(s.Kind=="resize"&&s.Options.ContainsKey("legacy_geometry")&&ordered)
+                        reasons.Add("Legacy sizing must keep its original compatible order and backend. Choose downscale-only sizing explicitly before using an independent step.");
+                    if(ordered&&(context.Platform!="linux"||context.Backend!="tensorrt"))reasons.Add("This ordered combination requires the Linux NVIDIA reader; the imported choices are preserved.");
+                    bool runtime=s.Runtime==context.Backend||s.Runtime=="cuda"&&context.Backend=="tensorrt";
+                    if(!runtime)reasons.Add("Step runtime "+s.Runtime+" differs from selected backend "+context.Backend+".");
+                    string suffix=context.Platform=="windows"?".dll":context.Platform=="macos"?".dylib":".so";
+                    string prefix=context.Platform=="windows"?"":"lib";
+                    string? module=context.Backend switch {"tensorrt"=>"aji_trt","directml"=>"aji_dml","openvino" or "onnxruntime"=>"aji_ort","migraphx"=>context.Platform=="windows"?"aji_migraphx":File.Exists(Path.Combine(context.InferenceDirectory,"libaji_migraphx_rgb.so"))?"aji_migraphx_rgb":"aji_ort","vulkan"=>"aji_vulkan","coreml" or "coremlnative" or "metal"=>"aji_ort",_=>null};
+                    if(module==null)reasons.Add("No declared reader for backend "+context.Backend+".");
+                    else Require("reader",prefix+module+suffix,Path.Combine(context.InferenceDirectory,prefix+module+suffix),
+                        module=="aji_ort"&&context.Platform=="linux"?"onnxruntime":null);
+                    if(context.Backend=="tensorrt")
+                    {
+                        string runtimeFile=context.Platform=="windows"?"nvinfer_11.dll":"libnvinfer.so.11";
+                        Require("runtime",runtimeFile,Path.Combine(context.InferenceDirectory,runtimeFile),"trt-runtime");
+                    }
+                    if(ordered&&context.Platform=="linux"&&context.Backend=="tensorrt")
+                        foreach(var file in new[]{"libaji_pipeline.so","aji_pipeline.fatbin"})Require("reader",file,Path.Combine(context.InferenceDirectory,file));
+                    if(s.Kind=="interpolate"&&s.Method=="rife")
+                    {
+                        if(context.Backend=="vulkan")
+                        {
+                            string root=Path.Combine(Path.GetDirectoryName(context.ModelsDirectory)!,"rife-vulkan","rife-v4.6");
+                            if(s.Model!="46")reasons.Add("The Vulkan reader currently requires RIFE4.6.");
+                            foreach(var name in new[]{"flownet.param","flownet.bin"})Require("model",name,Path.Combine(root,name),"rife-vulkan");
+                        }
+                        else
+                        {
+                            string name=RifeFile(s.Model,Opt(s,"ensemble","no")=="yes");
+                            if(name.Length==0)reasons.Add("Invalid RIFE model identifier.");
+                            else Require("model",name,Path.Combine(context.RifeDirectory??Path.Combine(Path.GetDirectoryName(context.ModelsDirectory)!,"rife"),name),"rife");
+                        }
+                        if(ordered&&(s.Factor.Denominator!=1||s.Factor.Numerator<2||s.Factor.Numerator>8))reasons.Add("Ordered RIFE requires an integer multiplier2–8.");
+                    }
+                    else if(s.Kind=="upscale"&&s.Method=="onnx")
+                    {
+                        if(string.IsNullOrWhiteSpace(s.Model))reasons.Add("Choose an upscaling model.");
+                        else if(context.Backend=="vulkan")
+                            foreach(var extension in new[]{".ncnn.param",".ncnn.bin"})Require("model",s.Model+extension,Path.Combine(context.ModelsDirectory,s.Model+extension));
+                        else if(context.Platform=="macos"&&context.Backend=="metal")Require("model",s.Model+".ajm",Path.Combine(context.ModelsDirectory,s.Model+".ajm"));
+                        else if(context.Platform=="macos"&&context.Backend=="coremlnative")Require("model",s.Model+".mlpatch",Path.Combine(context.ModelsDirectory,s.Model+".mlpatch"));
+                        else Require("model",s.Model+".onnx",Path.Combine(context.ModelsDirectory,s.Model+".onnx"));
+                        int frames=int.TryParse(Opt(s,"frames","0"),out int configured)&&configured>0?configured:OnnxModelShape.TemporalFrames(Path.Combine(context.ModelsDirectory,s.Model+".onnx"));
+                        if(ordered&&frames>1)reasons.Add("Temporal upscaling is unavailable in the ordered reader.");
+                    }
+                    else if(s.Kind=="resize"&&s.Method is "area" or "spline36" or "bilinear")
+                    {
+                        ulong bit=s.Method=="area"?1UL:s.Method=="spline36"?4UL:0UL;
+                        if(ordered&&(context.PipelineFeatures&bit)==0) {reasons.Add("Update the reader to use independent "+s.Method+" downscale.");requirements.Add(new("capability","independent-"+s.Method,"",false,"reader"));}
+                    }
+                    else if(s.Kind=="hdr"&&s.Method=="nvidia-truehdr"&&s.Runtime=="cuda")
+                    {
+                        if((context.PipelineFeatures&2)==0) {reasons.Add("Update the reader to use TrueHDR.");requirements.Add(new("capability","truehdr","",false,"reader"));}
+                        string root=Opt(s,"sdk_root","/usr/local/VideoFX");
+                        foreach(var file in new[]{"lib/libVideoFX.so","lib/libNVCVImage.so","features/nvvfxtruehdr/lib/libnvVFXTrueHDR.so"})Require("SDK",Path.GetFileName(file),Path.Combine(root,file));
+                    }
+                    else reasons.Add("No provider delivered for "+s.Kind+" / "+s.Method+".");
+                }
+            }
+            string status=!s.Enabled?"disabled":reasons.Count==0?"files-present":"unavailable";
+            string reason=!s.Enabled?"Disabled; settings preserved.":reasons.Count==0?"Required files present; GPU, driver and source support are checked during playback.":string.Join(" ",reasons);
+            output.Add(new(s.Id,s.Kind,s.Method,s.Runtime,s.Model,s.Enabled,status,reason,requirements,s.Enabled?group:0,cadence.ToString()));
+            if(s.Enabled)issues.AddRange(reasons.Select(r=>s.Id+": "+r));
+        }
+        if(!legacy&&(cadence.Denominator!=1||cadence.Numerator>16))issues.Add("Ordered cumulative interpolation must be an integer multiplier ≤16.");
+        return new(Schema,output,issues.Distinct().ToArray(),cadence.ToString(),legacy,issues.Count==0,
+            "Static plan and exact required files only. Groups describe consecutive inference; native fusion remains backend-dependent. No hardware execution or measured FPS is implied.");
+    }
+    public static Dictionary<string,Dictionary<string,string>> Parse(string text)
+    {
+        var sections=new Dictionary<string,Dictionary<string,string>>(StringComparer.OrdinalIgnoreCase);Dictionary<string,string>? section=null;
+        foreach(string line in text.Split('\n'))
+        {
+            string s=line.Trim();if(s.Length==0||s.StartsWith('#')||s.StartsWith(';'))continue;
+            if(s.StartsWith('[')&&s.EndsWith(']')) {string name=s[1..^1].Trim();if(!sections.TryGetValue(name,out section))sections[name]=section=new(StringComparer.OrdinalIgnoreCase);continue;}
+            int equals=s.IndexOf('=');if(section!=null&&equals>0)section[s[..equals].Trim().ToLowerInvariant()]=s[(equals+1)..].Trim();
+        }
+        return sections;
+    }
+    public static Configuration ResolveConfiguration(string text,Context context,int? slot=null,int? rule=null)
+    {
+        var sections=Parse(text);var global=sections.GetValueOrDefault("global")??new();
+        string backend=global.GetValueOrDefault("backend",context.Backend).ToLowerInvariant();
+        int selected=slot??(int.TryParse(global.GetValueOrDefault("default_slot","0"),out int n)?n:0);
+        var requirements=new List<Requirement>();var issues=new List<string>();Result? selectedPlan=null;
+        context=context with {Backend=backend,TemporalPolicy=global.GetValueOrDefault("rife_engine","fast")};
+        if(selected>0&&sections.TryGetValue("slot_"+selected,out var section))
+        {
+            var chains=section.Keys.Select(k=>Regex.Match(k,@"^chain_([1-9][0-9]*)_")).Where(m=>m.Success).Select(m=>int.Parse(m.Groups[1].Value)).Distinct().Order();
+            foreach(int chain in chains)
+            {
+                if(rule!=null&&rule!=chain)continue;
+                try
+                {
+                    var plan=InterpolationPipeline.Read(section,chain,backend,context.TemporalPolicy,name=>OnnxModelShape.TemporalFrames(Path.Combine(context.ModelsDirectory,name+".onnx")),context.Platform);
+                    var resolved=Resolve(plan,context);selectedPlan??=resolved;
+                    requirements.AddRange(resolved.Stages.SelectMany(s=>s.Requirements));issues.AddRange(resolved.Issues);
+                }
+                catch(InvalidDataException e){issues.Add("Rule "+chain+": "+e.Message);}
+            }
+        }
+        return new(Schema,backend,selected,rule,selectedPlan,requirements.DistinctBy(r=>r.Path).ToArray(),issues.Distinct().ToArray());
+    }
+}
+
+
+    // Reads an ONNX model's graph input shape without an onnx dependency: a
+    // minimal protobuf walk (ModelProto.graph -> GraphProto.input /
+    // initializer -> ValueInfoProto.type -> tensor_type.shape.dim), mirroring
+    // the engine's onnx_shape.cpp. Used to tell temporal (multi-frame) models
+    // apart, which take T frames as [N, T*3, H, W] or [N, T, 3, H, W].
+    public static class OnnxModelShape
+    {
+        private static readonly Dictionary<string, (DateTime, long, int)> _cache = [];
+
+        // Frames per inference of the model (1 for single-frame models or an
+        // unreadable file), cached while the file is unchanged.
+        public static int TemporalFrames(string onnxPath)
+        {
+            try
+            {
+                var info = new FileInfo(onnxPath);
+                if (!info.Exists)
+                    return 1;
+                if (_cache.TryGetValue(onnxPath, out var c) && c.Item1 == info.LastWriteTimeUtc && c.Item2 == info.Length)
+                    return c.Item3;
+                var dims = InputDims(File.ReadAllBytes(onnxPath));
+                var frames = 1;
+                if (dims is { Count: 5 } && dims[1] > 1 && dims[2] == 3)
+                    frames = (int)dims[1];
+                else if (dims is { Count: 4 } && dims[1] > 3 && dims[1] % 3 == 0)
+                    frames = (int)(dims[1] / 3);
+                _cache[onnxPath] = (info.LastWriteTimeUtc, info.Length, frames);
+                return frames;
+            }
+            catch (Exception)
+            {
+                return 1;
+            }
+        }
+
+        // Dims of the first graph input that is not an initializer (-1 for
+        // symbolic dims), or null.
+        public static List<long>? InputDims(byte[] data)
+        {
+            var m = new Reader(data, 0, data.Length);
+            while (m.More)
+            {
+                var f = m.Tag(out var wire);
+                if (f != 7 || wire != 2)
+                {
+                    m.Skip(wire);
+                    continue;
+                }
+                var g = m.Sub();
+                var inits = new HashSet<string>();
+                var inputs = new List<(string, List<long>)>();
+                while (g.More)
+                {
+                    var gf = g.Tag(out var gw);
+                    if (gf == 5 && gw == 2)
+                        inits.Add(TensorName(g.Sub()));
+                    else if (gf == 11 && gw == 2)
+                    {
+                        var vi = ValueInfo(g.Sub());
+                        if (vi is { } v)
+                            inputs.Add(v);
+                    }
+                    else
+                        g.Skip(gw);
+                }
+                foreach (var (name, dims) in inputs)
+                {
+                    if (!inits.Contains(name))
+                        return dims;
+                }
+                return null;
+            }
+            return null;
+        }
+
+        private static string TensorName(Reader r)
+        {
+            while (r.More)
+            {
+                var f = r.Tag(out var wire);
+                if (f == 8 && wire == 2)
+                    return r.String();
+                r.Skip(wire);
+            }
+            return string.Empty;
+        }
+
+        private static (string, List<long>)? ValueInfo(Reader r)
+        {
+            var name = string.Empty;
+            List<long>? dims = null;
+            while (r.More)
+            {
+                var f = r.Tag(out var wire);
+                if (f == 1 && wire == 2)
+                    name = r.String();
+                else if (f == 2 && wire == 2)
+                {
+                    var tp = r.Sub();
+                    while (tp.More)
+                    {
+                        var tf = tp.Tag(out var tw);
+                        if (tf != 1 || tw != 2)
+                        {
+                            tp.Skip(tw);
+                            continue;
+                        }
+                        var tt = tp.Sub();
+                        while (tt.More)
+                        {
+                            var ff = tt.Tag(out var w);
+                            if (ff == 2 && w == 2)
+                                dims = Shape(tt.Sub());
+                            else
+                                tt.Skip(w);
+                        }
+                    }
+                }
+                else
+                    r.Skip(wire);
+            }
+            return dims == null ? null : (name, dims);
+        }
+
+        private static List<long> Shape(Reader r)
+        {
+            var dims = new List<long>();
+            while (r.More)
+            {
+                var f = r.Tag(out var wire);
+                if (f == 1 && wire == 2)
+                {
+                    var d = r.Sub();
+                    long v = -1;
+                    while (d.More)
+                    {
+                        var df = d.Tag(out var dw);
+                        if (df == 1 && dw == 0)
+                            v = (long)d.Varint();
+                        else
+                            d.Skip(dw);
+                    }
+                    dims.Add(v);
+                }
+                else
+                    r.Skip(wire);
+            }
+            return dims;
+        }
+
+        private sealed class Reader(byte[] data, int pos, int end)
+        {
+            private int _pos = pos;
+
+            public bool More => _pos < end;
+
+            public ulong Varint()
+            {
+                ulong v = 0;
+                for (var shift = 0; shift < 64; shift += 7)
+                {
+                    if (_pos >= end)
+                        throw new InvalidDataException("truncated varint");
+                    var b = data[_pos++];
+                    v |= (ulong)(b & 0x7f) << shift;
+                    if ((b & 0x80) == 0)
+                        return v;
+                }
+                throw new InvalidDataException("varint too long");
+            }
+
+            public uint Tag(out int wire)
+            {
+                var t = Varint();
+                wire = (int)(t & 7);
+                return (uint)(t >> 3);
+            }
+
+            public Reader Sub()
+            {
+                var n = Varint();
+                if (n > (ulong)(end - _pos))
+                    throw new InvalidDataException("truncated field");
+                var r = new Reader(data, _pos, _pos + (int)n);
+                _pos += (int)n;
+                return r;
+            }
+
+            public string String()
+            {
+                var s = Sub();
+                return System.Text.Encoding.UTF8.GetString(data, s._pos, s.Length);
+            }
+
+            private int Length => end - _pos;
+
+            public void Skip(int wire)
+            {
+                switch (wire)
+                {
+                    case 0: Varint(); break;
+                    case 1: _pos += 8; break;
+                    case 2: Sub(); break;
+                    case 5: _pos += 4; break;
+                    default: throw new InvalidDataException($"wire type {wire}");
+                }
+                if (_pos > end)
+                    throw new InvalidDataException("truncated field");
+            }
+        }
+    }
