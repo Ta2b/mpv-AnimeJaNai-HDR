@@ -7,6 +7,7 @@ import sys
 root=Path(sys.argv[1]);source=Path(__file__).parent
 for name in ['vf_animejanai_vulkan.c','aji_vulkan.h']:
     shutil.copy2(source/name,root/'video/filter'/name)
+shutil.copy2(source.parent/'apple'/'nv12_import_probe.h',root/'video/filter'/'nv12_import_probe.h')
 # Pure-C optional Surface ABI headers for the native CUDA worker client.
 surface_headers=root/'video/filter/aji_surface'
 surface_headers.mkdir(exist_ok=True)

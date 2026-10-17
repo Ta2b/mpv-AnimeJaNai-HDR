@@ -6,7 +6,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK="${1:?usage: build-mpv.sh WORK OUTPUT}"
 OUTPUT="${2:?output directory required}"
-MPV_REVISION=19c0fcf895
+MPV_REVISION=19c0fcf89595e6ab33908299207c555b67e81558
 mkdir -p "$WORK" "$OUTPUT"
 WORK="$(cd "$WORK" && pwd)"; OUTPUT="$(cd "$OUTPUT" && pwd)"
 

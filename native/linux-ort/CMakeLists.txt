@@ -13,8 +13,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(ENGINE_SOURCES aji_ort.cpp tiles.cpp ajm.cpp mlpatch.cpp pixel_workers.cpp exec_ort.cpp cpu_activations.cpp exec_ref.cpp onnx_flow.cpp rife_flow_cache.cpp "${AJI_SOURCE}/src/aji_conf.cpp")
 if(APPLE)
   enable_language(OBJCXX)
-  list(APPEND ENGINE_SOURCES ../apple/exec_coreml.mm ../apple/exec_metal.mm)
-  set_source_files_properties(../apple/exec_coreml.mm ../apple/exec_metal.mm PROPERTIES
+  list(APPEND ENGINE_SOURCES ../apple/exec_coreml.mm ../apple/exec_metal.mm ../apple/nv12_import_probe.mm)
+  set_source_files_properties(../apple/exec_coreml.mm ../apple/exec_metal.mm ../apple/nv12_import_probe.mm PROPERTIES
     COMPILE_FLAGS "-fobjc-arc -Wno-deprecated-declarations")
 endif()
 add_library(aji_ort SHARED ${ENGINE_SOURCES})

@@ -24,6 +24,8 @@
 #include "osdep/threads.h"
 #include "video/mp_image.h"
 #include "aji_vulkan.h"
+#include "nv12_import_probe.h"
+#include "video/mp_image_pool.h"
 
 #define MAX_JOBS 128
 // Memory the computed pictures may hold while they wait for their turn on screen.
@@ -33,12 +35,19 @@ enum { JOB_QUEUED, JOB_RUNNING, JOB_DONE };
 // One output picture. `last`: the last one made from its source frame, numbered `source`.
 struct job { struct mp_image *previous, *in, *out; double t; int state; bool last; uint64_t source, previous_source, generation; };
 
-struct opts { char *lib, *conf, *model_dir, *rife_model_dir, *device, *stats; int slot, ahead; };
+struct opts { char *lib, *conf, *model_dir, *rife_model_dir, *device, *stats; int slot, ahead; bool apple_import_probe; };
 struct priv {
     struct opts *opts;
     struct mp_autoconvert *conv;
     struct mp_pin *in;
     struct mp_image *previous, *pending;
+    const struct aji_apple_nv12_probe_api *apple_api;
+    void *apple_probe;
+    struct mp_image_pool *apple_download_pool;
+    uint64_t apple_fallbacks,apple_software;
+    struct mp_image_params apple_last_format;
+    bool apple_reported,apple_sw_reported;
+    char apple_error[256];
     struct mp_image_params format;
     bool have_format, eof, reported;
     int acc, capacity;
@@ -73,6 +82,48 @@ static void job_free(struct job *j) {
     mp_image_unrefp(&j->previous);mp_image_unrefp(&j->in);mp_image_unrefp(&j->out);
     *j=(struct job){0};
 }
+#ifdef __APPLE__
+static struct aji_apple_nv12_view_v1 apple_view(struct mp_image *image,struct job *job) {
+    struct mp_image_params *m=&image->params;
+    struct mp_rect crop=mp_image_crop_valid(m)?m->crop:(struct mp_rect){0,0,image->w,image->h};
+    bool sdr709=m->repr.sys==PL_COLOR_SYSTEM_BT_709 && m->color.primaries==PL_COLOR_PRIM_BT_709 &&
+        m->color.transfer!=PL_COLOR_TRC_PQ && m->color.transfer!=PL_COLOR_TRC_HLG && m->color.transfer!=PL_COLOR_TRC_UNKNOWN &&
+        m->repr.levels==PL_COLOR_LEVELS_LIMITED;
+    return (struct aji_apple_nv12_view_v1){sizeof(struct aji_apple_nv12_view_v1),1,image->w,image->h,
+        crop.x0,crop.y0,crop.x1,crop.y1,sdr709?AJI_APPLE_NV12_SDR709:0,m->rotate,job->generation,job->source,image->pts};
+}
+#endif
+static int apple_consume(struct mp_filter *f,struct job *run,struct mp_image **replacement) {
+    struct priv *p=f->priv;int result=1;
+    snprintf(p->apple_error,sizeof(p->apple_error),"Metal import API/device unavailable");
+#ifdef __APPLE__
+    if(p->apple_probe) {
+        struct aji_apple_nv12_view_v1 view=apple_view(run->in,run);
+        result=p->apple_api->consume(p->apple_probe,run->in->planes[3],&view,NULL,p->apple_error,sizeof(p->apple_error));
+    }
+#endif
+    bool changed=!p->apple_reported||!mp_image_params_static_equal(&p->apple_last_format,&run->in->params);
+    if(result==1) {
+        // A typed software download, not RGB24: unsupported P010/HDR keeps
+        // its bit depth, color metadata, crop and PTS. No inference in this mode.
+        *replacement=mp_image_hw_download(run->in,p->apple_download_pool);
+        if(!*replacement){snprintf(p->apple_error,sizeof(p->apple_error),"VideoToolbox software download failed");return -1;}
+        struct mp_imgfmt_desc before=mp_imgfmt_get_desc(run->in->params.hw_subfmt),after=mp_imgfmt_get_desc((*replacement)->imgfmt);
+        if(before.comps[0].size>after.comps[0].size) {
+            mp_image_unrefp(replacement);snprintf(p->apple_error,sizeof(p->apple_error),"Refusing an import fallback that reduces component depth");return -1;
+        }
+        ++p->apple_fallbacks;
+        if(changed)MP_INFO(f,"EXPERIMENTAL Apple import: software fallback (%s), %s -> %s; no inference or silent depth conversion\n",
+            p->apple_error,mp_imgfmt_to_name(run->in->params.hw_subfmt),mp_imgfmt_to_name((*replacement)->imgfmt));
+        result=0;
+    } else if(result==0 && changed) {
+        struct aji_apple_nv12_stats_v1 stats={.size=sizeof(stats)};p->apple_api->stats(p->apple_probe,&stats);
+        MP_INFO(f,"EXPERIMENTAL Apple import: VideoToolbox NV12 SDR709 -> Metal device %llu; sample consumer only, source metadata/PTS unchanged\n",
+            (unsigned long long)stats.device);
+    }
+    p->apple_reported=true;p->apple_last_format=run->in->params;
+    return result;
+}
 static MP_THREAD_VOID worker(void *arg) {
     struct mp_filter *f=arg;struct priv *p=f->priv;
     mp_thread_set_name("animejanai");
@@ -94,12 +145,17 @@ static MP_THREAD_VOID worker(void *arg) {
         j->state=JOB_RUNNING;
         struct job run=*j;
         mp_mutex_unlock(&p->lock);
-        int wanted=p->upcoming?p->upcoming(p->context,next,strides,known):0;
-        if(p->source_ids) p->source_ids(p->context,run.generation,run.previous_source,run.source);
-        int result=p->process(p->context,run.previous?run.previous->planes[0]:NULL,
-            run.previous?run.previous->stride[0]:0,run.in->planes[0],run.in->stride[0],run.t,
-            run.out->planes[0],run.out->stride[0]);
+        int wanted=0,result=0;struct mp_image *replacement=NULL;
+        if(p->opts->apple_import_probe)result=apple_consume(f,&run,&replacement);
+        else {
+            wanted=p->upcoming?p->upcoming(p->context,next,strides,known):0;
+            if(p->source_ids) p->source_ids(p->context,run.generation,run.previous_source,run.source);
+            result=p->process(p->context,run.previous?run.previous->planes[0]:NULL,
+                run.previous?run.previous->stride[0]:0,run.in->planes[0],run.in->stride[0],run.t,
+                run.out->planes[0],run.out->stride[0]);
+        }
         mp_mutex_lock(&p->lock);
+        if(replacement){mp_image_unrefp(&j->out);j->out=replacement;}
         j->state=JOB_DONE;
         p->peek=MPCLAMP(wanted,0,MAX_PEEK);
         if(result<0) p->failed=true;
@@ -133,6 +189,8 @@ static void flush(struct priv *p) {
 static void reset(struct mp_filter *f) {
     struct priv *p=f->priv;
     drain(p);
+    if(p->apple_probe)p->apple_api->reset(p->apple_probe);
+    p->apple_reported=false;
     mp_image_unrefp(&p->previous);mp_image_unrefp(&p->pending);
     p->previous_source=0;
     if(!++p->generation)++p->generation; // source sequence is never reset by seek
@@ -145,6 +203,13 @@ static void destroy(struct mp_filter *f) {
         mp_thread_join(p->thread);
     }
     if(p->locks) { mp_cond_destroy(&p->work);mp_cond_destroy(&p->idle);mp_mutex_destroy(&p->lock); }
+    if(p->apple_probe) {
+        struct aji_apple_nv12_stats_v1 stats={.size=sizeof(stats)};p->apple_api->stats(p->apple_probe,&stats);
+        MP_INFO(f,"Apple import probe closed: imports=%llu fallback=%llu software=%llu live=%llu resets=%llu sampled-bytes=%llu (no inference)\n",
+            (unsigned long long)stats.imports,(unsigned long long)p->apple_fallbacks,(unsigned long long)p->apple_software,
+            (unsigned long long)stats.live_images,(unsigned long long)stats.resets,(unsigned long long)stats.sampled_bytes);
+        p->apple_api->destroy(p->apple_probe);
+    }
     if(p->context) p->destroy(p->context);
     if(p->library) dlclose(p->library);
 }
@@ -188,7 +253,7 @@ static void process(struct mp_filter *f) {
     int count=p->count,sources=p->sources,peek=p->peek;
     mp_mutex_unlock(&p->lock);
     if(failed) {
-        if(!p->reported) MP_ERR(f,"AnimeJaNai inference: %s\n",p->error(p->context));
+        if(!p->reported) MP_ERR(f,"AnimeJaNai inference: %s\n",p->opts->apple_import_probe?p->apple_error:p->error(p->context));
         p->reported=true;mp_filter_internal_mark_failed(f);return;
     }
     if(ready) {
@@ -204,8 +269,10 @@ static void process(struct mp_filter *f) {
     if(p->pending && (!p->have_format || !mp_image_params_static_equal(&p->format,&p->pending->params))) {
         if(busy) { flush(p);return; }
         struct mp_image *format=p->pending;
+        if(p->apple_probe)p->apple_api->reset(p->apple_probe);
+        p->apple_sw_reported=false;
         mp_image_unrefp(&p->previous);
-        if(format->params.color.transfer==PL_COLOR_TRC_PQ || format->params.color.transfer==PL_COLOR_TRC_HLG) {
+        if(!p->opts->apple_import_probe && (format->params.color.transfer==PL_COLOR_TRC_PQ || format->params.color.transfer==PL_COLOR_TRC_HLG)) {
             MP_ERR(f,"Vulkan inference currently accepts SDR sources only; use normal playback for HDR.\n");
             mp_filter_internal_mark_failed(f);return;
         }
@@ -243,7 +310,16 @@ static void process(struct mp_filter *f) {
     struct job jobs[8]={0};int n=0;
     if(!p->plan.active) {
         mp_image_unrefp(&p->previous);
-        jobs[n++]=(struct job){.out=in,.state=JOB_DONE};in=NULL;
+        bool import=false;
+#ifdef __APPLE__
+        import=p->opts->apple_import_probe&&in->imgfmt==IMGFMT_VIDEOTOOLBOX;
+#endif
+        if(p->opts->apple_import_probe&&!import) {
+            ++p->apple_software;
+            if(!p->apple_sw_reported)MP_INFO(f,"EXPERIMENTAL Apple import: software-frame fallback %s, source metadata and depth retained; no inference\n",mp_imgfmt_to_name(in->imgfmt));
+            p->apple_sw_reported=true;
+        }
+        jobs[n++]=(struct job){.in=import?mp_image_new_ref(in):NULL,.out=in,.state=import?JOB_QUEUED:JOB_DONE};in=NULL;
     } else {
         bool pair=p->previous && p->previous->pts!=MP_NOPTS_VALUE && in->pts!=MP_NOPTS_VALUE && in->pts>p->previous->pts;
         if(pair && in->nominal_fps>0 && in->pts-p->previous->pts>3.0/in->nominal_fps)pair=false;
@@ -288,6 +364,14 @@ static struct mp_filter *create(struct mp_filter *parent,void *options) {
     struct priv *p=f->priv;p->opts=talloc_steal(p,options);
     mp_mutex_init(&p->lock);mp_cond_init(&p->work);mp_cond_init(&p->idle);p->locks=true;
     p->capacity=MAX_JOBS;p->generation=1;
+    if(p->opts->apple_import_probe) {
+#ifndef __APPLE__
+        MP_ERR(f,"Apple import probe requires macOS.\n");goto fail;
+#endif
+        if(p->opts->slot!=0){MP_ERR(f,"Experimental Apple import probe requires slot=0; it does not execute inference.\n");goto fail;}
+        p->apple_download_pool=mp_image_pool_new(f);
+        if(!p->apple_download_pool)goto fail;
+    }
     mp_filter_add_pin(f,MP_PIN_IN,"in");mp_filter_add_pin(f,MP_PIN_OUT,"out");
     char *paths[5];char *sources[]={p->opts->lib,p->opts->conf,p->opts->model_dir,p->opts->rife_model_dir,p->opts->stats};
     for(int i=0;i<5;++i)paths[i]=sources[i]?mp_normalize_user_path(p,f->global,sources[i]):NULL;
@@ -303,10 +387,27 @@ static struct mp_filter *create(struct mp_filter *parent,void *options) {
     if(!(ids && strcmp(ids,"0")==0)) *(void **)(&p->source_ids)=dlsym(p->library,"aji_vk_source_ids");
     p->context=p->create(paths[1],paths[2],paths[3],p->opts->device,paths[4],p->opts->slot);
     if(!p->context){MP_ERR(f,"Vulkan backend: %s\n",p->error(NULL));goto fail;}
-    // Frames reach the engine as RGB24, whatever the decoder gives.
+    if(p->opts->apple_import_probe) {
+        snprintf(p->apple_error,sizeof(p->apple_error),"native probe API unavailable");
+        const struct aji_apple_nv12_probe_api *(*api)(void)=dlsym(p->library,"aji_apple_nv12_probe_api_v1");
+        if(api)p->apple_api=api();
+        if(p->apple_api&&p->apple_api->size>=sizeof(*p->apple_api)&&p->apple_api->version==1&&p->apple_api->create&&p->apple_api->query&&
+            p->apple_api->consume&&p->apple_api->reset&&p->apple_api->stats&&p->apple_api->destroy)
+            p->apple_probe=p->apple_api->create(p->apple_error,sizeof(p->apple_error));
+        if(!p->apple_probe)MP_WARN(f,"EXPERIMENTAL Apple import unavailable: %s; software-frame fallback only.\n",p->apple_error);
+        MP_WARN(f,"EXPERIMENTAL Apple import consumer: no inference, no FPS/zero-copy claim; enable videotoolbox explicitly for the probe.\n");
+    }
+    // Normal engine route stays RGB24. The explicit slot0 probe accepts VT
+    // frames plus software formats; its fallback never forces 10-bit to RGB8.
     p->conv=mp_autoconvert_create(f);
     if(!p->conv)goto fail;
-    mp_autoconvert_add_imgfmt(p->conv,IMGFMT_RGB24,0);
+    if(p->opts->apple_import_probe) {
+        mp_autoconvert_add_all_sw_imgfmts(p->conv);
+#ifdef __APPLE__
+        mp_autoconvert_add_imgfmt(p->conv,IMGFMT_VIDEOTOOLBOX,IMGFMT_NV12);
+        mp_autoconvert_add_imgfmt(p->conv,IMGFMT_VIDEOTOOLBOX,IMGFMT_P010);
+#endif
+    } else mp_autoconvert_add_imgfmt(p->conv,IMGFMT_RGB24,0);
     mp_pin_connect(p->conv->f->pins[0],f->ppins[0]);
     p->in=p->conv->f->pins[1];
     if(mp_thread_create(&p->thread,worker,f)){MP_ERR(f,"Vulkan backend: no thread for the engine\n");goto fail;}
@@ -322,7 +423,8 @@ static const m_option_t fields[]={
     {"stats",OPT_STRING(stats),.flags=M_OPT_FILE},{"device",OPT_STRING(device)},
     {"slot",OPT_INT(slot),M_RANGE(0,9999)},
     // Source frames computed in advance; 1 = each frame when it is asked for.
-    {"ahead",OPT_INT(ahead),M_RANGE(1,16)},{0}
+    {"ahead",OPT_INT(ahead),M_RANGE(1,16)},
+    {"apple-import-probe",OPT_BOOL(apple_import_probe)},{0}
 };
 const struct mp_user_filter_entry vf_animejanai_vulkan={
     .desc={.description="AnimeJaNai/RIFE NCNN Vulkan (SDR host-frame bridge)",.name="animejanai-vulkan",
