@@ -1,16 +1,16 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+  "backend_source": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "NVIDIA_RESULT": "success",
     "AMD_RESULT": "not-reused-in-this-bundle",
-    "GITHUB_SHA": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
-    "GITHUB_RUN_ID": "39006960500",
-    "validation": "NVIDIA job compiled/linked dispatcher,TRT andDML; no Windows GPU execution. Existing AMD module retained with its original source."
+    "GITHUB_SHA": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
+    "GITHUB_RUN_ID": "39007945723",
+    "validation": "NVIDIA dispatcher/TRT/DML compile/link only; no Windows GPU execution. Original AMD module preserved."
   },
-  "validation": "Lot58 Windows: new dispatcher/TRT/DML compiled and linked by NVIDIA job39006960500 after optionalAPI export declaration fix. Fast>3 unused score removed; DML exact pair preparation cached without removing RGB predictions. Paired mpv producer still required to activate DML IDs. No Windows GPU/FPS or display qualification.",
+  "validation": "Lot59 Windows compile/link success39007945723: AH-345 unused Fast>3 score elision, AH-347 lazy fallback YUV pads, AH-355 Surface Quality staging copy elision. Full predictions and numerical boundaries preserved by code; Linux-only GPU parity receipt, no Windows GPU/FPS claim. DML exact-pair cache prepared; paired reader producer required for activation.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -44,14 +44,17 @@
     "preserve-identical-v3-onnx-program",
     "content-keyed-temporal-io-classification",
     "static-temporal-profile-policy",
-    "optional-versioned-cuda-module-probe"
+    "optional-versioned-cuda-module-probe",
+    "fast-above-x3-unused-score-elision",
+    "lazy-fallback-rife-yuv-pads",
+    "quality-yuv-staging-copy-elision"
   ],
   "sha256": {
-    "aji.dll": "e83dfd9e1c426abd64be9e94c2869381700c4119caf7aedc9dfc9c413055a66f",
-    "aji_dml.dll": "250c67382413d9fdd308968b565194fc1fb5afe3289368473747a63311059b13",
+    "aji.dll": "4de66f2ca4dfecdd57c1be8f376ebe0e5fbcae60e378f138832bd726c389f0f6",
+    "aji_dml.dll": "2cf83e1faa2526c17df0ae7f786e3d003ae52c13adcd675c6cd405a6c353010b",
     "aji_migraphx.dll": "f3128836650a77761b2a5fa6570dc428f8d7bc51980b95f28cd81cef3f391549",
-    "aji_trt.dll": "23821e5e186d9a9cdf68b46a52ab47391e63c9848c6c7675be2362b7aa8f703a",
-    "aji_trt_rtx.dll": "23821e5e186d9a9cdf68b46a52ab47391e63c9848c6c7675be2362b7aa8f703a"
+    "aji_trt.dll": "04e898494b30d7a3abfefa66a6c9c1961ce54ae99be876a9d4611d0c0aba8d96",
+    "aji_trt_rtx.dll": "04e898494b30d7a3abfefa66a6c9c1961ce54ae99be876a9d4611d0c0aba8d96"
   },
   "player_qualification_source": "a22100c0fc9fb76fcabec01faf67b290cf565424",
   "prior_qualifications": [
@@ -67,18 +70,30 @@
       },
       "validation": "Linux RTX4070Ti SM8.9: real shipped FP16 kernel probe, module/runtime/device data, invalid ordinal, short/null outputs and caller CUDA context preserved. CPU conversion qualified separately in player. Existing C exports preserved plus optional probe. No model inference/FPS claim. Previous unchanged-render qualifications retained, not repeated. Windows compile/link only.",
       "scope": "Historical Windows modules before lot58"
+    },
+    {
+      "backend_source": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+      "validation": "Lot58 Windows: new dispatcher/TRT/DML compiled and linked by NVIDIA job39006960500 after optionalAPI export declaration fix. Fast>3 unused score removed; DML exact pair preparation cached without removing RGB predictions. Paired mpv producer still required to activate DML IDs. No Windows GPU/FPS or display qualification.",
+      "windows_build": {
+        "NVIDIA_RESULT": "success",
+        "AMD_RESULT": "not-reused-in-this-bundle",
+        "GITHUB_SHA": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+        "GITHUB_RUN_ID": "39006960500",
+        "validation": "NVIDIA job compiled/linked dispatcher,TRT andDML; no Windows GPU execution. Existing AMD module retained with its original source."
+      },
+      "scope": "Historical lot58 before Quality pad/staging changes"
     }
   ],
   "module_sources": {
-    "aji.dll": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
-    "aji_trt.dll": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
-    "aji_trt_rtx.dll": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
-    "aji_dml.dll": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
+    "aji.dll": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
+    "aji_trt.dll": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
+    "aji_trt_rtx.dll": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
+    "aji_dml.dll": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
     "aji_migraphx.dll": "652fbc6bdd3a9d815367deeb2df65538636705dc"
   },
   "directml_exact_pair": {
-    "backend_source": "fac3b8afd5cffdb9f449b28d533791fb1d50cba9",
-    "build_run": 39006960500,
+    "backend_source": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
+    "build_run": 39007945723,
     "compiled": true,
     "reader_required": "windows-mpv-source-ref.txt with exact-pair1 producer",
     "reader_delivery": "pending",
