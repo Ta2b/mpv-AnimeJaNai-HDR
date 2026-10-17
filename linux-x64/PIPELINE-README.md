@@ -2,7 +2,8 @@
 
 This bundle contains the project-owned libaji_pipeline.so and aji_pipeline.fatbin.
 See GPU-SOURCE.json ordered_pipeline.backend_source for their exact source commit,
-and its separate top-level backend_source for the unchanged TensorRT libraries.
+and module_sources for each unchanged TensorRT/dispatcher library. The top-level
+backend_source is historical; per-module sources are authoritative.
 No NVIDIA SDK/runtime/headers or model weights are redistributed by this feature.
 
 Supported native stages: RIFE TensorRT integer x2..8; spatial ONNX TensorRT;
@@ -64,3 +65,9 @@ is bit-exact to ABI9 YUV444P16 with padding, descriptors, owners and timeline
 preserved. No legacy420 equivalence, universal FPS or physical HDR claim.
 Historical fusion/Area/TrueHDR qualification remains in player lots47/48/55;
 FRUC historical evidence no longer describes an available provider.
+
+AH-360: exact Area3:2 specialization uses integer (2,1)/(1,2) weights and
+(sum+4)/9. One 1920x1080->1280x720 YUV444P16 case covering all65536 codes:
+2764800 output values exact to previous generic Area and integer oracle;
+crops/strides/padding/descriptors/owners preserved. Generic other ratios stay
+unchanged. This removes generic FP64 footprint work, not a measured FPS claim.

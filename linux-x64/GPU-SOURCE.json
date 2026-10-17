@@ -3,7 +3,7 @@
   "tensorrt_version": "11.3.0.99",
   "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
   "player_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
-  "validation": "Lot62 Linux RTX4070Ti: same Quality/precision/kernels as.85, optional synchronous Surface batch added.13complete-chain images/hashes/PTS/flags/colors exact to.85; reset exact, old-module fallback exact. Native later-job invalid timestep drains queued work before releasing owners,18balanced callbacks, subsequent standard call exact; bounds/version/callback headers checked. No displayed FPS/universal gain claim.",
+  "validation": "Unchanged TensorRT and dispatcher retain lot62/earlier qualification. Ordered pipeline fatbin updated for exact integer Area3:2, see ordered_pipeline qualified scope. No new Windows/GPU/FPS extrapolation.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -115,17 +115,17 @@
     }
   ],
   "ordered_pipeline": {
-    "backend_source": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
+    "backend_source": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d",
     "api": "aji_pipeline_v1",
     "sha256": {
       "libaji_pipeline.so": "9432437367c4a94488940e9c305d9a31782b7ccabe8287c6dda73dc76bee7bf0",
-      "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
-      "PIPELINE-README.md": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc"
+      "aji_pipeline.fatbin": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
+      "PIPELINE-README.md": "57d4ca37d0d0a49cda73719cf5bf50161efc79e9663e92b68d9f8e4db0bce5fc"
     },
     "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
     "explicit_opt_in": true,
     "sdk_external": true,
-    "qualified": "Lot62 Linux RTX4070Ti: direct bounded Quality native batch on existing pipeline worker, same13outputs/timeline/color and reset, balanced owners; old provider fallback exact.5then4jobs perpair, one preparation/pair and promotion preserved.4to1 final output completion waits, second worker/reaper retired. Short whole-chain observations46.45/46.43ms still exceed41.7ms budget; no comparative FPS claim due reference DVFS. AJI_PIPELINE_QUALITY_BATCH=0 ablation, default only after compatible optional API negotiation.",
+    "qualified": "Lot68 Linux RTX4070Ti: Area1920x1080->1280x720, same pitched/cropped YUV444P16 input covering all65536 codes.2764800 outputs exact reference/candidate/integer oracle; owners/descriptors/padding preserved. Only3:2 uses integer weights, other geometry retains generic arithmetic. Static removal of FP64 footprint work, no FPS claim. libaji_pipeline.so rebuilt byte-identical to lot62; its prior fusion/TrueHDR/Quality batch qualification reused, not repeated.",
     "cuda_architectures": [
       75,
       80,
@@ -152,7 +152,8 @@
       "retired-fruc-explicit-incompatibility",
       "independent-spline36-downscale",
       "single-final-copy-batch-wait",
-      "synchronous-native-quality-batch"
+      "synchronous-native-quality-batch",
+      "exact-integer-area-three-halves"
     ],
     "sdk_hdr": {
       "externally_installed": true,
@@ -187,12 +188,46 @@
       "before": 18.851991999326856,
       "after": 17.402252999090706
     },
-    "prior_timing_scope": "Two warmup intervals then three contiguous intervals; short timing observation, not display FPS or universal performance"
+    "prior_timing_scope": "Two warmup intervals then three contiguous intervals; short timing observation, not display FPS or universal performance",
+    "player_qualification_source": "79e24e0e723a9795a6491329645f3094bd3537c2",
+    "module_sources": {
+      "libaji_pipeline.so": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d",
+      "aji_pipeline.fatbin": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d"
+    },
+    "build": {
+      "environment": "Linux GNU16.2.1 / CUDA13.4.92, same pipeline toolchain as lot62",
+      "elf_glibc_minimum": "2.38",
+      "elf_glibcxx_minimum": "3.4.30",
+      "local_rpath": false,
+      "cuda_cubin_sm": [
+        75,
+        80,
+        86,
+        89,
+        90,
+        100,
+        120
+      ],
+      "cuda_ptx_compute": [
+        75,
+        80,
+        86,
+        89,
+        90,
+        100,
+        120
+      ],
+      "hardware_qualified": [
+        "RTX4070Ti SM89"
+      ]
+    }
   },
   "module_sources": {
     "libaji.so": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
     "libaji_trt.so": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
-    "libaji_trt_rtx.so": "d5b34469a3aa1cc30f107ba3122699d713de1dca"
+    "libaji_trt_rtx.so": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
+    "libaji_pipeline.so": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d",
+    "aji_pipeline.fatbin": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d"
   },
   "lot58_source_reuse_proof_sha256": "f1deab18488760638525a34402db4eb922e0d170b74fa02451a50ed30f180de6",
   "windows_current_modules": {
