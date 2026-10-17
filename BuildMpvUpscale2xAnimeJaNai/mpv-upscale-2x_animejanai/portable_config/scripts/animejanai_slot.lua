@@ -11,6 +11,10 @@
 local mp = require 'mp'
 
 mp.register_script_message('aji-slot', function(slot)
+    local n=tonumber(slot);if not n or n%1~=0 or n<0 or n>9 then
+        mp.osd_message('Les anciens profils integres ont ete retires. Choisir un profil personnalise.',5);return
+    end
+    mp.set_property_native('user-data/animejanai-active-slot',n)
     mp.commandv('vf-command', 'aji', 'slot', slot)
     if mp.get_property_native('pause') then
         mp.command('no-osd seek 0 exact')

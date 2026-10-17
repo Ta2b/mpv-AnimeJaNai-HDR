@@ -13,7 +13,7 @@
      int prefetch;
      int64_t prefetch_bytes;
      bool surface_worker;
-+    char *pipeline_lib, *pipeline_kernels, *fruc_lib;
++    char *pipeline_lib, *pipeline_kernels;
  };
  
  #define MAX_DEPTH 4
@@ -41,7 +41,7 @@
      struct {
          char *conf, *model_dir, *trtexec, *trtexec_libdir, *stats, *engine,
 -             *lib, *rife_model_dir;
-+             *lib, *rife_model_dir, *pipeline_lib, *pipeline_kernels, *fruc_lib;
++             *lib, *rife_model_dir, *pipeline_lib, *pipeline_kernels;
      } path;
  
      CudaFunctions *cu;
@@ -69,7 +69,7 @@
      int outq_n, outq_pos;
      // Temporal (multi-frame) chains: the engine keeps the frame history and
      // upscales frame N from N-r..N+r. Frames are numbered by refqueue
-@@ -518,10 +541,190 @@
+@@ -518,10 +541,189 @@
      }
      return true;
  }
@@ -152,7 +152,6 @@
 +        .conf = p->path.conf, .model_dir = p->path.model_dir, .rife_dir = p->path.rife_model_dir,
 +        .trtexec = p->path.trtexec, .trtexec_env = env,
 +        .trt_library = pipeline_sibling(p, "libaji_trt.so"),
-+        .fruc_library = p->path.fruc_lib ? p->path.fruc_lib : pipeline_sibling(p, "libaji_fruc.so"),
 +        .kernel_fatbin = p->path.pipeline_kernels ? p->path.pipeline_kernels : pipeline_sibling(p, "aji_pipeline.fatbin"),
 +        .fps_numerator = fps.num, .fps_denominator = fps.den,
 +        .wakeup = surface_worker_wakeup, .wakeup_opaque = vf,
@@ -261,7 +260,7 @@
      p->worker_attempted = true;
      p->worker_reason = "unsupported-chain";
      if (!p->aji || !p->aji_active || p->is_d3d11 || p->rife_on || p->temporal_r ||
-@@ -626,6 +829,8 @@
+@@ -626,6 +828,8 @@
  static void flush_frames(struct mp_filter *vf)
  {
      struct priv *p = vf->priv;
@@ -270,7 +269,7 @@
      // GPU reads of the queued input frames must finish before the
      // refqueue drops them
      clear_ring(vf);
-@@ -668,6 +873,7 @@
+@@ -668,6 +872,7 @@
  {
      struct priv *p = vf->priv;
  
@@ -278,7 +277,7 @@
      // Finish submitted inference before releasing referenced surfaces or objects
      // created in the old CUDA/D3D device context. clear_ring() waits on the
      // upscaler ring; drain_backend() also flushes RIFE-first immediate work that
-@@ -736,6 +942,7 @@
+@@ -736,6 +941,7 @@
      p->is_d3d11 = false;
      p->aji_active = false;
      p->configured = false;
@@ -286,7 +285,7 @@
      p->rife_on = false;
      p->rife_first = false;
      p->temporal_r = 0;
-@@ -781,11 +988,14 @@
+@@ -781,11 +987,14 @@
  {
      struct priv *p = vf->priv;
      if (p->worker_active) clear_ring(vf);
@@ -301,7 +300,7 @@
      if (!p->aji) {
          update_depth(vf);
          return true;
-@@ -2196,13 +2406,18 @@
+@@ -2196,13 +2405,18 @@
  
      // A background engine build finished: reconfigure, and the chain (or
      // RIFE) activates mid-playback. Until then frames pass through.
@@ -321,7 +320,7 @@
      }
  
      // Extra RIFE outputs first: they go straight to the out pin without
-@@ -2221,6 +2436,7 @@
+@@ -2221,6 +2435,7 @@
          return;
      }
  
@@ -329,7 +328,7 @@
      if (p->configured) surface_worker_try_enable(vf);
      if (!mp_refqueue_can_output(p->queue))
          return;
-@@ -2490,6 +2706,20 @@
+@@ -2490,6 +2705,18 @@
          mp_tags_set_str(tags, "surface-worker-retains", text);
          snprintf(text, sizeof(text), "%"PRIuFAST64, atomic_load(&p->worker_releases));
          mp_tags_set_str(tags, "surface-worker-releases", text);
@@ -340,9 +339,7 @@
 +            aji_pipeline_stats_v1 stats;
 +            if (p->pipe.stats(p->pipeline, &stats, sizeof(stats)) == 0) {
 +                snprintf(text, sizeof(text), "%"PRIu64, stats.rife_predictions); mp_tags_set_str(tags, "pipeline-rife-requests", text);
-+                snprintf(text, sizeof(text), "%"PRIu64, stats.fruc_predictions); mp_tags_set_str(tags, "pipeline-fruc-requests", text);
 +                snprintf(text, sizeof(text), "%"PRIu64, stats.spatial_predictions); mp_tags_set_str(tags, "pipeline-spatial-requests", text);
-+                snprintf(text, sizeof(text), "%"PRIu64, stats.fruc_repetitions); mp_tags_set_str(tags, "pipeline-fruc-repetitions", text);
 +                snprintf(text, sizeof(text), "%"PRIu64, stats.peak_pixel_bytes); mp_tags_set_str(tags, "pipeline-peak-pixel-bytes", text);
 +                snprintf(text, sizeof(text), "%"PRIu64, stats.cpu_pixel_copies); mp_tags_set_str(tags, "pipeline-cpu-pixel-copies", text);
 +            }
@@ -350,7 +347,7 @@
          *(struct mp_tags **)cmd->res = tags; return true;
      }
      if (cmd->type != MP_FILTER_COMMAND_TEXT || !cmd->cmd)
-@@ -2523,7 +2753,7 @@
+@@ -2523,7 +2750,7 @@
      struct priv *p = vf->priv;
  
      flush_frames(vf);
@@ -359,7 +356,7 @@
          MP_VERBOSE(vf, "Surface worker shutdown ownership: live=%u retain=%"PRIuFAST64" release=%"PRIuFAST64"\n",
              atomic_load(&p->worker_live_owners), atomic_load(&p->worker_retains),
              atomic_load(&p->worker_releases));
-@@ -2532,6 +2762,8 @@
+@@ -2532,6 +2759,8 @@
          p->api.destroy(&p->aji);
      if (p->api.handle)
          aji_lib_close(p->api.handle);
@@ -368,23 +365,21 @@
      if (p->own_stream && p->cu &&
          p->cu->cuCtxPushCurrent(p->cuda_ctx) == CUDA_SUCCESS) {
          CUcontext dummy;
-@@ -2616,6 +2848,9 @@
+@@ -2616,6 +2845,8 @@
          {&p->path.engine, p->opts->engine},
          {&p->path.lib, p->opts->lib},
          {&p->path.rife_model_dir, p->opts->rife_model_dir},
 +        {&p->path.pipeline_lib, p->opts->pipeline_lib},
 +        {&p->path.pipeline_kernels, p->opts->pipeline_kernels},
-+        {&p->path.fruc_lib, p->opts->fruc_lib},
      };
      for (int i = 0; i < MP_ARRAY_SIZE(path_opts); i++) {
          if (path_opts[i].src && path_opts[i].src[0])
-@@ -2926,6 +3161,9 @@
+@@ -2926,6 +3157,8 @@
      {"queue-depth", OPT_INT(queue_depth), M_RANGE(1, MAX_DEPTH)},
      {"prefetch", OPT_INT(prefetch), M_RANGE(0, 64)},
      {"surface-worker", OPT_BOOL(surface_worker)},
 +    {"pipeline-lib", OPT_STRING(pipeline_lib), .flags=M_OPT_FILE},
 +    {"pipeline-kernels", OPT_STRING(pipeline_kernels), .flags=M_OPT_FILE},
-+    {"fruc-lib", OPT_STRING(fruc_lib), .flags=M_OPT_FILE},
      {"prefetch-bytes", OPT_BYTE_SIZE(prefetch_bytes), M_RANGE(0, 1099511627776LL)},
      {0}
  };

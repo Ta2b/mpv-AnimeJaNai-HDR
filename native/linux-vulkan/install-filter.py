@@ -10,7 +10,7 @@ for name in ['vf_animejanai_vulkan.c','aji_vulkan.h']:
 # Pure-C optional Surface ABI headers for the native CUDA worker client.
 surface_headers=root/'video/filter/aji_surface'
 surface_headers.mkdir(exist_ok=True)
-for name in ['surface.h','surface_async.h','interpolator.h','fruc.h','pipeline.h']:
+for name in ['surface.h','surface_async.h','interpolator.h','pipeline.h']:
     shutil.copy2(source.parent/'common'/name,surface_headers/name)
 edits={
     'filters/user_filters.h':('extern const struct mp_user_filter_entry vf_animejanai;',

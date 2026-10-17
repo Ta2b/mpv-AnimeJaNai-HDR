@@ -5,6 +5,7 @@ local utils = require 'mp.utils'
 local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.lua'}))
 local sync = dofile(mp.command_native({'expand-path','~~/hdr-tools/rife-sync.lua'}))
 local stages = dofile(mp.command_native({'expand-path','~~/hdr-tools/interpolation-stages.lua'}))
+local runtime=stages.runtime_configs(mp,utils,mp.command_native({'expand-path','~~/../animejanai'}),'linux-profile')
 local media = {}
 local light_scale=false
 local options = policy.options()
@@ -94,26 +95,48 @@ local function ready()
     mp.set_property_native('user-data/animejanai-hardware',hw)
     return hw.inference_available
 end
+local resolved_cache={}
 local function pipeline_route(wanted, text)
-    return stages.resolve(text or read(hw.conf_active or hw.conf),wanted,media.w,media.h,media.fps)
+    local source=text or read(hw.conf_active or hw.conf)
+    local route=stages.resolve(source,wanted,media.w,media.h,media.fps,'linux')
+    -- Resolve once per actual profile/rule/configuration. Manager and launcher
+    -- consume this same versioned contract; per-frame work stays native.
+    if not text and wanted>0 and route.chain and not route.unknown then
+        local key=tostring(wanted)..':'..tostring(route.chain)..':'..(source or '')
+        local resolved=resolved_cache[key]
+        if not resolved then
+            local helper=path('~~/../AnimeJaNaiPlatform')
+            local ok,result=pcall(mp.command_native,{name='subprocess',playback_only=false,capture_stdout=true,capture_stderr=true,
+                args={helper,'--profile-plan','--root',path('~~/..'),'--conf',hw.conf_active or hw.conf,
+                    '--slot',tostring(wanted),'--rule',tostring(route.chain),'--inference-dir',hw.inference_dir}})
+            if ok and type(result)=='table' and result.status==0 then resolved=utils.parse_json(result.stdout or '') end
+            if resolved and resolved.schema=='animejanai.profile-plan.v1' then
+                resolved_cache={[key]=resolved}
+            else route.error='Profile resolver unavailable; update the player components.' end
+        end
+        if resolved then
+            route.resolved_plan=resolved.plan
+            if resolved.issues and #resolved.issues>0 then route.error=table.concat(resolved.issues,' ') end
+        end
+    end
+    return route
 end
 local function select(value, preload)
     local wanted = tonumber(value)
     if not wanted or wanted~=math.floor(wanted) or wanted<0 then return end
     local bank=policy.read_bank(hw.conf)
-    if wanted>0 and not ready() then
+    local selected_route=pipeline_route(wanted)
+    if selected_route.error then mp.osd_message(selected_route.error,6);wanted=0;selected_route=pipeline_route(0) end
+    if wanted>=1000 then mp.osd_message("Les anciens profils integres ont ete retires. Choisir un profil personnalise.",5);wanted=0;selected_route=pipeline_route(0) end
+    if wanted>0 and not selected_route.inference_empty and not ready() then
         mp.osd_message(onnxruntime() and 'Moteur ONNX Runtime absent (libaji_ort.so). Lecture normale conservee.'
             or hw.backend=='vulkan' and 'Moteur Vulkan indisponible ou GPU non detecte. Lecture normale conservee.'
             or 'TensorRT indisponible : NVIDIA et composants TensorRT requis. Choisir Vulkan pour AMD.',5)
         wanted=0
     end
-    if wanted>=1000 and hw.backend=='vulkan' then
-        mp.osd_message('Vulkan : utiliser les profils Linux 1 a 4 ; profils ONNX integres indisponibles.',5);return
-    end
     if wanted>0 and wanted<1000 and (not bank or not bank.slots[wanted] or bank.slots[wanted].name=='New Profile') then
         mp.osd_message('Profil Linux '..wanted..' vide',4);return
     end
-    local selected_route=pipeline_route(wanted)
     local mixed=selected_route.explicit and not selected_route.legacy_equivalent
     if wanted>0 and mixed and hw.backend~='tensorrt' then
         mp.msg.error('Etages ordonnes indisponibles sur ce backend ; TensorRT/CUDA est requis actuellement.')
@@ -125,13 +148,22 @@ local function select(value, preload)
         mp.osd_message('Module de chaine absent. Lecture originale conservee.',6)
         wanted=0;selected_route=pipeline_route(0);mixed=false
     end
+    local effective_conf=hw.conf_active or hw.conf
+    if wanted>0 and not selected_route.inference_empty then
+        local prepared,error=runtime.prepare(effective_conf,read(effective_conf),selected_route,wanted)
+        if not prepared then
+            mp.osd_message('Configuration temporaire indisponible : '..tostring(error),6)
+            wanted=0;selected_route=pipeline_route(0);mixed=false
+        else effective_conf=prepared end
+    end
     local list=mp.get_property_native('vf') or {}
     local index
     local hdr_wanted=wanted>0 and stage_wanted() and selected_route.legacy_equivalent and not selected_route.hdr_stage_controlled
     for i,f in ipairs(list) do if f.label=='aji' then index=i end end
-    if wanted==0 then
+    if wanted==0 or selected_route.inference_empty then
         if index then table.remove(list,index);mp.set_property_native('vf',tag(list,false)) end
     elseif index and not preload and hw.backend=='tensorrt' and list[index].name=='animejanai'
+        and list[index].params.conf==effective_conf
         and hdr_wanted==(mp.get_property_native('user-data/animejanai-truehdr')==true)
         and (not mixed or list[index].params['pipeline-lib']) then
         local ok,result=pcall(mp.commandv,'vf-command','aji','slot',tostring(wanted))
@@ -141,7 +173,7 @@ local function select(value, preload)
         local vulkan=hw.backend=='vulkan'
         local ort=onnxruntime()
         local f={name=(vulkan or ort) and 'animejanai-vulkan' or 'animejanai',label='aji',enabled=true,params={
-            lib=ort and ort_library() or hw.inference_dir..(vulkan and '/libaji_vulkan.so' or '/libaji.so'),conf=hw.conf_active or hw.conf,
+            lib=ort and ort_library() or hw.inference_dir..(vulkan and '/libaji_vulkan.so' or '/libaji.so'),conf=effective_conf,
             ['model-dir']=path('~~/../animejanai/onnx'),['rife-model-dir']=path('~~/../animejanai/rife'),
             stats=path('~~/../animejanai/currentanimejanai.log'),slot=tostring(wanted)}}
         if vulkan then
@@ -159,7 +191,6 @@ local function select(value, preload)
             -- instead of silently executing only the legacy RIFE keys.
             f.params['pipeline-lib']=hw.inference_dir..'/libaji_pipeline.so'
             f.params['pipeline-kernels']=hw.inference_dir..'/aji_pipeline.fatbin'
-            f.params['fruc-lib']=hw.inference_dir..'/libaji_fruc.so'
         end
         local stage=not vulkan and not ort and hdr_wanted
         if selected_route.explicit and not selected_route.legacy_equivalent and stage_wanted() then
@@ -181,7 +212,7 @@ local function select(value, preload)
         if mp.get_property('scale')=='spline36' then mp.set_property('scale','ewa_lanczossharp') end
         light_scale=false
     end
-    if wanted==0 then decoder(hw.vendor=='nvidia' and 'nvdec' or 'auto-safe') end
+    if wanted==0 or selected_route.inference_empty then decoder(hw.vendor=='nvidia' and 'nvdec' or 'auto-safe') end
     mp.set_property_native('user-data/animejanai-active-slot',slot)
     local route=pipeline_route(slot)
     mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and (route.explicit or route.hdr_stage_controlled) and route or nil)
@@ -220,9 +251,10 @@ mp.add_hook('on_preloaded',-50,function()
         end
         local p,q,out,n=sync.choose(fps,tonumber((mp.get_property_native('display-fps'))),options.rife_max_factor)
         if p then
-            local runtime=path('~~/../animejanai/animejanai-runtime.conf')
-            local f=io.open(runtime,'wb')
-            if f then f:write((stages.sync_rewrite(text,p,q,sync.rewrite)));f:close();hw.conf_active=runtime end
+            local rewritten=stages.sync_rewrite(text,p,q,sync.rewrite,'linux')
+            local prepared,error=runtime.store(rewritten,'display-sync')
+            if prepared then hw.conf_active=prepared
+            else mp.msg.error('Cannot prepare display cadence: '..tostring(error)) end
             mp.set_property_native('user-data/animejanai-rife-sync',route.explicit and not route.legacy_equivalent
                 and 'Cadence explicite des etages conservee'
                 or string.format('x%d/%d -> %.3f i/s (%d rafraichissements)',p,q,out,n))

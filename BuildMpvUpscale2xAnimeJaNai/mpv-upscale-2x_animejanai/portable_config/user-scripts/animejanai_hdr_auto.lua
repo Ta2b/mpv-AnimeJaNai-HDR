@@ -10,11 +10,14 @@ if policy.is_linux(mp) then
     return dofile(mp.command_native({'expand-path','~~/hdr-tools/linux-hdr.lua'}))
 end
 local grade = dofile(mp.command_native({'expand-path','~~/hdr-tools/hdr-grade.lua'}))
-local options = policy.options()
+local base_options = policy.options()
+local options=base_options
+local hdr_route=dofile(mp.command_native({"expand-path","~~/hdr-tools/pipeline-hdr.lua"}))
 local hardware = policy.detect(mp,utils,options)
 local upscaler, hdr_backend
 -- Derived settings; re-run when the Manager asks for a live reload.
 local function derive_options()
+    options=hdr_route.options(base_options,hdr_route.route(mp,hardware))
     upscaler = policy.upscaler(hardware.vendor,options.vsr)
     if (options.vsr=='nvidia' or options.vsr=='amd') and upscaler~=options.vsr then
         msg.warn('Requested '..options.vsr..' upscale on '..hardware.vendor..'; using classic')
@@ -95,6 +98,7 @@ local function truehdr_output()
     return false
 end
 local function apply_grade(kind,state)
+    derive_options()
     local plan=grade.plan(options,{vendor=hardware.vendor,backend=stage.backend or hdr_backend,source=kind,
         windows=state,truehdr=truehdr_output(),target_gamma=native('video-target-params/gamma'),
         target_peak=native('video-target-params/max-luma'),enabled=grade_choice~='off',original=original},
@@ -480,6 +484,7 @@ local function release()
     report(last_result.reason)
 end
 local function reconcile()
+    derive_options()
     if stopped or not active or not loaded then return end
     -- The last frame can disappear before Lua receives end-file/shutdown.
     -- Do not rebuild GPU filters while VO is already being torn down.
@@ -613,7 +618,7 @@ end)
 -- Live reload (sent by the Manager through the IPC pipe after it saves the settings).
 -- Display, grade, subtitle, backend and upscaling settings apply to the current video.
 mp.register_script_message('animejanai-reload-options',function()
-    options = policy.options()
+    base_options = policy.options()
     derive_options()
     if policy.vulkan(hardware.vendor,options)~=vulkan then
         mp.osd_message('API de rendu modifiee : relancer le lecteur',6)

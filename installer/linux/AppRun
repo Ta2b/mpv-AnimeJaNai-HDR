@@ -104,6 +104,12 @@ for managed in scripts shaders user-scripts user-shaders hdr-tools; do
     [ -d "$HERE/portable_config/$managed" ] || continue
     cp -rf "$HERE/portable_config/$managed" "$DATA/portable_config/"
 done
+# Managed preparation programs live with the writable Manager root. Model
+# sources, weights, Python environments and preparation settings remain external.
+if [ -d "$HERE/animejanai/preparation" ]; then
+    mkdir -p "$DATA/animejanai/preparation"
+    cp -f "$HERE/animejanai/preparation/"*.py "$HERE/animejanai/preparation/"*.json "$DATA/animejanai/preparation/"
+fi
 # Converted Vulkan models are managed assets and refresh even at the same version.
 # TensorRT engine files and user banks remain writable and are preserved.
 for model in "$HERE/animejanai/onnx/"*.ncnn.*; do
@@ -205,45 +211,47 @@ fetch_pack() { # $1 = pack base (e.g. trt-sm120, rife); $2 = human note; $3 = it
     fi
 }
 
-# Per-SM TensorRT builder (needed to BUILD new engines; cached engines run
-# without it) - just the one matching this GPU, on first run.
-if grep -qiE '^[[:space:]]*backend[[:space:]]*=[[:space:]]*TensorRT' "$DATA/animejanai/animejanai.conf" \
-   && grep -qE '^[[:space:]]*default_slot[[:space:]]*=[[:space:]]*[1-9]' "$DATA/animejanai/animejanai.conf"; then
-sm="$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | tr -d ' .')"
-# TensorRT runtime (libraries and trtexec): only on an NVIDIA card, and not baked into the image
-# (it would weigh more than the rest of the AppImage).
-if [ -n "$sm" ] && [ ! -f "$HERE/animejanai/inference/libnvinfer.so.11" ]; then
-    [ -f "$INFDATA/libnvinfer.so.11" ] && [ ! -f "$DATA/animejanai/.pack-trt-runtime" ] && pack_mark trt-runtime inference_runtime
-    if [ ! -f "$INFDATA/libnvinfer.so.11" ] || pack_stale trt-runtime inference_runtime; then
-        fetch_pack "trt-runtime" "TensorRT runtime (~260 MB)" inference_runtime
+# Refresh packaged library links before resolving the effective profile. Custom
+# regular files remain untouched; the resolver records their actual presence.
+for lib in "$HERE/animejanai/inference/"*; do
+    [ -e "$lib" ] || continue
+    dest="$INFDATA/$(basename "$lib")"
+    if [ -L "$dest" ] || [ ! -e "$dest" ]; then ln -sf "$lib" "$dest"; fi
+done
+export LD_LIBRARY_PATH="$HERE/mpv:$HERE/animejanai/inference:$INFDATA:$HERE/usr/lib:${LD_LIBRARY_PATH:-}"
+
+# The Manager and launchers use the same active-stage dependency contract.
+# Resolve both required packs (for version refresh) and missing exact files.
+# Failure is nonfatal: playback reports the detailed resolver error.
+profile_components="$("$DATA/AnimeJaNaiPlatform" --profile-components --root "$DATA" 2>/dev/null || true)"
+needs_component() { printf '%s\n' "$profile_components" | grep -q "^$1:"; }
+missing_component() { printf '%s\n' "$profile_components" | grep -qx "$1:missing"; }
+
+# Per-SM builder is needed only for a profile that actually uses TensorRT.
+if needs_component trt-runtime; then
+    sm="$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | tr -d ' .')"
+    if [ -n "$sm" ]; then
+        [ ! -f "$INFDATA/libnvinfer.so.11" ] || [ -f "$DATA/animejanai/.pack-trt-runtime" ] || pack_mark trt-runtime inference_runtime
+        if missing_component trt-runtime || pack_stale trt-runtime inference_runtime; then
+            fetch_pack trt-runtime "TensorRT runtime (~260 MB)" inference_runtime
+        fi
+        if ls "$INFDATA"/libnvinfer_builder_resource_sm${sm}.so* >/dev/null 2>&1; then
+            [ -f "$DATA/animejanai/.pack-trt-sm${sm}" ] || pack_mark "trt-sm${sm}" inference_runtime
+        fi
+        if ! ls "$INFDATA"/libnvinfer_builder_resource_sm${sm}.so* >/dev/null 2>&1 || pack_stale "trt-sm${sm}" inference_runtime; then
+            fetch_pack "trt-sm${sm}" "TensorRT kernels for sm${sm} (~250 MB)" inference_runtime
+        fi
     fi
 fi
-if [ -n "$sm" ]; then
-    ls "$INFDATA"/libnvinfer_builder_resource_sm${sm}.so* >/dev/null 2>&1 && [ ! -f "$DATA/animejanai/.pack-trt-sm${sm}" ] && pack_mark "trt-sm${sm}" inference_runtime
-    if ! ls "$INFDATA"/libnvinfer_builder_resource_sm${sm}.so* >/dev/null 2>&1 || pack_stale "trt-sm${sm}" inference_runtime; then
-        fetch_pack "trt-sm${sm}" "TensorRT kernels for sm${sm} (~250 MB)" inference_runtime
+if needs_component rife; then
+    if missing_component rife || pack_stale rife rife; then
+        fetch_pack rife "Required RIFE interpolation models (~450 MB)" rife
     fi
 fi
-
-fi
-
-# RIFE models are also needed by native MIGraphX, independently of TensorRT.
-# RIFE models (interpolation only) - fetched only when the user's config enables
-# a RIFE chain, so pure-upscaling users never download them.
-ls "$RIFEDATA"/*.onnx >/dev/null 2>&1 && [ ! -f "$DATA/animejanai/.pack-rife" ] && pack_mark rife rife
-if { ! ls "$RIFEDATA"/*.onnx >/dev/null 2>&1 || pack_stale rife rife; } \
-   && grep -qiE '^[[:space:]]*chain_[0-9]+_rife[[:space:]]*=[[:space:]]*(yes|true|1)' \
-        "$DATA/animejanai/animejanai.conf" 2>/dev/null; then
-    fetch_pack "rife" "RIFE interpolation models (~450 MB)" rife
-fi
-
-# ONNX Runtime engine with OpenVINO / MIGraphX (Intel GPUs, AMD through ROCm): a pack too, fetched
-# when the Manager selected one of its backends.
-if grep -qiE '^[[:space:]]*backend[[:space:]]*=[[:space:]]*(OpenVINO|MIGraphX)' "$DATA/animejanai/animejanai.conf" 2>/dev/null \
-   && [ ! -f "$HERE/animejanai/inference/libaji_ort.so" ]; then
-    [ -f "$INFDATA/libaji_ort.so" ] && [ ! -f "$DATA/animejanai/.pack-onnxruntime" ] && pack_mark onnxruntime onnxruntime
-    if [ ! -f "$INFDATA/libaji_ort.so" ] || pack_stale onnxruntime onnxruntime; then
-        fetch_pack "onnxruntime" "ONNX Runtime engine with OpenVINO (~60 MB)" onnxruntime
+if needs_component onnxruntime; then
+    [ ! -f "$INFDATA/libaji_ort.so" ] || [ -f "$DATA/animejanai/.pack-onnxruntime" ] || pack_mark onnxruntime onnxruntime
+    if missing_component onnxruntime || pack_stale onnxruntime onnxruntime; then
+        fetch_pack onnxruntime "ONNX Runtime engine with OpenVINO (~60 MB)" onnxruntime
     fi
 fi
 

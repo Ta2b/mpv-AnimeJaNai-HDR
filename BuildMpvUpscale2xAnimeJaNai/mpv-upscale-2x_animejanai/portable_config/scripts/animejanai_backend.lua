@@ -40,23 +40,23 @@ local function read_conf()
     local rife = false
     local in_global = false
     for line in f:lines() do
-        local sec = line:match('^%[(.-)%]')
+        local sec = line:match('^%s*%[(.-)%]%s*$')
         if sec then
-            in_global = sec == 'global'
+            in_global = sec:match('^%s*(.-)%s*$'):lower() == 'global'
         elseif in_global then
-            local v = line:match('^backend=([^%s]+)')
+            local v = line:match('^%s*backend%s*=%s*([^%s]+)')
             if v then
                 backend = v
             end
-            local d = line:match('^default_slot=(-?%d+)')
+            local d = line:match('^%s*default_slot%s*=%s*(-?%d+)')
             if d then
                 default_slot = tonumber(d)
             end
-            local s = line:match('^sub_render_mode=([^%s]+)')
+            local s = line:match('^%s*sub_render_mode%s*=%s*([^%s]+)')
             if s then
                 sub_render_mode = s
             end
-            local r = line:match('^display_rate_match=([^%s]+)')
+            local r = line:match('^%s*display_rate_match%s*=%s*([^%s]+)')
             if r then
                 display_rate_match = r:lower() == 'yes' or r:lower() == 'true'
             end
@@ -69,94 +69,28 @@ local function read_conf()
     return backend, rife, default_slot, sub_render_mode, display_rate_match
 end
 
-local function exists(rel)
-    -- the installed/writable tree (config-dir parent = install root)
-    if utils.file_info(mp.command_native({'expand-path', '~~/../' .. rel})) ~= nil then
-        return true
+-- Exact dependencies and unsupported combinations come from the same plan as
+-- the Manager. An unrelated ONNX file no longer masks a missing RIFE variant.
+local function check_components()
+    local root=mp.command_native({'expand-path','~~/..'})
+    local windows=mp.get_property('platform')=='windows'
+    local helper=root..'/AnimeJaNaiPlatform'..(windows and '.exe' or '')
+    local result=mp.command_native({name='subprocess',playback_only=false,capture_stdout=true,capture_stderr=true,
+        args={helper,'--profile-plan','--root',root,'--conf',conf_path}})
+    local plan=type(result)=='table' and result.status==0 and utils.parse_json(result.stdout or '') or nil
+    local hints={}
+    if plan and plan.schema=='animejanai.profile-plan.v1' then
+        for _,issue in ipairs(plan.issues or {}) do hints[#hints+1]=issue end
+    else
+        hints[1]='Profile component check unavailable; update the player and open Engines & components in the Manager.'
     end
-    -- AppImage: the base runtime is bundled in the read-only payload, not under
-    -- the writable data dir. $APPDIR (set by the AppImage runtime) is its root.
-    local appdir = os.getenv('APPDIR')
-    if appdir and utils.file_info(appdir .. '/' .. rel) ~= nil then
-        return true
-    end
-    return false
-end
-
--- Component-pack sanity: a slim install (or one slimmed with
--- AnimeJaNaiUpdater --remove) may lack the pieces the conf asks for.
--- The filter would fail with a loader error; say what to run instead.
-local function check_components(backend, rife_configured)
-    local hints = {}
-    if backend == 'tensorrt' then
-        -- TensorRT core library name differs per platform (Windows DLL vs
-        -- Linux versioned .so).
-        local nvinfer = mp.get_property('platform') == 'windows'
-            and 'nvinfer_11.dll' or 'libnvinfer.so.11'
-        if not exists('animejanai/inference/' .. nvinfer) then
-            hints[#hints + 1] =
-                'TensorRT runtime not installed - press Ctrl+E to open ' ..
-                'AnimeJaNai Manager'
-        else
-            -- builder resources are only needed to build new engines; cached
-            -- engines still run without them, so this is a soft warning
-            local inf = mp.command_native({
-                'expand-path', '~~/../animejanai/inference'})
-            local files = utils.readdir(inf, 'files') or {}
-            local has_builder = false
-            for _, n in ipairs(files) do
-                -- matches both nvinfer_builder_resource_* (Windows) and
-                -- libnvinfer_builder_resource_* (Linux)
-                if n:match('nvinfer_builder_resource_') then
-                    has_builder = true
-                    break
-                end
-            end
-            if not has_builder then
-                hints[#hints + 1] =
-                    'No TensorRT kernel pack for this GPU - new engine builds ' ..
-                    'will fail; press Ctrl+E to open AnimeJaNai Manager'
-            end
-        end
-    end
-    if rife_configured then
-        local rdir = mp.command_native({'expand-path', '~~/../animejanai/rife'})
-        local onnx = utils.readdir(rdir, 'files') or {}
-        local has_model = false
-        for _, n in ipairs(onnx) do
-            if n:match('%.onnx$') then
-                has_model = true
-                break
-            end
-        end
-        if not has_model then
-            hints[#hints + 1] =
-                'RIFE is enabled but the models are not installed - ' ..
-                'press Ctrl+E to open AnimeJaNai Manager'
-        end
-    end
-    if #hints == 0 then
-        return
-    end
-    for _, h in ipairs(hints) do
-        msg.warn(h)
-    end
-    -- The player shows the filename through the same shared OSD text
-    -- slot we'd use, right after file-loaded and for osd-duration ms
-    -- (default 1s). Posting our hint immediately just loses that slot to
-    -- the filename. So wait until the filename has cleared, then show
-    -- our hint in the normal OSD position (where the filename was) for a
-    -- good while. Reading osd-duration adapts if the user changed it; if
-    -- the player used a longer title duration ours simply replaces it.
-    local shown = false
-    mp.register_event('file-loaded', function()
-        if shown then
-            return
-        end
-        shown = true
-        local after = mp.get_property_number('osd-duration', 1000) / 1000 + 0.5
-        mp.add_timeout(after, function()
-            mp.osd_message('AnimeJaNai: ' .. table.concat(hints, '\n'), 10)
+    if #hints==0 then return end
+    for _,hint in ipairs(hints) do msg.warn(hint) end
+    local shown=false
+    mp.register_event('file-loaded',function()
+        if shown then return end;shown=true
+        mp.add_timeout(mp.get_property_number('osd-duration',1000)/1000+0.5,function()
+            mp.osd_message('AnimeJaNai: '..hints[1]..'\nCtrl+E: Engines & components',10)
         end)
     end)
 end
@@ -257,16 +191,20 @@ if (sub_render_mode or ''):lower() == 'gpu' then
 end
 
 -- The Manager's "Set as Default Profile" stores the chosen slot here. mpv
--- rebuilds the filter chain from the vf string (which bakes in Balanced, 1002)
+-- rebuilds the filter chain from the vf string (initially inactive)
 -- on every file, so the active slot must be re-applied after each file loads or
--- every file after the first would snap back to Balanced. We re-apply the
+-- every file after the first would lose the active custom profile. We re-apply the
 -- *current* slot, not always default_slot: the default seeds the active slot at
 -- startup, but once the user switches that choice sticks across file loads.
 -- Restarting mpv re-reads default_slot and resets again.
 local current_slot = default_slot
+if not current_slot or current_slot>=1000 then
+    if current_slot and current_slot>=1000 then mp.osd_message("Les trois anciens profils integres ont ete retires. Demarrage desactive.",6) end
+    current_slot=0
+end
 mp.register_script_message('aji-slot', function(slot)
     local n = tonumber(slot)
-    if n then
+    if n and n%1==0 and n>=0 and n<=9 then
         current_slot = n
     end
 end)
@@ -277,4 +215,4 @@ mp.register_event('file-loaded', function()
     end
 end)
 
-check_components(backend, rife_configured)
+check_components()

@@ -791,20 +791,10 @@ void InstallSpecializedInference()
         if (!File.Exists(path)) throw new FileNotFoundException("Incomplete specialized GPU bundle", path);
         File.Copy(path, Path.Combine(inferencePath, name), true);
     }
-    // Optional provider: our code/kernels only. NVIDIA's FRUC SDK/runtime is
-    // installed separately by the user and never inferred or bundled here.
-    if (!plat.IsWindows && record.RootElement.TryGetProperty("fruc_provider", out var fruc))
-    {
-        foreach (var name in new[] { "libaji_fruc.so", "aji_fruc.fatbin", "FRUC-README.md" })
-        {
-            var path = Path.Combine(source, name);
-            if (!File.Exists(path)) throw new FileNotFoundException("Incomplete optional FRUC provider", path);
-            var expected = fruc.GetProperty("sha256").GetProperty(name).GetString();
-            var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
-            if (actual != expected) throw new InvalidDataException("FRUC provider hash mismatch: " + name);
-            File.Copy(path, Path.Combine(inferencePath, name), true);
-        }
-    }
+    // Retired project-owned files may remain in a reused assembly directory.
+    // User-installed SDKs are outside this package and are never removed here.
+    foreach (var name in new[] { "libaji_fruc.so", "aji_fruc.fatbin", "FRUC-README.md" })
+        File.Delete(Path.Combine(inferencePath, name));
     if (!plat.IsWindows && record.RootElement.TryGetProperty("ordered_pipeline", out var pipeline))
     {
         foreach (var name in new[] { "libaji_pipeline.so", "aji_pipeline.fatbin", "PIPELINE-README.md" })
@@ -1051,6 +1041,7 @@ void WriteVersionAndManifest()
         "manifest.json",
         plat.Exe("AnimeJaNaiUpdater"),
         "animejanai/benchmarks",
+        "animejanai/preparation",
     };
     // The models (animejanai/onnx) and the Manager are not in the overlay: they are core packs
     // (EmitComponentPacks), downloaded by an update only when they changed.
@@ -1059,7 +1050,7 @@ void WriteVersionAndManifest()
     var specializedTrt = plat.IsWindows ? "aji_trt_rtx.dll" : "libaji_trt_rtx.so";
     if (File.Exists(Path.Combine(inferencePath, specializedTrt)))
         overlayPaths.Add("animejanai/inference/" + specializedTrt);
-    foreach (var name in new[] { "aji_migraphx.dll", "AMD-README.md", "GPU-SOURCE.json", "GPU-INFERENCE-NOTICES.txt", "libaji_fruc.so", "aji_fruc.fatbin", "FRUC-README.md", "libaji_pipeline.so", "aji_pipeline.fatbin", "PIPELINE-README.md" })
+    foreach (var name in new[] { "aji_migraphx.dll", "AMD-README.md", "GPU-SOURCE.json", "GPU-INFERENCE-NOTICES.txt", "libaji_pipeline.so", "aji_pipeline.fatbin", "PIPELINE-README.md" })
         if (File.Exists(Path.Combine(inferencePath, name)))
             overlayPaths.Add("animejanai/inference/" + name);
     overlayPaths.Add("portable_config/scripts");
@@ -1113,7 +1104,7 @@ void WriteVersionAndManifest()
             platform_helper = "1",
             manager_hdr = ManagerHdrRelease,
             mpvfork = plat.IsWindows ? $"{MpvForkVersion}-{MpvForkGitHash}"
-                                     : $"{MpvForkLinuxVersion}-wayland-vulkan-bridge1-wlqueue-compat-quality-fast1-stats-atomic1-source-ids1-prefetch-prototype1-prefetch-budget1-surface-worker1-ordered-pipeline1-hdr-stage1",
+                                     : $"{MpvForkLinuxVersion}-wayland-vulkan-bridge1-wlqueue-compat-quality-fast1-stats-atomic1-source-ids1-prefetch-prototype1-prefetch-budget1-surface-worker1-ordered-pipeline1-hdr-stage1-fruc-retired1",
             inference_runtime = $"trt-{TrtVersion}",
             ort_dml = plat.IsWindows ? $"{OrtDmlVersion}+{DirectMLVersion}" : (string?)null,
             sevenzip = SevenZipVersion,

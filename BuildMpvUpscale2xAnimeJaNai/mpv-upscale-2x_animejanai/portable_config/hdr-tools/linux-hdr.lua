@@ -5,6 +5,7 @@ local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.
 local grade = dofile(mp.command_native({'expand-path','~~/hdr-tools/hdr-grade.lua'}))
 local color = dofile(mp.command_native({'expand-path','~~/hdr-tools/inference-color.lua'}))
 local options = policy.options()
+local hdr_route=dofile(mp.command_native({'expand-path','~~/hdr-tools/pipeline-hdr.lua'}))
 local hw = policy.detect(mp,utils,options)
 local original = {}
 for _,key in ipairs(grade.render_keys) do original[key]=mp.get_property(key) end
@@ -38,19 +39,19 @@ local function apply(kind,enabled)
     output()
     local confirmed=enabled and native('option-info/target-colorspace-hint-strict')~=nil and options.linux_hdr_output~='sdr' and native('video-target-params/gamma')=='pq'
     -- TrueHDR applied inside the engine (linux-playback.lua): frames arrive as PQ / BT.2020.
-    local configured=native('user-data/animejanai-pipeline-configured')
+    local configured=hdr_route.route(mp,hw)
     local owned=type(configured)=='table' and configured.hdr_stage_controlled
     local out=native('video-out-params') or {}
     local staged=owned and configured.hdr and configured.hdr.method=='nvidia-truehdr'
         and out.gamma=='pq' and out.primaries=='bt.2020' and kind=='sdr' or false
     mp.set_property_native('user-data/animejanai-pipeline-hdr',staged)
     local truehdr=native('user-data/animejanai-truehdr')==true or staged
-    local effective=options
-    if owned then effective={};for k,v in pairs(options) do effective[k]=v end;effective.hdr_conversion=false end
+    local effective=hdr_route.options(options,configured)
     local backend=truehdr and 'rtx' or effective.hdr_conversion and 'mpv' or 'none'
     state=grade.plan(effective,{vendor=hw.vendor,backend=backend,source=kind,output_hdr=confirmed,truehdr=truehdr,
         target_gamma=native('video-target-params/gamma'),target_peak=native('video-target-params/max-luma'),
         enabled=choice~='off',original=original},choice=='natural' and grade.presets.natural or nil)
+    mp.set_property_native('user-data/animejanai-mpv-hdr',state.active and backend=='mpv' and kind=='sdr' and confirmed or false)
     for _,key in ipairs(grade.render_keys) do
         -- Output TRC is selected above, not restored to a Windows-style auto value.
         if key~='target-trc' then set(key,state.render[key]) end
@@ -94,7 +95,7 @@ local function report()
         colors.source_line,
         colors.boundary_line,
         'Grading : '..state.mode..' | comparaison : '..choice,
-        'Filtre : '..filter..' | conversion SDR -> HDR : '..(truehdr and 'TrueHDR (moteur)' or options.hdr_conversion and 'mpv' or 'desactivee'),
+        'Filtre : '..filter..' | conversion SDR -> HDR : '..(truehdr and 'TrueHDR (moteur)' or native('user-data/animejanai-mpv-hdr')==true and 'mpv (rendu)' or 'desactivee'),
         'Profil : '..tostring(native('user-data/animejanai-active-slot') or 0)..' | '..tostring(native('user-data/animejanai-interpolation') or 'cadence originale'),
         'Decodage : '..tostring(native('hwdec-current') or 'logiciel')..' | images perdues : sortie='..tostring(native('frame-drop-count') or 0)..' decodage='..tostring(native('decoder-frame-drop-count') or 0),
         'RIFE : '..tostring(native('user-data/animejanai-rife-sync') or 'facteur du profil'),
@@ -123,7 +124,7 @@ mp.register_event('file-loaded',function() loaded=true;schedule() end)
 mp.register_event('start-file',function() loaded=false;calibration=false;reconcile() end)
 mp.register_event('end-file',function() loaded=false;calibration=false;reconcile() end)
 mp.register_event('shutdown',function() loaded=false;calibration=false;if pending then pending:kill() end end)
-for _,name in ipairs({'video-dec-params','video-params','video-out-params','user-data/animejanai-pipeline-configured','video-target-params','glsl-shaders','display-names','user-data/animejanai-truehdr'}) do
+for _,name in ipairs({'video-dec-params','video-params','video-out-params','user-data/animejanai-pipeline-configured','user-data/animejanai-active-slot','video-target-params','glsl-shaders','display-names','user-data/animejanai-truehdr'}) do
     mp.observe_property(name,'native',schedule)
 end
 mp.register_script_message('animejanai-reload-options',function()

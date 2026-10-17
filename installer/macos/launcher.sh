@@ -11,6 +11,10 @@ DATA="$HOME/Library/Application Support/AnimeJaNai"
 CONF="$DATA/portable_config"
 SRC="$RES/animejanai-config"
 mkdir -p "$CONF/script-opts" "$DATA/animejanai" "$HOME/Library/Caches/AnimeJaNai"
+if [ -d "$RES/animejanai/preparation" ]; then
+    mkdir -p "$DATA/animejanai/preparation"
+    cp "$RES/animejanai/preparation/"*.py "$RES/animejanai/preparation/"*.json "$DATA/animejanai/preparation/"
+fi
 for managed in scripts hdr-tools user-shaders; do
     rm -rf "$CONF/$managed"
     cp -R "$SRC/$managed" "$CONF/$managed"

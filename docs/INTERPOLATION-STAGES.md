@@ -1,154 +1,130 @@
-# Étages d’interpolation ordonnés — Linux NVIDIA
+# Étages ordonnés — Linux NVIDIA
 
-Le lecteur Linux accepte des étages ordonnés explicites dans `animejanai.conf`.
-Le Manager propose quatre catégories fixes et l’import du SDK FRUC.
-Downscale indépendant livré en3.8.0.78 ; HDRréel ajouté en3.8.0.79. Les profils existants conservent leur chemin, Quality et les fractions
-RIFE (dont5/2). Un schéma strictement équivalent à ces réglages emprunte
-également ce chemin inchangé.
+Ce document décrit le contrat du lecteur et du Manager du lot 57, en cours de
+préparation. Les rapports de qualification des versions antérieures restent
+historiques : ils ne constituent pas une liste des moteurs encore disponibles.
 
-## Capacités livrées
+## Catégories et exécution
 
-- Interpolation `rife` / `tensorrt` : facteur entier2..8 par étage mixte,
-  modèle RIFE disponible, ensemble, seuil de scène, politique Quality ou Fast.
-- Interpolation `nvidia-fruc` / `cuda` : Fast explicite×2, SDK NVIDIA installé
-  séparément, SDR8bits interne même dans un conteneur16bits. Ses défauts de
-  contours/bouche/occultation et des artefacts sévères sur des changements
-  lumineux rapides excluent une équivalence Quality.
-- Upscaling `onnx` / `tensorrt` spatial, entre ou après les interpolateurs.
-  Les upscalers contigus restent regroupés pour conserver leurs calculs.
+Chaque étage conserve sa catégorie : **Interpolation**, **Upscale**,
+**Downscale** ou **HDR**. La technologie se choisit à l’intérieur de la catégorie.
+Les IDs, les options, l’ordre et les étages désactivés sont conservés dans le
+profil. Un moteur absent ou une option inconnue produit une incompatibilité
+explicite ; il n’est jamais remplacé silencieusement.
 
-Les facteurs temporels se multiplient : RIFE×2 puis FRUC×2 =×4.
-Limites initiales :16étages, facteur cumulé≤16, pool pixels possédés512MiB
-(hors espace de travail interne TRT/SDK). Un étage désactivé est conservé.
-Méthode/runtime/option non implémentés, SR temporel et fractions mixtes sont
-refusés explicitement. Les moteurs actuels restentSDR ; seuleunechaîneHDR
-seule préserve une sourcePQ/HLGBT2020 sansreconversion. Ces limites n’en font pas des choix disponibles.
-Les autres moteurs du comparatif restent des travaux distincts du backlog.
+Le moteur ordonné Linux NVIDIA propose :
 
-## Utiliser le Manager
+- `interpolate/rife/tensorrt` : facteur entier 2..8 par étage, modèle RIFE,
+  ensemble, seuil de scène et politique Quality/Fast propres à cet étage.
+- `upscale/onnx/tensorrt` : modèle spatial ONNX. Les étages d’upscale ne portent
+  plus de nouveau réglage de réduction de résolution.
+- `resize/area/cuda` : intégration Area sur les plans YUV444P16.
+- `resize/spline36/tensorrt` ou `resize/spline36/cuda` : Spline36 du moteur natif,
+  réutilisé dans une chaîne sans modèle ONNX. Ce sont deux noms de runtime pour
+  le même chemin NVIDIA ; la bibliothèque TensorRT du paquet reste nécessaire.
+- `hdr/nvidia-truehdr/cuda` : conversion TrueHDR avec SDK Maxine Core et feature
+  TrueHDR installés séparément. Le mode HDR mpv est un traitement de rendu mpv,
+  distinct de ce fournisseur CUDA ; sa disponibilité relève du lecteur/Manager.
 
-Ouvrir un profil personnalisé (ou cloner un profil prédéfini dans un slot
-personnalisé), puis sa chaîne : cocher **Ordered interpolation and upscaling
-stages**. Les réglages RIFE/upscaling existants sont repris sans perte.
-Ajouter **Interpolation**, puis choisir **NVIDIA FRUC** dans cet étage.
-Installer son SDK depuis **Install optional engines…** ou l’onglet **Optional
-engines** : le lien NVIDIA ouvre le téléchargement officiel ; importer le ZIP
-Optical Flow SDK dans le Manager. Les chemins sont installés automatiquement.
-FRUC reste grisé lorsque le SDK/provider ou le lecteur compatible manque.
-Activer l’étage, le déplacer entre RIFE et SPAN avec les flèches, puis choisir
-×2 pour RIFE ; FRUC implémente×2. Le Manager affiche24→48→96fps à titre d’exemple.
-Les modes Quality/Fast concernent RIFE ; FRUC n’offre pas de modeQuality.
+Les facteurs temporels se multiplient : Quality ×2 puis Fast ×2 produit ×4.
+Au maximum 16 étages et un facteur cumulé 16 ; le budget par défaut des pixels
+possédés est 512 Mio, hors espace de travail interne TensorRT/SDK. Les fractions
+RIFE des profils historiques équivalents restent sur leur chemin ABI9. Les
+fractions mixtes et modèles de super-résolution temporelle ne sont pas exécutés
+par ce pipeline. Les autres méthodes d’interpolation restent des intégrations
+séparées du backlog ; leur présence dans un catalogue ne les rend pas exécutables.
 
-Les ajouts **Upscale**, **Downscale** et **HDR** sont des catégories distinctes.
-Le choix de technologie reste limité à sa catégorie. Downscale utiliseArea,
-avec hauteurplafond ou pourcentage ; placé avantRIFE, il réduit réellement sa
-résolution. Les réglages deréduction sont absents des nouveaux étagesUpscale.
-Un resize historique reste exact tant que l’action «Move imported resize into
-Downscale» n’est pas utilisée ; celle-ci garde sa position et annonceArea.
-HDR est disponible sousLinuxNVIDIA avecleSDKMaxineCore+TrueHDRinstallé et le
-lecteurcompatible, unseulétage sur toutleprofil (inactifscompris). Il est le
-dernierétageactif, aprèslesmoteursSDR ; paramètres propres et ordrevisible réel.
-AjouterHDR masque les ancienscontrôlesglobaux deconversion ; retirerHDR ne
-lesréactivepas. Lesprofilsnonmigrés gardentleurcomportementhistorique. SDKabsent,
-HDRrestégrisé ; l’assistantd’importCore/feature est suivi dansAH-318.
-Les profils/exports gardent les IDs, l’ordre, options et étages désactivés.
-Une erreur de saisie laisse le dernier fichier valide et un diagnostic inline.
-Les autres moteurs deviendront des choix après livraison de leur provider ;
-le catalogue d’intégrations prévues ne prétend pas les exécuter déjà.
+## Résolution, fusion et fidélité
 
-## Exemple : RIFE×2 → FRUC×2 → SPAN
+Un Downscale applique une hauteur plafond (`target_height`, 32..8192) ou un
+pourcentage entier (`target_percent`, 1..100), jamais les deux. Il réduit à sa
+position dans la chaîne : **Downscale → Interpolation → Upscale** permet donc
+l’interpolation à la résolution réduite. Spline36 conserve les règles géométriques
+du redimensionneur natif ; Area arrondit au pixel le plus proche. Aucun alias
+« bilinear » ne masque un autre algorithme.
 
-Conserver la section `[global]` de son profil avec `backend=TensorRT`, et ses
-options de construction. Dans le slot/règle choisi, garder les limites de
-résolution/FPS, puis ajouter les clés suivantes. Cet exemple manuel
-illustre les clés écrites automatiquement par le Manager après l’importSDK ;
-ses chemins sont à adapter uniquement pour une configuration manuelle. Aucun
-SDK/runtime propriétaire n’est livré. Le modèle RIFE426 et le SPAN doivent être présents dans le paquet/cache.
+La migration d’un redimensionnement historique n’autorise pas son déplacement
+arbitraire. Pour un schéma historiquement représentable, le lecteur conserve le
+chemin natif historique et ses pixels. Un nouveau Spline36 indépendant travaille
+sur le pont YUV444P16 du pipeline : son algorithme peut être comparé exactement au
+redimensionneur natif en 4:4:4, sans promettre une équivalence avec les anciens
+allers-retours NV12/P010. Les profils non représentables ne doivent pas être
+rabattus silencieusement sur l’ancien ordre.
+
+Les étages d’interpolation/upscale consécutifs forment un groupe logique. Les
+blocs TensorRT compatibles sont fusionnés en conservant l’ordre et la politique
+RIFE. Fast ×4 suivi d’upscale réutilise les sources déjà agrandies et le mouvement.
+Fast ×2 garde un bloc natif séparé : les variantes fusionnées testées au lot 55
+n’ont pas établi de bénéfice. Plusieurs étages RIFE peuvent donc appartenir à un
+même groupe sans partager un contexte natif. Downscale et HDR sont des frontières
+explicites ; aucune fusion ne les déplace. Quality conserve ses prédictions
+complètes ; Fast conserve son compromis de reconstruction.
+
+## HDR et retrait de FRUC
+
+Un seul étage HDR est permis par profil, toutes chaînes et étages désactivés
+compris. Les moteurs d’interpolation/upscale actuels traitent du SDR ; la
+conversion TrueHDR doit être le dernier étage actif. Les pixels sont annoncés
+PQ/BT.2020 uniquement après conversion réussie. Un HDR seul préserve une source
+native PQ/HLG BT.2020 et ses métadonnées.
+
+TrueHDR passe par SDR BT.709 → RGBA8 SDK → RGB10A2 PQ BT.2020 → YUV444P16 limité.
+Le SDK produit 10 bits effectifs, sans restauration des détails absents de son
+entrée 8 bits. Le pic 400..2000 nits est un réglage de destination, pas un MaxCLL
+inventé. Core, feature et dépendances restent installés localement par
+l’utilisateur ; aucune redistribution du SDK n’est ajoutée.
+
+**NVIDIA FRUC est retiré** à la demande de l’utilisateur (AH-328) : pas de choix
+actif, de fournisseur natif ni de cible de compilation/asset FRUC. Un ancien
+étage FRUC conserve ses données et affiche une incompatibilité explicite. Il faut
+le retirer ou le désactiver avant la lecture ; aucune conversion automatique vers
+RIFE ou Optical Flow n’est effectuée. Les rapports FRUC antérieurs restent les
+preuves historiques des défauts qui ont motivé ce retrait.
+
+## Exemple de contrat écrit par le Manager
+
+Conserver les paramètres globaux et les limites de sélection de la chaîne. Cet
+extrait montre seulement les étages ; les modèles doivent être présents dans le
+paquet/cache. Le Manager fournit les chemins des bibliothèques du lecteur.
 
 ```ini
 [slot_1]
 chain_1_pipeline_version=1
 chain_1_stage_count=3
-chain_1_stage_1_id=rife-first
-chain_1_stage_1_kind=interpolate
-chain_1_stage_1_method=rife
+chain_1_stage_1_id=down-first
+chain_1_stage_1_kind=resize
+chain_1_stage_1_method=spline36
 chain_1_stage_1_runtime=tensorrt
-chain_1_stage_1_enabled=yes
-chain_1_stage_1_model=426
-chain_1_stage_1_factor_numerator=2
-chain_1_stage_1_factor_denominator=1
-chain_1_stage_1_policy=quality
-chain_1_stage_1_ensemble=no
-chain_1_stage_1_scene_detect_threshold=0.150
-chain_1_stage_2_id=fruc-second
+chain_1_stage_1_target_height=720
+chain_1_stage_2_id=rife-second
 chain_1_stage_2_kind=interpolate
-chain_1_stage_2_method=nvidia-fruc
-chain_1_stage_2_runtime=cuda
-chain_1_stage_2_enabled=yes
-chain_1_stage_2_factor_numerator=2
+chain_1_stage_2_method=rife
+chain_1_stage_2_runtime=tensorrt
+chain_1_stage_2_model=426
+chain_1_stage_2_factor_numerator=4
 chain_1_stage_2_factor_denominator=1
-chain_1_stage_2_policy=fast
-chain_1_stage_2_sdk_library=/chemin/SDK/libNvOFFRUC.so
-chain_1_stage_2_sdk_runtime=/chemin/SDK/libcudart.so.11.6.55
-chain_1_stage_2_kernel_fatbin=/chemin/paquet/animejanai/inference/aji_fruc.fatbin
+chain_1_stage_2_policy=quality
+chain_1_stage_2_ensemble=no
+chain_1_stage_2_scene_detect_threshold=0.150
 chain_1_stage_3_id=span-last
 chain_1_stage_3_kind=upscale
 chain_1_stage_3_method=onnx
 chain_1_stage_3_runtime=tensorrt
-chain_1_stage_3_enabled=yes
 chain_1_stage_3_model=2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16
-chain_1_stage_3_policy=quality
 ```
-
-Un ID reste attaché à son étage quand l’ordre change. Les facteurs absents
-valent1 ; renseigner les facteurs des interpolateurs. Les clés historiques
-restent utiles à la compatibilité des profils équivalents ; elles ne remplacent
-jamais silencieusement une chaîne mixte. Utiliser ce schéma avec le nouveau
-lecteur Linux ; le Manager antérieur à AH-302 ne doit pas réenregistrer ces
-profils manuels. Il ne connaît pas encore les étages.
-
-Le lanceur fournit les chemins des modules propres au lecteur. FRUC exige un
-`kernel_fatbin` explicite et son CUDART11 compatible : ne jamais renommer
-CUDART13 en11. SDK et pilotes suivent leurs propres conditions et compatibilités.
-La chaîne mixte conserve sa cadence déclarée ; la synchronisation écran
-continue pour les anciens profils/étages équivalents. La conversionHDR mixte exigeunétageTrueHDR explicite : requête seule ne
-retaguejamaisdespixelSDR ; seulslespixelconvertisavecsuccès sontannoncésPQ.
 
 ## Qualification et diagnostic
 
-Sur RTX4070Ti/Linux : neuf sorties réelles pour trois sources, cadence×4,
-EOF sans futur fictif, médiane commune RIFE→SPAN exacte, seek/pause/changement
-de slot, owners équilibrés et erreurs remontées. Aucune copie pixels CPU dans
-le moteur. La file et l’initialisation des modèles sont asynchrones ; une
-compilation peut être annulée à la destruction du lecteur.
+Les compteurs `pipeline-active`, `pipeline-factor`, `pipeline-*-requests`,
+`pipeline-peak-pixel-bytes` et `pipeline-cpu-pixel-copies` décrivent l’exécution.
+Une requête ne prouve pas le nombre de kernels : une coupure peut recopier une
+source. Aucun pixel ne transite par le CPU dans le moteur ordonné ; initialisation
+et exécution sont asynchrones, avec annulation des constructions en cours.
 
-Les métadonnées `pipeline-active`, `pipeline-factor`, `pipeline-*-requests`,
-`pipeline-fruc-repetitions`, `pipeline-peak-pixel-bytes` et
-`pipeline-cpu-pixel-copies` décrivent l’exécution. Les requêtes ne prouvent pas
-le nombre de kernels lancés ; une coupure de scène peut copier une source.
-Aucune garantie FPS tous matériels, HDR physique ou autre API n’est établie.
-Le SDK FRUC n’a pas montré une reproductibilité exacte bit à bit.
-Voir le rapport `docs/qualification/lot-40-ordered-interpolation-20261016.md`
-dans les sources du projet pour les preuves et diagnostics exclus.
-
-
-Le cas utilisateur d’un faisceau lumineux à17min32s a été reproduit directement
-avec le SDK en RGBA et NV12, sans lecteur ni shader : blocs/trous sévères dans
-la lumière synthétisée, sources propres. Changer de format ne corrige pas ce
-cas. Voir docs/qualification/lot-46-fruc-quality-20261016.md. Aucun remède
-universel ni qualité supérieure à OpticalFlow brut n’est établi.
-
-
-TrueHDR : SDRBT709→RGBA8SDK→RGB10A2PQBT2020→YUV444P16limité. LeSDKreçoit8bits,
-sortie10bitseffectifs ; pic400..2000nits configuré, sansMaxCLLinventé. UnHDRseul
-sursourceHDRpréservepixels et métadonnées. SourceSDKinstallée parutilisateur,
-aucune redistribution. Voir qualification/lot-48-hdr-stage-20261017.md ;
-affichageHDRphysique et autresmatériels/API nonqualifiés.
-
-
-À partir de3.8.0.80 : importer Maxine Core et la feature TrueHDR dans Optional
-engines (ZIP/TGZ/tar.gz, ordre libre). Les runtimes et licences sont gérés
-localement, sans droits administrateur ni chemin manuel. Core seul ne suffit
-pas. Rouvrir le lecteur après import ; un ancien profil peut adopter le SDK
-installé en un bouton. L’archive officielle Core a été contrôlée ; le layout
-de l’archive NGC originale feature reste suivi explicitement par AH-324.
+Le lot 55 qualifie la fusion sur Linux/RTX 4070 Ti : pixels Quality/hybrides,
+cadence, EOF, propriétaires et invalidations. Son gain Fast ×4 local ne garantit
+pas les FPS affichés, une chaîne HDR complète ou les autres matériels.
+Voir [qualification lot 55](qualification/lot-55-rife-fusion-20261017.md).
+Le lot 57 vérifie séparément le retrait FRUC et le nouvel étage Spline36 ; ses
+résultats ciblés et limites sont consignés dans le rapport de ce lot. Une
+compilation portable ne vaut pas qualification sur chaque architecture CUDA.

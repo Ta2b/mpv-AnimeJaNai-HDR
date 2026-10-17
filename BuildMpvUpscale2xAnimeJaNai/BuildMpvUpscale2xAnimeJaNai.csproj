@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\tools\interpolation\*.py;..\tools\interpolation\*.json" Link="mpv-upscale-2x_animejanai\animejanai\preparation\%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
     <None Include="..\docs\LINUX*.md" Link="linux-docs\%(Filename)%(Extension)">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

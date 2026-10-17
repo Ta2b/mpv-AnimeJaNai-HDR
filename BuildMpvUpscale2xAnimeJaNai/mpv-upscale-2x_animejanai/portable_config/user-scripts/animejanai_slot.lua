@@ -15,6 +15,9 @@ if policy.is_linux(mp) then return end -- linux-playback owns slot selection and
 local amf_enabled = policy.options().frame_generation == 'amf'
 policy.select_engine(mp, require 'mp.utils',
     (mp.get_property_native('user-data/animejanai-hardware') or {}).vendor, policy.options())
+local utils=require 'mp.utils'
+local stages=dofile(mp.command_native({'expand-path','~~/hdr-tools/interpolation-stages.lua'}))
+local runtime=stages.runtime_configs(mp,utils,mp.command_native({'expand-path','~~/../animejanai'}),'windows-profile')
 local selection_generation = 0
 local amf_requested = false
 
@@ -30,13 +33,49 @@ local function remove_amf()
     return true
 end
 
-mp.register_script_message('aji-slot', function(slot)
+local function select_slot(slot,defer_unknown)
+    local requested=tonumber(slot)
+    if not requested or requested%1~=0 or requested<0 or requested>9 then
+        mp.osd_message('Les anciens profils integres ont ete retires. Choisir un profil personnalise.',5);return
+    end
     selection_generation = selection_generation + 1
     local current = selection_generation
     local hw = mp.get_property_native('user-data/animejanai-hardware') or {vendor='nvidia'}
     slot = policy.map_slot(hw.vendor,slot)
     local bank=policy.read_bank(hw.conf)
     local profile=bank and bank.slots[slot]
+    local route,text
+    local conf=hw.conf_active or hw.conf
+    local file=conf and io.open(conf,'rb')
+    if file then
+        text=file:read('*a');file:close()
+        local w,h,fps=stages.source(mp)
+        route=stages.resolve(text,slot,w,h,fps,'windows')
+    end
+    if route and route.unknown and defer_unknown then
+        -- on_load has no selected rule yet. Decide before the first frame,
+        -- once on_preloaded exposes demux geometry, instead of losing the slot.
+        mp.set_property_native('user-data/animejanai-active-slot',slot)
+        return
+    end
+    if route and (route.error or route.explicit and not route.legacy_equivalent) then
+        mp.osd_message(route.error or 'Cette chaine mixte requiert actuellement Linux CUDA.',6);slot=0;route=nil
+    end
+    if slot>0 and route and not route.inference_empty then
+        local prepared,error=runtime.prepare(conf,text,route,slot)
+        if not prepared then mp.osd_message('Configuration temporaire indisponible : '..tostring(error),6);slot=0;route=nil
+        else conf=prepared end
+    end
+    local hdr_router=dofile(mp.command_native({'expand-path','~~/hdr-tools/pipeline-hdr.lua'}))
+    local stage_options=hdr_router.options(policy.options(),route)
+    if route and route.hdr and route.hdr.runtime=='rtx-video' and policy.vulkan(hw.vendor,stage_options) then route.inference_empty=false end
+    policy.select_engine(mp,require 'mp.utils',hw.vendor,stage_options)
+    if slot==0 or route and route.inference_empty then
+        local filters={};for _,f in ipairs(mp.get_property_native('vf') or {}) do if f.label~='aji' and f.label~='hdrtag' then filters[#filters+1]=f end end
+        mp.set_property_native('vf',filters);mp.set_property_native('user-data/animejanai-active-slot',slot)
+        mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and route or nil);return
+    end
+    mp.set_property_native('user-data/animejanai-pipeline-configured',route)
     if hw.vendor ~= 'nvidia' then
         -- Replace our previous FRC pair before applying the selected profile.
         if not remove_amf() then
@@ -56,7 +95,7 @@ mp.register_script_message('aji-slot', function(slot)
         vf = mp.get_property_native('vf') or {}
     end
     -- conf_active: the bank, or its runtime copy with RIFE matched to the display.
-    local prepared, changed = policy.configure_filters(vf,hw.vendor,hw.conf_active or hw.conf,slot)
+    local prepared, changed = policy.configure_filters(vf,hw.vendor,conf,slot)
     if changed then mp.set_property_native('vf',prepared) end
     local function apply()
         if current ~= selection_generation then return end
@@ -90,7 +129,18 @@ mp.register_script_message('aji-slot', function(slot)
         if mp.get_property_native('pause') then mp.command('no-osd seek 0 exact') end
     end
     if changed or not found then mp.add_timeout(0.1,apply) else apply() end
-end)
+end
+
+mp.register_script_message('aji-slot',select_slot)
+local function select_configured_slot(defer_unknown)
+    local hw=mp.get_property_native('user-data/animejanai-hardware') or {}
+    local bank=policy.read_bank(hw.conf)
+    local slot=mp.get_property_native('user-data/animejanai-active-slot') or bank and bank.default_slot or 0
+    if slot>=1000 then mp.osd_message('Les trois anciens profils integres ont ete retires. Demarrage desactive.',6);slot=0 end
+    select_slot(tostring(slot),defer_unknown)
+end
+mp.add_hook('on_load',-40,function() select_configured_slot(true) end)
+mp.add_hook('on_preloaded',-40,function() select_configured_slot(false) end)
 
 mp.register_event('end-file',function(event)
     -- FRC format initialization happens after vf append may have succeeded.

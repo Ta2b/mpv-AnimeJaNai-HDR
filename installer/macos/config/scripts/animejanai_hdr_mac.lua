@@ -25,7 +25,7 @@ local function toggle_hdr()
     f:write(text:sub(2))
     f:close()
     mp.commandv('script-message', 'animejanai-reload-options')
-    mp.osd_message(wanted == 'pq' and 'Conversion SDR vers HDR : activée' or 'Conversion SDR vers HDR : désactivée (format de la vidéo)', 4)
+    mp.osd_message(wanted == 'pq' and 'Sortie HDR PQ : activée (conversion selon le profil)' or 'Sortie HDR PQ forcée : désactivée', 4)
 end
 mp.add_key_binding('Ctrl+h', 'animejanai-hdr-toggle', toggle_hdr)
 mp.register_script_message('animejanai-hdr-toggle', toggle_hdr)

@@ -3,11 +3,14 @@ local mp = require 'mp'
 local utils = require 'mp.utils'
 local policy = dofile(mp.command_native({'expand-path','~~/hdr-tools/gpu-policy.lua'}))
 local rife_sync = dofile(mp.command_native({'expand-path','~~/hdr-tools/rife-sync.lua'}))
+local stages=dofile(mp.command_native({'expand-path','~~/hdr-tools/interpolation-stages.lua'}))
 local options = policy.options()
 local hw = policy.detect(mp,utils,options)
 if policy.is_linux(mp) then
     return dofile(mp.command_native({'expand-path','~~/hdr-tools/linux-playback.lua'}))
 end
+
+local runtime=stages.runtime_configs(mp,utils,mp.command_native({'expand-path','~~/../animejanai'}),'windows-sync')
 
 local function read_file(path)
     local f = io.open(path, 'rb')
@@ -54,7 +57,7 @@ local function prepare()
     end
     -- The slot chosen during this session (Ctrl+0..4) wins over the bank's default slot.
     local bank=policy.read_bank(hw.conf)
-    local slot=mp.get_property_native('user-data/animejanai-active-slot') or (bank and bank.default_slot) or 3
+    local slot=mp.get_property_native('user-data/animejanai-active-slot') or (bank and bank.default_slot) or 0
     local vf, changed = policy.configure_filters(mp.get_property_native('vf') or {},hw.vendor,hw.conf_active,slot,true)
     if changed then mp.set_property_native('vf',vf) end
 end
@@ -101,9 +104,10 @@ local function match_rife()
         end
         local p,q,out,n=rife_sync.choose(source,display,options.rife_max_factor)
         if p then
-            local runtime=mp.command_native({'expand-path','~~/../animejanai/animejanai-runtime.conf'})
-            local new=rife_sync.rewrite(text,p,q)
-            if read_file(runtime)==new or write_file(runtime,new) then wanted=runtime end
+            local new=stages.sync_rewrite(text,p,q,rife_sync.rewrite,'windows')
+            local prepared,error=runtime.store(new,'display-sync')
+            if prepared then wanted=prepared
+            else mp.msg.error('Cannot prepare display cadence: '..tostring(error)) end
             status=string.format('x%d/%d -> %.3f i/s, %d rafraichissement(s) par image a %.3f Hz',p,q,out,n,display)
         else
             status=string.format('aucun facteur exact (source %s i/s, ecran %s Hz, max x%s) : facteur du profil',
@@ -113,7 +117,7 @@ local function match_rife()
     mp.set_property_native('user-data/animejanai-rife-sync',status)
     set_active_conf(wanted)
     local bank=policy.read_bank(hw.conf)
-    local slot=mp.get_property_native('user-data/animejanai-active-slot') or (bank and bank.default_slot) or 3
+    local slot=mp.get_property_native('user-data/animejanai-active-slot') or (bank and bank.default_slot) or 0
     local vf,changed=policy.configure_filters(mp.get_property_native('vf') or {},hw.vendor,wanted,slot,true)
     if changed then mp.set_property_native('vf',vf) end
 end

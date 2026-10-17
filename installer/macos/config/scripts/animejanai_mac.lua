@@ -31,6 +31,8 @@ local bundle = os.getenv('ANIMEJANAI_BUNDLE') or ''
 local home = os.getenv('HOME') or ''
 local cache = os.getenv('ANIMEJANAI_CACHE') or (home .. '/Library/Caches/AnimeJaNai')
 local data = os.getenv('ANIMEJANAI_DATA_DIR') or (home .. '/Library/Application Support/AnimeJaNai/animejanai')
+local stages=dofile(mp.command_native({'expand-path','~~/hdr-tools/interpolation-stages.lua'}))
+local runtime=stages.runtime_configs(mp,utils,data,'macos-profile')
 local user_bank = data .. '/animejanai.conf'
 local bundle_bank = bundle .. '/animejanai/animejanai.conf'
 local remembered = data .. '/auto-profile.txt'
@@ -107,12 +109,26 @@ end
 
 local function select(value, quiet)
     local wanted = tonumber(value)
-    if not wanted or wanted < 0 or wanted ~= math.floor(wanted) then return end
-    if wanted > 0 and failed then
+    if not wanted or wanted < 0 or wanted>9 or wanted ~= math.floor(wanted) then return end
+    local route,text
+    local bank_path=bank_for(wanted)
+    local file=bank_path and io.open(bank_path,'rb')
+    if file then
+        text=file:read('*a');file:close()
+        local w,h,fps=stages.source(mp)
+        route=stages.resolve(text,wanted,w,h,fps,'macos')
+    end
+    if route and (route.error or route.explicit and not route.legacy_equivalent) then mp.osd_message(route.error or 'Cette chaine mixte requiert Linux CUDA.',6);wanted=0;route=nil end
+    if wanted>0 and route and not route.inference_empty then
+        local prepared,error=runtime.prepare(bank_path,text,route,wanted)
+        if not prepared then mp.osd_message('Configuration temporaire indisponible : '..tostring(error),6);wanted=0;route=nil
+        else bank_path=prepared end
+    end
+    if wanted > 0 and not (route and route.inference_empty) and failed then
         mp.osd_message('AnimeJaNai : moteur en échec pour cette session, voir le terminal.', 5)
         wanted = 0
     end
-    if wanted > 0 and not utils.file_info(engine) then
+    if wanted > 0 and not (route and route.inference_empty) and not utils.file_info(engine) then
         mp.osd_message('AnimeJaNai : moteur introuvable dans l\'application.', 5)
         wanted = 0
     end
@@ -122,9 +138,9 @@ local function select(value, quiet)
     end
     local list = mp.get_property_native('vf') or {}
     for i = #list, 1, -1 do if list[i].label == 'aji' then table.remove(list, i) end end
-    if wanted > 0 then
+    if wanted > 0 and not (route and route.inference_empty) then
         table.insert(list, 1, {name = 'animejanai-vulkan', label = 'aji', enabled = true, params = {
-            lib = engine, conf = bank_for(wanted), ['model-dir'] = models_dir(), ['rife-model-dir'] = rife_dir(),
+            lib = engine, conf = bank_path, ['model-dir'] = models_dir(), ['rife-model-dir'] = rife_dir(),
             device = setting_device(), stats = stats, slot = tostring(wanted)}})
     end
     os.remove(stats)   -- the measure below must not read the previous profile's figures
@@ -132,6 +148,7 @@ local function select(value, quiet)
     slot = wanted
     seen = -1
     mp.set_property_native('user-data/animejanai-active-slot', slot)
+    mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and route or nil)
     if not quiet then
         mp.osd_message(slot == 0 and 'AnimeJaNai : désactivé'
             or 'AnimeJaNai ' .. slot .. ' : ' .. tostring(profile_name(slot)), 4)

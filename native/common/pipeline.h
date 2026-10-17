@@ -8,21 +8,22 @@ extern "C" {
 #endif
 #define AJI_PIPELINE_MAX_OUTPUTS 16
 enum aji_pipeline_status { AJI_PIPELINE_LEGACY=1 };
-enum aji_pipeline_features { AJI_PIPELINE_FEATURE_AREA_DOWNSCALE=1, AJI_PIPELINE_FEATURE_TRUEHDR=2 };
+enum aji_pipeline_features { AJI_PIPELINE_FEATURE_AREA_DOWNSCALE=1, AJI_PIPELINE_FEATURE_TRUEHDR=2, AJI_PIPELINE_FEATURE_SPLINE36_DOWNSCALE=4, AJI_PIPELINE_FEATURE_RENDER_HDR=8 };
 /* Static reader features, no CUDA initialization or pixel work. */
 uint64_t aji_pipeline_features_v1(void);
 enum aji_pipeline_create_flags { AJI_PIPELINE_ALLOW_FAST=1, AJI_PIPELINE_ALLOW_COLOR_CHANGE=2 };
 enum aji_pipeline_cap_flags { AJI_PIPELINE_COLOR_CHANGE=4 };
 enum aji_pipeline_request_flags { AJI_PIPELINE_EOF=2 };
 enum aji_pipeline_output_flags { AJI_PIPELINE_ORIGINAL=1, AJI_PIPELINE_RIFE=2,
-    AJI_PIPELINE_FRUC=4, AJI_PIPELINE_REPEATED=8, AJI_PIPELINE_UPSCALED=16,
+    /* Bit 4 is retired; other ABI v1 flag values remain stable. */
+    AJI_PIPELINE_REPEATED=8, AJI_PIPELINE_UPSCALED=16,
     AJI_PIPELINE_RESIZED=32, AJI_PIPELINE_HDR=64, AJI_PIPELINE_PROTECTED=128 };
 typedef struct aji_pipeline_create_v1_params {
     uint32_t struct_size,version,width,height,device_index,slot,capacity,flags;
     uint64_t generation;
     void *cuda_context;
     const char *conf,*model_dir,*rife_dir,*trtexec,*trtexec_env;
-    const char *trt_library,*fruc_library,*kernel_fatbin;
+    const char *trt_library,*reserved_provider_library,*kernel_fatbin; /* Reserved pointer ignored; initialize to NULL. */
     int64_t fps_numerator,fps_denominator;
     uint64_t pixel_budget; /* Provider-owned pixel pool only; 0 = 512 MiB. */
     aji_surface_wakeup_fn wakeup;
@@ -46,7 +47,7 @@ typedef struct aji_pipeline_completion_v1 {
 } aji_pipeline_completion_v1;
 typedef struct aji_pipeline_stats_v1 {
     uint32_t struct_size,version;
-    uint64_t submitted,finished,failed,cancelled,source_conversions,rife_predictions,fruc_predictions,fruc_repetitions,spatial_predictions;
+    uint64_t submitted,finished,failed,cancelled,source_conversions,rife_predictions,reserved_provider_predictions,reserved_provider_repetitions,spatial_predictions;
     uint64_t pixel_bytes,peak_pixel_bytes,cpu_pixel_copies;
 } aji_pipeline_stats_v1;
 /* Create only copies/config-validates and starts one bounded worker. Query

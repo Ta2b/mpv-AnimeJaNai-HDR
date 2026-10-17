@@ -17,7 +17,7 @@ end
 
 function M.options()
     local o = {mode='follow',amd_mode='follow',windows_hdr='',diagnostic=false,max_attempts=3,idle_restore_seconds=2,
-        vsr='auto',target_resolution='auto',frame_generation='off',gpu_vendor='auto',hdr_conversion=true,hdr_backend='auto',
+        vsr='auto',target_resolution='auto',frame_generation='off',gpu_vendor='auto',conversion_in_profiles=false,hdr_conversion=true,hdr_backend='auto',
         -- One display description. Empty shared keys allow older per-GPU files to work.
         display_peak='',display_gamut='',display_oled='',
         peak_nvidia='auto',peak_amd='auto',gamut_nvidia='auto',gamut_amd='auto',
@@ -97,7 +97,8 @@ function M.options()
         o['oled_'..gpu] = (oled == 'yes' or oled == 'no') and oled or 'auto'
     end
     o.frame_generation = tostring(o.frame_generation):lower() == 'amf' and 'amf' or 'off'
-    o.hdr_conversion = bool(o.hdr_conversion)
+    o.conversion_in_profiles=bool(o.conversion_in_profiles)
+    o.hdr_conversion = not o.conversion_in_profiles and bool(o.hdr_conversion)
     o.grade = bool(o.grade)
     o.grade_native_hdr = bool(o.grade_native_hdr)
     o.paper_white = number(o.paper_white, 203, 80, 400)
@@ -195,12 +196,8 @@ function M.target_resolution(o, display_width, display_height)
 end
 
 function M.map_slot(vendor, slot)
-    slot = tonumber(slot) or 2
-    if vendor ~= 'nvidia' then
-        if slot == 1001 or slot == 1002 then return 2 end
-        if slot == 1003 then return 1 end
-    end
-    return slot
+    slot=tonumber(slot) or 0
+    return slot%1==0 and slot>=0 and slot<=9 and slot or 0
 end
 
 function M.upscale_profile(vendor)
@@ -250,8 +247,7 @@ local function copy(value)
 end
 
 -- Point the aji filter at the GPU's bank. With preload (before a file starts), also set the
--- wanted slot so the filter does not first load the built-in slot baked into the vf line
--- (1002). During playback, slots switch with vf-command instead: no filter rebuild.
+-- wanted custom slot before loading the filter. During playback, slots switch with vf-command instead: no filter rebuild.
 function M.configure_filters(list, vendor, conf, slot, preload)
     local output = copy(list)
     local wanted = tostring(M.map_slot(vendor,slot))

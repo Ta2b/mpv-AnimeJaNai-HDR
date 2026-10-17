@@ -22,6 +22,8 @@ RES="$APP/Contents/Resources"
 # The launcher copies these settings to the user's folder and starts mpv with MPV_HOME.
 CONF="$RES/animejanai-config"
 mkdir -p "$CONF/scripts" "$CONF/script-opts" "$RES/animejanai/inference" "$RES/animejanai/onnx"
+mkdir -p "$RES/animejanai/preparation"
+cp "$HERE/../../tools/interpolation/"*.py "$HERE/../../tools/interpolation/"*.json "$RES/animejanai/preparation/"
 cp "$HERE/config/mpv.conf" "$CONF/mpv.conf"
 cp "$HERE/config/scripts/"*.lua "$CONF/scripts/"
 # SDR -> HDR conversion: the HDR scripts and the shaders of the other platforms.
@@ -31,7 +33,7 @@ if [ -n "$PLATFORM" ]; then
     cp "$PC/scripts/animejanai_reference.lua" "$CONF/scripts/"
 fi
 mkdir -p "$CONF/hdr-tools" "$CONF/user-shaders"
-cp "$PC/hdr-tools/gpu-policy.lua" "$PC/hdr-tools/hdr-grade.lua" "$PC/hdr-tools/linux-hdr.lua" "$CONF/hdr-tools/"
+cp "$PC/hdr-tools/gpu-policy.lua" "$PC/hdr-tools/hdr-grade.lua" "$PC/hdr-tools/linux-hdr.lua" "$PC/hdr-tools/interpolation-stages.lua" "$PC/hdr-tools/pipeline-hdr.lua" "$CONF/hdr-tools/"
 cp "$PC/hdr-tools/playback-state.lua" "$CONF/hdr-tools/"
 cp "$PC/scripts/animejanai_playback.lua" "$CONF/scripts/"
 cp "$PC/user-shaders/"*.hook "$CONF/user-shaders/"
