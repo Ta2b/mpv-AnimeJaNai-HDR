@@ -1,0 +1,49 @@
+{
+  "release": "3.8.0.100",
+  "source": "0d7f1f3537cdad4f2eac3b92b9f0ebc0fba2feb8",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39025300122,
+      "headSha": "0d7f1f3537cdad4f2eac3b92b9f0ebc0fba2feb8",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39025300137,
+      "headSha": "0d7f1f3537cdad4f2eac3b92b9f0ebc0fba2feb8",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39025300054,
+      "headSha": "0d7f1f3537cdad4f2eac3b92b9f0ebc0fba2feb8",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    }
+  ],
+  "assets_uploaded": 17,
+  "payload_check": {
+    "passed": true,
+    "archive_sha256": "1c660df721e03e8dd502dd4ae3223414f87b3e5592308b2265bcd40363009862",
+    "managed_programs": 17,
+    "controller_source_exact": true,
+    "launcher_source_exact": true,
+    "helper_sha256": "95444da8f5642ef63b97aa1dc4e13cfde840b61182f9d5e874a6cc217fb6dac3",
+    "helper_models_dir_option_present": true,
+    "manager_sha256": "f31e12d8a43ec5a787af0fbc8093fecac59eb0e0ef9cbe2816489e12f028d8cd",
+    "manager_executable_identical_to_immutable_producer": true,
+    "dylib_sha256": "7816d2a515cee72d8be4236aab946ba20f9117bdb5b887cf92816621d2268a45",
+    "dylib_unchanged_99": true,
+    "no_video_replay": true
+  },
+  "scope": "AH353 canonical macOS plan/paired Manager (preload correction still required, AH353/AH339 not Done)",
+  "qualification_reuse": "No video/native replay; Mac dylib exact .99 in .100; .101 GPU/Vulkan exact .95 and native sources unchanged. Existing Windows/Linux canonical proofs .84 retained.",
+  "limits": [
+    "AH353 asynchronous first-frame gate corrected separately in lot81/.102 before closing that ticket",
+    "No GPU/FPS/physical Apple claim from metadata or controller fixtures"
+  ]
+}

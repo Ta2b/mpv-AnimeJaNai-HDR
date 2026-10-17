@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "cases": {
+    "before": {
+      "slot": 0
+    },
+    "after": {
+      "slot": 1
+    },
+    "error": {
+      "slot": 0
+    }
+  },
+  "scope": "Actual Linux mpv Lua hooks with macOS controller and 300ms fake resolver; no engine/native GPU call, no FPS claim",
+  "mpv_version": [
+    "mpv v0.41.0 Copyright \u00a9 2000-2025 mpv/MPlayer/mplayer2 projects",
+    " built on Aug 29 2026 22:13:49",
+    "libplacebo version: v7.360.1"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "release": "3.8.0.101",
+  "source": "5ff6137878cc4f3616ee9740fb7495fc9a2c46f0",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39025842293,
+      "headSha": "5ff6137878cc4f3616ee9740fb7495fc9a2c46f0",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39025842271,
+      "headSha": "5ff6137878cc4f3616ee9740fb7495fc9a2c46f0",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39025842226,
+      "headSha": "5ff6137878cc4f3616ee9740fb7495fc9a2c46f0",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    }
+  ],
+  "assets_uploaded": 17,
+  "payload_check": {
+    "passed": true,
+    "managed_programs": 32,
+    "helper_sha256": "7c1deeb8383e08cbf94bee7813e95150dd2d97b7a4ffbd9ec9f80f6916b1b73c",
+    "manager_sha256": "8659a9d1f7d88177f56016c9b9b7e9be820bef32fe75936f6500896f11f616da",
+    "manager_source": "hdr-b69968a8a30cedc83b28820ca14d014abcb36928",
+    "manager_rebuilt_from_pinned_source": true,
+    "manager_informational_source_exact": true,
+    "manager_streaming_metadata_code_present": true,
+    "shared_source_blob": "9a0854ca73fbdf5b21c72c4338c543b3be87b4cf",
+    "shared_source_identical_to_manager_pin": true,
+    "native_bundle_identity": "linux-mpv-bundle-v1-sha256-c8a86a650cd2fc1d88cf789846cb7ab33d0a24f03751fea8445ab7d0e6d9654a",
+    "identity_recomputed": true,
+    "GPU_Vulkan_bytes_identical_95": true,
+    "delivered_trimmed_helper_temporal_4_order_correct": true,
+    "helper_trial_scope": "One artifact-coupling case in private file fixtures, no native/GPU execution or repeat of metadata allocation proof",
+    "manager_byte_comparison": "Different from immutable producer executable because PLAYER Linux workflow rebuilds Manager with current shared sources (MANAGER_HDR_LOCAL); source identity and new reader code checked, no stale binary implied",
+    "native_calculations_unchanged": "Source diff .100->.101 contains no native code changes"
+  },
+  "scope": "AH366 metadata streaming in helper and source-rebuilt Manager",
+  "qualification_reuse": "No video/native replay; Mac dylib exact .99 in .100; .101 GPU/Vulkan exact .95 and native sources unchanged. Existing Windows/Linux canonical proofs .84 retained.",
+  "limits": [
+    "AH353 asynchronous first-frame gate corrected separately in lot81/.102 before closing that ticket",
+    "No GPU/FPS/physical Apple claim from metadata or controller fixtures"
+  ]
+}

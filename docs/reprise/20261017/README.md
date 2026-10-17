@@ -9,7 +9,7 @@ La release3.8.0.84 est **publiée et vérifiée**, trois CI réussies et17 asset
 - PLAYER .84 : `f626ceb2154f1b90ff5c4e275e8bb31a969f1bc6` ; Manager `f1f85962f8e86e5f37d84501f37f72b6d1780828` compilé avec source partagée `69aca0b866a8625bb53bc265d308743cd1314269`.
 - Backend Linux .84 : `36f3d94491b51d334dc9420ce6d5192b086b0a8f` ; bundle GPU `e48fb15b048db5ea39d3becbe9fdede6764f1941`.
 - Sources isolées PLAYER/Manager : `/home/ta2b/.animejanai-tools/work/{lot-57-manager-ux-20261017,manager-ux-20261017}`. Le checkout documentaire racine contient des modifications utilisateur et peut être plus ancien : ne pas l'utiliser comme source de release.
-- Les candidats AH-344/345/346 sont préparés, **non committés et non livrés**. Les autres optimisations décrites restent des plans. Lire le reçu `.84` et Jira pour le statut de livraison actuel ; les guides datés ne sont pas un suivi temps réel.
+- AH345/AH346 sont livrés depuis .85. AH344 : backend compilé/déjà livré, lecteur Windows apparié construit et livraison .103 en cours ; AH367 porte la qualification GPU restante. Les anciens patches sont des archives. Lire ETAT et Jira pour l’état courant.
 
 ## Ordre conseillé pour reprendre
 
