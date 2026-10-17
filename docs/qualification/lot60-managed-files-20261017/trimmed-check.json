@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "trimmed": true,
+  "rid": "linux-x64",
+  "binary_sha256": "c4856282c416b9509664c071acb8239e5aab498c244a84e227312a242ab6b31a",
+  "first": "installed=2,removed=1,conflicts=0",
+  "second": "installed=0,removed=1,conflicts=1",
+  "legacy_inventory_and_state_read": true,
+  "state_and_report_written": true,
+  "custom_file_preserved": true
+}

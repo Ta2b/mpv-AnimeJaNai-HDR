@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace AnimeJaNai.Platform;
 
@@ -11,8 +13,6 @@ public static class ManagedProgramFiles
     const string StateName = ".managed-program-files.json";
     const string LegacyName = "legacy-managed-program-files.json";
     const string Schema = "animejanai.managed-program-files.v1";
-    static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        PropertyNameCaseInsensitive = true, WriteIndented = true };
     public sealed record Inventory(string Schema, Dictionary<string, string> Files);
     public sealed record Legacy(string Schema, Dictionary<string, string[]> Files);
     public sealed record Report(string Schema, bool LegacyMigration, List<string> Installed,
@@ -55,15 +55,15 @@ public static class ManagedProgramFiles
     }
     static Inventory Read(string path)
     {
-        var result = JsonSerializer.Deserialize<Inventory>(File.ReadAllText(path), Json)
+        var result = JsonSerializer.Deserialize(File.ReadAllText(path), ManagedProgramFilesJsonContext.Default.Inventory)
             ?? throw new InvalidDataException("Empty managed inventory");
         if (result.Schema != Schema || result.Files == null) throw new InvalidDataException("Unsupported managed inventory");
         Validate(result.Files); return result;
     }
-    static void AtomicJson(string path, object value)
+    static void AtomicJson<T>(string path, T value, JsonTypeInfo<T> type)
     {
         string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        try { File.WriteAllText(temporary, JsonSerializer.Serialize(value, Json) + "\n"); File.Move(temporary, path, true); }
+        try { File.WriteAllText(temporary, JsonSerializer.Serialize(value, type) + "\n"); File.Move(temporary, path, true); }
         finally { File.Delete(temporary); }
     }
     public static void WriteInventory(string root)
@@ -83,7 +83,7 @@ public static class ManagedProgramFiles
         foreach (string directory in new[] { "portable_config/scripts", "portable_config/shaders", "portable_config/user-scripts",
             "portable_config/user-shaders", "portable_config/hdr-tools", "animejanai/preparation" })
             if (Directory.Exists(Path.Combine(root, directory))) Visit(Path.Combine(root, directory));
-        Validate(files); AtomicJson(Path.Combine(root, InventoryName), new Inventory(Schema, files));
+        Validate(files); AtomicJson(Path.Combine(root, InventoryName), new Inventory(Schema, files), ManagedProgramFilesJsonContext.Default.Inventory);
     }
     public static Report Sync(string packageRoot, string targetRoot, IEnumerable<string>? preservedPaths = null)
     {
@@ -109,7 +109,7 @@ public static class ManagedProgramFiles
         string legacyPath = Path.Combine(packageRoot, LegacyName);
         if (File.Exists(legacyPath))
         {
-            var legacy = JsonSerializer.Deserialize<Legacy>(File.ReadAllText(legacyPath), Json)
+            var legacy = JsonSerializer.Deserialize(File.ReadAllText(legacyPath), ManagedProgramFilesJsonContext.Default.Legacy)
                 ?? throw new InvalidDataException("Empty legacy program inventory");
             if (legacy.Schema != Schema || legacy.Files == null) throw new InvalidDataException("Unsupported legacy program inventory");
             foreach (var (path, hashes) in legacy.Files)
@@ -163,8 +163,16 @@ public static class ManagedProgramFiles
         }
         // Atomic receipt publication: partially completed copies/removals are
         // recognized by old/new hashes on the next run after interruption.
-        AtomicJson(state, new Inventory(Schema, next));
-        AtomicJson(Path.Combine(targetRoot, ".managed-program-files-report.json"), report);
+        AtomicJson(state, new Inventory(Schema, next), ManagedProgramFilesJsonContext.Default.Inventory);
+        AtomicJson(Path.Combine(targetRoot, ".managed-program-files-report.json"), report, ManagedProgramFilesJsonContext.Default.Report);
         return report;
     }
 }
+
+// The updater is trimmed: use generated metadata rather than runtime reflection.
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
+    PropertyNameCaseInsensitive = true, WriteIndented = true)]
+[JsonSerializable(typeof(ManagedProgramFiles.Inventory))]
+[JsonSerializable(typeof(ManagedProgramFiles.Legacy))]
+[JsonSerializable(typeof(ManagedProgramFiles.Report))]
+internal partial class ManagedProgramFilesJsonContext : JsonSerializerContext { }
