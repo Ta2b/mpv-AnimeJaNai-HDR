@@ -24,9 +24,9 @@ typedef struct aji_surface_batch_job_v1 {
  * batch: discard all its outputs. Synchronous completion is performed once
  * after the queued output work, preserving internal scene/stream dependencies.
  * No new formats, device imports or approximations are implied by support. */
-AJI_OPTIONAL_EXPORT int aji_surface_batch_query_v1(void *context,uint32_t version,
+int aji_surface_batch_query_v1(void *context,uint32_t version,
     aji_surface_batch_caps_v1 *,size_t);
-AJI_OPTIONAL_EXPORT int aji_surface_process_batch_v1(void *context,uint32_t version,
+int aji_surface_process_batch_v1(void *context,uint32_t version,
     const aji_surface_batch_job_v1 *,size_t count);
 #ifdef __cplusplus
 }
