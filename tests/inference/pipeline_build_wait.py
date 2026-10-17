@@ -32,6 +32,22 @@ def main():
     for name, args in {'aji_pipeline_create_v1': [ptr, ptr, ptr, C.c_size_t], 'aji_pipeline_query_v1': [ptr, ptr, C.c_size_t],
                        'aji_pipeline_last_error_v1': [ptr, ptr, C.c_size_t], 'aji_pipeline_destroy_v1': [ptr]}.items():
         getattr(lib, name).argtypes = args; getattr(lib, name).restype = None if 'destroy' in name else C.c_int
+    # Lot B: the stages' configure logs (first-play engine builds included), as the
+    # player's stats file sees them. Older modules lack the call.
+    status = getattr(lib, 'aji_pipeline_status_text_v1', None)
+    if status:
+        status.argtypes = [ptr, ptr, C.c_size_t]; status.restype = C.c_int
+
+    def show_status(last):
+        if not status or not ctx:
+            return last
+        buf = C.create_string_buffer(16384)
+        if status(ctx, buf, len(buf)) != 0:
+            return last
+        text = buf.value.decode('utf-8', 'replace')
+        if text and text != last:
+            print(f'--- status at {time.monotonic() - started:.1f}s ---\n{text.rstrip()}', flush=True)
+        return text
     p = Create(struct_size=C.sizeof(Create), version=1, width=s['width'], height=s['height'], slot=1, capacity=1, flags=3, generation=1,
                cuda_context=f.ctx, conf=os.fsencode(s['conf']), model_dir=os.fsencode(s['models']), rife_dir=os.fsencode(s['rife']),
                trtexec=os.fsencode(s.get('trtexec', '/bin/false')), trt_library=os.fsencode(s['trt']), kernel_fatbin=os.fsencode(s['kernel']),
@@ -39,8 +55,9 @@ def main():
     error = C.create_string_buffer(2048); started = time.monotonic()
     try:
         code = lib.aji_pipeline_create_v1(C.byref(p), C.byref(ctx), error, len(error)); assert code == 0, (code, error.value)
-        caps = Caps(); deadline = started + timeout
+        caps = Caps(); deadline = started + timeout; last_status = ''
         while True:
+            last_status = show_status(last_status)
             code = lib.aji_pipeline_query_v1(ctx, C.byref(caps), C.sizeof(caps))
             if code != -4:
                 break
@@ -48,6 +65,7 @@ def main():
                 print('timeout waiting for readiness'); return 2
             wake.wait(.5); wake.clear()
         lib.aji_pipeline_last_error_v1(ctx, error, len(error)); assert code == 0, (code, error.value)
+        show_status(last_status)
         print(f'ready after {time.monotonic() - started:.1f}s; waiting for builders', flush=True)
         last_busy = time.monotonic(); seen = False
         while time.monotonic() < deadline:

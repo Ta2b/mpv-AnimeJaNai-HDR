@@ -76,11 +76,13 @@ Trois programmes TensorRT dérivés des mêmes poids s'ajoutent au plan de réf�
 
 | Programme | Ce qui change | Ce qui ne change pas | Bascule |
 |---|---|---|---|
-| SPAN à lot dynamique (1 à 5 images, `AH-376`) | l'ONNX déclare une dimension de lot symbolique ; le plan compile pour un lot de 4 ; une inférence par rafale au lieu d'une par image | nœuds, poids, pré/post-conversions, résolution | `AJI_SPAN_BATCH=0` |
+| SPAN à lot dynamique (1 à 4 images, `AH-376`) | l'ONNX déclare une dimension de lot symbolique ; le plan compile pour un lot de 4 ; une inférence par rafale au lieu d'une par image ; préparé seulement quand l'appelant annonce des rafales (`chain_N_batch_upscale=yes`, écrit par le pipeline ordonné pour son bloc Quality fusionné) | nœuds, poids, pré/post-conversions, résolution | `AJI_SPAN_BATCH=0`, `AJI_PIPELINE_QUALITY_BATCH=0` |
 | Remise directe RIFE → SPAN (`AH-74`) | l'image RIFE est recadrée en RGB FP16 dans le créneau du lot, sans passer par YUV444P16 | modèles, padding, matrice | `AJI_RIFE_DIRECT_HANDOFF=0` |
 | Encodeur RIFE 4.26 partagé (`AH-357`/`AH-376`) | les caractéristiques indépendantes de l'instant sont calculées une fois par paire ; la tête tourne par instant | nœuds, poids, sortie RGB complète | `AJI_RIFE_ENCODER_CACHE=1` (opt-in) |
 
 Les sorties ne sont plus identiques bit à bit au plan précédent ; les reçus d'équivalence et les mesures sont dans les tickets et dans `GPU-SOURCE.json`.
+
+Ces plans sont **optionnels** : ils se construisent à la première lecture comme les plans de référence (une construction à la fois, GPU au repos, le moniteur de construction narre et tient la lecture), le pipeline ordonné attend leur construction avant de se déclarer prêt pour les adopter dès cette lecture, et leur échec de construction est noté dans le journal (« Optional engine … was not built ») sans devenir une erreur de la chaîne : les plans de référence servent. Un plan dérivé ne remplace jamais un plan de référence manquant.
 
 ## Qualification et fin du ticket
 

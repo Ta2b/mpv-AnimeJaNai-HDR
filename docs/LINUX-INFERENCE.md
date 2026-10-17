@@ -513,6 +513,15 @@ AnimeJaNai Performance 640x360 en 53 s, 1920x1080 en 64 s, RIFE 4.26 en 1920x108
   son fichier de statistiques ; `animejanai_engine_monitor.lua` y lisait toujours « Building
   TensorRT engine », gardait la lecture en pause et comptait indéfiniment. Il s'arrête maintenant
   sur l'erreur du filtre, reprend la lecture et affiche la cause.
+- **Pipeline ordonné sans narration (corrigé au lot B, 18 octobre).** Sur la route du pipeline
+  ordonné, le filtre ne publiait pas de fichier de statistiques pendant la préparation des étages :
+  les constructions de la première lecture retenaient les images sans message ni pause. Le pipeline
+  expose désormais les journaux de configuration de ses étages (`aji_pipeline_status_text_v1`) et
+  le filtre les publie dans le fichier de statistiques pendant l'initialisation puis une fois prêt
+  (`vf_animejanai-pipeline-stats.patch`, `pipeline_stats=1` dans `build-info.txt`) ; le moniteur
+  narre et tient la lecture comme sur la route héritée, et `animejanaistats.lua` affiche les étages.
+  Les plans optionnels du lot B (SPAN à lot, encodeur RIFE partagé) se construisent dans cette
+  même attente ; leur échec laisse les plans de référence en service.
 
 **TrueHDR (Maxine) : première exécution réussie.** Avec le SDK 1.3.0.0, la fonction
 `nvvfxtruehdr`, `libaji_trt_rtx.so` et `libaji_rtx.so` installés : profil RIFE x4 en 720p puis

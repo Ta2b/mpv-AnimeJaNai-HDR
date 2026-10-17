@@ -1,0 +1,77 @@
+--- a/video/filter/vf_animejanai.c
++++ b/video/filter/vf_animejanai.c
+@@ -223,6 +223,7 @@
+     int (*complete)(void *,uint64_t,uint32_t,aji_pipeline_completion_v1 *,size_t);
+     int (*error)(void *,char *,size_t);
+     int (*stats)(void *,aji_pipeline_stats_v1 *,size_t);
++    int (*status_text)(void *,char *,size_t); // optional: the stages' logs for the stats file
+     void (*destroy)(void *);
+ };
+ static void pipeline_stop(struct mp_filter *vf);
+@@ -268,6 +269,7 @@
+     struct pipeline_api pipe;
+     void *pipeline;
+     bool pipeline_ready, pipeline_restart;
++    char *pipeline_stats_text; // last stats snapshot published while the ordered pipeline runs
+     aji_pipeline_caps_v1 pipeline_caps;
+     uint64_t pipeline_source_sequence;
+     CUevent pipeline_event[PIPELINE_JOBS];
+@@ -579,7 +581,8 @@
+ static void pipeline_stop(struct mp_filter *vf)
+ {
+     struct priv *p = vf->priv;
+-    if (p->pipeline) { p->pipe.destroy(p->pipeline); p->pipeline = NULL; } // destroy drains the jobs first
++    if (p->pipeline) { p->pipe.destroy(p->pipeline); p->pipeline = NULL; }
++    talloc_free(p->pipeline_stats_text); p->pipeline_stats_text = NULL; // destroy drains the jobs first
+     for (int j = 0; j < PIPELINE_JOBS; j++) {
+         struct pipeline_job *job = &p->pipeline_jobs[j];
+         for (int i = 0; i < job->n; i++) mp_image_unrefp(&job->images[i]);
+@@ -619,6 +622,8 @@
+         PIPE_SYM(error, "aji_pipeline_last_error_v1"); PIPE_SYM(destroy, "aji_pipeline_destroy_v1");
+         PIPE_SYM(stats, "aji_pipeline_stats_v1_get");
+         p->pipe.output_color = aji_lib_sym(p->pipe.handle, "aji_pipeline_output_color_v1");
++        // Optional (older modules lack it): without it no stats snapshot is published while initializing.
++        p->pipe.status_text = aji_lib_sym(p->pipe.handle, "aji_pipeline_status_text_v1");
+ #undef PIPE_SYM
+     }
+     CUcontext previous; CUdevice device;
+@@ -652,19 +657,38 @@
+     mp_refqueue_set_refs(p->queue, 0, PIPELINE_JOBS); // one source frame past the last pair in flight
+     MP_VERBOSE(vf, "Ordered GPU pipeline initializing on its worker, %d pairs in flight\n", PIPELINE_JOBS); return true;
+ }
++// While the ordered pipeline prepares its stages (engine builds on first play
++// included) and once it runs, its stages' configure logs replace the legacy
++// chain's stats snapshot: the engine monitor narrates the builds and holds
++// playback exactly as on the legacy route, and the stats overlay shows the
++// stages. Written only when the text changes; the module may lack the call.
++static void pipeline_publish_stats(struct mp_filter *vf)
++{
++    struct priv *p = vf->priv;
++    if (!p->pipeline || !p->pipe.status_text || !p->path.stats) return;
++    char text[16384];
++    if (p->pipe.status_text(p->pipeline, text, sizeof(text)) != 0 || !text[0]) return;
++    if (p->pipeline_stats_text && strcmp(p->pipeline_stats_text, text) == 0) return;
++    talloc_free(p->pipeline_stats_text);
++    p->pipeline_stats_text = talloc_strdup(p, text);
++    if (!mp_save_to_file(p->path.stats, text, strlen(text)))
++        MP_WARN(vf, "Cannot publish stats snapshot %s\n", p->path.stats);
++}
++
+ static void pipeline_process(struct mp_filter *vf)
+ {
+     struct priv *p = vf->priv;
+     if (!p->pipeline_ready) {
+         aji_pipeline_caps_v1 caps;
+         int status = p->pipe.query(p->pipeline, &caps, sizeof(caps));
+-        if (status == AJI_SURFACE_ASYNC_BUSY) return;
++        if (status == AJI_SURFACE_ASYNC_BUSY) { pipeline_publish_stats(vf); return; }
+         if (status) {
+             char message[1024]; p->pipe.error(p->pipeline, message, sizeof(message));
+             MP_ERR(vf, "Ordered pipeline initialization failed: %s\n", message); goto fail;
+         }
+         if (caps.factor < 1 || caps.factor > AJI_PIPELINE_MAX_OUTPUTS || caps.output_format != AJI_SURFACE_YUV444P16) goto fail;
+         p->pipeline_caps = caps; p->pipeline_ready = true;
++        pipeline_publish_stats(vf);
+         double sx = (double)caps.width / p->params.w, sy = (double)caps.height / p->params.h;
+         p->out_params = p->params; p->out_params.w = caps.width; p->out_params.h = caps.height;
+         p->out_params.crop.x0 = lrint(p->params.crop.x0*sx); p->out_params.crop.y0 = lrint(p->params.crop.y0*sy);
