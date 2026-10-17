@@ -1,0 +1,47 @@
+{
+  "release": "3.8.0.98",
+  "source": "18013889f61234facfa53b997d5aeebea2cdc307",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39023622140,
+      "headSha": "18013889f61234facfa53b997d5aeebea2cdc307",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39023622007,
+      "headSha": "18013889f61234facfa53b997d5aeebea2cdc307",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39023622025,
+      "headSha": "18013889f61234facfa53b997d5aeebea2cdc307",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    }
+  ],
+  "assets_uploaded": 16,
+  "payload_check": {
+    "passed": true,
+    "archive_sha256": "f940f8859a6368e88188e5e8e2ffea2676206cb61aad14ceb45bf74a1a96b7dc",
+    "dylib_sha256": "61b30d435acb85659927d3e5686cd7e28288efefbf457e79eb6918f761fff478",
+    "byte_identical_to_native_qualified_365_baseline": true,
+    "managed_programs": 17,
+    "model_resources_identical": 32,
+    "no_native_replay": true
+  },
+  "native_qualification": 39023454995,
+  "additional_CABI_qualification_reused": 39023928908,
+  "scope": "AH364 CoreML snapshot/transaction/native validation/immutable generation protocol",
+  "qualification_reuse": "Delivered dylib exact to full .98 baseline actually executed in AH365 native CABI; AH364 standalone native protocol passed. No replay. .98 changes only CoreML executor and table path validation, Linux/Windows engine calculations unchanged.",
+  "limits": [
+    "CPU native proof, no GPU/ANE/FPS claim",
+    "Other provider/Windows transactions still AH254",
+    "No generation GC without reader leases"
+  ]
+}
