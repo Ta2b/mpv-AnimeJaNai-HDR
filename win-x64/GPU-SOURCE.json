@@ -10,7 +10,7 @@
     "GITHUB_RUN_ID": "39009958899",
     "validation": "NVIDIA+AMD workflow completed success; only NVIDIA dispatcher/TRT/DML reused. Old AMD module preserved with original source. Compile/link only, no Windows GPU inference."
   },
-  "validation": "Lot62 Windows compile/link success39009958899. Optional batch symbols compiled in TRT, supported Surface route remains Linux-specific and query rejects Windows; no new Windows GPU/API runtime support claimed. Existing AH345/347/355 code retained. DML exact-pair reader still pending.",
+  "validation": "Lot62 Windows compile/link success39009958899. Optional batch symbols compiled in TRT, supported Surface route remains Linux-specific and query rejects Windows; no new Windows GPU/API runtime support claimed. Existing AH345/347/355 code retained. DML exact-pair reader built successfully in run39019317771, source32464bc13260918381537dbb73a5a2e7523c2477; activation requires the release pin and packaged paired binaries. No Windows GPU execution measured.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -108,7 +108,9 @@
     "build_run": 39009958899,
     "compiled": true,
     "reader_required": "windows-mpv-source-ref.txt with exact-pair1 producer",
-    "reader_delivery": "pending",
-    "gpu_executed": false
+    "reader_delivery": "Immutable paired producer published; release source must pin windows-mpv-source-ref.txt and package its provenance. No Windows GPU inference measured.",
+    "gpu_executed": false,
+    "reader_producer_source": "32464bc13260918381537dbb73a5a2e7523c2477",
+    "reader_build_run": 39019317771
   }
 }
