@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <atomic>
 
 namespace aji {
 namespace {
@@ -80,6 +81,30 @@ std::shared_ptr<detail::PlacementState> placement(NSURL *compiled,MLModelConfigu
     }
     return std::make_shared<PlacementState>(PlacementStatus::Unavailable,"unavailable (requires macOS14.4)");
 }
+
+// Keep the actual prediction result alive, including when Core ML ignores the
+// proposed output backing. A retained previous result must never be overwritten.
+struct CoreMLBuffer {
+    CVPixelBufferRef value=nullptr;
+    CoreMLBuffer(int w,int h) {
+        NSDictionary *attributes=@{(id)kCVPixelBufferIOSurfacePropertiesKey:@{}, (id)kCVPixelBufferMetalCompatibilityKey:@YES};
+        require(CVPixelBufferCreate(kCFAllocatorDefault,w,h,kCVPixelFormatType_32BGRA,
+            (__bridge CFDictionaryRef)attributes,&value)==kCVReturnSuccess,"Core ML: could not allocate a picture buffer");
+    }
+    explicit CoreMLBuffer(CVPixelBufferRef p):value(CVPixelBufferRetain(p)) {}
+    ~CoreMLBuffer(){if(value)CVPixelBufferRelease(value);}
+    CoreMLBuffer(const CoreMLBuffer&)=delete;
+    CoreMLBuffer &operator=(const CoreMLBuffer&)=delete;
+};
+struct CoreMLImage final : ResidentImage {
+    std::shared_ptr<CoreMLBuffer> buffer;
+    CoreMLImage(std::shared_ptr<CoreMLBuffer> p,int w,int h):buffer(std::move(p)) {
+        width=w;height=h;format=Format::BGRA8;memory=Memory::CoreMLPixelBuffer;
+        // IOSurface-backed CVPixelBuffers are consumed by Core ML itself. This
+        // is a framework image contract, not an advertised GPU device allocation.
+        device=0;
+    }
+};
 
 class CoreMLExecutor : public Executor {
 public:
@@ -181,15 +206,10 @@ public:
                 }
                 throw std::runtime_error("Core ML could not load the requested configuration (CPU artifact valid, cache preserved): "+failure);
             }
-            NSDictionary *attributes = @{(id)kCVPixelBufferIOSurfacePropertiesKey: @{}, (id)kCVPixelBufferMetalCompatibilityKey: @YES};
-            require(CVPixelBufferCreate(kCFAllocatorDefault, (size_t)w_, (size_t)h_, kCVPixelFormatType_32BGRA,
-                                        (__bridge CFDictionaryRef)attributes, &in_) == kCVReturnSuccess
-                    && CVPixelBufferCreate(kCFAllocatorDefault, (size_t)(2 * w_), (size_t)(2 * h_), kCVPixelFormatType_32BGRA,
-                                           (__bridge CFDictionaryRef)attributes, &out_) == kCVReturnSuccess,
-                    "Core ML: could not allocate the picture buffers");
-            options_ = [[MLPredictionOptions alloc] init];
-            // Core ML writes the result into this buffer instead of allocating one per picture.
-            options_.outputBackings = @{@"output": (__bridge id)out_};
+            in_=std::make_shared<CoreMLBuffer>(w_,h_);
+            out_=std::make_shared<CoreMLBuffer>(2*w_,2*h_);
+            options_=[[MLPredictionOptions alloc] init];
+            options_.outputBackings=@{@"output":(__bridge id)out_->value};
             detail::PlacementKey key;
             key.template_content="p3-"+program;key.model=r.model;key.width=w_;key.height=h_;
             key.units=(int)configuration.computeUnits;key.low_precision=configuration.allowLowPrecisionAccumulationOnGPU?1:0;
@@ -202,50 +222,88 @@ public:
         }
     }
 
-    ~CoreMLExecutor() override
-    {
-        if (in_) CVPixelBufferRelease(in_);
-        if (out_) CVPixelBufferRelease(out_);
-    }
-
     std::string placement_note() const override {return placement_?placement_->snapshot().message:note;}
 
     void run(const Job &job) override
     {
-        @autoreleasepool {
-            // Accelerate converts on several cores unless told not to: only when this executor
-            // is the one working.
-            const vImage_Flags flags = job.spread ? kvImageNoFlags : kvImageDoNotTile;
-            require(CVPixelBufferLockBaseAddress(in_, 0) == kCVReturnSuccess, "Core ML: input buffer not accessible");
-            vImage_Buffer rgb = {(void *)job.in, (vImagePixelCount)h_, (vImagePixelCount)w_, (size_t)job.in_stride};
-            vImage_Buffer bgra = {CVPixelBufferGetBaseAddress(in_), (vImagePixelCount)h_, (vImagePixelCount)w_, CVPixelBufferGetBytesPerRow(in_)};
-            const vImage_Error packed = vImageConvert_RGB888toBGRA8888(&rgb, NULL, 255, &bgra, false, flags);
-            CVPixelBufferUnlockBaseAddress(in_, 0);
-            require(packed == kvImageNoError, "Core ML: could not convert the input picture");
+        auto result=run_resident(job);
+        read_resident(*result,job);
+    }
 
-            NSError *error = nil;
-            MLDictionaryFeatureProvider *features =
-                [[MLDictionaryFeatureProvider alloc] initWithDictionary:@{@"input": [MLFeatureValue featureValueWithPixelBuffer:in_]}
-                                                                  error:&error];
-            require(features != nil, "Core ML: " + text(error));
-            id<MLFeatureProvider> result = [model_ predictionFromFeatures:features options:options_ error:&error];
-            require(result != nil, "Core ML prediction failed: " + text(error));
-            CVPixelBufferRef picture = [[result featureValueForName:@"output"] imageBufferValue];
-            require(picture != NULL, "Core ML returned no picture");
-            require(CVPixelBufferGetPixelFormatType(picture) == kCVPixelFormatType_32BGRA
-                    && CVPixelBufferGetWidth(picture) == (size_t)(2 * w_) && CVPixelBufferGetHeight(picture) == (size_t)(2 * h_),
-                    "Core ML returned a picture of an unexpected format or size");
-            require(CVPixelBufferLockBaseAddress(picture, kCVPixelBufferLock_ReadOnly) == kCVReturnSuccess,
-                    "Core ML: output buffer not accessible");
-            const size_t row = CVPixelBufferGetBytesPerRow(picture);
-            uint8_t *base = (uint8_t *)CVPixelBufferGetBaseAddress(picture);
-            vImage_Buffer from = {base + (size_t)job.crop_y * row + (size_t)job.crop_x * 4,
-                                  (vImagePixelCount)job.crop_h, (vImagePixelCount)job.crop_w, row};
-            vImage_Buffer to = {job.out, (vImagePixelCount)job.crop_h, (vImagePixelCount)job.crop_w, (size_t)job.out_stride};
-            const vImage_Error unpacked = vImageConvert_BGRA8888toRGB888(&from, &to, flags);
-            CVPixelBufferUnlockBaseAddress(picture, kCVPixelBufferLock_ReadOnly);
-            require(unpacked == kvImageNoError, "Core ML: could not convert the output picture");
+    const char *resident_ablation() const override {return "AJI_COREML_RESIDENT_SPAN";}
+    bool can_take_resident(const Executor &source) const override
+    {
+        const auto *other=dynamic_cast<const CoreMLExecutor *>(&source);
+        return other && w_==2*other->w_ && h_==2*other->h_;
+    }
+
+    std::unique_ptr<ResidentImage> run_resident(const Job &job,const ResidentImage *source=nullptr) override
+    {
+        @autoreleasepool {
+            CVPixelBufferRef input=nullptr;
+            if(source) {
+                const auto *image=dynamic_cast<const CoreMLImage *>(source);
+                require(image && image->format==ResidentImage::Format::BGRA8 &&
+                    image->memory==ResidentImage::Memory::CoreMLPixelBuffer && image->width==w_ && image->height==h_,
+                    "Core ML: incompatible resident image");
+                input=image->buffer->value;
+                require(CVPixelBufferGetPixelFormatType(input)==kCVPixelFormatType_32BGRA &&
+                    CVPixelBufferGetWidth(input)==(size_t)w_ && CVPixelBufferGetHeight(input)==(size_t)h_,
+                    "Core ML: resident pixel buffer type or shape mismatch");
+            } else {
+                require(job.in && job.in_stride>=(ptrdiff_t)w_*3,"Core ML: invalid host input");
+                input=in_->value;
+                require(CVPixelBufferLockBaseAddress(input,0)==kCVReturnSuccess,"Core ML: input buffer not accessible");
+                vImage_Buffer rgb={(void *)job.in,(vImagePixelCount)h_,(vImagePixelCount)w_,(size_t)job.in_stride};
+                vImage_Buffer bgra={CVPixelBufferGetBaseAddress(input),(vImagePixelCount)h_,(vImagePixelCount)w_,CVPixelBufferGetBytesPerRow(input)};
+                const vImage_Error packed=vImageConvert_RGB888toBGRA8888(&rgb,NULL,255,&bgra,false,job.spread?kvImageNoFlags:kvImageDoNotTile);
+                CVPixelBufferUnlockBaseAddress(input,0);
+                require(packed==kvImageNoError,"Core ML: could not convert the input picture");
+                to_bgra_.fetch_add((uint64_t)w_*h_*3,std::memory_order_relaxed);
+            }
+            // The normal chain releases each producer after its synchronous
+            // consumer. Allocate another backing only if an older image lives on.
+            if(out_.use_count()>1) {
+                out_=std::make_shared<CoreMLBuffer>(2*w_,2*h_);
+                options_.outputBackings=@{@"output":(__bridge id)out_->value};
+            }
+            NSError *error=nil;
+            MLDictionaryFeatureProvider *features=[[MLDictionaryFeatureProvider alloc]
+                initWithDictionary:@{@"input":[MLFeatureValue featureValueWithPixelBuffer:input]} error:&error];
+            require(features!=nil,"Core ML: "+text(error));
+            id<MLFeatureProvider> result=[model_ predictionFromFeatures:features options:options_ error:&error];
+            require(result!=nil,"Core ML prediction failed: "+text(error));
+            CVPixelBufferRef picture=[[result featureValueForName:@"output"] imageBufferValue];
+            require(picture && CVPixelBufferGetPixelFormatType(picture)==kCVPixelFormatType_32BGRA &&
+                CVPixelBufferGetWidth(picture)==(size_t)(2*w_) && CVPixelBufferGetHeight(picture)==(size_t)(2*h_),
+                "Core ML returned a picture of an unexpected format or size");
+            auto owner=picture==out_->value?out_:std::make_shared<CoreMLBuffer>(picture);
+            return std::make_unique<CoreMLImage>(std::move(owner),2*w_,2*h_);
         }
+    }
+
+    void read_resident(const ResidentImage &source,const Job &job) override
+    {
+        const auto *image=dynamic_cast<const CoreMLImage *>(&source);
+        require(image && image->format==ResidentImage::Format::BGRA8 && image->memory==ResidentImage::Memory::CoreMLPixelBuffer &&
+            image->width==2*w_ && image->height==2*h_,"Core ML: incompatible resident readback");
+        require(job.out && job.crop_x>=0 && job.crop_y>=0 && job.crop_w>0 && job.crop_h>0 &&
+            job.crop_x<=2*w_-job.crop_w && job.crop_y<=2*h_-job.crop_h && job.out_stride>=(ptrdiff_t)job.crop_w*3,
+            "Core ML: invalid output crop or stride");
+        CVPixelBufferRef picture=image->buffer->value;
+        require(CVPixelBufferLockBaseAddress(picture,kCVPixelBufferLock_ReadOnly)==kCVReturnSuccess,"Core ML: output buffer not accessible");
+        const size_t row=CVPixelBufferGetBytesPerRow(picture);
+        auto *base=(uint8_t *)CVPixelBufferGetBaseAddress(picture);
+        vImage_Buffer from={base+(size_t)job.crop_y*row+(size_t)job.crop_x*4,(vImagePixelCount)job.crop_h,(vImagePixelCount)job.crop_w,row};
+        vImage_Buffer to={job.out,(vImagePixelCount)job.crop_h,(vImagePixelCount)job.crop_w,(size_t)job.out_stride};
+        const vImage_Error unpacked=vImageConvert_BGRA8888toRGB888(&from,&to,job.spread?kvImageNoFlags:kvImageDoNotTile);
+        CVPixelBufferUnlockBaseAddress(picture,kCVPixelBufferLock_ReadOnly);
+        require(unpacked==kvImageNoError,"Core ML: could not convert the output picture");
+        to_rgb_.fetch_add((uint64_t)job.crop_w*job.crop_h*3,std::memory_order_relaxed);
+    }
+
+    ExecutorTransfers transfers() const override {
+        return {0,0,to_bgra_.load(std::memory_order_relaxed),to_rgb_.load(std::memory_order_relaxed)};
     }
 
 private:
@@ -253,7 +311,8 @@ private:
     int w_, h_;
     MLModel *model_ = nil;
     MLPredictionOptions *options_ = nil;
-    CVPixelBufferRef in_ = NULL, out_ = NULL;
+    std::shared_ptr<CoreMLBuffer> in_,out_;
+    std::atomic<uint64_t> to_bgra_{0},to_rgb_{0};
 };
 
 } // namespace

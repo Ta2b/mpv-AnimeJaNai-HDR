@@ -58,6 +58,8 @@ public:
         read_resident(*result,job);
     }
 
+    const char *resident_ablation() const override {return "AJI_METAL_RESIDENT_SPAN";}
+
     bool can_take_resident(const Executor &source) const override
     {
         const auto *other=dynamic_cast<const MetalExecutor *>(&source);

@@ -606,13 +606,15 @@ bool areas_cheaper(const Step &step, size_t changed)
 // first model takes).
 bool resident_chain_ready(const Context &c)
 {
-    const char *ablation=std::getenv("AJI_METAL_RESIDENT_SPAN");
-    if((ablation&&std::strcmp(ablation,"0")==0)||c.rife||c.settings.reuse!="off"||
+    if(c.rife||c.settings.reuse!="off"||
        c.settings.boost||c.steps.size()<2)return false;
     for(size_t i=0;i<c.steps.size();++i) {
         const Step &step=c.steps[i];
         if(step.workers.size()!=1||step.fine||step.boost||step.w!=step.in_w||step.h!=step.in_h||
            step.plan.tiles.size()!=1||step.plan.width!=step.w||step.plan.height!=step.h)return false;
+        const char *switch_name=step.workers[0].executor->resident_ablation();
+        const char *ablation=switch_name?std::getenv(switch_name):nullptr;
+        if(ablation&&std::strcmp(ablation,"0")==0)return false;
         const Tile &tile=step.plan.tiles[0];
         if(tile.x0||tile.y0||tile.wx||tile.wy||tile.x1!=step.w||tile.y1!=step.h)return false;
         if(i && (step.in_w!=2*c.steps[i-1].in_w||step.in_h!=2*c.steps[i-1].in_h||
@@ -626,7 +628,7 @@ bool resident_upscale(Context &c,const uint8_t *input,ptrdiff_t input_stride,uin
     const double start=now_ms();
     std::unique_ptr<ResidentImage> image;
     for(auto &step:c.steps) {
-        Job job;job.in=input;job.in_stride=input_stride;
+        Job job;job.in=input;job.in_stride=input_stride;job.spread=true;
         Worker &worker=step.workers[0];
         const double began=now_ms();
         auto next=worker.executor->run_resident(job,image.get());
@@ -642,7 +644,7 @@ bool resident_upscale(Context &c,const uint8_t *input,ptrdiff_t input_stride,uin
         ++step.computed;step.last_computed=step.last_total=1;
     }
     require(image->width==c.plan.width&&image->height==c.plan.height,"Resident final geometry mismatch");
-    Job target;target.out=output;target.out_stride=output_stride;target.crop_w=c.plan.width;target.crop_h=c.plan.height;
+    Job target;target.spread=true;target.out=output;target.out_stride=output_stride;target.crop_w=c.plan.width;target.crop_h=c.plan.height;
     c.steps.back().workers[0].executor->read_resident(*image,target);
     ++c.resident_span_segments;c.last_model_ms+=now_ms()-start;
     return true;
@@ -1197,11 +1199,14 @@ std::string format_stats(const Context &c)
     for(const auto &step:c.steps)for(const auto &worker:step.workers) {
         const auto t=worker.executor->transfers();transfers.host_staging+=t.host_staging;
         transfers.explicit_readback+=t.explicit_readback;
+        transfers.rgb_to_bgra+=t.rgb_to_bgra;transfers.bgra_to_rgb+=t.bgra_to_rgb;
     }
     f<<"Resident SPAN eligible: "<<(c.resident_span?"yes":"no")
      <<"\nResident SPAN segments: "<<c.resident_span_segments
      <<"\nExecutor host staging bytes: "<<transfers.host_staging
-     <<"\nExecutor explicit readback bytes: "<<transfers.explicit_readback<<"\n";
+     <<"\nExecutor explicit readback bytes: "<<transfers.explicit_readback
+     <<"\nExecutor RGB to BGRA bytes: "<<transfers.rgb_to_bgra
+     <<"\nExecutor BGRA to RGB bytes: "<<transfers.bgra_to_rgb<<"\n";
     if (c.rife) {
         const auto &timing = c.rife->timing;
         f << "RIFE profiling: " << (c.rife_profiled ? "on" : "off")

@@ -69,20 +69,24 @@ struct Job {
 // Owners retain the device storage. Producers return only after synchronous
 // completion; the consumer keeps this object alive through its own run.
 struct ResidentImage {
-    enum class Format { RGB8NHWC };
-    enum class Memory { MetalGraph };
+    enum class Format { RGB8NHWC, BGRA8 };
+    enum class Memory { MetalGraph, CoreMLPixelBuffer };
     int width=0,height=0;
     uint64_t device=0;
     Format format=Format::RGB8NHWC;
     Memory memory=Memory::MetalGraph;
     virtual ~ResidentImage()=default;
 };
-struct ExecutorTransfers { uint64_t host_staging=0,explicit_readback=0; };
+struct ExecutorTransfers {
+    uint64_t host_staging=0,explicit_readback=0;
+    uint64_t rgb_to_bgra=0,bgra_to_rgb=0; // Host adapter RGB bytes; not GPU transfers.
+};
 
 class Executor {
 public:
     virtual ~Executor() = default;
     virtual void run(const Job &job) = 0;
+    virtual const char *resident_ablation() const {return nullptr;}
     virtual bool can_take_resident(const Executor &) const { return false; }
     virtual std::unique_ptr<ResidentImage> run_resident(const Job &,const ResidentImage * = nullptr) {
         throw std::runtime_error("Executor has no resident image contract");
