@@ -1,0 +1,75 @@
+{
+  "release": "3.8.0.90",
+  "source": "848479af5006ffc8926027083453f5fe619a2928",
+  "publication_verified": true,
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.90",
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39014727407,
+      "headSha": "848479af5006ffc8926027083453f5fe619a2928",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39014727407",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39014727418,
+      "headSha": "848479af5006ffc8926027083453f5fe619a2928",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39014727418",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39014727381,
+      "headSha": "848479af5006ffc8926027083453f5fe619a2928",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39014727381",
+      "workflowName": "Release macOS"
+    }
+  ],
+  "downloaded_assets": [
+    {
+      "name": "manifest-linux-x64.json",
+      "sha256": "afa7773589cd14c3a41780c6502bb874a36fe0966f0859d90424dc23a559664f",
+      "bytes": 2705
+    },
+    {
+      "name": "packs-linux-x64.json",
+      "sha256": "b430724262db06885d3a3d9320e79a51c42bfa7171cdb0ce9bd9bafd18afce3e",
+      "bytes": 10819
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.90-linux-x64.7z",
+      "sha256": "e55724b919db25cdd2e9731b65eae3b353ccf3a8cab63a04da6653c199473a78",
+      "bytes": 51879915
+    }
+  ],
+  "gpu_binaries_source": "9167816cc47c18ad5a29fd3aab66c065b3735f60",
+  "linux_overlay": {
+    "module_hashes_verified": {
+      "libaji.so": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+      "libaji_trt.so": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
+      "libaji_trt_rtx.so": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
+      "libaji_pipeline.so": "9432437367c4a94488940e9c305d9a31782b7ccabe8287c6dda73dc76bee7bf0",
+      "aji_pipeline.fatbin": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
+      "PIPELINE-README.md": "57d4ca37d0d0a49cda73719cf5bf50161efc79e9663e92b68d9f8e4db0bce5fc"
+    },
+    "managed_programs_verified": 32,
+    "new_area_kernel_matches_qualified_binary": true,
+    "pipeline_and_trt_unchanged": true
+  },
+  "qualification_reuse": {
+    "same_model_free_kernel_runtime_result": "lot68",
+    "unchanged_macos_models_programs": "3.8.0.88",
+    "unchanged_Windows_and_engine_payloads": "3.8.0.87",
+    "managed_files_sync": "3.8.0.85"
+  },
+  "limits": [
+    "Changed Linux overlay verified; unchanged Mac/Windows and AppImage assembly qualifications reused, no payload redownload",
+    "No FPS benchmark or already conclusive full-chain tests repeated",
+    "Multi-SM compilation is not all-hardware qualification; native GPU case RTX4070Ti only",
+    "DML paired reader remains pending"
+  ]
+}
