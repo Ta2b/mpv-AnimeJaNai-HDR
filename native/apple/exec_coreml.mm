@@ -4,13 +4,14 @@
 //
 // The device is the caller's choice, exactly: ALL / AUTO (Core ML decides), GPU, ANE / NPU
 // (Neural Engine) or CPU. Core ML always keeps the CPU as a fallback for an operation a
-// processor cannot run; where the model really runs is reported in the statistics (Placement).
+// processor cannot run; statistics report the preferred placement plan, not a per-frame device trace.
 #import <Foundation/Foundation.h>
 #import <Accelerate/Accelerate.h>
 #import <CoreML/CoreML.h>
 #import <CoreVideo/CoreVideo.h>
 #include "engine.h"
 #include "mlpatch.h"
+#include "../common/placement_diagnostic.h"
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -23,35 +24,59 @@ std::string text(NSError *error)
     return error ? std::string([[error localizedDescription] UTF8String]) : std::string("unknown error");
 }
 
-// How many operations Core ML plans to run on each processor (macOS 14.4 and later).
-std::string placement(NSURL *compiled, MLModelConfiguration *configuration)
+// The plan is a diagnostic of preferred placement, not a per-frame device trace.
+// URL/configuration and state outlive the executor; callbacks never capture it.
+struct PlanRequest {
+    NSURL *__strong url=nil;
+    MLModelConfiguration *__strong configuration=nil;
+    std::shared_ptr<detail::PlacementState> state;
+};
+std::shared_ptr<detail::PlacementState> placement(NSURL *compiled,MLModelConfiguration *configuration,
+    const detail::PlacementKey &key)
 {
+    using namespace detail;
+    const char *disabled=std::getenv("AJI_COREML_NO_PLAN");
+    if(disabled&&*disabled=='1')return std::make_shared<PlacementState>(PlacementStatus::Disabled,"disabled (AJI_COREML_NO_PLAN)");
     if (@available(macOS 14.4, *)) {
-        __block NSString *summary = nil;
-        dispatch_semaphore_t done = dispatch_semaphore_create(0);
-        [MLComputePlan loadContentsOfURL:compiled configuration:configuration
-                       completionHandler:^(MLComputePlan *plan, NSError *error) {
-            (void)error;
-            MLModelStructureProgramFunction *main = plan.modelStructure.program.functions[@"main"];
-            if (main != nil) {
-                NSUInteger gpu = 0, neural = 0, cpu = 0;
-                for (MLModelStructureProgramOperation *operation in main.block.operations) {
-                    MLComputePlanDeviceUsage *usage = [plan computeDeviceUsageForMLProgramOperation:operation];
-                    id<MLComputeDeviceProtocol> device = usage.preferredComputeDevice;
-                    if (device == nil) continue;   // constants
-                    if ([device isKindOfClass:[MLGPUComputeDevice class]]) gpu++;
-                    else if ([device isKindOfClass:[MLNeuralEngineComputeDevice class]]) neural++;
-                    else cpu++;
+        static PlacementCache cache(16);
+        auto entry=cache.get(key);if(!entry.start)return entry.state;
+        auto request=std::make_shared<PlanRequest>();request->url=compiled;request->configuration=configuration;request->state=entry.state;
+        // Even the API invocation runs outside configure. A cached or pending
+        // identical request is shared; no per-executor thread and no join.
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY,0), ^{
+          @autoreleasepool { @try {
+            [MLComputePlan loadContentsOfURL:request->url configuration:request->configuration
+                completionHandler:^(MLComputePlan *plan,NSError *error) {
+              @autoreleasepool { @try {
+                if(error||!plan) {
+                    request->state->complete(PlacementStatus::Failed,"failed: "+text(error));return;
                 }
-                summary = [NSString stringWithFormat:@"%lu operations on the GPU, %lu on the Neural Engine, %lu on the CPU",
-                                                     (unsigned long)gpu, (unsigned long)neural, (unsigned long)cpu];
-            }
-            dispatch_semaphore_signal(done);
-        }];
-        if (dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(20 * NSEC_PER_SEC))) == 0 && summary != nil)
-            return std::string([summary UTF8String]);
+                MLModelStructureProgramFunction *main=plan.modelStructure.program.functions[@"main"];
+                if(!main){request->state->complete(PlacementStatus::Failed,"unavailable (no ML Program main in compute plan)");return;}
+                NSUInteger gpu=0,neural=0,cpu=0,unknown=0;
+                for(MLModelStructureProgramOperation *operation in main.block.operations) {
+                    MLComputePlanDeviceUsage *usage=[plan computeDeviceUsageForMLProgramOperation:operation];
+                    id<MLComputeDeviceProtocol> device=usage.preferredComputeDevice;
+                    if(device==nil)continue; // constants
+                    if([device isKindOfClass:[MLGPUComputeDevice class]])gpu++;
+                    else if([device isKindOfClass:[MLNeuralEngineComputeDevice class]])neural++;
+                    else if([device isKindOfClass:[MLCPUComputeDevice class]])cpu++;
+                    else unknown++;
+                }
+                NSString *summary=[NSString stringWithFormat:@"plan: %lu GPU, %lu Neural Engine, %lu CPU preferred operations (%lu unclassified)",
+                    (unsigned long)gpu,(unsigned long)neural,(unsigned long)cpu,(unsigned long)unknown];
+                request->state->complete(PlacementStatus::Ready,std::string([summary UTF8String]));
+              } @catch(NSException *exception) {
+                request->state->complete(PlacementStatus::Failed,"failed: "+std::string([[exception reason] UTF8String]?:"Core ML diagnostic exception"));
+              } }
+            }];
+          } @catch(NSException *exception) {
+            request->state->complete(PlacementStatus::Failed,"failed: "+std::string([[exception reason] UTF8String]?:"Core ML diagnostic exception"));
+          } }
+        });
+        return entry.state;
     }
-    return "";
+    return std::make_shared<PlacementState>(PlacementStatus::Unavailable,"unavailable (requires macOS14.4)");
 }
 
 class CoreMLExecutor : public Executor {
@@ -125,8 +150,15 @@ public:
             options_ = [[MLPredictionOptions alloc] init];
             // Core ML writes the result into this buffer instead of allocating one per picture.
             options_.outputBackings = @{@"output": (__bridge id)out_};
-            const char *no_plan = std::getenv("AJI_COREML_NO_PLAN");
-            if (!(no_plan && *no_plan == '1')) note = placement(url, configuration);
+            detail::PlacementKey key;
+            key.template_content=content;key.model=r.model;key.width=w_;key.height=h_;
+            key.units=(int)configuration.computeUnits;key.low_precision=configuration.allowLowPrecisionAccumulationOnGPU?1:0;
+            key.os_build=std::string([[[NSProcessInfo processInfo] operatingSystemVersionString] UTF8String]);
+            if (@available(macOS 14.4, *))key.reshape=(int)configuration.optimizationHints.reshapeFrequency;
+            if (@available(macOS 15.0, *))key.specialization=(int)configuration.optimizationHints.specializationStrategy;
+            note="unavailable (diagnostic initialization failed)"; // immutable fallback
+            try { placement_=placement(url,configuration,key); }
+            catch(const std::exception &error) {std::fprintf(stderr,"[aji] Core ML placement diagnostic unavailable: %s\n",error.what());}
         }
     }
 
@@ -135,6 +167,8 @@ public:
         if (in_) CVPixelBufferRelease(in_);
         if (out_) CVPixelBufferRelease(out_);
     }
+
+    std::string placement_note() const override {return placement_?placement_->snapshot().message:note;}
 
     void run(const Job &job) override
     {
@@ -175,6 +209,7 @@ public:
     }
 
 private:
+    std::shared_ptr<detail::PlacementState> placement_;
     int w_, h_;
     MLModel *model_ = nil;
     MLPredictionOptions *options_ = nil;

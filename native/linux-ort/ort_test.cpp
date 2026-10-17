@@ -38,7 +38,10 @@ int main(int argc, char **argv)
     if (!c) { std::printf("create failed: %s\n", aji_vk_error(nullptr)); return 1; }
     aji_vk_plan plan;
     const char *fps_env = std::getenv("AJI_TEST_FPS");
+    const auto configure_start = std::chrono::steady_clock::now();
     if (aji_vk_configure(c, w, h, fps_env && *fps_env ? std::atof(fps_env) : 23.976, &plan)) { std::printf("configure failed: %s\n", aji_vk_error(c)); aji_vk_destroy(c); return 1; }
+    const double configure_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - configure_start).count();
+    std::printf("configure: %.3f ms\n", configure_ms);
     std::printf("plan: %dx%d active=%d", plan.width, plan.height, plan.active);
     if (plan.numerator != plan.denominator) std::printf(" interpolation=%d/%d", plan.numerator, plan.denominator);
     std::printf("\n");
@@ -100,7 +103,10 @@ int main(int argc, char **argv)
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
         if (i >= warmup) { total += ms; samples.push_back(ms); }
         if (i >= warmup && (best == 0 || ms < best)) best = ms;
-        if (i == 0) std::printf("first frame: %.1f ms\n", ms);
+        if (i == 0) {
+            std::printf("first frame: %.1f ms\n", ms);
+            std::printf("STARTUP | configure %.3f ms | first_process %.3f ms\n", configure_ms, ms);
+        }
         // A source interval can contain several calls. Read cumulative work, not only the
         // final endpoint call (which is cached when RIFE precomputed it).
         const char *snapshot = aji_vk_stats_snapshot(c);

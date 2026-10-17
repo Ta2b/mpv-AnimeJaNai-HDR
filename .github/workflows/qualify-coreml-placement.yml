@@ -1,0 +1,85 @@
+name: Qualify Core ML placement diagnostic
+# A one-off qualification, deliberately not a repeated release benchmark.
+on:
+  workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: 'Immutable PLAYER source containing the synchronous Core ML diagnostic'
+        default: '9f810aaaa0890657a73d1e427301b61899a90ac2'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  placement:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare one unchanged SPAN model
+        run: |
+          pip install -q onnx==1.19.1 numpy==2.2.6 coremltools==9.0
+          python native/apple/convert_models.py BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx models --only Sharp1_Performance
+      - name: Compile the portable state fixture and both native probes
+        env:
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+        run: |
+          [[ "$BASELINE_REF" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          git fetch --no-tags --depth=1 origin "$BASELINE_REF"
+          mkdir -p baseline results
+          git show "$BASELINE_REF:native/apple/exec_coreml.mm" > baseline/exec_coreml.mm
+          clang++ -std=c++17 -pthread -Inative/common tests/observability/placement_diagnostic_check.cpp -o state-check
+          ./state-check > results/state-check.txt
+          for variant in baseline candidate; do
+            source=baseline/exec_coreml.mm
+            [ "$variant" = baseline ] || source=native/apple/exec_coreml.mm
+            clang++ -std=c++17 -O2 -fobjc-arc -mmacosx-version-min=13.3 -Inative/linux-ort \
+              tests/apple/coreml_placement_probe.mm "$source" native/linux-ort/mlpatch.cpp \
+              -framework Foundation -framework CoreML -framework CoreVideo -framework Accelerate -o "$variant-probe"
+            codesign --force -s - "$variant-probe"
+          done
+      - name: One short same-model qualification on CPU placement
+        run: |
+          model="$(basename "$(find models -maxdepth 1 -name '*Sharp1_Performance*.mlpatch' -print -quit)" .mlpatch)"
+          [ -n "$model" ] || exit 1
+          mkdir cache
+          # Compile the model once; exclude this cold compile from both comparisons.
+          AJI_COREML_NO_PLAN=1 ./baseline-probe "$PWD/models" "$model" "$PWD/cache" results/warm.rgb > results/warm.log
+          ./baseline-probe "$PWD/models" "$model" "$PWD/cache" results/baseline.rgb > results/baseline.log
+          ./candidate-probe "$PWD/models" "$model" "$PWD/cache" results/candidate.rgb > results/candidate.log
+          AJI_COREML_NO_PLAN=1 ./candidate-probe "$PWD/models" "$model" "$PWD/cache" results/disabled.rgb > results/disabled.log
+          cmp results/baseline.rgb results/candidate.rgb
+          cmp results/candidate.rgb results/disabled.rgb
+          sw_vers > results/machine.txt
+          uname -m >> results/machine.txt
+          shasum -a 256 models/*.mlpatch models/*.mlpackage/Data/com.apple.CoreML/model.mlmodel > results/model-sha256.txt
+          python - <<'PY'
+          import json,hashlib,os
+          from pathlib import Path
+          root=Path('results')
+          def log(name):
+              lines=(root/(name+'.log')).read_text().splitlines()
+              return dict(line.split('=',1) for line in lines if '=' in line)
+          base,candidate,disabled=map(log,['baseline','candidate','disabled'])
+          assert candidate['note_after'].startswith('plan:'),candidate
+          assert disabled['note_after'].startswith('disabled'),disabled
+          assert candidate['note_before'].startswith(('pending','plan:')),candidate
+          result={'source':os.environ['GITHUB_SHA'],'passed':True,'baseline':base,'candidate':candidate,'disabled':disabled,
+              'pixels_exact':True,'output_sha256':hashlib.sha256((root/'candidate.rgb').read_bytes()).hexdigest(),
+              'scope':'Core ML CPU native executor construction/one image/plan, no FPS or GPU/ANE placement claim'}
+          (root/'receipt.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result))
+          PY
+      - name: Preserve concise qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coreml-placement-evidence
+          path: |
+            results/*.json
+            results/*.log
+            results/*.txt
+          if-no-files-found: warn

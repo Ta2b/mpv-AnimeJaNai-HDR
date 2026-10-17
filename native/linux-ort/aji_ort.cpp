@@ -1189,8 +1189,10 @@ std::string format_stats(const Context &c)
                 f << " [" << w.executor->label << ": " << (w.tiles > 1 ? w.total_ms / (w.tiles - 1) : 0) << " ms an area]";
             f << "\n";
         }
-        for (const auto &w : step.workers)
-            if (!w.executor->note.empty()) f << "Placement: " << w.executor->label << ": " << w.executor->note << "\n";
+        for (const auto &w : step.workers) {
+            const std::string placement = w.executor->placement_note();
+            if (!placement.empty()) f << "Placement: " << w.executor->label << ": " << placement << "\n";
+        }
     }
     f << "Source ID hits: " << c.source_id_hits << "\nSource byte comparisons: " << c.source_byte_comparisons << "\nSource ID rejected calls: " << c.id_tracker.rejected_calls << "\n";
     if (!c.boost_note.empty()) f << "Boost: not active (" << c.boost_note << ")\n";

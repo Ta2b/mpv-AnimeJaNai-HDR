@@ -70,7 +70,8 @@ public:
     virtual ~Executor() = default;
     virtual void run(const Job &job) = 0;
     std::string label;   // "CoreML GPU", "Metal", "CPU"...
-    std::string note;    // where the model really runs, when the device can tell
+    virtual std::string placement_note() const { return note; }
+    std::string note;    // immutable diagnostic; async executors override the snapshot getter
 };
 
 struct ExecutorRequest {
