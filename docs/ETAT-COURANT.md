@@ -12,7 +12,7 @@ Reprise continue demandée par l'utilisateur. Dernière release vérifiée **3.8
 
 AH358 sousAH76 InProgress : étude neuronaleSPANB4 intégrée au lot .88, source initiale `b46672b`. Premier comparatifFP16 non exact (8 063 623/11 059 200valeurs, maxabs0,0107422, MSE1,43062e-7) ; direction perceptuelle inconnue, arrêt avant autresimages/benchmark, aucun runtimeB4 activé. AH76 reste ouvert ; poolsAH53/contextesB1concurrents non faits. [Preuve](qualification/lot64-span-batch-20261017/README.md). Done après livraison du lot.
 
-AH344 : backendDML compilé ; producteur Windowsmpv39006425781 échoué après compilation de libass, nettoyage supposant une branche Git alors que la source est épinglée à un commit. Journaux acquis ; correctif dans le checkoutisolé `lot-66-windows-producer-20261017`. Aucun pin lecteur ni cacheDML actif annoncé dans.85/.86/.87/.88. Relancer le producteur corrigé puis finir son lot apparié après succès.
+AH344 : backend DML compilé ; premier producteur Windowsmpv39006425781 échoué au nettoyage de libass sur HEAD détachée. Correctif `aa49479` dans `lot-66-windows-producer-20261017` : SHA40 préservés, contrôle CMake/Git court passé, dépendances sauvées même en échec. Nouveau producteur39013899609 en cours, ne pas attendre. Aucun pin lecteur ni cacheDML actif annoncé dans .85 à .89 ; finir le lot apparié après succès et vérification.
 
 Le manque de débit Quality4 reste ouvert : fusionactive, RIFE1280×720 et modules.84 réellement mappés dans l'instance contrôlée ; ce n'était pas un retour à l'ancien moteur. AH354 livré : batch natif direct,4→1attentes finales sans second worker/reaper,13sorties/PTS/couleurs exacts et reset/fallback/erreur qualifiés ; observation complète46,4ms encore au-dessus du budget41,7ms. AH356 : encodeur partagé viable sur un modèle/forme (RGBFP16 exact), gain réseau local≈0,656ms/3,15%, aucun raccordruntime ; suite explicite AH357 ToDo. Ne pas annoncer96FPS. Médias/profils privés conservés dans `artifacts/performance/lots-20261017/quality-live-20261017/`, installation utilisateur inchangée.
 
@@ -23,6 +23,8 @@ Les28guidesJira du relais restent disponibles dans [l’index](reprise/20261017/
 - Précision utilisateur du17octobre : pas de benchmark systématique. Revue/compilation si l’effet est suffisamment établi ; essai court seulement pour une incertitude réelle ou une mesure revendiquée. Ne pas répéter un résultat concluant. Pour UI/docs/packaging, contrôles simples. Distinguer bénéfice statique, gain attendu et gain mesuré.
 - Quality conserve les prédictions complètes et les frontières numériques de référence. Toute approximation reste Fast explicite. Ne pas forcer la convergence des backends quand leurs besoins diffèrent. Matériel absent : qualification partielle, jamais inventée.
 - Lancer builds/releases puis avancer une tâche indépendante ; consulter leur résultat en fin de tâche. Pas d’attente active ni gh run watch. Strata facultatif, aucun concurrent GPU pendant une mesure.
+
+**Lot .89 en publication — AH352** : comparaison Area/Spline36 conclue, [preuve unique lot67](qualification/lot67-downscale-comparison-20261017/README.md). Guides/reçus/probe uniquement, moteurs et profils inchangés. Spline36 filtre davantage le damier mais crée des halos, Area sans dépassement ; aucun FPS mesuré. Vérifier la livraison documentaire avant Done puis relire AH321 entier. Le lot comprend aussi le correctif du producteur Windows, sans activer son lecteur encore absent.
 
 ## Référence précédente : 3.8.0.84
 
