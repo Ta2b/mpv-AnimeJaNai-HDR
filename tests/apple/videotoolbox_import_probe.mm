@@ -40,6 +40,15 @@ int main(int argc,char **argv) {
         auto save=[&]{NSData *json=[NSJSONSerialization dataWithJSONObject:receipt options:NSJSONWritingPrettyPrinted error:nil];[json writeToFile:@(argv[2]) atomically:YES];};
         const aji_apple_nv12_probe_api *api=aji_apple_nv12_probe_api_v1();void *context=nullptr;
         try {
+            receipt[@"os"]=[[NSProcessInfo processInfo]operatingSystemVersionString];
+            id<MTLDevice> device=MTLCreateSystemDefaultDevice();receipt[@"metal_device"]=device.name?:@"unavailable";
+            receipt[@"metal_registry_id"]=@(device.registryID);receipt[@"metal_unified"]=@(device.hasUnifiedMemory);
+            receipt[@"hardware_hevc_advertised"]=@(VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC));
+            receipt[@"hardware_h264_advertised"]=@(VTIsHardwareDecodeSupported(kCMVideoCodecType_H264));
+            CFArrayRef decoders=nullptr;
+            OSStatus listed=VTCopyVideoDecoderList(nullptr,&decoders);
+            receipt[@"decoder_list_status"]=@(listed);
+            if(decoders){receipt[@"decoder_list_description"]=[(__bridge NSArray *)decoders description];CFRelease(decoders);}save();
             NSError *error=nil;AVURLAsset *asset=[AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:@(argv[1])] options:nil];
             AVAssetTrack *track=[[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];check(track!=nil,"no compressed video track");
             AVAssetReader *reader=[[AVAssetReader alloc]initWithAsset:asset error:&error];check(reader!=nil,"cannot create compressed sample reader");
@@ -53,13 +62,26 @@ int main(int argc,char **argv) {
                 (__bridge id)kCVPixelBufferIOSurfacePropertiesKey:@{},(__bridge id)kCVPixelBufferMetalCompatibilityKey:@YES};
             OSStatus made=VTDecompressionSessionCreate(kCFAllocatorDefault,(CMVideoFormatDescriptionRef)CMSampleBufferGetFormatDescription(sample),
                 (__bridge CFDictionaryRef)spec,(__bridge CFDictionaryRef)attrs,&callback,&session.value);
-            if(made!=noErr){CFRelease(sample);throw std::runtime_error("VideoToolbox native decoder unavailable: "+std::to_string(made));}
+            NSMutableArray *attempts=[NSMutableArray arrayWithObject:@{@"requirements":@"NV12 IOSurface Metal-compatible; hardware optional",@"status":@(made)}];
+            receipt[@"session_create_attempts"]=attempts;
+            receipt[@"format_description"]=[(__bridge id)CMSampleBufferGetFormatDescription(sample) description];save();
+            if(made!=noErr) {
+                // Diagnose a rejected output constraint separately from codec availability.
+                // Subsequent import checks still require the real decoded NV12 IOSurface.
+                NSMutableDictionary *withoutMetal=[attrs mutableCopy];[withoutMetal removeObjectForKey:(__bridge id)kCVPixelBufferMetalCompatibilityKey];
+                made=VTDecompressionSessionCreate(kCFAllocatorDefault,(CMVideoFormatDescriptionRef)CMSampleBufferGetFormatDescription(sample),
+                    nullptr,(__bridge CFDictionaryRef)withoutMetal,&callback,&session.value);
+                [attempts addObject:@{@"requirements":@"NV12 IOSurface; platform decoder",@"status":@(made)}];save();
+            }
+            if(made!=noErr) {
+                made=VTDecompressionSessionCreate(kCFAllocatorDefault,(CMVideoFormatDescriptionRef)CMSampleBufferGetFormatDescription(sample),
+                    nullptr,nullptr,&callback,&session.value);
+                [attempts addObject:@{@"requirements":@"platform defaults; diagnosis only unless import contract holds",@"status":@(made)}];save();
+            }
+            if(made!=noErr){CFRelease(sample);throw std::runtime_error("VideoToolbox native decoder unavailable after minimal constraints: "+std::to_string(made));}
             CFTypeRef hardware=nullptr;
             OSStatus property=VTSessionCopyProperty(session.value,kVTDecompressionPropertyKey_UsingHardwareAcceleratedVideoDecoder,kCFAllocatorDefault,&hardware);
             receipt[@"hardware_decoder"]=property==noErr&&hardware?(__bridge id)hardware:[NSNull null];if(hardware)CFRelease(hardware);
-            receipt[@"os"]=[[NSProcessInfo processInfo]operatingSystemVersionString];
-            id<MTLDevice> device=MTLCreateSystemDefaultDevice();receipt[@"metal_device"]=device.name?:@"unavailable";
-            receipt[@"metal_registry_id"]=@(device.registryID);receipt[@"metal_unified"]=@(device.hasUnifiedMemory);
             char why[256];context=api->create(why,sizeof why);check(context!=nullptr,why);
             VTDecodeInfoFlags flags=0;OSStatus status=VTDecompressionSessionDecodeFrame(session.value,sample,0,nullptr,&flags);
             VTDecompressionSessionWaitForAsynchronousFrames(session.value);
