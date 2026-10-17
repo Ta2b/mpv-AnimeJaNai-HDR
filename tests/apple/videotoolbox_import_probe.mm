@@ -45,10 +45,7 @@ int main(int argc,char **argv) {
             receipt[@"metal_registry_id"]=@(device.registryID);receipt[@"metal_unified"]=@(device.hasUnifiedMemory);
             receipt[@"hardware_hevc_advertised"]=@(VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC));
             receipt[@"hardware_h264_advertised"]=@(VTIsHardwareDecodeSupported(kCMVideoCodecType_H264));
-            CFArrayRef decoders=nullptr;
-            OSStatus listed=VTCopyVideoDecoderList(nullptr,&decoders);
-            receipt[@"decoder_list_status"]=@(listed);
-            if(decoders){receipt[@"decoder_list_description"]=[(__bridge NSArray *)decoders description];CFRelease(decoders);}save();
+            save();
             NSError *error=nil;AVURLAsset *asset=[AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:@(argv[1])] options:nil];
             AVAssetTrack *track=[[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];check(track!=nil,"no compressed video track");
             AVAssetReader *reader=[[AVAssetReader alloc]initWithAsset:asset error:&error];check(reader!=nil,"cannot create compressed sample reader");
