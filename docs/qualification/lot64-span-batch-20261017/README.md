@@ -1,0 +1,11 @@
+# AH-358 — SPAN neuronal B4 : décision bornée
+
+Le modèle Sharp1Performance audité contient déjà des Shape/Gather pour le batch des Reshape du pixel-unshuffle. Le prototype change seulement les annotations batch et enlève les anciens value_info figés ; tous les opérateurs, attributs et poids restent identiques. Plans TRT11.3 niveau5, même1280×720 et quatre entréesRGBFP16 distinctes. Aucun modèle/profil installé modifié. [Reçu](receipt.json).
+
+L'exécution neuronale B4 fonctionne, mais **la première image n'est pas strictement identique** à B1 :8 063 623valeursFP16 différentes sur11 059 200, aucun non-fini, écart absolu maximum0,0107422, MSE1,43062e-7. Ce constat ne démontre pas une perte de qualité perceptuelle ni son sens ; les choix internes de compilation/tactiques peuvent changer, cause non isolée. La transformation n'est donc pas validée comme optimisation exacte de Quality.
+
+Arrêt dès cet échec concluant : pas de comparaison des images suivantes ni de benchmark, pas d'activation runtime, aucun gain de débit revendiqué. Le probe inclut la mesure CUDAgraph ABBA mais la garde numérique l'a empêchée. AH76 reste ouvert pour les approches suivantes ; les pools/budgets AH53 et les contextes B1 concurrents ne sont pas livrés par ce prototype. Ne pas fermer ces parents avec cette seule étude.
+
+Reproduction : `tools/model-graph/span_dynamic_batch.py SOURCE NOUVEAU_DOSSIER`, puis compiler originalB1 et dérivéB4 avec `--optShapes=input:1x3x720x1280` / `4x3x720x1280`, niveau5, types ONNX imposés, mêmeTRT. `tests/inference/span-batch/compare.cpp`, compilé C++17 et lié TensorRT/CUDA, prend `reference.plan batch.plan input4.fp16`. Il retourne2au premier écart. Source inconnue et dossier existant refusés. Les médias/tenseurs restent privés ; hashes/commandes/recettes suffisent au relais.
+
+Si une autre piste le justifie, inspecter d'abord les précisions et tactiques B1/B4 sur les premières couches divergentes, avant tout raccord au lecteur. Ne pas inventer une tolérance ni déclarer une accélération sans comparaison pertinente. Une future qualification numérique différente devra être explicitement annoncée, conserver la référence et juger la fidélité, sans transformer silencieusement Quality en compromis.
