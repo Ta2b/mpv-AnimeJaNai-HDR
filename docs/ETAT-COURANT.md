@@ -62,7 +62,7 @@ AH-324 (archive TrueHDR originale) reste distinct. AH-333 (HDR avant interpolati
 
 ## Repères historiques utiles seulement si nécessaires
 
-Audit global AH-334 clos :333 tickets examinés,171 descriptions révisées, documents condensés ; nettoyage AH-340 livré .83. Voir [audit](AUDIT-GLOBAL-2026-10-17.md), [carte multi-dépôts](audit-20261017/repositories.md), [archives](ARCHIVES.md).
+Audit global AH-334 clos :333 tickets examinés,171 descriptions révisées, documents condensés ; nettoyage AH-340 livré .83. Voir [audit Jira AH-334](https://tatoub.atlassian.net/browse/AH-334). Les rapports historiques locaux `docs/AUDIT-GLOBAL-2026-10-17.md`, `docs/audit-20261017/repositories.md` et `docs/ARCHIVES.md` restent disponibles dans le workspace initial ; ils ne sont pas nécessaires à ces guides autonomes.
 
 Lot55/.82 AH-331/332 Done : Fast×4→SPAN58,8–60,5→18,3–18,4ms sur LinuxRTX4070Ti sansHDR ; Qualityexact. Hybride Quality×2→Fast×2 et chaîneHDR : pas de gain global établi. Fast×2 conserve sa voie séparée. Ces chiffres ne mesurent ni .84 ni les nouveaux candidats.
 
