@@ -1,0 +1,105 @@
+name: Qualify Core ML resident SPAN
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  resident-span:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reuse the normalized model already delivered in .88
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir source-model
+          gh release download 3.8.0.88 --repo "$GITHUB_REPOSITORY" --dir source-model \
+            --pattern mpv-AnimeJaNai-HDR-v3.8.0.88-macos-arm64.zip \
+            --pattern mpv-AnimeJaNai-HDR-v3.8.0.88-macos-arm64.zip.sha256
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,zipfile
+          source=Path('source-model/mpv-AnimeJaNai-HDR-v3.8.0.88-macos-arm64.zip')
+          assert hashlib.sha256(source.read_bytes()).hexdigest()==Path(str(source)+'.sha256').read_text().split()[0]
+          prefix='mpv AnimeJaNai.app/Contents/Resources/animejanai/onnx/'
+          with zipfile.ZipFile(source) as archive:
+              for member in archive.infolist():
+                  if member.is_dir() or not member.filename.startswith(prefix):continue
+                  relative=member.filename[len(prefix):]
+                  if not any(kind in relative for kind in ('Sharp1_Performance','V3.1_Performance')) or not (relative.endswith('.mlpatch') or '.mlpackage/' in relative):continue
+                  assert '..' not in Path(relative).parts and not Path(relative).is_absolute()
+                  target=Path('models')/relative;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(archive.read(member))
+          assert len(list(Path('models').glob('*.mlpatch')))==2
+          PY
+      - name: Fetch the matching engine build dependencies
+        run: |
+          curl -fsSL --retry 3 -o ort.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-osx-arm64-1.31.0.tgz
+          mkdir ort-x && tar -xzf ort.tgz -C ort-x
+          header="$(find ort-x -name onnxruntime_cxx_api.h -print -quit)"
+          mv "$(dirname "$(dirname "$header")")" ort
+          git clone --depth 1 --branch v0.11.1 https://github.com/the-database/animejanai-inference.git parser
+      - name: Build reference and candidate whole C ABI modules
+        run: |
+          git fetch --no-tags --depth=1 origin 18013889f61234facfa53b997d5aeebea2cdc307
+          git worktree add --detach baseline FETCH_HEAD
+          mkdir results
+          for variant in baseline candidate; do
+            source=native/linux-ort
+            [ "$variant" = candidate ] || source=baseline/native/linux-ort
+            cmake -S "$source" -B "$variant-build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 \
+              -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3 -DORT_ROOT="$PWD/ort" -DAJI_SOURCE="$PWD/parser"
+            cmake --build "$variant-build" --target aji_ort -j 4
+            codesign --force -s - "$variant-build/libaji_ort.dylib"
+          done
+          clang++ -std=c++17 -O2 -fobjc-arc -mmacosx-version-min=13.3 -Inative/linux-ort \
+            tests/apple/coreml_resident_owner_probe.mm -Lcandidate-build -laji_ort -framework Foundation -o owner-probe
+          codesign --force -s - owner-probe
+      - name: Qualify exact frames and removed conversion work once
+        env:
+          AJI_COREML_NO_PLAN: '1'
+          AJI_ORT_CACHE: ${{ github.workspace }}/cache
+          DYLD_LIBRARY_PATH: ${{ github.workspace }}/candidate-build:${{ github.workspace }}/ort/lib
+        run: |
+          sw_vers > results/machine.txt
+          uname -m >> results/machine.txt
+          shasum -a 256 models/*.mlpatch > results/tables.sha256
+          python - <<'PYCODE'
+          from pathlib import Path
+          import json
+          names=sorted(p.stem for p in Path('models').glob('*.mlpatch'))
+          conf='[global]\nbackend=CoreMLNative\nrife_engine=quality\nengine_reuse=off\nengine_boost=no\nengine_tiles=1\n[slot_1]\nchain_1_rife=no\n'
+          conf+='chain_1_model_1_name='+names[0]+'\nchain_1_model_2_name='+names[1]+'\n'
+          Path('results/resident.conf').write_text(conf)
+          Path('results/resize.conf').write_text(conf+'chain_1_model_2_resize_factor_before_upscale=50\n')
+          spec={k:str(Path(v).resolve()) for k,v in {'baseline':'baseline-build/libaji_ort.dylib','candidate':'candidate-build/libaji_ort.dylib','models':'models','conf':'results/resident.conf','resize_conf':'results/resize.conf','output':'results'}.items()}
+          Path('spec.json').write_text(json.dumps(spec))
+          Path('model-names.txt').write_text('\n'.join(names)+'\n')
+          PYCODE
+          python tests/apple/coreml_resident_chain_probe.py spec.json > results/chain.log 2>&1
+          first="$(sed -n '1p' model-names.txt)"
+          second="$(sed -n '2p' model-names.txt)"
+          ./owner-probe "$PWD/models" "$first" "$second" "$PWD/cache" results/owner.rgb > results/owner.log 2>&1
+          python - <<'PYCODE'
+          import hashlib,json
+          from pathlib import Path
+          r=json.loads(Path('results/receipt.json').read_text())
+          digest=hashlib.sha256(Path('results/owner.rgb').read_bytes()).hexdigest()
+          assert digest==r['cases']['base_off_on']['output_sha256']
+          r['owner_and_error_probe']={'retained_output_not_overwritten':True,'invalid_format_refused':True,'recovered_chain_output_exact':True,'output_sha256':digest}
+          Path('results/receipt.json').write_text(json.dumps(r,indent=2)+'\n')
+          PYCODE
+      - name: Preserve targeted native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coreml-resident-span-evidence
+          path: |
+            results/*.json
+            results/*.log
+            results/*.txt
+            results/*.sha256
+          if-no-files-found: warn
