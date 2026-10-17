@@ -1,9 +1,9 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "79e8aa48e0c776e8335c2430d538426ed3b0a506",
+  "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
   "player_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
-  "validation": "Linux RTX4070Ti ordered RIFE2->FRUC2->SPAN: correct 9 frames, PTS/durations/EOF; exact common RIFE/SPAN median under final TRT module; 6 legacy fractional outputs and PTS exact absent/equivalent v1. Queue/owners/cancel/reset/controlled-error and cancellable pending model build qualified. TRT CUDA fatbin exact prior binary. No FPS, HDR synthesis, other-HW/API or physical-presentation claim.",
+  "validation": "Lot55 Linux RTX4070Ti: ordered fusion restores Fast4 finished-source warp (short native SPAN interval60.522/58.831ms ->18.298/18.371ms). Quality4, hybrid Q2/F2 and four-link identity/Q2/F2/SPAN pixels and rational timeline exact. Fast2 native fusion rejected; separate block retained, hybrid timing gain nonconclusive. Prefix source cache and generation reset exact. Actual mpv NVDEC1080 -> Area720 -> RIFE4 -> SPAN1440 -> TrueHDR:9outputs, PTS/durations/EOF/owners correct. Complete HDR gain/displayFPS/otherHW unqualified. Portable RPATH relink .text/fatbin exact.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -50,12 +50,14 @@
     "optional-native-surface-cache-counters",
     "terminal-native-surface-wakeup",
     "portable-cuda-target-default",
-    "optional-typed-async-build-status"
+    "optional-typed-async-build-status",
+    "guarded-adjacent-surface-promotion",
+    "cached-prefix-upscale-endpoints"
   ],
   "sha256": {
     "libaji.so": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
-    "libaji_trt.so": "953c8f8f65cf9bf58140d1ad08a543f73b73ee8b9cfb5df506ff30063b92c414",
-    "libaji_trt_rtx.so": "953c8f8f65cf9bf58140d1ad08a543f73b73ee8b9cfb5df506ff30063b92c414"
+    "libaji_trt.so": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+    "libaji_trt_rtx.so": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -70,7 +72,7 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
+  "player_qualification_source": "e5df509c67bd6281d8d9acfa17a4c0317ca4b2c9",
   "windows_bundle_unchanged": {
     "binary_pin": "d00ed919d8337a89b68f519f1ab1ce71e68a8628",
     "backend_source": "652fbc6bdd3a9d815367deeb2df65538636705dc"
@@ -85,6 +87,11 @@
       "backend_source": "861ab52efda5f1313bd39b8e15053b6d3c31f130",
       "player_qualification_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
       "validation": "Linux RTX4070Ti CUDA13.4/TRT11.3 optional terminal completion wakeup integrated into spatial mpv producer. NVDEC pause reserve3 with bounded job slots3;12NV12 outputs+PTS and one default YUV444P16 output exact off/on, EOF. Controlled200ms fence withholding: IPC195.54->36.98ms with pending owners; NOT a real GPU/FPS speed claim. Seek correct, terminal failure discarded, owners28/28 and20/20 live0 at shutdown; older module explicit legacy fallback. Default CUDA target selection fixed before project compiler detection; final multi-SM build12+1 outputs rechecked against saved references after compilation-target correction. .text/fatbin unchanged by packaging RPATH. Other API/HW/HDR/real device-loss unqualified; Windows bundle unchanged d00ed919/652fbc6."
+    },
+    {
+      "backend_source": "79e8aa48e0c776e8335c2430d538426ed3b0a506",
+      "player_qualification_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
+      "validation": "Linux RTX4070Ti ordered RIFE2->FRUC2->SPAN: correct 9 frames, PTS/durations/EOF; exact common RIFE/SPAN median under final TRT module; 6 legacy fractional outputs and PTS exact absent/equivalent v1. Queue/owners/cancel/reset/controlled-error and cancellable pending model build qualified. TRT CUDA fatbin exact prior binary. No FPS, HDR synthesis, other-HW/API or physical-presentation claim."
     }
   ],
   "fruc_provider": {
@@ -120,17 +127,17 @@
     }
   },
   "ordered_pipeline": {
-    "backend_source": "4603933f363bc35ab2bcfab433ae665e7d4b7397",
+    "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
     "api": "aji_pipeline_v1",
     "sha256": {
-      "libaji_pipeline.so": "2d94f5601d9ec38235e796d2394053f88385cfd094cf40bbc38b16b0211d3c38",
+      "libaji_pipeline.so": "04733106673129bd508acee4f4068323cc63609aaffb35e331844b0b39140c28",
       "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
-      "PIPELINE-README.md": "0984be23f2d9f0400c21df2977a15c0ff431c5f183ddd5c8ceaa2a8f69f67d92"
+      "PIPELINE-README.md": "1b85a1f3bbe5aa628e6ea00057cc1bfeaa204c17424a8e0957f641df94bda8a4"
     },
     "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
     "explicit_opt_in": true,
     "sdk_external": true,
-    "qualified": "Linux RTX4070Ti SDR, native RIFE2->FRUC2->spatial SPAN; only actual supported stage capabilities; Fast FRUC8bit, no Quality equivalence; Area downscale reference/pixel ownership and actual NVDEC RIFE at720p verified on RTX4070Ti; relative performance nonconclusive due short variable timings; TrueHDR acquired SDK reference exact native YUV16, reset/owners/old-reader/color checked, actual NVDEC RIFE/FRUC->TrueHDR exact native timeline and export PQ2020, native HDR-only pixels unchanged; physical HDR display not exercised",
+    "qualified": "Linux RTX4070Ti SDR, native RIFE2->FRUC2->spatial SPAN; only actual supported stage capabilities; Fast FRUC8bit, no Quality equivalence; Area downscale reference/pixel ownership and actual NVDEC RIFE at720p verified on RTX4070Ti; relative performance nonconclusive due short variable timings; TrueHDR acquired SDK reference exact native YUV16, reset/owners/old-reader/color checked, actual NVDEC RIFE/FRUC->TrueHDR exact native timeline and export PQ2020, native HDR-only pixels unchanged; physical HDR display not exercised; lot55 fusion qualification: exact Quality/hybrid/4-link output, reset, actual NVDEC1080-720-1440 HDR timeline; Fast4 local native gain, full HDR performance nonconclusive",
     "cuda_architectures": [
       75,
       80,
@@ -141,7 +148,7 @@
       120,
       "PTX120"
     ],
-    "prior_backend_source": "9f2541e3dee1f159800b3a20c0e0729adc18491b",
+    "prior_backend_source": "4603933f363bc35ab2bcfab433ae665e7d4b7397",
     "features": [
       "independent-area-downscale",
       "static-reader-feature-query",
@@ -149,7 +156,12 @@
       "explicit-truehdr-conversion",
       "optional-output-color-query",
       "native-hdr-only-passthrough",
-      "explicit-fruc-artifact-protection"
+      "explicit-fruc-artifact-protection",
+      "maximal-interpolation-spatial-groups",
+      "ordered-compatible-trt-fusion",
+      "fast-x2-cost-fallback",
+      "typed-endpoint-reuse",
+      "optional-execution-trace"
     ],
     "sdk_hdr": {
       "externally_installed": true,

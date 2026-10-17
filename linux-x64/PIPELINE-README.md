@@ -83,3 +83,9 @@ repeats; provider SDK-only and protection counters remain separate. No cadence
 or timestamp changes, no CPU pixel copies; local fluidity can fall to source
 cadence. The conversion kernels for Area/TrueHDR are byte-identical to the
 previous bundle; only FRUC guard kernels and pipeline dispatch changed.
+
+## Consecutive interpolation/spatial groups (2026-10-17)
+
+Consecutive active interpolation/upscale links form one execution group. Compatible TensorRT blocks share an ABI9 context with the original order and RIFE policy. RIFE Fast x4 followed by spatial models can reuse finished source pictures and motion; Fast x2 retains a separate native block because the tested fused variants established no benefit. Multiple RIFE/providers may require multiple native contexts. Downscale/HDR remain explicit boundaries. Source-view/generation guards protect endpoint promotion and prefix spatial reuse; reset invalidates both. Nonidentity attached legacy resizes prohibit reordering by fusion.
+
+Qualified on Linux RTX4070Ti: exact Quality and hybrid reference pixels/PTS, four-link identity/Q2/F2/SPAN group, reset, and actual 1080p NVDEC -> Area720 -> RIFE4 -> SPAN1440 -> TrueHDR. Short native Fast4+SPAN interval improved from about59-61ms to18ms; complete HDR timing nonconclusive. Fast reconstruction retains its quality tradeoff. No display-FPS or other-hardware guarantee. See player qualification lot55.
