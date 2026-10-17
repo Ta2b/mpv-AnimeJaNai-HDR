@@ -1,0 +1,9 @@
+# AH-356 — Première conclusion sur le partage encodeur RIFE
+
+La coupe de RIFE4.26 non-ensemble est viable sur le cas qualifié : les trois synthèses RGBFP16 (.25/.5/.75) sont strictement identiques au plan monolithique, 2 949 120éléments par image, aucun non-fini. Opérateurs/poids conservés octet par octet, cinq raffinements et GridSample maintenus. Modèles originaux/profils/SDK non modifiés. Voir [le reçu](receipt.json) et le [guide reproductible](../../../tests/inference/rife-encoder/README.md).
+
+Un seul passage GPU court avec graphes, ordre ABBA : trois réseaux complets20,8044/20,8788ms ; un encodeur et trois têtes20,3735/19,9974ms. Moyennes20,8416→20,18545ms, économie locale0,65615ms≈3,15%. Ce sont des temps réseau CUDA sur cette seule paire représentative, forme et machine, pas un gain de débit vidéo. Le coût d'intégration/mémoire/fences dans le lecteur n'est pas inclus. Aucune raison de répéter cette observation concluante ni de promettre96FPS.
+
+Décision : conserver l'outil/probe de dérivation comme preuve reproductible ; la séparation passe son verrou numérique initial, mais son gain local modeste ne suffit pas à expliquer/résoudre le manque de débit global. Le raccord runtime doit être un ticket distinct si retenu : tête à deux entrées, cachefeatures15Mio à720p, identité de programme dérivé/recette/SHA, identités complètes de paire et reset, graphes détruits avant buffers, fallback monolithique. Ne pas l'activer automatiquement dans Quality sur d'autres modèles/formes/API sans preuve appropriée. AH73 reste ouvert.
+
+Plans compilés avec défaut RIFE réel niveau3, identique entre références/candidats. Les flags cuDNN/cuBLAS historiques sont retirés par le backend sur TRT11 ; une première invocation de build les a refusés avant compilation, corrigée sans mesure ni effet utilisateur. Les fichiers dérivés ne sont pas installés ni livrés comme modèles utilisables dans le Manager.
