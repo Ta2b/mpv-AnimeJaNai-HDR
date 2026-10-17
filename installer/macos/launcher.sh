@@ -66,6 +66,8 @@ if [ ! -f "$DATA/.display-defaults" ] && [ -f "$hdr" ]; then
 fi
 export MPV_HOME="$CONF"
 export ANIMEJANAI_BUNDLE="$RES"
+# Models live in user-linked folders, but native modules belong to this bundle.
+export ANIMEJANAI_INFERENCE_DIR="$RES/animejanai/inference"
 export ANIMEJANAI_ROOT="$DATA"
 export ANIMEJANAI_DATA_DIR="$DATA/animejanai"
 # Compiled models: out of the application (read-only once installed) and kept through updates.

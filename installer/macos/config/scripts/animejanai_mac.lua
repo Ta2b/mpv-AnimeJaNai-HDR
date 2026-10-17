@@ -321,7 +321,7 @@ local function open_manager()
         return
     end
     local args = {'/usr/bin/open', '-a', manager_app}
-    for _, name in ipairs({'ANIMEJANAI_IPC_PATH', 'ANIMEJANAI_DATA_DIR', 'ANIMEJANAI_ROOT', 'ANIMEJANAI_BUNDLE'}) do
+    for _, name in ipairs({'ANIMEJANAI_IPC_PATH', 'ANIMEJANAI_DATA_DIR', 'ANIMEJANAI_ROOT', 'ANIMEJANAI_BUNDLE', 'ANIMEJANAI_INFERENCE_DIR'}) do
         local value = os.getenv(name)
         if value and value ~= '' then
             args[#args + 1] = '--env'
