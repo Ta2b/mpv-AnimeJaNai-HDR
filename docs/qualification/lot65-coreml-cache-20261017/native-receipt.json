@@ -1,0 +1,62 @@
+{
+  "source": "50c3fd7215b317b983d3f73c5696dee5dd9d90f6",
+  "normalization": {
+    "recipe": "animejanai-coreml-manifest-v1",
+    "resources_sha256": "f64799358da911a30ac0955cc68cdc7201ccac3be352018d79b8d05ef4ebff48",
+    "manifest_sha256": "9b0f8f3bd392a5e00080cf1015e76ff3e6737b906a16790feebdd1815435cb55"
+  },
+  "cases": {
+    "original-cold": {
+      "returncode": 0,
+      "cache_miss": true,
+      "content_tag": "v2-1eaa574773eeef7745c9110d28dfe2ec40d34f8b2d3e880751d64e3b877f9b26",
+      "output_sha256": "18dfcc6c44d5a6abeeeb97c2c9e393c9126762ddc34e9da1e72fd806f8843f63"
+    },
+    "original-hit": {
+      "returncode": 0,
+      "cache_miss": false,
+      "content_tag": "v2-1eaa574773eeef7745c9110d28dfe2ec40d34f8b2d3e880751d64e3b877f9b26",
+      "output_sha256": "18dfcc6c44d5a6abeeeb97c2c9e393c9126762ddc34e9da1e72fd806f8843f63"
+    },
+    "normalized-cold": {
+      "returncode": 0,
+      "cache_miss": true,
+      "content_tag": "v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7",
+      "output_sha256": "18dfcc6c44d5a6abeeeb97c2c9e393c9126762ddc34e9da1e72fd806f8843f63"
+    },
+    "identical-reexport-hit": {
+      "returncode": 0,
+      "cache_miss": false,
+      "content_tag": "v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7",
+      "output_sha256": "18dfcc6c44d5a6abeeeb97c2c9e393c9126762ddc34e9da1e72fd806f8843f63"
+    },
+    "weights-only-rebuild": {
+      "returncode": 0,
+      "cache_miss": true,
+      "content_tag": "v2-6cea75140b3a685f8a7ab6222237e177b469864617d2af7b9a4f7c8a4c3f46de",
+      "output_sha256": "6edc44a92d81afdd1b88677453617452d4bcc3b324efbdca189be373e7b2b4b2"
+    },
+    "donor-reference": {
+      "returncode": 0,
+      "cache_miss": true,
+      "content_tag": "v2-7f7661a4c41c67169592cb4b3511d7c3029239fbe6cf6c321d97580debcc32d6",
+      "output_sha256": "6edc44a92d81afdd1b88677453617452d4bcc3b324efbdca189be373e7b2b4b2"
+    },
+    "corrupt-cache-diagnostic": {
+      "returncode": 1,
+      "cache_miss": false,
+      "content_tag": "v2-6cea75140b3a685f8a7ab6222237e177b469864617d2af7b9a4f7c8a4c3f46de"
+    },
+    "retry-rebuild": {
+      "returncode": 0,
+      "cache_miss": true,
+      "content_tag": "v2-6cea75140b3a685f8a7ab6222237e177b469864617d2af7b9a4f7c8a4c3f46de",
+      "output_sha256": "6edc44a92d81afdd1b88677453617452d4bcc3b324efbdca189be373e7b2b4b2"
+    }
+  },
+  "passed": true,
+  "pixels_exact_after_normalization": true,
+  "changed_weights_match_donor": true,
+  "old_entries_preserved": true,
+  "scope": "macOS native Core ML CPU, 256x256 RGB; no GPU/ANE/FPS claim"
+}

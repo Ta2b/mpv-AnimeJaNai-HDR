@@ -1,0 +1,76 @@
+{
+  "passed": true,
+  "resource_count_per_release": 32,
+  "original_differences": [
+    "2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16.mlpackage/Manifest.json",
+    "2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16.mlpackage/Manifest.json",
+    "2x_AnimeJaNai_HD_V3.1_Balanced_SPANF3_b8f64_unshuffle_fp16.mlpackage/Manifest.json",
+    "2x_AnimeJaNai_HD_V3.1_Performance_SPANF3_b5f48_unshuffle_fp16.mlpackage/Manifest.json"
+  ],
+  "old_tags": [
+    {
+      "2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16": "v2-7c6b821f478afb2960160d8baf159c7c1368c338de04366ab266e18892df7090",
+      "2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16": "v2-b84811bdac6688a23356b2248435f3d1299ac21328dee4ad1573b3620b56646c",
+      "2x_AnimeJaNai_HD_V3.1_Balanced_SPANF3_b8f64_unshuffle_fp16": "v2-d5b9d2268a65a624b2123c0fa25ddf698fe3ee2d71ddb38b2dd21bb36a7aa337",
+      "2x_AnimeJaNai_HD_V3.1_Performance_SPANF3_b5f48_unshuffle_fp16": "v2-be40b724552088d8321c2474061b82209116fc3ea3c34a6ee425cf7cd89e27c1"
+    },
+    {
+      "2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16": "v2-24bba37e4e3fcc39dc9bd8ecd10751c7128a1c10a50a848a62d5db3533e6db6d",
+      "2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16": "v2-1eaa574773eeef7745c9110d28dfe2ec40d34f8b2d3e880751d64e3b877f9b26",
+      "2x_AnimeJaNai_HD_V3.1_Balanced_SPANF3_b8f64_unshuffle_fp16": "v2-d24cbb82766af69a94cdf9973a73eec0087dc400c2696202b29c50e6ef2b930d",
+      "2x_AnimeJaNai_HD_V3.1_Performance_SPANF3_b5f48_unshuffle_fp16": "v2-7f7661a4c41c67169592cb4b3511d7c3029239fbe6cf6c321d97580debcc32d6"
+    }
+  ],
+  "stable_tags": {
+    "2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16": "v2-0dd363c4a759eaf65b163fd510495430a5e3b8ca19b0084b18355a28f07dd2d6",
+    "2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16": "v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7",
+    "2x_AnimeJaNai_HD_V3.1_Balanced_SPANF3_b8f64_unshuffle_fp16": "v2-b27eab771109dca5823b63215de62aca888a12d797effc07b80d4d3b48c20910",
+    "2x_AnimeJaNai_HD_V3.1_Performance_SPANF3_b5f48_unshuffle_fp16": "v2-0de5cb8413b5e032da95817cd27559f85da94b9a07979a106c11f83b4e926d75"
+  },
+  "recipes": {
+    "0/2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16": {
+      "recipe": "animejanai-coreml-manifest-v1",
+      "resources_sha256": "364450942d9c1e7986d4ecee2df84478e7f277f89217cd36b55fd3a2d9d9b9f6",
+      "manifest_sha256": "1ecdedbccc0111c9cb868c172df716fc647fe6865c8812f751892d05df1948c9"
+    },
+    "0/2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16": {
+      "recipe": "animejanai-coreml-manifest-v1",
+      "resources_sha256": "f64799358da911a30ac0955cc68cdc7201ccac3be352018d79b8d05ef4ebff48",
+      "manifest_sha256": "9b0f8f3bd392a5e00080cf1015e76ff3e6737b906a16790feebdd1815435cb55"
+    },
+    "0/2x_AnimeJaNai_HD_V3.1_Balanced_SPANF3_b8f64_unshuffle_fp16": {
+      "recipe": "animejanai-coreml-manifest-v1",
+      "resources_sha256": "6a507553ae9db39973ae1b56ea196361f478af6a9dc9ef7e8cff5fd44de002ef",
+      "manifest_sha256": "1b59e0217314e78e576ec5fb9f70ce49fddd8f7d91eaf61c2bf67c90a8a16677"
+    },
+    "0/2x_AnimeJaNai_HD_V3.1_Performance_SPANF3_b5f48_unshuffle_fp16": {
+      "recipe": "animejanai-coreml-manifest-v1",
+      "resources_sha256": "92f0d525f1a230b58f8a033c38af417e4a7a5fbb5b05dd209cd186fb6f771e06",
+      "manifest_sha256": "675722dc49c1814b30e622f564a33be08fc30af6fe2d7c20df5de31a2dc45957"
+    },
+    "1/2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16": {
+      "recipe": "animejanai-coreml-manifest-v1",
+      "resources_sha256": "364450942d9c1e7986d4ecee2df84478e7f277f89217cd36b55fd3a2d9d9b9f6",
+      "manifest_sha256": "1ecdedbccc0111c9cb868c172df716fc647fe6865c8812f751892d05df1948c9"
+    },
+    "1/2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16": {
+      "recipe": "animejanai-coreml-manifest-v1",
+      "resources_sha256": "f64799358da911a30ac0955cc68cdc7201ccac3be352018d79b8d05ef4ebff48",
+      "manifest_sha256": "9b0f8f3bd392a5e00080cf1015e76ff3e6737b906a16790feebdd1815435cb55"
+    },
+    "1/2x_AnimeJaNai_HD_V3.1_Balanced_SPANF3_b8f64_unshuffle_fp16": {
+      "recipe": "animejanai-coreml-manifest-v1",
+      "resources_sha256": "6a507553ae9db39973ae1b56ea196361f478af6a9dc9ef7e8cff5fd44de002ef",
+      "manifest_sha256": "1b59e0217314e78e576ec5fb9f70ce49fddd8f7d91eaf61c2bf67c90a8a16677"
+    },
+    "1/2x_AnimeJaNai_HD_V3.1_Performance_SPANF3_b5f48_unshuffle_fp16": {
+      "recipe": "animejanai-coreml-manifest-v1",
+      "resources_sha256": "92f0d525f1a230b58f8a033c38af417e4a7a5fbb5b05dd209cd186fb6f771e06",
+      "manifest_sha256": "675722dc49c1814b30e622f564a33be08fc30af6fe2d7c20df5de31a2dc45957"
+    }
+  },
+  "all_resources_exact_after_normalization": true,
+  "non_manifest_resources_unchanged": true,
+  "valid_weights_only_replacement_changes_tag_and_ids": true,
+  "scope": "portable content identity; no Apple API or FPS claim"
+}
