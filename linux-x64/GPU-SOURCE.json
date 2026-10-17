@@ -3,7 +3,7 @@
   "tensorrt_version": "11.3.0.99",
   "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
   "player_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
-  "validation": "Unchanged TensorRT and dispatcher retain lot62/earlier qualification. Ordered pipeline fatbin updated for exact integer Area3:2, see ordered_pipeline qualified scope. No new Windows/GPU/FPS extrapolation.",
+  "validation": "Lot70 Linux RTX4070Ti configured RIFE semantics/error buffers/old Quality refusal/current Quality and Fast/old explicit Fast passed, no video frames or FPS measured. TRT device .nv_fatbin byte-identical to lot62; numeric/source-cache/quality-batch qualification reused. Optional API reports loaded symbol image, not mapped-page hash; build source declaration unknown in portable image without git.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -56,12 +56,13 @@
     "fast-above-x3-unused-score-elision",
     "lazy-fallback-rife-yuv-pads",
     "quality-yuv-staging-copy-elision",
-    "optional-synchronous-cuda-surface-batch"
+    "optional-synchronous-cuda-surface-batch",
+    "optional-configured-rife-semantics-v1"
   ],
   "sha256": {
     "libaji.so": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
-    "libaji_trt.so": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
-    "libaji_trt_rtx.so": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd"
+    "libaji_trt.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+    "libaji_trt_rtx.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e"
   },
   "linux_build": {
     "environment": "local aji-rtx-build Ubuntu baseline Docker",
@@ -76,7 +77,7 @@
       "120-virtual"
     ]
   },
-  "player_qualification_source": "e5df509c67bd6281d8d9acfa17a4c0317ca4b2c9",
+  "player_qualification_source": "53e62bb8ad7c5032ac7c923b5e79823d47db4918",
   "prior_qualifications": [
     {
       "backend_source": "7e9c87137e77046e5c521e635634bfdef751a277",
@@ -115,17 +116,17 @@
     }
   ],
   "ordered_pipeline": {
-    "backend_source": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d",
+    "backend_source": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
     "api": "aji_pipeline_v1",
     "sha256": {
-      "libaji_pipeline.so": "9432437367c4a94488940e9c305d9a31782b7ccabe8287c6dda73dc76bee7bf0",
+      "libaji_pipeline.so": "834ca0a740b92e632b5ea63b07f5da28326d6bd2cc72f67b08ed6a8f6b9b39bc",
       "aji_pipeline.fatbin": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
-      "PIPELINE-README.md": "57d4ca37d0d0a49cda73719cf5bf50161efc79e9663e92b68d9f8e4db0bce5fc"
+      "PIPELINE-README.md": "b22600caedee5387a50a5c8ec2b79d793162534b9b2f0998363fd9b1dfa169c1"
     },
     "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
     "explicit_opt_in": true,
     "sdk_external": true,
-    "qualified": "Lot68 Linux RTX4070Ti: Area1920x1080->1280x720, same pitched/cropped YUV444P16 input covering all65536 codes.2764800 outputs exact reference/candidate/integer oracle; owners/descriptors/padding preserved. Only3:2 uses integer weights, other geometry retains generic arithmetic. Static removal of FP64 footprint work, no FPS claim. libaji_pipeline.so rebuilt byte-identical to lot62; its prior fusion/TrueHDR/Quality batch qualification reused, not repeated.",
+    "qualified": "Lot70 Linux RTX4070Ti: old provider Quality-alone refused before create/configure; current Quality4+SPAN fused reports effectiveQuality/flags1 and actual module; currentFast flags2; old explicit Fast accepted with effectiveunknown. Native null/short/version/unconfigured query output untouched. CPU fixture proves dependency symbol cannot certify old engine, and guard precedes configure. No video frame processed or FPS claimed. Device kernels unchanged, prior numeric proofs reused; historical ABI9 path/Windows/macOS not protected by this ticket.",
     "cuda_architectures": [
       75,
       80,
@@ -153,7 +154,8 @@
       "independent-spline36-downscale",
       "single-final-copy-batch-wait",
       "synchronous-native-quality-batch",
-      "exact-integer-area-three-halves"
+      "exact-integer-area-three-halves",
+      "required-effective-quality-contract"
     ],
     "sdk_hdr": {
       "externally_installed": true,
@@ -189,9 +191,9 @@
       "after": 17.402252999090706
     },
     "prior_timing_scope": "Two warmup intervals then three contiguous intervals; short timing observation, not display FPS or universal performance",
-    "player_qualification_source": "79e24e0e723a9795a6491329645f3094bd3537c2",
+    "player_qualification_source": "53e62bb8ad7c5032ac7c923b5e79823d47db4918",
     "module_sources": {
-      "libaji_pipeline.so": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d",
+      "libaji_pipeline.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
       "aji_pipeline.fatbin": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d"
     },
     "build": {
@@ -220,13 +222,19 @@
       "hardware_qualified": [
         "RTX4070Ti SM89"
       ]
+    },
+    "quality_contract": {
+      "feature_bit": 16,
+      "quality": "requires same-image configured semantics-v1 before pixels; missing contract refused before create",
+      "fast": "older provider accepted with effective semantics unknown",
+      "protected_route": "ordered CUDA pipeline only; historical ABI9/dispatcher/other OS remain separate"
     }
   },
   "module_sources": {
     "libaji.so": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
-    "libaji_trt.so": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
-    "libaji_trt_rtx.so": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
-    "libaji_pipeline.so": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d",
+    "libaji_trt.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
+    "libaji_trt_rtx.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
+    "libaji_pipeline.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
     "aji_pipeline.fatbin": "3447cd8dc1e6649cf9e8e75656c951ebc91f4d5d"
   },
   "lot58_source_reuse_proof_sha256": "f1deab18488760638525a34402db4eb922e0d170b74fa02451a50ed30f180de6",
@@ -236,5 +244,15 @@
     "preserved_modules": [
       "aji_migraphx.dll"
     ]
+  },
+  "rife_semantics_v1": {
+    "version": 1,
+    "implemented_platforms": [
+      "Linux CUDA"
+    ],
+    "scope": "configured context, idle serialized calls; no per-frame query",
+    "binary_source_declaration": "unknown (git absent from portable build image)",
+    "loaded_image_path_is_not_a_mapped_pages_hash": true,
+    "numeric_gpu_section_sha256": "23766330f0d82b1a69660abff608b3f0630ea9089f03be755eb4e06830d097cc"
   }
 }

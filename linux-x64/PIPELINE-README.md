@@ -1,9 +1,9 @@
 # Ordered interpolation stages — Linux CUDA
 
 This bundle contains the project-owned libaji_pipeline.so and aji_pipeline.fatbin.
-See GPU-SOURCE.json ordered_pipeline.backend_source for their exact source commit,
-and module_sources for each unchanged TensorRT/dispatcher library. The top-level
-backend_source is historical; per-module sources are authoritative.
+See GPU-SOURCE.json module_sources and ordered_pipeline.module_sources for the
+exact source of each artifact. Legacy backend_source is historical; per-module
+sources are authoritative.
 No NVIDIA SDK/runtime/headers or model weights are redistributed by this feature.
 
 Supported native stages: RIFE TensorRT integer x2..8; spatial ONNX TensorRT;
@@ -71,3 +71,13 @@ AH-360: exact Area3:2 specialization uses integer (2,1)/(1,2) weights and
 2764800 output values exact to previous generic Area and integer oracle;
 crops/strides/padding/descriptors/owners preserved. Generic other ratios stay
 unchanged. This removes generic FP64 footprint work, not a measured FPS claim.
+
+AH-361: Quality requires configured RIFE semantics-v1 from the same loaded
+image as create/configure/process. Missing or inconsistent semantics refuse
+Quality before pixels (missing API: before create/build). Existing local files
+are preserved; update GPU components and restart the player. Explicit Fast
+remains compatible with older modules and reports effective=unknown. A loaded
+symbol path and optional declared source are not a hash of mapped pages.
+Qualification covers initialization/guards, no video replay/FPS gain. Numeric
+GPU sections are identical to prior qualified code. This applies only to the
+ordered CUDA pipeline, not historical ABI9/dispatcher or other OS.
