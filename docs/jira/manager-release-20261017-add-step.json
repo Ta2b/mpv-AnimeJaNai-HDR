@@ -1,0 +1,35 @@
+{
+  "source": "714d48e1924dcd8ef1933a1e93966900830a9789",
+  "player_shared_source": "97e325efb59e80d2eac7dfc685192052a01d7399",
+  "producer_run": 39031655538,
+  "three_os_build_and_publish": "success",
+  "tag": "hdr-714d48e1924dcd8ef1933a1e93966900830a9789",
+  "assets": [
+    {
+      "name": "AnimeJaNaiManager-HDR-linux-x64.tar.zst",
+      "size": 44327148,
+      "sha256": "8803072fa07fb303ebc56ee4465ed4253aef8fa2fe48e8dad78e3604da2cd37b"
+    },
+    {
+      "name": "AnimeJaNaiManager-HDR-macos-arm64.zip",
+      "size": 46784389,
+      "sha256": "46f1e85cd7d5b1aff96d4123aea4c950fa0a79594b70cb73a20dc50d8eb8a143"
+    },
+    {
+      "name": "AnimeJaNaiManager-HDR-x64.zip",
+      "size": 49022296,
+      "sha256": "b32d500e0ae5f327a3b5f571b15415074fece51782a85610d11d3272e75a68ef"
+    },
+    {
+      "name": "AnimeJaNaiManager-HDR.exe",
+      "size": 99548787,
+      "sha256": "c7c2f25578672650de8eb2ab4d40b21e081a6535b8412c520b5c1e9f76e9bebc"
+    }
+  ],
+  "actual_linux_executable": {
+    "sha256": "7ef45a248f6349ab3371efb0eb6b2603bd9a1f16aee9f627720236844a20484b",
+    "compiled_source_marker_exact": true,
+    "deferred_OnAddStep_lambda_marker_present": true
+  },
+  "qualification": "tests/AddStepUi before failed first category; after 25 assertions pass; no engine/video mutation"
+}

@@ -36,9 +36,9 @@ Le patch rejeté et son protocole sont versionnés comme recherche, jamais à ap
 
 Régression utilisateur reproduite via les vrais boutons Avalonia Headless : menu ouvert, contexte et commande valides, clic Interpolation n’ajoute rien. Le Click ferme le Flyout avant l’exécution de la commande, ce qui détache son binding. Correctif : fermeture différée sur le dispatcher UI.
 
-Manager isolé `/home/ta2b/.animejanai-tools/work/lot-85-manager-add-step-20261017`, branche perf-specialized-manager-add-step-20261017 ; test `tests/AddStepUi` : échec avant, quatre catégories/sélection inactive/fermeture/sauvegarde-rechargement puis gardes HDR unique/plafond16/schéma futur passés après, sans replay. Aucun moteur/vidéo changé. Producteur trois OS lancé ; livraison PLAYER .106 à faire après disponibilité des assets. AH369 In Progress, parent AH224 reste ouvert. PLAYER isolé `lot-85-manager-add-step-player-20261017`.
+Manager isolé `/home/ta2b/.animejanai-tools/work/lot-85-manager-add-step-20261017`, branche perf-specialized-manager-add-step-20261017 ; test `tests/AddStepUi` : échec avant, quatre catégories/sélection inactive/fermeture/sauvegarde-rechargement puis gardes HDR unique/plafond16/schéma futur passés après, sans replay. Aucun moteur/vidéo changé. Producteur trois OS39031655538 réussi, tag immuable et quatre assets publiés ; source714d48e1924dcd8ef1933a1e93966900830a9789 épinglée dans PLAYER .106. Publication du lot puis vérification finale. AH369 In Progress, parent AH224 reste ouvert. PLAYER isolé `lot-85-manager-add-step-player-20261017`.
 
-AH368 In Progress : étude bornée d’ordonnancement Quality RIFE→SPAN, **aucun code ni gain encore**. Checkouts propres lot-84-quality-stage-major-{player,backend}-20261017, backend base118c272 (jamais candidat rejeté82c8). Reprendre après correctif Manager ; lire ticket détaillé. Corriger son chemin de fichier en `include/surface_cuda_state.h` avant implémentation.
+AH368 In Progress : étude bornée d’ordonnancement Quality RIFE→SPAN, **aucun code ni gain encore**. Checkouts propres lot-84-quality-stage-major-{player,backend}-20261017, backend base118c272 (jamais candidat rejeté82c8). Reprendre après correctif Manager ; lire ticket détaillé. Chemin corrigé dans Jira : `include/surface_cuda_state.h`.
 
 ## Problème Quality×4 toujours ouvert
 
