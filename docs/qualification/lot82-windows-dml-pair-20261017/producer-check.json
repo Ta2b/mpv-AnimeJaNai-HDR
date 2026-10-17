@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "producer": {
+    "schema": "animejanai.windows-mpv-bundle.v1",
+    "mpv_source": "19c0fcf89595e6ab33908299207c555b67e81558",
+    "patch_sha256": "526303a3a596436acc7cc339e400f3f4adc0a40c7680573d8bc7e329e9b03095",
+    "filter_sha256": "7ecbb7e76d4f5a05f8933b5bbdf10a075541de23617112730af9ced51e2e8bba",
+    "dml_exact_pair": 1,
+    "abi": 9,
+    "hardware_qualification": "not-run",
+    "player_source": "32464bc13260918381537dbb73a5a2e7523c2477",
+    "winbuild_source": "597bab33931cbd2ec29abe9d44a29e6363da7499",
+    "recipe_source": "1f8d2e76255abc48f0456d9be99b4cab9c6566e6",
+    "libass_source": "896614fa263f9f64944f7b8650ff6806d5328c4d",
+    "libplacebo_source": "0d043c7f6f79cd3687c023454bdacbe615e4d96f",
+    "files": {
+      "libmpv-2.dll": "adba3568849d9becdb506ce028d4848979908c667034afe051f7faa8aa47b196",
+      "mpv.com": "3e781712c2183b949bb43ea7e2fa8ffccae54240ab4c069e8c55fb27688a4a49",
+      "mpv.exe": "858089c7113c0988e1b9e398e3f8b74dc97c5a9ae9f683a8700c03705d291320"
+    }
+  },
+  "archive_sha256": "62d5039e072bc307cd55f1c29ea21617530e5a4e6173493b064565ffb93dcf8c",
+  "backend_source": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
+  "backend_build": 39009958899,
+  "dispatcher_exports_begin_pair": true,
+  "gpu_qualification": "not run; no Windows hardware here",
+  "source_policy": "full RGB predictions unchanged; CPU cache invariants reuse existing proof"
+}
