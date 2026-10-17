@@ -48,7 +48,9 @@ ciblé corrigé, sans relancer de contrôles concluants.
 Manager b6ebb1a696d8e8bc04a960651784d3e4c662b1b2, workflow 38984776150 success,
 quatre assets immuables vérifiés. Rapport/reçus dans
 artifacts/performance/lots-20261017/lot-49 et docs/jira/lot-49-truehdr-import-20261017.json.
-AH-318 reste In Progress jusqu’à livraison vérifiée de 3.8.0.80.
+3.8.0.80 livrée et vérifiée : trois workflows success,17 assets non vides, deux
+manifestes et EXE/DLL du Manager exacts. AH-318 Done, commentaire10183 ; reçu
+docs/jira/release-20261017-3.8.0.80.json.
 
 Le contrôle du layout de l’archive NGC originale est explicitement isolé dans
 AH-324, To Do. Aucun compte, clé ou téléchargement authentifié automatique.

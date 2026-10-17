@@ -1,0 +1,133 @@
+{
+  "lot": 52,
+  "tickets": {
+    "AH-322": "In Progress",
+    "AH-327": "In Progress"
+  },
+  "backend_source": "4603933f363bc35ab2bcfab433ae665e7d4b7397",
+  "manager_source": "2847c79961c0d14241234d2ef8799b399e4b6a9d",
+  "binary_source": "92fb311a7f5b7ae522c4e7a88c7798c5c97c2f32",
+  "metric": {
+    "passed": true,
+    "cases": [
+      {
+        "case": "beam",
+        "integer_sums": [
+          1246113,
+          1433662,
+          3952898
+        ],
+        "threshold_ratio": 2,
+        "trigger": true,
+        "gpu_metric_ms": 0.0798719972372055,
+        "input_sha256": "dd9615cffb090e170542da1bae63012ed997afa4148b6c97f90764ce456c61e2",
+        "cached_sdk_sha256": "67e8aceaedb8ba7c5f713781b3146c8e7d9f136c6bac4a7bd41bb1278732fa54"
+      },
+      {
+        "case": "ordinary",
+        "integer_sums": [
+          3312992,
+          2896227,
+          3462934
+        ],
+        "threshold_ratio": 2,
+        "trigger": false,
+        "gpu_metric_ms": 0.03276799991726875,
+        "input_sha256": "e30f5c91686fd5c7e6f7fb427d468501cb283c3560934def1525d62f8838e458",
+        "cached_sdk_sha256": "9c0e9f53f99e4ee94a1f79403b208637665d93268fd7827e1f1622e82b2a0135"
+      }
+    ],
+    "scope": "One new GPU metric interval per cached case; exact independent integer oracle, no SDK replay; isolated overhead only, no FPS claim.",
+    "identity": {
+      "libaji_fruc.so": "8bedb990cff62cd91f04568e303aaea7a9f85e5bd89e8d26239007f6d22e1905",
+      "aji_fruc.fatbin": "52a5af438281eb9a840c5ecd7dff9e6ad1574bb58bbc4db8b0f5dfbebe80506c",
+      "libaji_pipeline.so": "2d94f5601d9ec38235e796d2394053f88385cfd094cf40bbc38b16b0211d3c38",
+      "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d"
+    }
+  },
+  "native": {
+    "passed": true,
+    "output_flags": [
+      1,
+      140,
+      1
+    ],
+    "source_originals_and_protected_frame_bitexact": true,
+    "pts_ns": [
+      0,
+      20500000,
+      41000000
+    ],
+    "durations_ns": [
+      20500000,
+      20500000,
+      41000000
+    ],
+    "complete_wall_ms": [
+      60.713961996953,
+      0.6052690005162731
+    ],
+    "owners_balanced": true,
+    "roi_padding_intact": true,
+    "descriptors_unchanged": true,
+    "fruc_sdk_predictions": 1,
+    "policy_repeats": 1,
+    "cpu_pixel_copies": 0,
+    "scope": "One new protected beam interval plus EOF; no direct SDK/format/neural reference replay. Local fluidity reduced to original cadence for the protected interval.",
+    "identity": {
+      "libaji_fruc.so": "8bedb990cff62cd91f04568e303aaea7a9f85e5bd89e8d26239007f6d22e1905",
+      "aji_fruc.fatbin": "52a5af438281eb9a840c5ecd7dff9e6ad1574bb58bbc4db8b0f5dfbebe80506c",
+      "libaji_pipeline.so": "2d94f5601d9ec38235e796d2394053f88385cfd094cf40bbc38b16b0211d3c38",
+      "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d"
+    }
+  },
+  "player": {
+    "passed": true,
+    "output_flags": [
+      1,
+      140,
+      1
+    ],
+    "native_timeline": [
+      [
+        0.0,
+        0.0205,
+        1
+      ],
+      [
+        0.0205,
+        0.0205,
+        140
+      ],
+      [
+        0.041,
+        0.041,
+        1
+      ]
+    ],
+    "protected_source_copy_bitexact": true,
+    "geometry": [
+      1920,
+      1080
+    ],
+    "nvdec_used": true,
+    "process": {
+      "returncode": 0,
+      "wall_ms": 1015.1757540006656
+    },
+    "scope": "One new two-source NVDEC interval and EOF; protected output repeats source pixels exactly, no invented future frame. No SDK or neural reference replay/FPS claim."
+  },
+  "ui": {
+    "passed": true,
+    "checks": [
+      "new capable reader offers one protection control enabled by default",
+      "protection states its original-repeat and fluidity compromise",
+      "explicit off preserves standard FRUC and survives save reload",
+      "protection on remains FRUC Fast x2 with same stage identity",
+      "older provider cannot silently enable unsupported protection",
+      "standard FRUC is still explicitly available on the older provider"
+    ],
+    "scope": "New FRUC guard option/capability/persistence only; no old UI suite or GPU pixels replayed"
+  },
+  "release": "3.8.0.81 preparing"
+}

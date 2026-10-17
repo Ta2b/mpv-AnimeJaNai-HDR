@@ -3,7 +3,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum aji_fruc_create_flags { AJI_FRUC_ALLOW_FAST=1 };
+enum aji_fruc_create_flags { AJI_FRUC_ALLOW_FAST=1, AJI_FRUC_PROTECT_ARTIFACTS=2 };
+/* Static feature mask 1: synthesis artifact protection, no GPU initialization. */
+uint64_t aji_fruc_features_v1(void);
+typedef struct aji_fruc_protection_stats_v1 {
+    uint32_t struct_size,version;
+    uint64_t checked,protected_frames;
+} aji_fruc_protection_stats_v1;
+int aji_fruc_protection_stats_v1_get(void *,aji_fruc_protection_stats_v1 *,size_t);
 typedef struct aji_fruc_create_v1_params {
     uint32_t struct_size,version,flags,width,height,device_index,capacity,reserved;
     uint64_t generation;
@@ -18,7 +25,9 @@ typedef struct aji_fruc_create_v1_params {
  * RGB8/full RGB, NV12/left and YUV444P16 supported SDR, no rotation/flip/HDR.
  * Internal FRUC synthesis is 8 bit even with 16-bit YUV input/output. Separate
  * model/runtime/upscaler; no SDK redistribution, implicit load, CPU fallback,
- * or pretended Quality equivalence. Error text buffer may be NULL/zero length.
+ * or pretended Quality equivalence. PROTECT_ARTIFACTS rejects severe bright-edge
+ * excess by repeating the exact previous source for matching surface formats;
+ * local fluidity is reduced and defects outside this guard can remain. Error text buffer may be NULL/zero length.
  */
 int aji_fruc_create_v1(const aji_fruc_create_v1_params *,void **,char *,size_t);
 #ifdef __cplusplus

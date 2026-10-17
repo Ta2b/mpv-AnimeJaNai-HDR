@@ -1,6 +1,6 @@
 # Reprise du travail — état au 14 octobre 2026
 
-Point courant 17 octobre : **3.8.0.79 publiée sur les trois plateformes, AH-317 Done** ; Manager f69589d7 et module/noyau HDR vérifiés. Downscale est séparé depuis .78 (AH-315/AH-323 Done). HDR réel avec SDK installé, un par profil, après les moteurs SDR ; source HDR seule préservée. **Lot49/.80 poussé : AH-318 In Progress jusqu’à livraison vérifiée**, import Core/feature, Manager b6ebb1a6 publié et qualifié ; Core officiel importé, 14 gardes, 7 contrôles UI, lanceur vérifié sans test vidéo. Archive NGC originale feature isolée explicitement dans **AH-324 To Do**. Voir qualification/lot-48-hdr-stage-20261017.md et lot-49-truehdr-import-20261017.md. .77/AH-320 Done, mitigation FRUC AH-322 ouverte ; autres tickets conservés.
+Point courant 17 octobre : **3.8.0.79 publiée sur les trois plateformes, AH-317 Done** ; Manager f69589d7 et module/noyau HDR vérifiés. Downscale est séparé depuis .78 (AH-315/AH-323 Done). HDR réel avec SDK installé, un par profil, après les moteurs SDR ; source HDR seule préservée. **Lot49/.80 publiée et vérifiée : AH-318 Done**, import Core/feature, Manager b6ebb1a6 publié et qualifié ; Core officiel importé, 14 gardes, 7 contrôles UI, lanceur vérifié sans test vidéo. Archive NGC originale feature isolée explicitement dans **AH-324 To Do**. Voir qualification/lot-48-hdr-stage-20261017.md et lot-49-truehdr-import-20261017.md. .77/AH-320 Done, mitigation FRUC AH-322 ouverte ; autres tickets conservés.
 
 ## Quality / Fast — 3.8.0.31 publiée le 15 octobre 2026
 

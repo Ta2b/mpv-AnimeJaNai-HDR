@@ -1,7 +1,7 @@
 {
   "lot": 49,
   "tickets": {
-    "AH-318": "In Progress",
+    "AH-318": "Done",
     "AH-324": "To Do"
   },
   "manager_source": "b6ebb1a696d8e8bc04a960651784d3e4c662b1b2",
@@ -52,7 +52,8 @@
   ],
   "jira_comments": [
     "10179",
-    "10180"
+    "10180",
+    "10183"
   ],
-  "release": "3.8.0.80 preparing"
+  "release": "3.8.0.80 verified"
 }

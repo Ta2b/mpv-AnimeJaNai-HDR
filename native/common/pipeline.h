@@ -16,7 +16,7 @@ enum aji_pipeline_cap_flags { AJI_PIPELINE_COLOR_CHANGE=4 };
 enum aji_pipeline_request_flags { AJI_PIPELINE_EOF=2 };
 enum aji_pipeline_output_flags { AJI_PIPELINE_ORIGINAL=1, AJI_PIPELINE_RIFE=2,
     AJI_PIPELINE_FRUC=4, AJI_PIPELINE_REPEATED=8, AJI_PIPELINE_UPSCALED=16,
-    AJI_PIPELINE_RESIZED=32, AJI_PIPELINE_HDR=64 };
+    AJI_PIPELINE_RESIZED=32, AJI_PIPELINE_HDR=64, AJI_PIPELINE_PROTECTED=128 };
 typedef struct aji_pipeline_create_v1_params {
     uint32_t struct_size,version,width,height,device_index,slot,capacity,flags;
     uint64_t generation;
@@ -41,7 +41,7 @@ typedef struct aji_pipeline_submit_v1_request {
     aji_surface_dependency_v1 dependencies[3];
 } aji_pipeline_submit_v1_request;
 typedef struct aji_pipeline_completion_v1 {
-    aji_interpolator_completion_v1 result; /* flags: any SDK repetition in this burst */
+    aji_interpolator_completion_v1 result; /* flags: any provider or protection repetition in this burst */
     uint32_t output_count,output_flags[AJI_PIPELINE_MAX_OUTPUTS];
 } aji_pipeline_completion_v1;
 typedef struct aji_pipeline_stats_v1 {

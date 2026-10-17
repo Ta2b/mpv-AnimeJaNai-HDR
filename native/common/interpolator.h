@@ -11,7 +11,7 @@ extern "C" {
 #define AJI_INTERPOLATOR_MAX_IO 8
 enum aji_interpolator_phase_kind { AJI_INTERPOLATOR_SCALAR=1, AJI_INTERPOLATOR_MAP=2 };
 enum aji_interpolator_flags { AJI_INTERPOLATOR_FAST=1, AJI_INTERPOLATOR_FIXED_MEDIAN=2 };
-enum aji_interpolator_completion_flags { AJI_INTERPOLATOR_REPEATED=1 };
+enum aji_interpolator_completion_flags { AJI_INTERPOLATOR_REPEATED=1, AJI_INTERPOLATOR_PROTECTED=2 };
 typedef struct aji_interpolator_phase_v1 {
     uint32_t kind,reserved;
     double scalar;
