@@ -24,6 +24,10 @@ Branche PLAYER `impl/lot-a-20261017` (base `c6fee61`), backend `impl/lot-fidelit
 
 Reste pour ce lot : vérifier la release 3.8.0.107 (trois CI), qualifier AH-371 sur une source 601, mesurer AH-374 en lecture.
 
+## Lot B en cours (18 octobre) — budget Quality ×4
+
+Branches `impl/lot-b-20261018` (PLAYER et BACKEND). Livré en code : temps GPU par étage et par job (`AJI_PIPELINE_TIMING=1`), banc alterné `tools/bench/pipeline_bench.py`, attente de construction `tests/inference/pipeline_build_wait.py` (AH-396) ; encodeur RIFE 4.26 partagé en opt-in (`AJI_RIFE_ENCODER_CACHE=1`, ÉQUIVALENT FP32 sur la chaîne du lot 55) ; SPAN à lot dynamique 1..4 avec remise directe RIFE → SPAN en RGB FP16 (AH-376, AH-74, bascules `AJI_SPAN_BATCH=0`, `AJI_RIFE_DIRECT_HANDOFF=0`) ; règle d'équivalence v2 (AH-399). Reste : mesures sur GPU libre (le GPU de référence sert aussi à jouer), décision des défauts, build toutes architectures, bundle et release 3.8.0.108.
+
 ## Audit des tickets (17 octobre, fin de soirée)
 
 283 tickets ouverts audités un par un : 203 clos (fusionnés dans leur ticket parapluie avec un commentaire qui le nomme, ou sans voie temps réel), 55 réécrits au format commun (verdict, périmètre, fichiers, étapes, preuve de clôture, gain attendu, modèle d'exécution recommandé), 25 créés le jour même conservés tels quels. Parapluies : AH-377 (programme VFI, catalogue des méthodes), AH-384/385/386/387/82 (objectifs AMD, Intel, Apple, Vulkan, Windows), AH-388 (kernels), AH-389 (modèles), AH-394 (matrice par matériel), AH-396 (banc), AH-329 (budget Quality ×4). Règle d'exécution : Opus 5.5 effort high pour moteur/filtre/interop, Fable 5.1 medium pour Lua/Manager/docs/scripts, Fable 5.1 max pour les études ; revue adversariale seulement avant une release moteur.
