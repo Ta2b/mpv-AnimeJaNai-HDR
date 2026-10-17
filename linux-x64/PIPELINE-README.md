@@ -1,91 +1,66 @@
-# Ordered interpolation stages — experimental Linux CUDA
+# Ordered interpolation stages — Linux CUDA
 
-Project-owned libaji_pipeline.so and aji_pipeline.fatbin, backend source
-4603933f363bc35ab2bcfab433ae665e7d4b7397. TRT optional build-status extension
-comes from 79e8aa48e0c776e8335c2430d538426ed3b0a506 (same TRT sources at 35c0049).
-No NVIDIA SDK/runtime/headers or model weights are included by this feature.
+This bundle contains the project-owned libaji_pipeline.so and aji_pipeline.fatbin.
+See GPU-SOURCE.json ordered_pipeline.backend_source for their exact source commit,
+and its separate top-level backend_source for the unchanged TensorRT libraries.
+No NVIDIA SDK/runtime/headers or model weights are redistributed by this feature.
 
-Opt in with chain_N_pipeline_version=1 and ordered stage keys, as documented
-in docs/INTERPOLATION-STAGES.md. Requires the matching ordered-pipeline1 Linux
-mpv filter; existing profiles keep their original arithmetic and rational cadence.
-RIFE TensorRT x2..8, FRUC CUDA Fast x2, spatial ONNX TensorRT can be ordered.
-Cumulative factor <=16, <=16 stages, capacity1..2, owned pixel budget512MiB.
-Mixed factors currently integer; exact-equivalent legacy RIFE fractions remain
-on ABI9. Unsupported stages/options/temporal SR fail explicitly, never vanish.
+Supported native stages: RIFE TensorRT integer x2..8; spatial ONNX TensorRT;
+independent Area CUDA and Spline36 CUDA/TensorRT downscale; final TrueHDR CUDA
+with a separately installed Maxine Core + TrueHDR SDK. Spline36 uses the existing
+native resize-only chain, without an ONNX model. It runs at the declared position.
+Area and Spline36 accept one height ceiling32..8192 or percentage1..100.
+Independent Spline36 height preserves source aspect with native even-pixel
+rounding, without the legacy16:9 fit-box; Area rounds to the nearest pixel.
 
-FRUC requires explicit paths to separately installed libNvOFFRUC.so and its
-compatible CUDA runtime (SDK5.0.7 uses CUDART11). The stage kernel_fatbin path must point explicitly
-to the bundled aji_fruc.fatbin. Never rename CUDART13 to11. FRUC is internally8bit SDR,
-with known jagged/mouth/occlusion defects and nonconclusive SDK repeatability.
-No Quality equivalence is claimed. Current interpolation/upscaling providers
-require SDR input. HDR output requires an explicit final TrueHDR stage; no
-request alone retags SDR pictures.
+FRUC has been removed at user request (AH-328). This bundle no longer contains
+its provider, fatbin or setup instructions. Enabled historical FRUC stages fail
+explicitly and remain preserved in the profile; disabled entries retain their
+options. No implicit replacement occurs. ABI v1 retains reserved fields at their
+original offsets to avoid breaking the structure layout; the fields are ignored.
 
-One persistent worker initializes stages and executes with bounded owners,
-recorded dependencies and GPU-only canonical YUV444P16 surfaces. Submit and
-Complete do not wait for execution or capacity. Typed model build status allows
-cancellation of pending stage initialization; lifecycle drains before destruction.
-Output flags and counters report API requests/repetitions, not kernel launches.
-No CPU pixel copies inside the engine. Stats exclude SDK/TRT workspace memory.
+Use chain_N_pipeline_version=1 and ordered stage keys documented in player
+sources docs/INTERPOLATION-STAGES.md, with a matching native reader. Maximum16
+stages, cumulative factor16, capacity1..2, default owned pixel budget512MiB.
+Mixed factors are integer. Equivalent legacy configurations keep ABI9 arithmetic
+and rational cadence. Unsupported stages/options/temporal SR fail explicitly.
 
-Qualified on RTX4070Ti/Linux: RIFE2->FRUC2->SPAN, cadence/EOF, common RIFE
-median exact, legacy fractional pixel/PTS parity, seek/profile/pause, pending
-producer, queue cancel/full, controlled final-copy failure and build cancellation.
-No other hardware/API or physical presentation qualification.
-Portable kernels SM75/80/86/89/90/100/120+PTX120; host glibc>=2.38,
-GLIBCXX>=3.4.30 (Ubuntu24 package baseline). Source/report in player lot40.
+Consecutive interpolation/upscale stages form logical execution groups.
+Compatible TensorRT blocks fuse without reordering stages or RIFE policies.
+Fast x4 plus spatial models reuses finished source pictures/motion; Fast x2 keeps
+a separate native block because fused alternatives established no benefit.
+Multiple RIFE stages may share a group but need separate contexts. Downscale/HDR
+are explicit boundaries. Source-view and generation guards protect endpoint
+promotion and prefix spatial reuse; reset invalidates both. Attached legacy
+resizes are never silently moved by fusion.
 
+The pipeline bridge uses GPU-only canonical YUV444P16. Standalone Spline36 is
+qualified against the established native 4:4:4 resize. This does not assert pixel
+identity with an old NV12/P010 roundtrip. Faithful migration of a representable
+legacy resize->RIFE->upscale chain uses the legacy route; new independent stages
+retain their explicit order. No bilinear alias is implemented.
 
-Independent Downscale: resize/area/cuda, target_height32..8192 or exclusive
-integer target_percent1..100. Shrinks only, aspect rounded to the nearest pixel,
-GPU YUV444P16 area integration, no RGB8 conversion or cadence change. Static
-aji_pipeline_features_v1 advertises AREA_DOWNSCALE without GPU initialization.
-At most one HDR stage per profile (all chains, inactive stages included).
-The optional HDR conversion capability is described below.
-Qualified: 1080->720 and1080->540 independent area references max0 YUV16 code,
-ROI/owners/EOF; actual NVDEC Area720->RIFE720 five outputs/PTS/durations; original
-endpoints exact across RIFE1080->Area720 and Area720->RIFE720. Synthesized
-contours differ with resolution. Performance qualification remains partial:
-short timings varied; no universal FPS claim. Source/report in player lot47.
+One persistent worker initializes and executes stages with bounded ownership.
+Submit/Complete do not wait for execution or capacity. Typed build status allows
+cancellation of pending model initialization; destruction drains the lifecycle.
+Counters describe API requests, not kernel launches. The engine makes no CPU
+pixel copies; the budget excludes internal TensorRT/SDK workspace.
 
+Only one HDR stage is allowed per profile, inactive stages included. Current
+interpolation/upscale providers require SDR; TrueHDR must be last. Its SDK input
+is SDR709 RGBA8; output RGB10A2 PQ2020 is exported as limited YUV444P16 with10
+effective SDK bits. Converted metadata is published only after SDK success.
+Target peak400..2000nits is a user target, not fabricated MaxCLL. An HDR-only chain
+passes native PQ/HLG BT2020 through without conversion. SDK staging buffers count
+toward the pixel budget, SDK internal workspace does not. The mpv render HDR mode
+is managed by the player, not advertised as this CUDA provider.
 
-Explicit TrueHDR: hdr/nvidia-truehdr/cuda, factor1, Quality configuration with
-contrast0..200, saturation0..200, middle_gray10..100 and peak400..2000nits.
-Requires externally installed NVIDIA Maxine Core + TrueHDR feature and their
-CUDA12/NPP/TensorRT10 dependencies; no vendor SDK binary/header is distributed.
-Default installed root /usr/local/VideoFX (or ANIMEJANAI_VFX_SDK); managed ZIP
-import is tracked separately. The portable launcher supplies SDK library paths.
-A matching hdr-stage1 reader negotiates color via aji_pipeline_output_color_v1;
-older readers refuse HDR before processing. Per-pipeline effects run on the
-worker; SDK default stream and producer/completion fences are required by the
-acquired reference. Pixel conversion: SDR BT.709 -> RGBA8 SDK input -> RGB10A2
-PQ BT.2020 -> limited YUV444P16, 10 effective SDK bits. Converted frames are
-released/tagged only after successful SDK completion. Target peak is a configured
-display target, never fabricated content MaxCLL. The stage must be last because
-the current other providers require SDR. An HDR-only chain passes native
-PQ/HLG BT.2020 through, preserving source HDR metadata and avoiding conversion.
-The SDK staging buffers count toward the pixel budget; SDK workspace does not.
-
-Qualified Linux RTX4070Ti: independent acquired SDK gradient/primary reference,
-pack bytes exact, unpack <=1 YUV16 code, complete pipeline output max0 against
-that reference, reset creates a fresh effect, owners/EOF/timestamps balanced,
-old reader explicitly refused. Native HDR passthrough bit-exact, no HDR-converted
-flag. Actual NVDEC RIFE->TrueHDR and RIFE->FRUC->TrueHDR produce five frames each,
-exact native PTS/durations/EOF; latter export has PQ/BT.2020 limited metadata.
-Matroska export timestamps have millisecond rounding and final muxed duration
-limits; this is distinct from exact native playback duration. No FPS gain,
-physical HDR display, Windows/macOS HDR-stage or other-GPU qualification claimed.
-
-FRUC stage artifact_protection=yes/no (defaultyes) enables the severe bright-edge
-guard described in FRUC-README.md. Protected output flags are FRUC|REPEATED|
-PROTECTED (4|8|128=140). Pipeline fruc_repetitions counts both SDK and policy
-repeats; provider SDK-only and protection counters remain separate. No cadence
-or timestamp changes, no CPU pixel copies; local fluidity can fall to source
-cadence. The conversion kernels for Area/TrueHDR are byte-identical to the
-previous bundle; only FRUC guard kernels and pipeline dispatch changed.
-
-## Consecutive interpolation/spatial groups (2026-10-17)
-
-Consecutive active interpolation/upscale links form one execution group. Compatible TensorRT blocks share an ABI9 context with the original order and RIFE policy. RIFE Fast x4 followed by spatial models can reuse finished source pictures and motion; Fast x2 retains a separate native block because the tested fused variants established no benefit. Multiple RIFE/providers may require multiple native contexts. Downscale/HDR remain explicit boundaries. Source-view/generation guards protect endpoint promotion and prefix spatial reuse; reset invalidates both. Nonidentity attached legacy resizes prohibit reordering by fusion.
-
-Qualified on Linux RTX4070Ti: exact Quality and hybrid reference pixels/PTS, four-link identity/Q2/F2/SPAN group, reset, and actual 1080p NVDEC -> Area720 -> RIFE4 -> SPAN1440 -> TrueHDR. Short native Fast4+SPAN interval improved from about59-61ms to18ms; complete HDR timing nonconclusive. Fast reconstruction retains its quality tradeoff. No display-FPS or other-hardware guarantee. See player qualification lot55.
+Portable kernels target SM75/80/86/89/90/100/120+PTX; host glibc>=2.38,
+GLIBCXX>=3.4.30. Compilation for these targets is not per-device qualification.
+Lot57 on Linux RTX4070Ti: removal preserves all5 output hashes, PTS, durations,
+flags, dimensions and request counters for Area(identity)->RIFE Fast4->SPAN;
+fusion trace remains active, same TRT and fatbin. Spline36 model-free128x72->64x36
+is bit-exact to ABI9 YUV444P16 with padding, descriptors, owners and timeline
+preserved. No legacy420 equivalence, universal FPS or physical HDR claim.
+Historical fusion/Area/TrueHDR qualification remains in player lots47/48/55;
+FRUC historical evidence no longer describes an available provider.

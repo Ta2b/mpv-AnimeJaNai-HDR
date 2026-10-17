@@ -24,8 +24,6 @@ Program cache contract v3: backend df489209a9758149f0e8e580539ebdc50c2ae577, Win
 
 2026-10-16: optional terminal CUDA Surface notification (backend861ab52efda5f1313bd39b8e15053b6d3c31f130), spatial mpv integration qualified on Linux/NVDEC; exact NV12/4:4:4 outputs, controlled responsiveness and ownership/seek/error cleanup. Portable CUDA default corrected; no universal FPS/native Windows qualification.
 
-2026-10-16: optional project-owned CUDA FRUC provider/fatbin, backend f8da50a. NVIDIA SDK5.0.7 remains separately installed under NVIDIA terms, not redistributed. Fast opt-in SDR8-bit; Linux RTX4070Ti lifecycle/GPU SPAN qualified, exact SDK repeatability nonconclusive. See FRUC-README.md.
-
 2026-10-17: optional project-owned TrueHDR pipeline adapter, backend 9f2541e3dee1f159800b3a20c0e0729adc18491b. NVIDIA Maxine SDK headers compile inputs only; SDK/Core/feature/runtime libraries remain user installed and are not bundled. SDR709 RGBA8 to SDK HDR10; one stage/profile, last active stage, native HDR-only bypass. Linux RTX4070Ti SDK reference and actual NVDEC pipeline qualified; no physical HDR display or universal FPS claim. See PIPELINE-README.md.
 
-2026-10-17: FRUC severe bright-edge protection, backend 4603933f363bc35ab2bcfab433ae665e7d4b7397. Exact previous-source repeat at expense of local fluidity; default Fast-stage guard, explicit off. Native/actual NVDEC beam and acquired ordinary control qualified RTX4070Ti only; no SDK fix, universal detector or FPS claim. No vendor files or models added.
+2026-10-17: FRUC provider, kernels and integration removed by user request AH-328. Native ordered pipeline build no longer depends on that SDK. Independent Spline36 resize reuses the unchanged native model-free resize; canonical 4:4:4 pixel parity qualified on RTX4070Ti. No vendor redistribution, FPS or legacy420 identity claim. Pipeline backend 36f3d94491b51d334dc9420ce6d5192b086b0a8f.

@@ -92,52 +92,25 @@
       "backend_source": "79e8aa48e0c776e8335c2430d538426ed3b0a506",
       "player_qualification_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
       "validation": "Linux RTX4070Ti ordered RIFE2->FRUC2->SPAN: correct 9 frames, PTS/durations/EOF; exact common RIFE/SPAN median under final TRT module; 6 legacy fractional outputs and PTS exact absent/equivalent v1. Queue/owners/cancel/reset/controlled-error and cancellable pending model build qualified. TRT CUDA fatbin exact prior binary. No FPS, HDR synthesis, other-HW/API or physical-presentation claim."
+    },
+    {
+      "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+      "validation": "Linux RTX4070Ti SDR, native RIFE2->FRUC2->spatial SPAN; only actual supported stage capabilities; Fast FRUC8bit, no Quality equivalence; Area downscale reference/pixel ownership and actual NVDEC RIFE at720p verified on RTX4070Ti; relative performance nonconclusive due short variable timings; TrueHDR acquired SDK reference exact native YUV16, reset/owners/old-reader/color checked, actual NVDEC RIFE/FRUC->TrueHDR exact native timeline and export PQ2020, native HDR-only pixels unchanged; physical HDR display not exercised; lot55 fusion qualification: exact Quality/hybrid/4-link output, reset, actual NVDEC1080-720-1440 HDR timeline; Fast4 local native gain, full HDR performance nonconclusive",
+      "scope": "Historical pipeline before FRUC removal; not a current capability declaration"
     }
   ],
-  "fruc_provider": {
-    "backend_source": "4603933f363bc35ab2bcfab433ae665e7d4b7397",
-    "api": "aji_interpolator_v1 + aji_fruc_create_v1",
-    "sha256": {
-      "libaji_fruc.so": "8bedb990cff62cd91f04568e303aaea7a9f85e5bd89e8d26239007f6d22e1905",
-      "aji_fruc.fatbin": "52a5af438281eb9a840c5ecd7dff9e6ad1574bb58bbc4db8b0f5dfbebe80506c",
-      "FRUC-README.md": "13ad95c14dbc9e47781a291253e19a483ef5904fafb1e9a80ff60185cc3358c8"
-    },
-    "sdk_external": true,
-    "fast_opt_in": true,
-    "qualified": "Linux RTX4070Ti SDR; exact SDK pixel repeatability nonconclusive; no Windows/HDR/other hardware qualification",
-    "cuda_architectures": [
-      75,
-      80,
-      86,
-      89,
-      90,
-      100,
-      120,
-      "PTX120"
-    ],
-    "prior_backend_source": "f8da50a014fbf020bc3027e9bafc13feebb6323e",
-    "artifact_protection": {
-      "feature_mask": 1,
-      "stage_default": "yes",
-      "criterion": "bright-edge energy >2x max sources; edge luma >96",
-      "fallback": "exact previous source for matching descriptor",
-      "qualified": "severe beam + ordinary cached SDK control; native and actual NVDEC pixels/timeline/EOF; RTX4070Ti Linux only",
-      "quality_tradeoff": "local fluidity loss; other defects may remain",
-      "cpu_pixel_copies": 0
-    }
-  },
   "ordered_pipeline": {
-    "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+    "backend_source": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
     "api": "aji_pipeline_v1",
     "sha256": {
-      "libaji_pipeline.so": "04733106673129bd508acee4f4068323cc63609aaffb35e331844b0b39140c28",
+      "libaji_pipeline.so": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
       "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
-      "PIPELINE-README.md": "1b85a1f3bbe5aa628e6ea00057cc1bfeaa204c17424a8e0957f641df94bda8a4"
+      "PIPELINE-README.md": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc"
     },
     "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
     "explicit_opt_in": true,
     "sdk_external": true,
-    "qualified": "Linux RTX4070Ti SDR, native RIFE2->FRUC2->spatial SPAN; only actual supported stage capabilities; Fast FRUC8bit, no Quality equivalence; Area downscale reference/pixel ownership and actual NVDEC RIFE at720p verified on RTX4070Ti; relative performance nonconclusive due short variable timings; TrueHDR acquired SDK reference exact native YUV16, reset/owners/old-reader/color checked, actual NVDEC RIFE/FRUC->TrueHDR exact native timeline and export PQ2020, native HDR-only pixels unchanged; physical HDR display not exercised; lot55 fusion qualification: exact Quality/hybrid/4-link output, reset, actual NVDEC1080-720-1440 HDR timeline; Fast4 local native gain, full HDR performance nonconclusive",
+    "qualified": "Lot57 Linux RTX4070Ti: FRUC provider/build/assets removed; native RIFE Fast4+SPAN retained 5 exact output hashes, rational PTS/durations/flags, dimensions and request counters against lot55 bundle; same TRT and fatbin. Model-free standalone Spline36 128x72->64x36 canonical YUV444P16 exactly matches established ABI9 resize with unchanged descriptors, padding, owners and cadence. Independent height preserves source aspect with native even-pixel rounding, without the legacy16:9 box; wide and smaller-source configure cases qualified separately. No NV12/P010 legacy-route equivalence, universal FPS or physical HDR claim. Previous Area/TrueHDR/fusion evidence remains historical.",
     "cuda_architectures": [
       75,
       80,
@@ -148,7 +121,7 @@
       120,
       "PTX120"
     ],
-    "prior_backend_source": "4603933f363bc35ab2bcfab433ae665e7d4b7397",
+    "prior_backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
     "features": [
       "independent-area-downscale",
       "static-reader-feature-query",
@@ -156,12 +129,13 @@
       "explicit-truehdr-conversion",
       "optional-output-color-query",
       "native-hdr-only-passthrough",
-      "explicit-fruc-artifact-protection",
       "maximal-interpolation-spatial-groups",
       "ordered-compatible-trt-fusion",
       "fast-x2-cost-fallback",
       "typed-endpoint-reuse",
-      "optional-execution-trace"
+      "optional-execution-trace",
+      "retired-fruc-explicit-incompatibility",
+      "independent-spline36-downscale"
     ],
     "sdk_hdr": {
       "externally_installed": true,
@@ -171,6 +145,14 @@
       "pixel_workspace_counted": true,
       "sdk_workspace_counted": false,
       "reader": "hdr-stage1"
-    }
+    },
+    "retired_methods": {
+      "nvidia-fruc": "Removed by user request AH-328; enabled legacy stages explicitly rejected, disabled data preserved; ABI fields reserved"
+    },
+    "targeted_timing_ms": {
+      "before": 18.851991999326856,
+      "after": 17.402252999090706
+    },
+    "timing_scope": "Two warmup intervals then three contiguous intervals; short timing observation, not display FPS or universal performance"
   }
 }
