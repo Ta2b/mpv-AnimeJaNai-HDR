@@ -71,6 +71,14 @@ doivent être écrites ; elles n'imposent pas de campagne longue. Si les résult
 sont insuffisants, bruités ou variables, cibler seulement les essais nécessaires
 pour trancher, ou laisser une qualification partielle si le matériel manque.
 
+## Mesurer une performance (depuis le lot B, 18 octobre 2026)
+
+- **Temps GPU réel** : `AJI_PIPELINE_TIMING=1` (ou `AJI_PIPELINE_TRACE=1`) fait écrire au pipeline, pour chaque job, `aji_pipeline_timing: ticket=… total_gpu_ms=… <étage>=…` à partir d'événements CUDA sur son stream : attentes et bulles comprises, aucune synchronisation ajoutée. Les `ms=` de la trace sont du temps CPU de soumission et ne mesurent plus rien en stream partagé.
+- **Comparer des variantes** : `tools/bench/pipeline_bench.py --spec <sonde.json> --variant nom=VAR=val,... --runs N --output reçu.json` alterne les variantes en tourniquet, ignore les paires de chauffe, donne min et médiane (GPU et mur) et refuse ou signale un GPU occupé par d'autres processus (`--idle-threshold`, `--idle-patience`). Un gain se lit sur le **min** de plusieurs séries alternées, jamais sur une exécution.
+- **Plans TensorRT manquants** : la sonde courte tue le constructeur (`trtexec` meurt avec son parent) ; lancer d'abord `tests/inference/pipeline_build_wait.py <sonde.json>` autant de fois qu'il y a de plans à construire (un par cycle), puis mesurer.
+- **GPU partagé** : la machine de référence sert aussi au bureau et au jeu ; vérifier `nvidia-smi` (utilisation et mémoire) avant toute série. Un plan optionnel qui ne trouve pas sa mémoire est ignoré proprement (repli B1), mais ses chiffres n'ont alors aucun sens.
+- **Équivalence** : chaque variante qui change un programme TensorRT passe `tests/inference/quality_equivalence.py` (règle v2 : pixels, comptes, chronologie, drapeaux, coupures) contre la référence FP32 sans TF32.
+
 ## Compte rendu Jira obligatoire
 
 Dans le ticket existant, enregistrer : référence/candidat et SHA, machine,
