@@ -22,4 +22,4 @@ Aucun téléchargement ni invocation de l’updater réel, aucun fichier d’ins
 
 ## Livraison
 
-Prévue .95. Vérifier trois CI/tag, manifeste Linux avec nouvelle identité, build-info effectivement dans le paquet et recalcul de l’identité sur le dossier natif du tar publié. Vérifier les nouveaux lecteurs et dispatcher déjà contrôlés en .93 ; le [reçu .93](../../jira/release-20261017-3.8.0.93.json) valide les payloads frais, sans clore AH362 tant que ce couplage d’upgrade reste ouvert. AH335 (manifeste local invalide) et les autres routes d’AH330 restent distincts.
+Livraison .95 vérifiée : trois CI/tag/15assets ; tar/manifeste/packs digests conformes, build-info livré et identité recalculée `linux-mpv-bundle-v1-sha256-cd055eef2e4e07d2e4dc718021af8f6b18fda19cd9734bd67fc14514b1701cdf` égale au manifeste. [Reçu .95](../../jira/release-20261017-3.8.0.95.json). AH363/AH362 Done. Vérifier les nouveaux lecteurs et dispatcher déjà contrôlés en .93 ; le [reçu .93](../../jira/release-20261017-3.8.0.93.json) valide les payloads frais, complété par le couplage d’upgrade .95 désormais vérifié. AH335 (manifeste local invalide) et les autres routes d’AH330 restent distincts.
