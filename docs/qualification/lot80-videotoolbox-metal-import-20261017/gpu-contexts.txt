@@ -1,0 +1,5 @@
+Available GPU contexts:
+  auto             Auto detect
+  macvk            mac/Vulkan (via Metal)
+  displayvk        VK_KHR_display
+

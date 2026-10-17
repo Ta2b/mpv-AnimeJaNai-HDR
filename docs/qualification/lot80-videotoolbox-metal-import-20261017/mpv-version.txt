@@ -1,0 +1,12 @@
+mpv v0.41.0-dev-g19c0fcf89-dirty Copyright © 2000-2026 mpv/MPlayer/mplayer2 projects
+ built on Oct 17 2026 11:39:45
+libplacebo version: v7.360.1
+FFmpeg version: 9.0.1
+FFmpeg library versions:
+   libavcodec      63.1.101
+   libavdevice     63.1.101
+   libavfilter     12.1.101
+   libavformat     63.1.101
+   libavutil       61.1.101
+   libswresample   7.1.101
+   libswscale      10.1.101

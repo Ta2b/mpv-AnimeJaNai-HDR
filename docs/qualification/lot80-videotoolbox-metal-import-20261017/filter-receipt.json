@@ -1,0 +1,175 @@
+{
+  "cases": {
+    "nv12": {
+      "planes_pts_format_exact": true,
+      "color_exact": true,
+      "frame_records": [
+        [
+          "0",
+          "0",
+          "nv12",
+          "256x144",
+          "9D27E007",
+          "F5C2A43B 5A593BCC"
+        ],
+        [
+          "1",
+          "41667",
+          "nv12",
+          "256x144",
+          "33B2C369",
+          "1FB17B98 4A7647D1"
+        ],
+        [
+          "2",
+          "83333",
+          "nv12",
+          "256x144",
+          "A2BCC34A",
+          "BFC472F1 35EE5059"
+        ]
+      ],
+      "color_records": [
+        [
+          "tv",
+          "bt709",
+          "bt709",
+          "bt709"
+        ],
+        [
+          "tv",
+          "bt709",
+          "bt709",
+          "bt709"
+        ],
+        [
+          "tv",
+          "bt709",
+          "bt709",
+          "bt709"
+        ]
+      ],
+      "imports": 3,
+      "fallbacks": 0,
+      "software": 0,
+      "live": 0,
+      "resets": 2,
+      "sampled_bytes": 9
+    },
+    "matrix-fallback": {
+      "planes_pts_format_exact": true,
+      "color_exact": true,
+      "frame_records": [
+        [
+          "0",
+          "0",
+          "nv12",
+          "256x144",
+          "306168F9",
+          "7CFE0F3E 030D59BB"
+        ],
+        [
+          "1",
+          "41667",
+          "nv12",
+          "256x144",
+          "EC576279",
+          "3E3CFA15 A6D56855"
+        ],
+        [
+          "2",
+          "83333",
+          "nv12",
+          "256x144",
+          "677F5E33",
+          "3876F1B8 73096C6C"
+        ]
+      ],
+      "color_records": [
+        [
+          "tv",
+          "smpte170m",
+          "smpte170m",
+          "bt709"
+        ],
+        [
+          "tv",
+          "smpte170m",
+          "smpte170m",
+          "bt709"
+        ],
+        [
+          "tv",
+          "smpte170m",
+          "smpte170m",
+          "bt709"
+        ]
+      ],
+      "imports": 0,
+      "fallbacks": 3,
+      "software": 0,
+      "live": 0,
+      "resets": 2,
+      "sampled_bytes": 0
+    },
+    "p010-hdr-fallback": {
+      "planes_pts_format_exact": true,
+      "color_exact": true,
+      "frame_records": [
+        [
+          "0",
+          "0",
+          "yuv420p10le",
+          "256x144",
+          "3B2A12D3",
+          "E26E1C01 AFC5CE3C E63F2887"
+        ],
+        [
+          "1",
+          "41667",
+          "yuv420p10le",
+          "256x144",
+          "D3593901",
+          "FF6C4C7E 9462C76A C06F250A"
+        ],
+        [
+          "2",
+          "83333",
+          "yuv420p10le",
+          "256x144",
+          "21B37FED",
+          "58A9813E FAF4C9B8 980E34E8"
+        ]
+      ],
+      "color_records": [
+        [
+          "tv",
+          "bt2020nc",
+          "bt2020",
+          "smpte2084"
+        ],
+        [
+          "tv",
+          "bt2020nc",
+          "bt2020",
+          "smpte2084"
+        ],
+        [
+          "tv",
+          "bt2020nc",
+          "bt2020",
+          "smpte2084"
+        ]
+      ],
+      "imports": 0,
+      "fallbacks": 3,
+      "software": 0,
+      "live": 0,
+      "resets": 2,
+      "sampled_bytes": 0
+    }
+  },
+  "scope": "Real mpv/VideoToolbox/Metal import probe and software fallback; no inference/macvk renderer/FPS claim",
+  "passed": true,
+  "module_sha256": "f13aafd1fa090d0ed0f2998569f60c9e30893894e762f0914edd0a8a1e566298"
+}

@@ -10,8 +10,10 @@ Dylib candidat SHA256 `f13aafd1fa090d0ed0f2998569f60c9e30893894e762f0914edd0a8a1
 
 Investigations antérieures :39027604395 puis39028979843 sessions refusées-12902 avant tout cas ; fluxinitialRExt remplacé parMain (insuffisant).39029226467 confirme le refus même avec paramètres minimaux ; aucune API absente déduite. La dernière fixture prend seulement les vrais échantillons comprimés non vides/avecformat (scan borné de marqueurs), puis création réussie dès les contraintes complètes. Le reçu final ne conserve que l’inspection du dernier échantillon : ne pas prétendre disposer du nombre exact de marqueurs du premier appel.39029122843 a échoué à compiler un diagnostic utilisant une fonction non publique, retirée ; aucun résultat d’import issu de ce run.
 
-## Consommateur mpv encore à vérifier
+## Vrai filtre mpv conclu
 
-Le jobfiltre du même run compile le vrai lecteur, puis compare troisimages par cas :NV12SDR709import, matrice601repli, P010HDRrepli sans troncature. À la fin d’une tâche indépendante vérifier ce job, sans attendre/relancer. Le modefilter_only réutilise le natif concluant39029415108 si le filtre seul doit être corrigé ; ne pas refaire les cas natifs conclus avec les mêmes octets.
+Le second job du même run39029415108 a compilé le vrai lecteur mpv19c0fcf89595e6ab33908299207c555b67e81558 avec le filtre candidat. FFmpeg9.0.1_1, libplacebo7.360.1, MoltenVK1.4.2 ; rendu de contrôlevo=null, décodageVideoToolbox réellement actif dans les sixprocessus référence/probe.
+
+Troiscas distincts, troisimages chacun : NV12SDR709→3imports/0repli/9octets de contrôle ; matrice601→0import/3replis ; P010HDR→0import/3replis. Plans, PTS, format, dimensions et couleurs byte-référence exacts dans les troiscas. Le troisième resteyuv420p10le/PQBT2020, aucune troncature. Deuxresets parprocessus et liveowners0 àfermeture. [Reçu filtre](filter-receipt.json). Aucun cas concluant à répéter ; code natif et build-mpv identiques au candidat91632df après fusion .103.
 
 Périmètre expérimental : apple-import-probe=yes, slot0 seulement, aucuneinférence. La voie normaleRGB24/videotoolbox-copy demeure en place, aucunEnumMETAL public activé. Une lecture GPU3octets/frame touche les plans, ce n’est pas une optimisationFPS ni un chemin complet sans copie. AH120 reste ouvert pour préparation fidèle et rendu macvk.

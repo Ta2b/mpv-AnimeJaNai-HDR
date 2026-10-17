@@ -1,0 +1,3 @@
+ffmpeg 9.0.1_1
+libplacebo 7.360.1
+molten-vk 1.4.2
