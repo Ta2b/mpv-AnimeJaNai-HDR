@@ -4,8 +4,8 @@ Lire d’abord [ETAT-COURANT](../../ETAT-COURANT.md), puis la description Jira e
 
 ## Travail courant
 
-- [AH369](AH-369.md) : ajout d’étapes du Manager, correctif UI qualifié, livraison .106 en cours. Préserver les quatre catégories, composition libre, sélection et HDR unique.
-- [AH368](AH-368.md) : étude d’ordonnancement Quality RIFE→SPAN, procédure détaillée dans Jira, pas encore de code/gain ; backend de départ118c272. Reprendre après AH369.
+- [AH369](AH-369.md) : ajout d’étapes du Manager, correctif UI qualifié, livraison .106 vérifiée. Préserver les quatre catégories, composition libre, sélection et HDR unique.
+- [AH368](AH-368.md) : étude d’ordonnancement Quality RIFE→SPAN, procédure détaillée dans Jira, prototype local compilé, qualification numérique/gain encore absents ; backend de départ118c272. Reprendre après AH369.
 - [AH329](AH-329.md), [AH208](AH-208.md), [AH73](https://tatoub.atlassian.net/browse/AH-73) : débit Quality×4/fusion toujours ouverts. Une chaîne logique fusionnée ne prouve ni un seul moteur ni le respect du budget24fps. Garder les frontières numériques et chaque prédiction Quality.
 - [AH367](AH-367.md) : qualification GPUWindows native du couple lecteur/DML livré .103, matériel encore absent. Ne pas reconstruire le producteur apparié de deux heures déjà publié.
 - [AH119](AH-119.md), [AH120](AH-120.md), [AH131](AH-131.md), [AH93](AH-93.md) : parents CoreML/Metal/Vulkan/DML ouverts pour leurs frontières restantes, pas une reprise de leurs sous-tickets conclus.

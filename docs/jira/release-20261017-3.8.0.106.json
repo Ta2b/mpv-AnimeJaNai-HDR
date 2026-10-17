@@ -1,0 +1,47 @@
+{
+  "release": "3.8.0.106",
+  "source": "a688bef614ecc2ca45f75cf484ce3118dab101c4",
+  "publication_verified": true,
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.106",
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39031859484,
+      "name": "Release Linux",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39031859568,
+      "name": "Release macOS",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39031859493,
+      "name": "Release Windows",
+      "status": "completed"
+    }
+  ],
+  "assets_uploaded": 17,
+  "scope": "AH369 Manager add-step Flyout command ordering; four modular categories and persistence restored",
+  "manager_source": "714d48e1924dcd8ef1933a1e93966900830a9789",
+  "manager_producer_run": 39031655538,
+  "payload_check": {
+    "passed": true,
+    "archive_sha256": "6e6bdfdf2b5b077702c33bb588e401285f425eac22a15e5910793ed5a7bf7bce",
+    "manager_sha256": "559de2175271078e9d784c97cbd1b68edb1cb88740afe32914f69f7ef4210ea9",
+    "compiled_manager_source_exact": true,
+    "deferred_OnAddStep_lambda_marker_present": true,
+    "managed_programs_verified": 32,
+    "linux_manifest_manager_pin_exact": true,
+    "note": "Linux CI recompiles the pinned Manager with PLAYER shared files; binary need not equal autonomous producer hash. No user install launched.",
+    "windows_manifest_manager_pin_exact": true
+  },
+  "qualification": "Real production Flyout headless button dispatch failed before first category; after 25 assertions passed incl four categories, selected inactive stage, dismissal, save/reload and guards. No conclusive replay.",
+  "engine_video_or_quality_change": false,
+  "limits": [
+    "Headless Linux UI interaction; three native OS builds and release delivery verified, no native Windows/macOS interaction claim.",
+    "Quality x4 global frame budget remains open in AH329/AH208; no FPS improvement claimed."
+  ]
+}
