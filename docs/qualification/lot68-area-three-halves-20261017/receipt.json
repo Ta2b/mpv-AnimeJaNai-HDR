@@ -1,0 +1,36 @@
+{
+  "input_sha256": "12fdd4fc466c1d50a8c9f2acf73a58890baff82db6490d1275dd7ad999797c3c",
+  "input_code16_values": 65536,
+  "source_dimensions": [
+    1920,
+    1080
+  ],
+  "output_dimensions": [
+    1280,
+    720
+  ],
+  "variants": {
+    "reference": {
+      "kernel_sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "output_sha256": "8909fb2f351eb3143b2a010af2254a1bcd238717c484fc6ed2b7785ac7d2fb7f",
+      "exact_to_integer_oracle": true,
+      "padding_preserved": true,
+      "descriptors_unchanged": true,
+      "owners_balanced": true
+    },
+    "candidate": {
+      "kernel_sha256": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
+      "output_sha256": "8909fb2f351eb3143b2a010af2254a1bcd238717c484fc6ed2b7785ac7d2fb7f",
+      "exact_to_integer_oracle": true,
+      "padding_preserved": true,
+      "descriptors_unchanged": true,
+      "owners_balanced": true
+    }
+  },
+  "passed": true,
+  "compared_code16_values": 2764800,
+  "fps_measured": false,
+  "library_sha256": "9432437367c4a94488940e9c305d9a31782b7ccabe8287c6dda73dc76bee7bf0",
+  "trt_sha256": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
+  "scope": "Linux CUDA YUV444P16 pitched/cropped active views; no full-chain or FPS remeasurement"
+}
