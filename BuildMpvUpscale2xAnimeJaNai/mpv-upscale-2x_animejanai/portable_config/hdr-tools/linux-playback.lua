@@ -131,7 +131,10 @@ local function provenance(path)
     end
     local match='unknown'
     if declared~=nil and digest~=nil then match=(declared==digest) end
-    return {path=path,present=true,resolved=resolved,managed_link=is_link,sha256=digest,declared_sha256=declared,declared_match=match}
+    -- a <name>.override marker declares a custom build on purpose (AppRun): no warning, just the record
+    local override=utils.file_info(path..'.override')~=nil
+    if override and match==false then match='override' end
+    return {path=path,present=true,resolved=resolved,managed_link=is_link,override=override,sha256=digest,declared_sha256=declared,declared_match=match}
 end
 -- AH-330: the launcher renames an old local copy of a managed module at startup and only
 -- writes to stderr; tell the player once per launch when the log gained a fresh line.
