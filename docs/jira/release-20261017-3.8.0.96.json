@@ -1,0 +1,46 @@
+{
+  "release": "3.8.0.96",
+  "source": "f71a17bac81d8f87af1ffeeda43ab4a4066464a8",
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.96",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39021770805,
+      "headSha": "f71a17bac81d8f87af1ffeeda43ab4a4066464a8",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39021770893,
+      "headSha": "f71a17bac81d8f87af1ffeeda43ab4a4066464a8",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39021770843,
+      "headSha": "f71a17bac81d8f87af1ffeeda43ab4a4066464a8",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    }
+  ],
+  "assets_uploaded": 16,
+  "scope": "AH349 Metal resident SPAN",
+  "payload_check": {
+    "passed": true,
+    "archive_sha256": "048c07652b572758515df7d30fd9a2a33d537982c324128abeb2a84769e84755",
+    "dylib_sha256": "67805bd1a0c6dea078fd0a14c26467cf7e81a9d207c4b14da69f4483b9dda190",
+    "dylib_byte_identical_to_native_qualified": true,
+    "managed_programs": 17,
+    "model_resources_byte_identical_to_verified_91": 32,
+    "no_native_replay": true
+  },
+  "qualification_reuse": "No replay: Metal delivered dylib byte-identical to native qualified .96; .97 GPU/Vulkan byte-identical .95 and ApplyOver CPU proof complete; unrelated providers unchanged",
+  "limits": [
+    "No universal FPS claim",
+    "Windows DML reader still pending",
+    "Parent tickets remain open"
+  ]
+}

@@ -1,0 +1,64 @@
+name: Qualify Core ML cache transactions
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  coreml-transactions:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reuse the normalized model already delivered in .88
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir source-model
+          gh release download 3.8.0.88 --repo "$GITHUB_REPOSITORY" --dir source-model \
+            --pattern mpv-AnimeJaNai-HDR-v3.8.0.88-macos-arm64.zip \
+            --pattern mpv-AnimeJaNai-HDR-v3.8.0.88-macos-arm64.zip.sha256
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,zipfile
+          source=Path('source-model/mpv-AnimeJaNai-HDR-v3.8.0.88-macos-arm64.zip')
+          assert hashlib.sha256(source.read_bytes()).hexdigest()==Path(str(source)+'.sha256').read_text().split()[0]
+          prefix='mpv AnimeJaNai.app/Contents/Resources/animejanai/onnx/'
+          with zipfile.ZipFile(source) as archive:
+              for member in archive.infolist():
+                  if member.is_dir() or not member.filename.startswith(prefix):continue
+                  relative=member.filename[len(prefix):]
+                  if 'Sharp1_Performance' not in relative or not (relative.endswith('.mlpatch') or '.mlpackage/' in relative):continue
+                  assert '..' not in Path(relative).parts and not Path(relative).is_absolute()
+                  target=Path('models')/relative;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(archive.read(member))
+          assert len(list(Path('models').glob('*Sharp1_Performance*.mlpatch')))==1
+          PY
+      - name: Compile actual Core ML executor and protocol fixture
+        run: |
+          mkdir results
+          clang++ -std=c++17 -O2 -fobjc-arc -mmacosx-version-min=13.3 -Inative/linux-ort -Inative/apple \
+            tests/apple/coreml_placement_probe.mm native/apple/exec_coreml.mm native/linux-ort/mlpatch.cpp \
+            -framework Foundation -framework CoreML -framework CoreVideo -framework Accelerate -o candidate-probe
+          codesign --force -s - candidate-probe
+          clang++ -std=c++17 -O2 -Wall -Wextra -Werror -pthread tests/cache/coreml_transaction_check.cpp -o protocol-check
+      - name: Qualify protocol and native transaction cases once
+        run: |
+          ./protocol-check "$PWD/protocol-fixture" > results/protocol.log 2>&1
+          model="$(basename "$(find models -maxdepth 1 -name '*.mlpatch' -print -quit)" .mlpatch)"
+          sw_vers > results/machine.txt
+          uname -m >> results/machine.txt
+          shasum -a 256 candidate-probe > results/probe.sha256
+          python tests/apple/coreml_transaction_native.py ./candidate-probe models "$model" results
+      - name: Preserve targeted evidence even on first failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coreml-transaction-evidence
+          path: |
+            results/*.json
+            results/*.txt
+            results/*.log
+            results/*.sha256
+          if-no-files-found: warn

@@ -1,0 +1,56 @@
+{
+  "release": "3.8.0.97",
+  "source": "7796cfc13f7a0d1557238149bffaf22b09bb27dd",
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.97",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39022390947,
+      "headSha": "7796cfc13f7a0d1557238149bffaf22b09bb27dd",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39022390950,
+      "headSha": "7796cfc13f7a0d1557238149bffaf22b09bb27dd",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39022390982,
+      "headSha": "7796cfc13f7a0d1557238149bffaf22b09bb27dd",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    }
+  ],
+  "assets_uploaded": 16,
+  "scope": "AH335 update preservation floor/backup",
+  "payload_check": {
+    "passed": true,
+    "native_bundle_identity": "linux-mpv-bundle-v1-sha256-91db1a94391569d9fc92f9cafa1d8de23826f56d9578389e2759c34e7ae63f65",
+    "managed_programs": 32,
+    "GPU_modules": {
+      "libaji.so": "592a828989d3fa40228577bd103374568ef05277df89eb6f467ab965175764c3",
+      "libaji_trt.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+      "libaji_trt_rtx.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+      "libaji_pipeline.so": "834ca0a740b92e632b5ea63b07f5da28326d6bd2cc72f67b08ed6a8f6b9b39bc",
+      "aji_pipeline.fatbin": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
+      "PIPELINE-README.md": "b22600caedee5387a50a5c8ec2b79d793162534b9b2f0998363fd9b1dfa169c1"
+    },
+    "vulkan_sha256": "031dc1f8befc57cecc1d6f976ffc64e984219e8ec8fb38a2a657020c435f9857",
+    "updater_sha256": "2ee7ddc585c6cb678ff530c373a9026cdc2c754af8d6e425235a3f8b6732bb1b",
+    "updater_changed_from_95": true,
+    "updater_elf_executable": true,
+    "native_build_info": "mpv=19c0fcf895\naji_abi=9\nstats_atomic=1\nprefetch_prototype=1\nprefetch_budget=1\nsurface_worker=1\nordered_pipeline=1\nhdr_stage=1\nhdr_color_query=1\nlegacy_rife_contract=1\nsource_ids=aji-v1\nvulkan_bridge_abi=1\nwayland_queue_api=unnamed-compatible\nlibass=896614fa263f9f64944f7b8650ff6806d5328c4d\nwayland=1.23.1\nprotocols=1.45\nffmpeg=n9.0.2\nlibplacebo=v7.360.1\n",
+    "qualification": "Actual ApplyOver floor/backup fixtures from lot75 reused, release CI publishes that source; no updater invoked against user install"
+  },
+  "qualification_reuse": "No replay: Metal delivered dylib byte-identical to native qualified .96; .97 GPU/Vulkan byte-identical .95 and ApplyOver CPU proof complete; unrelated providers unchanged",
+  "limits": [
+    "No universal FPS claim",
+    "Windows DML reader still pending",
+    "Parent tickets remain open"
+  ]
+}
