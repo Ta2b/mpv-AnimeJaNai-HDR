@@ -65,10 +65,32 @@ struct Job {
     bool spread = false;
 };
 
+// Optional internal image, never a pointer smuggled through the RGB C ABI.
+// Owners retain the device storage. Producers return only after synchronous
+// completion; the consumer keeps this object alive through its own run.
+struct ResidentImage {
+    enum class Format { RGB8NHWC };
+    enum class Memory { MetalGraph };
+    int width=0,height=0;
+    uint64_t device=0;
+    Format format=Format::RGB8NHWC;
+    Memory memory=Memory::MetalGraph;
+    virtual ~ResidentImage()=default;
+};
+struct ExecutorTransfers { uint64_t host_staging=0,explicit_readback=0; };
+
 class Executor {
 public:
     virtual ~Executor() = default;
     virtual void run(const Job &job) = 0;
+    virtual bool can_take_resident(const Executor &) const { return false; }
+    virtual std::unique_ptr<ResidentImage> run_resident(const Job &,const ResidentImage * = nullptr) {
+        throw std::runtime_error("Executor has no resident image contract");
+    }
+    virtual void read_resident(const ResidentImage &,const Job &) {
+        throw std::runtime_error("Executor has no resident image readback");
+    }
+    virtual ExecutorTransfers transfers() const { return {}; }
     std::string label;   // "CoreML GPU", "Metal", "CPU"...
     virtual std::string placement_note() const { return note; }
     std::string note;    // immutable diagnostic; async executors override the snapshot getter

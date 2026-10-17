@@ -229,6 +229,8 @@ struct Context {
     AjiChainConf chain;
     aji_vk_plan plan{};
     Settings settings;
+    bool resident_span=false;
+    uint64_t resident_span_segments=0;
     bool rife_skipped = false;
     // The source frames after the one being computed (aji_vk_upcoming), until that call returns.
     std::vector<const uint8_t *> upcoming;
@@ -602,6 +604,50 @@ bool areas_cheaper(const Step &step, size_t changed)
 // every tile of every model was computed (nothing reused).
 // width x height: the size of `pixels` (the source frame, or a frame already at the size the
 // first model takes).
+bool resident_chain_ready(const Context &c)
+{
+    const char *ablation=std::getenv("AJI_METAL_RESIDENT_SPAN");
+    if((ablation&&std::strcmp(ablation,"0")==0)||c.rife||c.settings.reuse!="off"||
+       c.settings.boost||c.steps.size()<2)return false;
+    for(size_t i=0;i<c.steps.size();++i) {
+        const Step &step=c.steps[i];
+        if(step.workers.size()!=1||step.fine||step.boost||step.w!=step.in_w||step.h!=step.in_h||
+           step.plan.tiles.size()!=1||step.plan.width!=step.w||step.plan.height!=step.h)return false;
+        const Tile &tile=step.plan.tiles[0];
+        if(tile.x0||tile.y0||tile.wx||tile.wy||tile.x1!=step.w||tile.y1!=step.h)return false;
+        if(i && (step.in_w!=2*c.steps[i-1].in_w||step.in_h!=2*c.steps[i-1].in_h||
+            !step.workers[0].executor->can_take_resident(*c.steps[i-1].workers[0].executor)))return false;
+    }
+    return true;
+}
+
+bool resident_upscale(Context &c,const uint8_t *input,ptrdiff_t input_stride,uint8_t *output,ptrdiff_t output_stride)
+{
+    const double start=now_ms();
+    std::unique_ptr<ResidentImage> image;
+    for(auto &step:c.steps) {
+        Job job;job.in=input;job.in_stride=input_stride;
+        Worker &worker=step.workers[0];
+        const double began=now_ms();
+        auto next=worker.executor->run_resident(job,image.get());
+        const double took=now_ms()-began;
+        if(worker.tiles>0) {
+            worker.pace_ms=worker.pace_ms<=0?took:0.7*worker.pace_ms+0.3*took;
+            worker.total_ms+=took;
+        }
+        ++worker.tiles;worker.idle=0;
+        require(next && next->width==2*step.in_w && next->height==2*step.in_h,
+            "Resident executor returned incompatible geometry");
+        image=std::move(next); // previous backing survives the synchronous consumer
+        ++step.computed;step.last_computed=step.last_total=1;
+    }
+    require(image->width==c.plan.width&&image->height==c.plan.height,"Resident final geometry mismatch");
+    Job target;target.out=output;target.out_stride=output_stride;target.crop_w=c.plan.width;target.crop_h=c.plan.height;
+    c.steps.back().workers[0].executor->read_resident(*image,target);
+    ++c.resident_span_segments;c.last_model_ms+=now_ms()-start;
+    return true;
+}
+
 bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, int width, int height, uint8_t *output, ptrdiff_t output_stride)
 {
     const uint8_t *src = pixels;
@@ -623,6 +669,7 @@ bool upscale(Context &c, const uint8_t *pixels, ptrdiff_t stride, int width, int
             pad_rgb24(src, src_stride, step.in_w, step.in_h, step.padded.data(), step.w, step.h);
             src = step.padded.data(); src_stride = (ptrdiff_t)step.w * 3;
         }
+        if(i==0&&c.resident_span)return resident_upscale(c,src,src_stride,output,output_stride);
         const bool last = i + 1 == c.steps.size();
         const int ow = 2 * step.in_w, oh = 2 * step.in_h;
         if (last) require(ow == c.plan.width && oh == c.plan.height, "Model output dimensions differ from the configured 2x profile");
@@ -1146,6 +1193,15 @@ std::string format_stats(const Context &c)
       // What the player's automatic profile choice reads: the last two seconds, and what a frame
       // costs when nothing can be reused (a pan, a cut).
       << "\nRecent ms: " << recent << "\nFull frame ms: " << (c.full_frames ? c.full_ms / c.full_frames : 0) << "\n";
+    ExecutorTransfers transfers;
+    for(const auto &step:c.steps)for(const auto &worker:step.workers) {
+        const auto t=worker.executor->transfers();transfers.host_staging+=t.host_staging;
+        transfers.explicit_readback+=t.explicit_readback;
+    }
+    f<<"Resident SPAN eligible: "<<(c.resident_span?"yes":"no")
+     <<"\nResident SPAN segments: "<<c.resident_span_segments
+     <<"\nExecutor host staging bytes: "<<transfers.host_staging
+     <<"\nExecutor explicit readback bytes: "<<transfers.explicit_readback<<"\n";
     if (c.rife) {
         const auto &timing = c.rife->timing;
         f << "RIFE profiling: " << (c.rife_profiled ? "on" : "off")
@@ -1403,6 +1459,7 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
         c.source_id_hits = c.source_byte_comparisons = 0;
         c.error.clear(); c.stats_state = "configured"; c.last_frame_ms = 0;
         c.steps.clear(); c.width = width; c.height = height; c.rife_skipped = false;
+        c.resident_span=false;c.resident_span_segments=0;
         c.rife.reset();
         c.count = 0; c.full_frames = 0; c.total_ms = 0; c.model_ms = 0; c.full_ms = 0; c.recent.clear();
         c.upcoming.clear(); c.upcoming_stride.clear();
@@ -1430,6 +1487,7 @@ AJI_ORT_EXPORT int aji_vk_configure(aji_vk_context *context, int width, int heig
         c.rife_skipped = !c.rife && c.chain.rife && c.chain.rife_factor_num > c.chain.rife_factor_den;
         c.plan = {2 * c.steps.back().in_w, 2 * c.steps.back().in_h, 1, 1, 1};
         if (c.rife) { c.plan.numerator = c.chain.rife_factor_num; c.plan.denominator = c.chain.rife_factor_den; }
+        c.resident_span=resident_chain_ready(c);
         *plan = c.plan;
         publish_stats(c, true);
         c.surface_configured=true;

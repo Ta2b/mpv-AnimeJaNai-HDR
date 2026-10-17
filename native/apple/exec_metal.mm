@@ -11,6 +11,7 @@
 #include "ajm.h"
 #include "engine.h"
 #include <cstdlib>
+#include <atomic>
 #include <cstring>
 #include <string>
 
@@ -18,6 +19,13 @@ namespace aji {
 namespace {
 
 const uint16_t kHalfOne = 0x3C00;   // 1.0 as a half float
+
+struct MetalImage final : ResidentImage {
+    __strong MPSGraphTensorData *tensor=nil;
+    MetalImage(MPSGraphTensorData *value,int w,int h,uint64_t id) : tensor(value) {
+        width=w;height=h;device=id;
+    }
+};
 
 class MetalExecutor : public Executor {
 public:
@@ -46,32 +54,75 @@ public:
 
     void run(const Job &job) override
     {
+        auto result=run_resident(job);
+        read_resident(*result,job);
+    }
+
+    bool can_take_resident(const Executor &source) const override
+    {
+        const auto *other=dynamic_cast<const MetalExecutor *>(&source);
+        return other && device_.registryID==other->device_.registryID &&
+            w_==2*other->w_ && h_==2*other->h_;
+    }
+
+    std::unique_ptr<ResidentImage> run_resident(const Job &job,const ResidentImage *source=nullptr) override
+    {
         @autoreleasepool {
-            const size_t row = (size_t)w_ * 3;
-            for (int y = 0; y < h_; y++) std::memcpy(in_.data() + (size_t)y * row, job.in + (ptrdiff_t)y * job.in_stride, row);
-            NSData *bytes = [NSData dataWithBytesNoCopy:in_.data() length:in_.size() freeWhenDone:NO];
-            MPSGraphTensorData *feed = [[MPSGraphTensorData alloc] initWithDevice:graph_device_ data:bytes
-                                                                            shape:in_shape_ dataType:MPSDataTypeUInt8];
-            MPSGraphTensorData *result = nil;
-            if (executable_ != nil) {
-                NSArray<MPSGraphTensorData *> *results = [executable_ runWithMTLCommandQueue:queue_ inputsArray:@[feed]
-                                                                                  resultsArray:nil executionDescriptor:nil];
-                require(results.count == 1, "Metal: the graph returned no result");
-                result = results[0];
+            MPSGraphTensorData *feed=nil;
+            if(source) {
+                const auto *image=dynamic_cast<const MetalImage *>(source);
+                require(image && image->device==device_.registryID && image->width==w_ && image->height==h_ &&
+                    image->format==ResidentImage::Format::RGB8NHWC && image->memory==ResidentImage::Memory::MetalGraph,
+                    "Metal: incompatible resident image");
+                feed=image->tensor;
+                require(feed.dataType==MPSDataTypeUInt8 && [feed.shape isEqualToArray:in_shape_],
+                    "Metal: resident tensor type or shape mismatch");
             } else {
-                NSDictionary<MPSGraphTensor *, MPSGraphTensorData *> *results =
-                    [graph_ runWithMTLCommandQueue:queue_ feeds:@{input_: feed} targetTensors:@[output_] targetOperations:nil];
-                result = results[output_];
+                require(job.in && (job.in_stride>=(ptrdiff_t)w_*3 || job.in_stride<=-(ptrdiff_t)w_*3),"Metal: invalid host input");
+                const size_t row=(size_t)w_*3;
+                for(int y=0;y<h_;++y)std::memcpy(in_.data()+(size_t)y*row,job.in+(ptrdiff_t)y*job.in_stride,row);
+                staging_bytes_.fetch_add(in_.size(),std::memory_order_relaxed);
+                NSData *bytes=[NSData dataWithBytesNoCopy:in_.data() length:in_.size() freeWhenDone:NO];
+                feed=[[MPSGraphTensorData alloc] initWithDevice:graph_device_ data:bytes shape:in_shape_ dataType:MPSDataTypeUInt8];
             }
-            require(result != nil, "Metal: the graph returned no result");
-            MPSNDArray *array = [result mpsndarray];
-            require(array != nil, "Metal: the result is not readable");
-            [array readBytes:out_.data() strideBytes:nil];
-            const size_t out_row = (size_t)2 * w_ * 3;
-            for (int y = 0; y < job.crop_h; y++)
-                std::memcpy(job.out + (ptrdiff_t)y * job.out_stride,
-                            out_.data() + (size_t)(y + job.crop_y) * out_row + (size_t)job.crop_x * 3, (size_t)job.crop_w * 3);
+            MPSGraphTensorData *result=nil;
+            // Both APIs are synchronous: the owner remains alive through the
+            // next graph's call, without another queue/fence/worker protocol.
+            if(executable_!=nil) {
+                NSArray<MPSGraphTensorData *> *results=[executable_ runWithMTLCommandQueue:queue_ inputsArray:@[feed]
+                    resultsArray:nil executionDescriptor:nil];
+                require(results.count==1,"Metal: the graph returned no result");result=results[0];
+            } else {
+                NSDictionary<MPSGraphTensor *,MPSGraphTensorData *> *results=
+                    [graph_ runWithMTLCommandQueue:queue_ feeds:@{input_:feed} targetTensors:@[output_] targetOperations:nil];
+                result=results[output_];
+            }
+            require(result && result.dataType==MPSDataTypeUInt8 &&
+                [result.shape isEqualToArray:@[@1,@(2*h_),@(2*w_),@3]],"Metal: invalid graph output");
+            return std::make_unique<MetalImage>(result,2*w_,2*h_,device_.registryID);
         }
+    }
+
+    void read_resident(const ResidentImage &source,const Job &job) override
+    {
+        @autoreleasepool {
+            const auto *image=dynamic_cast<const MetalImage *>(&source);
+            require(image && image->device==device_.registryID && image->width==2*w_ && image->height==2*h_,
+                "Metal: incompatible readback image");
+            require(job.out && job.crop_x>=0 && job.crop_y>=0 && job.crop_w>=0 && job.crop_h>=0 &&
+                job.crop_x+job.crop_w<=2*w_ && job.crop_y+job.crop_h<=2*h_ &&
+                (job.out_stride>=(ptrdiff_t)job.crop_w*3 || job.out_stride<=-(ptrdiff_t)job.crop_w*3),"Metal: invalid output crop");
+            MPSNDArray *array=[image->tensor mpsndarray];require(array!=nil,"Metal: the result is not readable");
+            [array readBytes:out_.data() strideBytes:nil];
+            readback_bytes_.fetch_add(out_.size(),std::memory_order_relaxed);
+            const size_t row=(size_t)2*w_*3;
+            for(int y=0;y<job.crop_h;++y)
+                std::memcpy(job.out+(ptrdiff_t)y*job.out_stride,
+                    out_.data()+(size_t)(y+job.crop_y)*row+(size_t)job.crop_x*3,(size_t)job.crop_w*3);
+        }
+    }
+    ExecutorTransfers transfers() const override {
+        return {staging_bytes_.load(std::memory_order_relaxed),readback_bytes_.load(std::memory_order_relaxed)};
     }
 
 private:
@@ -200,6 +251,7 @@ private:
     MPSGraphExecutable *executable_ = nil;
     NSArray<NSNumber *> *in_shape_ = nil;
     std::vector<uint8_t> in_, out_;
+    std::atomic<uint64_t> staging_bytes_{0},readback_bytes_{0};
 };
 
 } // namespace
