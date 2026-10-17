@@ -17,3 +17,7 @@ Le second job du même run39029415108 a compilé le vrai lecteur mpv19c0fcf89595
 Troiscas distincts, troisimages chacun : NV12SDR709→3imports/0repli/9octets de contrôle ; matrice601→0import/3replis ; P010HDR→0import/3replis. Plans, PTS, format, dimensions et couleurs byte-référence exacts dans les troiscas. Le troisième resteyuv420p10le/PQBT2020, aucune troncature. Deuxresets parprocessus et liveowners0 àfermeture. [Reçu filtre](filter-receipt.json). Aucun cas concluant à répéter ; code natif et build-mpv identiques au candidat91632df après fusion .103.
 
 Périmètre expérimental : apple-import-probe=yes, slot0 seulement, aucuneinférence. La voie normaleRGB24/videotoolbox-copy demeure en place, aucunEnumMETAL public activé. Une lecture GPU3octets/frame touche les plans, ce n’est pas une optimisationFPS ni un chemin complet sans copie. AH120 reste ouvert pour préparation fidèle et rendu macvk.
+
+## Livraison vérifiée
+
+[.104](../../jira/release-20261017-3.8.0.104.json) : modulef13aafd1 exact à la qualification, archiveMac80ab0fc3…,17programmes gérés conformes, consommateur présent dans le vrai mpv ; les troisCI release sont réussies. Aucun essai natif concluant rejoué.

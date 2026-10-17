@@ -1,0 +1,58 @@
+{
+  "release": "3.8.0.104",
+  "source": "26dea3562f7d9260b0c935d6e25bfb562a152eff",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39029778179,
+      "headSha": "26dea3562f7d9260b0c935d6e25bfb562a152eff",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39029778149,
+      "headSha": "26dea3562f7d9260b0c935d6e25bfb562a152eff",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39029778125,
+      "headSha": "26dea3562f7d9260b0c935d6e25bfb562a152eff",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39029777921,
+      "headSha": "26dea3562f7d9260b0c935d6e25bfb562a152eff",
+      "status": "completed",
+      "workflowName": "Build native AMD engine"
+    }
+  ],
+  "assets_uploaded": 15,
+  "payload_check": {
+    "passed": true,
+    "archive_sha256": "80ab0fc3d2df9c509be2f3a7fc3108d71ed044c18e397be128ff094dd03cf1d7",
+    "managed_programs": 17,
+    "controller_source_exact": true,
+    "module_sha256": "f13aafd1fa090d0ed0f2998569f60c9e30893894e762f0914edd0a8a1e566298",
+    "module_exact_to_qualified_native_and_filter": true,
+    "private_api_export_present": true,
+    "native_qualification_run": 39029415108,
+    "default_hwdec": "videotoolbox-copy retained",
+    "scope": "Experimental import consumer only; no inference/macvk rendering/FPS claim",
+    "consumer_option_present": true,
+    "consumer_lifecycle_log_present": true,
+    "default_hwdec_checked_in_package": true
+  },
+  "scope": "AH350 first experimental VideoToolbox NV12 SDR709 -> Metal import boundary, explicit software fallback; parent AH120 remains open",
+  "qualification": "Native and real mpv before/probe three discriminating short inputs passed run39029415108. Exact shipped module to native/consumer qualification. Existing numerical/ownership cases not replayed.",
+  "limits": [
+    "Apple Paravirtual CI; no physical Apple GPU/FPS or macvk rendering result.",
+    "No SPAN/RIFE inference connected to this import yet.",
+    "Experimental option only, slot0, default normal decode unchanged."
+  ]
+}
