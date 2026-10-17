@@ -144,3 +144,11 @@ sortie10bitseffectifs ; pic400..2000nits configuré, sansMaxCLLinventé. UnHDRse
 sursourceHDRpréservepixels et métadonnées. SourceSDKinstallée parutilisateur,
 aucune redistribution. Voir qualification/lot-48-hdr-stage-20261017.md ;
 affichageHDRphysique et autresmatériels/API nonqualifiés.
+
+
+À partir de3.8.0.80 : importer Maxine Core et la feature TrueHDR dans Optional
+engines (ZIP/TGZ/tar.gz, ordre libre). Les runtimes et licences sont gérés
+localement, sans droits administrateur ni chemin manuel. Core seul ne suffit
+pas. Rouvrir le lecteur après import ; un ancien profil peut adopter le SDK
+installé en un bouton. L’archive officielle Core a été contrôlée ; le layout
+de l’archive NGC originale feature reste suivi explicitement par AH-324.

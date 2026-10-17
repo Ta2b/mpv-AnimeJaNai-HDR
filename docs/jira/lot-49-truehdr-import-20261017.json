@@ -1,0 +1,58 @@
+{
+  "lot": 49,
+  "tickets": {
+    "AH-318": "In Progress",
+    "AH-324": "To Do"
+  },
+  "manager_source": "b6ebb1a696d8e8bc04a960651784d3e4c662b1b2",
+  "manager_delivery": {
+    "run": 38984776150,
+    "conclusion": "success",
+    "url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/tag/hdr-b6ebb1a696d8e8bc04a960651784d3e4c662b1b2",
+    "assets": [
+      {
+        "name": "AnimeJaNaiManager-HDR-linux-x64.tar.zst",
+        "size": 44315901,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-b6ebb1a696d8e8bc04a960651784d3e4c662b1b2/AnimeJaNaiManager-HDR-linux-x64.tar.zst"
+      },
+      {
+        "name": "AnimeJaNaiManager-HDR-macos-arm64.zip",
+        "size": 46765533,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-b6ebb1a696d8e8bc04a960651784d3e4c662b1b2/AnimeJaNaiManager-HDR-macos-arm64.zip"
+      },
+      {
+        "name": "AnimeJaNaiManager-HDR-x64.zip",
+        "size": 49013008,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-b6ebb1a696d8e8bc04a960651784d3e4c662b1b2/AnimeJaNaiManager-HDR-x64.zip"
+      },
+      {
+        "name": "AnimeJaNaiManager-HDR.exe",
+        "size": 99528307,
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/Ta2b/AnimeJaNaiManager-HDR/releases/download/hdr-b6ebb1a696d8e8bc04a960651784d3e4c662b1b2/AnimeJaNaiManager-HDR.exe"
+      }
+    ]
+  },
+  "shared_player_source": "d71264d1a4977f1a077167a8f52920966bcde8b1",
+  "qualification": {
+    "official_core_archive_sha256": "6fb57ff447203910f4e9ca4ede8ddb465921978b0b64fea591ec59c0f951ff05",
+    "core_import_ms": 24629.7697,
+    "installed_feature_fixture_import_ms": 62.6705,
+    "archive_guards": 14,
+    "ui_checks": 7,
+    "launcher_checks": "managed complete SDK and explicit user override",
+    "video_or_gpu_tests": false
+  },
+  "limits": [
+    "original NGC TrueHDR feature archive qualification explicitly separated AH-324",
+    "existing physical HDR and other-GPU/API qualifications remain open"
+  ],
+  "jira_comments": [
+    "10179",
+    "10180"
+  ],
+  "release": "3.8.0.80 preparing"
+}

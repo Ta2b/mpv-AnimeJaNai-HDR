@@ -86,3 +86,6 @@ indisponibles explicitementgrisés. DéfautsFRUCdéjàdiagnostiqués inchangés.
 Artefacts : `artifacts/performance/lots-20261017/lot-48/`, scripts et logs
 référencés dans le reçu `docs/jira/lot-48-hdr-stage-20261017.json`.
 AH-317 reste In Progress jusqu’à publication vérifiée de.79.
+
+
+Livraison vérifiée : 3.8.0.79, trois workflows success,17assets ; Manager EXE+DLL exacts, module/noyau HDR exacts dans l’overlayLinux, lecteur HDR réel présent dans le paquet Linux. AH-317 Done, commentaire10181. Reçu docs/jira/release-20261017-3.8.0.79.json.

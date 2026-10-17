@@ -11,7 +11,18 @@ export ANIMEJANAI_DATA_DIR="$ANIMEJANAI_ROOT/animejanai"
 export LD_LIBRARY_PATH="$HERE/mpv:$ANIMEJANAI_INFERENCE_DIR:${ANIMEJANAI_EXTRA_LIBS:-}:${LD_LIBRARY_PATH:-}"
 # TrueHDR (ordered pipeline or legacy libaji_rtx.so): NVIDIA Maxine Video Effects loads its own CUDA, TensorRT and
 # feature libraries by name. They go last, after the player's own libraries.
-vfx="${ANIMEJANAI_VFX_SDK:-/usr/local/VideoFX}"
+# The Manager commits a complete managed SDK only after both components exist.
+# Read only its fixed-format SHA identifier; no archive path becomes shell code.
+managed_vfx=""
+registry="$ANIMEJANAI_DATA_DIR/optional-sdks/truehdr/current.json"
+if [ -f "$registry" ]; then
+    runtime_id="$(sed -n 's/^[[:space:]]*"RuntimeId":[[:space:]]*"\([0-9a-f]\{64\}\)"[[:space:]]*[,}]*[[:space:]]*$/\1/p' "$registry" | head -n 1)"
+    if [ -n "$runtime_id" ]; then
+        candidate="$ANIMEJANAI_DATA_DIR/optional-sdks/truehdr/versions/$runtime_id"
+        if [ -f "$candidate/lib/libVideoFX.so" ] && [ -f "$candidate/features/nvvfxtruehdr/lib/libnvVFXTrueHDR.so" ]; then managed_vfx="$candidate"; fi
+    fi
+fi
+vfx="${ANIMEJANAI_VFX_SDK:-${managed_vfx:-/usr/local/VideoFX}}"
 if { [ -f "$ANIMEJANAI_INFERENCE_DIR/libaji_rtx.so" ] || [ -f "$ANIMEJANAI_INFERENCE_DIR/libaji_pipeline.so" ]; } && [ -d "$vfx/lib" ]; then
     for dir in "$vfx/lib" "$vfx"/features/*/lib "$vfx/external/cuda/lib" "$vfx/external/tensorrt/lib"; do
         if [ -d "$dir" ]; then LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$dir"; fi

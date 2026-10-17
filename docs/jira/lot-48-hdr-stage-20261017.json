@@ -1,7 +1,7 @@
 {
   "lot": 48,
   "tickets": {
-    "AH-317": "In Progress"
+    "AH-317": "Done"
   },
   "backend_source": "9f2541e3dee1f159800b3a20c0e0729adc18491b",
   "manager_source": "f69589d7656ba5237cd29784e0c49f5106ff156b",
@@ -27,7 +27,7 @@
     "Windows/macOS HDR stage unavailable",
     "Matroska exported duration limitation distinct from exact native playback"
   ],
-  "release": "3.8.0.79 preparing",
+  "release": "3.8.0.79 verified",
   "manager_delivery": {
     "source": "f69589d7656ba5237cd29784e0c49f5106ff156b",
     "run": 38982628105,
@@ -63,5 +63,6 @@
   },
   "jira_comments": {
     "qualification": "10178"
-  }
+  },
+  "delivery_comment": "10181"
 }
