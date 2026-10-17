@@ -1,7 +1,7 @@
 # Ordered interpolation stages — experimental Linux CUDA
 
 Project-owned libaji_pipeline.so and aji_pipeline.fatbin, backend source
-9f2541e3dee1f159800b3a20c0e0729adc18491b. TRT optional build-status extension
+4603933f363bc35ab2bcfab433ae665e7d4b7397. TRT optional build-status extension
 comes from 79e8aa48e0c776e8335c2430d538426ed3b0a506 (same TRT sources at 35c0049).
 No NVIDIA SDK/runtime/headers or model weights are included by this feature.
 
@@ -75,3 +75,11 @@ exact native PTS/durations/EOF; latter export has PQ/BT.2020 limited metadata.
 Matroska export timestamps have millisecond rounding and final muxed duration
 limits; this is distinct from exact native playback duration. No FPS gain,
 physical HDR display, Windows/macOS HDR-stage or other-GPU qualification claimed.
+
+FRUC stage artifact_protection=yes/no (defaultyes) enables the severe bright-edge
+guard described in FRUC-README.md. Protected output flags are FRUC|REPEATED|
+PROTECTED (4|8|128=140). Pipeline fruc_repetitions counts both SDK and policy
+repeats; provider SDK-only and protection counters remain separate. No cadence
+or timestamp changes, no CPU pixel copies; local fluidity can fall to source
+cadence. The conversion kernels for Area/TrueHDR are byte-identical to the
+previous bundle; only FRUC guard kernels and pipeline dispatch changed.

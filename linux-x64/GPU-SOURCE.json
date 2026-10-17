@@ -88,12 +88,12 @@
     }
   ],
   "fruc_provider": {
-    "backend_source": "f8da50a014fbf020bc3027e9bafc13feebb6323e",
+    "backend_source": "4603933f363bc35ab2bcfab433ae665e7d4b7397",
     "api": "aji_interpolator_v1 + aji_fruc_create_v1",
     "sha256": {
-      "libaji_fruc.so": "f320f5cc51f3aeec8385a49896e0aa2e1483c86394763a30610f09f2d5df13c1",
-      "aji_fruc.fatbin": "f9c8c551aec2ee87cd1b7c3097d8538546b1de0cf8eb9569de43d5853e572469",
-      "FRUC-README.md": "6554d0c88fc7a0bebf7327bf932e9d78b8a4a858b1d0afd299c89070bf5df1d4"
+      "libaji_fruc.so": "8bedb990cff62cd91f04568e303aaea7a9f85e5bd89e8d26239007f6d22e1905",
+      "aji_fruc.fatbin": "52a5af438281eb9a840c5ecd7dff9e6ad1574bb58bbc4db8b0f5dfbebe80506c",
+      "FRUC-README.md": "13ad95c14dbc9e47781a291253e19a483ef5904fafb1e9a80ff60185cc3358c8"
     },
     "sdk_external": true,
     "fast_opt_in": true,
@@ -107,15 +107,25 @@
       100,
       120,
       "PTX120"
-    ]
+    ],
+    "prior_backend_source": "f8da50a014fbf020bc3027e9bafc13feebb6323e",
+    "artifact_protection": {
+      "feature_mask": 1,
+      "stage_default": "yes",
+      "criterion": "bright-edge energy >2x max sources; edge luma >96",
+      "fallback": "exact previous source for matching descriptor",
+      "qualified": "severe beam + ordinary cached SDK control; native and actual NVDEC pixels/timeline/EOF; RTX4070Ti Linux only",
+      "quality_tradeoff": "local fluidity loss; other defects may remain",
+      "cpu_pixel_copies": 0
+    }
   },
   "ordered_pipeline": {
-    "backend_source": "9f2541e3dee1f159800b3a20c0e0729adc18491b",
+    "backend_source": "4603933f363bc35ab2bcfab433ae665e7d4b7397",
     "api": "aji_pipeline_v1",
     "sha256": {
-      "libaji_pipeline.so": "d85dbb438c1129a2f2acd80abc3d3c3d4b293f0ce7db5e14c4d1b7acd9e38ff5",
+      "libaji_pipeline.so": "2d94f5601d9ec38235e796d2394053f88385cfd094cf40bbc38b16b0211d3c38",
       "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
-      "PIPELINE-README.md": "76e673bb594ecdb9d13a186d6bdc8c130377cedb21397abfb01dc1dc7b17bf0e"
+      "PIPELINE-README.md": "0984be23f2d9f0400c21df2977a15c0ff431c5f183ddd5c8ceaa2a8f69f67d92"
     },
     "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
     "explicit_opt_in": true,
@@ -131,14 +141,15 @@
       120,
       "PTX120"
     ],
-    "prior_backend_source": "8d4ea4e28a660523bf2264dbb56627472400b10a",
+    "prior_backend_source": "9f2541e3dee1f159800b3a20c0e0729adc18491b",
     "features": [
       "independent-area-downscale",
       "static-reader-feature-query",
       "one-hdr-stage-per-profile",
       "explicit-truehdr-conversion",
       "optional-output-color-query",
-      "native-hdr-only-passthrough"
+      "native-hdr-only-passthrough",
+      "explicit-fruc-artifact-protection"
     ],
     "sdk_hdr": {
       "externally_installed": true,
