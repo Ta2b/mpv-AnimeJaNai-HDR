@@ -1,0 +1,43 @@
+{
+  "binaries": {
+    "library": "834ca0a740b92e632b5ea63b07f5da28326d6bd2cc72f67b08ed6a8f6b9b39bc",
+    "trt": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+    "older_trt": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
+    "kernel": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9"
+  },
+  "cases": [
+    {
+      "name": "old-quality-alone",
+      "refused": true,
+      "diagnostic": "RIFE Quality cannot be verified for loaded engine /home/ta2b/.animejanai-tools/work/lot-62-quality-trt-build-20261017/libaji_trt.so; update the GPU engine components (RIFE semantics v1 required). Local files were preserved."
+    },
+    {
+      "name": "current-quality-fused",
+      "accepted": true,
+      "configured_stages": 2
+    },
+    {
+      "name": "current-fast-fused",
+      "accepted": true,
+      "configured_stages": 2
+    },
+    {
+      "name": "old-fast-fused",
+      "accepted": true,
+      "configured_stages": 2
+    }
+  ],
+  "video_frames_processed": 0,
+  "fps_measured": false,
+  "native_error_outputs_untouched": true,
+  "passed": true,
+  "scope": "Linux CUDA configured semantics and old-module refusal/explicit Fast compatibility; no pixels or benchmark",
+  "trt_device_fatbin_unchanged_sha256": "23766330f0d82b1a69660abff608b3f0630ea9089f03be755eb4e06830d097cc",
+  "observed_semantics": [
+    "aji_pipeline: RIFE semantics stage=rife requested=quality effective=quality contract=v1 flags=1 module=\"/home/ta2b/.animejanai-tools/work/lot-70-quality-trt-build-20261017/libaji_trt.so\" declared_source=unknown ",
+    "aji_pipeline: RIFE semantics stage=rife requested=fast effective=fast contract=v1 flags=2 module=\"/home/ta2b/.animejanai-tools/work/lot-70-quality-trt-build-20261017/libaji_trt.so\" declared_source=unknown ",
+    "aji_pipeline: RIFE semantics stage=rife requested=fast effective=unknown contract=unavailable flags=0 module=\"/home/ta2b/.animejanai-tools/work/lot-62-quality-trt-build-20261017/libaji_trt.so\" declared_source=unknown semantics-v1 unavailable"
+  ],
+  "source_declaration": "unknown: git unavailable in the portable build image; bundle provenance is separate",
+  "numeric_implementation": "GPU kernels and pixel algorithms unchanged; existing Quality qualifications reused"
+}
