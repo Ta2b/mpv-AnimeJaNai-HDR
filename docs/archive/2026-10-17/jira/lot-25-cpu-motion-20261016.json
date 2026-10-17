@@ -1,0 +1,17 @@
+{
+  "issue": "AH-272",
+  "parent": "AH-66",
+  "native_qualification": "AH-273",
+  "status": "Done",
+  "base": "4d7ff64d667d6204bf4acb6fd52a50c7c1310920",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-25-cpu-motion-20261016",
+  "qualification": "complete Linux CPU Fast:16 actual kernels and RGB buffer removed; raw flow/mask exact at two geometries and activation-off;8 RGB outputs exact; off/failure safe, timings nonconclusive",
+  "source": "10b15a18018c5ed88e1dfa42fa48536541ec003d",
+  "engine_source": "4488fd442e3373a62886b12688478aff5ead45d0",
+  "version": "3.8.0.57",
+  "push": "confirmed",
+  "qualification_comment_id": "10091",
+  "binary_sha256": "e08294868c34b43eaec49571cc7090709f36b3c45c94a4df5b5d29f8176eceea",
+  "close_comment_id": "10093",
+  "release_receipt": "release-20261016-3.8.0.57.json"
+}

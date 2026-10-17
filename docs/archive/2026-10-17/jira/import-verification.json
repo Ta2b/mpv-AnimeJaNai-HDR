@@ -1,0 +1,489 @@
+{
+  "verified_at_utc": "2026-10-15T13:35:27.014Z",
+  "site_url": "https://tatoub.atlassian.net",
+  "project_key": "AH",
+  "board_url": "https://tatoub.atlassian.net/jira/software/projects/AH/boards/2",
+  "source_sha256": "a2648e4d7fca41492c0f5b8096be21ecbfd14d38283db4a4d1bf1e9b834b511e",
+  "method": "Jira paginated reads",
+  "issues": 232,
+  "epics": {
+    "FOND": {
+      "id": "10003",
+      "key": "AH-1",
+      "url": "https://tatoub.atlassian.net/browse/AH-1"
+    },
+    "ARCH": {
+      "id": "10004",
+      "key": "AH-2",
+      "url": "https://tatoub.atlassian.net/browse/AH-2"
+    },
+    "NVIDIA": {
+      "id": "10005",
+      "key": "AH-3",
+      "url": "https://tatoub.atlassian.net/browse/AH-3"
+    },
+    "AMD": {
+      "id": "10006",
+      "key": "AH-4",
+      "url": "https://tatoub.atlassian.net/browse/AH-4"
+    },
+    "INTEL": {
+      "id": "10007",
+      "key": "AH-5",
+      "url": "https://tatoub.atlassian.net/browse/AH-5"
+    },
+    "APPLE": {
+      "id": "10008",
+      "key": "AH-6",
+      "url": "https://tatoub.atlassian.net/browse/AH-6"
+    },
+    "VULKAN": {
+      "id": "10009",
+      "key": "AH-7",
+      "url": "https://tatoub.atlassian.net/browse/AH-7"
+    },
+    "VFI": {
+      "id": "10010",
+      "key": "AH-8",
+      "url": "https://tatoub.atlassian.net/browse/AH-8"
+    },
+    "KERNELS": {
+      "id": "10011",
+      "key": "AH-9",
+      "url": "https://tatoub.atlassian.net/browse/AH-9"
+    },
+    "QUAL": {
+      "id": "10012",
+      "key": "AH-10",
+      "url": "https://tatoub.atlassian.net/browse/AH-10"
+    }
+  },
+  "tasks": 222,
+  "dependencies": [
+    {
+      "id": "10000",
+      "from": "AH-11",
+      "to": "AH-12"
+    },
+    {
+      "id": "10009",
+      "from": "AH-11",
+      "to": "AH-36"
+    },
+    {
+      "id": "10027",
+      "from": "AH-14",
+      "to": "AH-74"
+    },
+    {
+      "id": "10058",
+      "from": "AH-14",
+      "to": "AH-127"
+    },
+    {
+      "id": "10077",
+      "from": "AH-14",
+      "to": "AH-209"
+    },
+    {
+      "id": "10021",
+      "from": "AH-15",
+      "to": "AH-49"
+    },
+    {
+      "id": "10025",
+      "from": "AH-15",
+      "to": "AH-51"
+    },
+    {
+      "id": "10028",
+      "from": "AH-15",
+      "to": "AH-74"
+    },
+    {
+      "id": "10033",
+      "from": "AH-15",
+      "to": "AH-86"
+    },
+    {
+      "id": "10053",
+      "from": "AH-15",
+      "to": "AH-119"
+    },
+    {
+      "id": "10059",
+      "from": "AH-15",
+      "to": "AH-127"
+    },
+    {
+      "id": "10078",
+      "from": "AH-15",
+      "to": "AH-209"
+    },
+    {
+      "id": "10022",
+      "from": "AH-16",
+      "to": "AH-49"
+    },
+    {
+      "id": "10013",
+      "from": "AH-23",
+      "to": "AH-40"
+    },
+    {
+      "id": "10001",
+      "from": "AH-28",
+      "to": "AH-29"
+    },
+    {
+      "id": "10003",
+      "from": "AH-28",
+      "to": "AH-30"
+    },
+    {
+      "id": "10005",
+      "from": "AH-28",
+      "to": "AH-31"
+    },
+    {
+      "id": "10007",
+      "from": "AH-28",
+      "to": "AH-35"
+    },
+    {
+      "id": "10019",
+      "from": "AH-28",
+      "to": "AH-46"
+    },
+    {
+      "id": "10050",
+      "from": "AH-28",
+      "to": "AH-116"
+    },
+    {
+      "id": "10002",
+      "from": "AH-32",
+      "to": "AH-29"
+    },
+    {
+      "id": "10004",
+      "from": "AH-32",
+      "to": "AH-30"
+    },
+    {
+      "id": "10006",
+      "from": "AH-32",
+      "to": "AH-31"
+    },
+    {
+      "id": "10008",
+      "from": "AH-32",
+      "to": "AH-35"
+    },
+    {
+      "id": "10020",
+      "from": "AH-32",
+      "to": "AH-46"
+    },
+    {
+      "id": "10051",
+      "from": "AH-32",
+      "to": "AH-116"
+    },
+    {
+      "id": "10010",
+      "from": "AH-49",
+      "to": "AH-36"
+    },
+    {
+      "id": "10011",
+      "from": "AH-50",
+      "to": "AH-36"
+    },
+    {
+      "id": "10012",
+      "from": "AH-36",
+      "to": "AH-40"
+    },
+    {
+      "id": "10014",
+      "from": "AH-36",
+      "to": "AH-41"
+    },
+    {
+      "id": "10016",
+      "from": "AH-36",
+      "to": "AH-42"
+    },
+    {
+      "id": "10018",
+      "from": "AH-36",
+      "to": "AH-46"
+    },
+    {
+      "id": "10015",
+      "from": "AH-37",
+      "to": "AH-41"
+    },
+    {
+      "id": "10017",
+      "from": "AH-50",
+      "to": "AH-42"
+    },
+    {
+      "id": "10023",
+      "from": "AH-49",
+      "to": "AH-51"
+    },
+    {
+      "id": "10036",
+      "from": "AH-49",
+      "to": "AH-96"
+    },
+    {
+      "id": "10041",
+      "from": "AH-49",
+      "to": "AH-109"
+    },
+    {
+      "id": "10052",
+      "from": "AH-49",
+      "to": "AH-119"
+    },
+    {
+      "id": "10024",
+      "from": "AH-50",
+      "to": "AH-51"
+    },
+    {
+      "id": "10029",
+      "from": "AH-50",
+      "to": "AH-75"
+    },
+    {
+      "id": "10031",
+      "from": "AH-50",
+      "to": "AH-76"
+    },
+    {
+      "id": "10045",
+      "from": "AH-50",
+      "to": "AH-111"
+    },
+    {
+      "id": "10054",
+      "from": "AH-50",
+      "to": "AH-122"
+    },
+    {
+      "id": "10080",
+      "from": "AH-50",
+      "to": "AH-210"
+    },
+    {
+      "id": "10026",
+      "from": "AH-51",
+      "to": "AH-74"
+    },
+    {
+      "id": "10037",
+      "from": "AH-51",
+      "to": "AH-96"
+    },
+    {
+      "id": "10043",
+      "from": "AH-51",
+      "to": "AH-110"
+    },
+    {
+      "id": "10056",
+      "from": "AH-51",
+      "to": "AH-126"
+    },
+    {
+      "id": "10030",
+      "from": "AH-53",
+      "to": "AH-75"
+    },
+    {
+      "id": "10032",
+      "from": "AH-53",
+      "to": "AH-76"
+    },
+    {
+      "id": "10055",
+      "from": "AH-53",
+      "to": "AH-122"
+    },
+    {
+      "id": "10049",
+      "from": "AH-56",
+      "to": "AH-113"
+    },
+    {
+      "id": "10064",
+      "from": "AH-57",
+      "to": "AH-139"
+    },
+    {
+      "id": "10061",
+      "from": "AH-58",
+      "to": "AH-129"
+    },
+    {
+      "id": "10065",
+      "from": "AH-58",
+      "to": "AH-141"
+    },
+    {
+      "id": "10069",
+      "from": "AH-58",
+      "to": "AH-143"
+    },
+    {
+      "id": "10071",
+      "from": "AH-58",
+      "to": "AH-150"
+    },
+    {
+      "id": "10073",
+      "from": "AH-58",
+      "to": "AH-151"
+    },
+    {
+      "id": "10075",
+      "from": "AH-58",
+      "to": "AH-154"
+    },
+    {
+      "id": "10076",
+      "from": "AH-58",
+      "to": "AH-156"
+    },
+    {
+      "id": "10034",
+      "from": "AH-232",
+      "to": "AH-86"
+    },
+    {
+      "id": "10035",
+      "from": "AH-94",
+      "to": "AH-95"
+    },
+    {
+      "id": "10038",
+      "from": "AH-106",
+      "to": "AH-108"
+    },
+    {
+      "id": "10046",
+      "from": "AH-106",
+      "to": "AH-112"
+    },
+    {
+      "id": "10039",
+      "from": "AH-107",
+      "to": "AH-108"
+    },
+    {
+      "id": "10040",
+      "from": "AH-108",
+      "to": "AH-109"
+    },
+    {
+      "id": "10044",
+      "from": "AH-108",
+      "to": "AH-111"
+    },
+    {
+      "id": "10047",
+      "from": "AH-108",
+      "to": "AH-112"
+    },
+    {
+      "id": "10042",
+      "from": "AH-109",
+      "to": "AH-110"
+    },
+    {
+      "id": "10048",
+      "from": "AH-112",
+      "to": "AH-113"
+    },
+    {
+      "id": "10072",
+      "from": "AH-119",
+      "to": "AH-150"
+    },
+    {
+      "id": "10074",
+      "from": "AH-119",
+      "to": "AH-151"
+    },
+    {
+      "id": "10057",
+      "from": "AH-202",
+      "to": "AH-126"
+    },
+    {
+      "id": "10060",
+      "from": "AH-128",
+      "to": "AH-129"
+    },
+    {
+      "id": "10062",
+      "from": "AH-129",
+      "to": "AH-130"
+    },
+    {
+      "id": "10063",
+      "from": "AH-178",
+      "to": "AH-130"
+    },
+    {
+      "id": "10066",
+      "from": "AH-165",
+      "to": "AH-141"
+    },
+    {
+      "id": "10067",
+      "from": "AH-141",
+      "to": "AH-142"
+    },
+    {
+      "id": "10068",
+      "from": "AH-165",
+      "to": "AH-142"
+    },
+    {
+      "id": "10070",
+      "from": "AH-178",
+      "to": "AH-143"
+    },
+    {
+      "id": "10079",
+      "from": "AH-209",
+      "to": "AH-210"
+    },
+    {
+      "id": "10081",
+      "from": "AH-209",
+      "to": "AH-211"
+    },
+    {
+      "id": "10082",
+      "from": "AH-210",
+      "to": "AH-211"
+    }
+  ],
+  "duplicates": 0,
+  "missing": 0,
+  "extra": 0,
+  "parents_verified": true,
+  "priorities_verified": true,
+  "labels_verified": true,
+  "descriptions_verified": true,
+  "description_normalization": "Trailing whitespace on each Markdown line only.",
+  "dependency_direction_verified": true,
+  "privacy": "Confirmed by user; connector does not expose project access setting."
+}

@@ -1,0 +1,12 @@
+{
+  "entries": [
+    {
+      "parent": "AH-33",
+      "issue_key": "AH-284",
+      "summary": "R\u00e9utiliser la pr\u00e9paration exacte des paires Surface CUDA entre phases avec identit\u00e9s compl\u00e8tes",
+      "marker": "exploration-20261016-cuda-surface-pair-cache",
+      "actual_status": "In Progress"
+    }
+  ],
+  "parent_comment_id": "10113"
+}

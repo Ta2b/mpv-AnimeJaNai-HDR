@@ -11,4 +11,4 @@ Lire [docs/ETAT-COURANT.md](docs/ETAT-COURANT.md), puis uniquement le ticket et 
 - Ne pas attendre les builds/releases : lancer, poursuivre une tâche indépendante, vérifier à sa fin. Strata optionnel s’il aide ; aucun travail concurrent GPU pendant une mesure.
 - Consigner preuves courtes, limites, décision et reçus dans le ticket existant. Mettre à jour ETAT-COURANT en remplaçant les faits périmés ; ne pas empiler plusieurs « points courants ».
 
-[Protocole](docs/PROTOCOLE-VALIDATION-FEATURES.md) · [Guides de reprise](docs/reprise/20261017/README.md) · [Audit Jira AH-334](https://tatoub.atlassian.net/browse/AH-334). Les catalogues historiques sont des réservoirs de cas, jamais une batterie de tests obligatoire.
+[Protocole](docs/PROTOCOLE-VALIDATION-FEATURES.md) · [Audit du matin](docs/AUDIT-GLOBAL-2026-10-17.md) · [Audit du soir](docs/AUDIT-PERFORMANCE-QUALITE-MANAGER-2026-10-17.md) · [Programme d’amélioration](docs/PROGRAMME-AMELIORATION-2026-10.md) · [Archives](docs/ARCHIVES.md). Les catalogues historiques sont des réservoirs de cas, jamais une batterie de tests obligatoire.

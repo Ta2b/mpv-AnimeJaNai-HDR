@@ -1,0 +1,27 @@
+{
+  "entries": [
+    {
+      "parent": "AH-50",
+      "issue_key": "AH-280",
+      "summary": "Int\u00e9grer Submit/Complete CPU born\u00e9 avec tickets, erreurs diff\u00e9r\u00e9es et drainage des surfaces",
+      "marker": "split-20261016-sur2-cpu-submit",
+      "actual_status": "Done"
+    },
+    {
+      "parent": "AH-50",
+      "issue_key": "AH-281",
+      "summary": "Int\u00e9grer Submit/Complete CUDA Linux avec \u00e9v\u00e9nements natifs, ownership et drainage born\u00e9s",
+      "marker": "split-20261016-sur2-native-fences",
+      "actual_status": "Done"
+    },
+    {
+      "parent": "AH-50",
+      "issue_key": "AH-283",
+      "summary": "Porter Submit/Complete et fences natives sur les API et OS hors CUDA Linux",
+      "marker": "split-20261016-sur2-native-remaining",
+      "actual_status": "To Do"
+    }
+  ],
+  "parent_comment_id": "10103",
+  "native_split_comment_id": "10109"
+}

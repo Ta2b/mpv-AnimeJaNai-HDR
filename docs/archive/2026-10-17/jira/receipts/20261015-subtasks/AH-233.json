@@ -1,0 +1,14 @@
+{
+  "parent": "AH-11",
+  "marker": "split-20261015-ref-linux-export",
+  "summary": "Export CLI/Lua Linux de configuration et inventaire SHA-256",
+  "target_status": "Done",
+  "criterion": "Exporter la configuration effective observée par IPC, champs inconnus explicites, inventaire de fichiers/hash, sans écraser un rapport ni modifier le rendu.",
+  "evidence": "3.8.0.33 c7581ed98b2a0802fd495e9851f53d82c01568c3 ; docs/qualification/lot-02-reference-20261015.md ; 29 hashes vérifiés, PNG16/PTS identiques, CLI/Lua fonctionnels, coût ponctuel 1,6147 s. Portée : observation/inventaire Linux, pas preuve des poids déjà chargés.",
+  "status": "planned",
+  "issue_key": "AH-233",
+  "create_result": {
+    "id": "10235",
+    "key": "AH-233"
+  }
+}

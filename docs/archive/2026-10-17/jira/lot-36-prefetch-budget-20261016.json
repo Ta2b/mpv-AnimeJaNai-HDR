@@ -1,0 +1,20 @@
+{
+  "issue": "AH-287",
+  "parent": "AH-39",
+  "status": "Done",
+  "followups": [
+    "AH-288",
+    "AH-289"
+  ],
+  "worktree": "/home/ta2b/.animejanai-tools/work/lot-36-prefetch-budget-20261016",
+  "mpv_worktree": "/home/ta2b/.animejanai-tools/work/mpv-prefetch-budget-20261016",
+  "base": "3f09cd036a218d600fd285c74924d9e8a069d530",
+  "qualification_source": "dc1551f01c38fb0964e35001a6dcac8272cae95f",
+  "player_source": "ea24deaf24f9091afcb27b44c7718da9f04f943e",
+  "release": "3.8.0.68",
+  "qualification_comment": "10125",
+  "evidence": "artifacts/performance/lots-20261016/lot-36/qualification.json",
+  "remaining": [],
+  "close_comment": "10127",
+  "release_receipt": "docs/jira/release-20261016-3.8.0.68.json"
+}

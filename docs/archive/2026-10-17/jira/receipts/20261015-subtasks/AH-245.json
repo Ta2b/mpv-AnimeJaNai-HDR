@@ -1,0 +1,15 @@
+{
+  "parent": "AH-30",
+  "marker": "split-20261015-flow-cache-cpu",
+  "summary": "Intégrer le cache flow identifié et transactionnel, qualifier RIFE partagé sur CPU",
+  "target_status": "Done",
+  "criterion": "load_rife utilise identité source/poids/transformation et cache provider isolé ; ancien flow ignoré, contenu vérifié, poids externes copiés correctement ; hit/miss/réparation/concurrence et inférence CPU exacts.",
+  "evidence": "3.8.0.35 735a33d87d228b3b77718b6d918111ed83e476af ; docs/qualification/lot-04-rife-flow-20261015.md ; même paire RIFE4.26/SPAN Fast, 3 instants : 0 octet changé, graphe identique ; configuration 217,80 -> 363,04 ms, correction fidélité. Pré-requis techniques flow local couverts, parents AH-28/AH-32 restent globaux.",
+  "status": "planned",
+  "issue_key": "AH-245",
+  "create_result": {
+    "id": "10247",
+    "key": "AH-245"
+  },
+  "actual_status": "To Do"
+}

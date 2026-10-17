@@ -1,0 +1,15 @@
+{
+  "parent": "AH-28",
+  "marker": "split-20261015-cac-trt-derived-keys",
+  "summary": "Auditer et compléter les clés TensorRT dérivées et temporelles",
+  "target_status": "To Do",
+  "criterion": "Vérifier motion-only, transformations et fenêtres temporelles : graphes/poids externes, version de conversion, settings/formes/types et runtime/GPU complets ; compléter les omissions et qualifier les cas changés.",
+  "evidence": "Les engines TensorRT ordinaires sont intégrés/qualifiés Linux dans AH-31 ; motion-only a une empreinte historique dont la couverture complète reste à vérifier.",
+  "status": "planned",
+  "issue_key": "AH-242",
+  "create_result": {
+    "id": "10244",
+    "key": "AH-242"
+  },
+  "actual_status": "To Do"
+}

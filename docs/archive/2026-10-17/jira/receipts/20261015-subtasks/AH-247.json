@@ -1,0 +1,15 @@
+{
+  "parent": "AH-31",
+  "marker": "split-20261015-trt-ordinary-linux",
+  "summary": "Engines ordinaires par contenu, migration et qualification réelle Linux TensorRT",
+  "target_status": "Done",
+  "criterion": "Ne plus accepter un ancien engine désérialisable comme preuve de poids ; graphe/poids externes/settings/runtime/GPU courant dans la clé ; source figée, migration conservatrice et publication contrôlée. Vérifier build réel, hit sans builder, poids remplacés et parité avec même plan sur Linux.",
+  "evidence": "3.8.0.36 765763fd2991bca726595969cef4a43f7074bc71 ; backend d9d0a94, pin 9eee3504d82387035e4908909ca9621733fed68c ; docs/qualification/lot-05-tensorrt-20261015.md. 3 sorties même plan exactes, production multi-SM testée SM89, ABI 24 symboles identique ; reconstructions indépendantes delta max 1/255 explicite, aucun FPS revendiqué.",
+  "status": "planned",
+  "issue_key": "AH-247",
+  "create_result": {
+    "id": "10249",
+    "key": "AH-247"
+  },
+  "actual_status": "To Do"
+}

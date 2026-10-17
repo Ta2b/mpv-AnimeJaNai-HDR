@@ -1,0 +1,12 @@
+{
+  "key": "AH-31",
+  "marker": "[sync-lots-01-05-20261015]",
+  "source": "lots-01-05",
+  "result": {
+    "message": "Comment added to AH-31 successfully",
+    "commentId": "10028",
+    "body": "\\[sync-lots-01-05-20261015\\]\n\nLot 05 CAC-04 en cours. Backend isolé d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 ; original utilisateur 1468be6 intact. Engines v2 SHA-256 : graphe + poids externes, settings, version TensorRT, CUDA runtime/driver et GPU courant (UUID/SM). Anciennes clés ignorées/préservées ; source figée sous identité et builders temporaires publiés uniquement après succès. Essai ciblé CPU : remplacement poids même nom/taille/mtime, oracle SHA, runtime/settings/device, snapshot invalide, concurrence et échec builder : succès.\n\nEssai GPU réel RTX4070Ti/TRT11.3, Quality SPAN V3.1Sharp1 Performance, 3 images anime NV12 128×72, mêmes inputs/settings. Configure ancien 3,1267 s → candidat 2,7537 s, hit 0,0336 s sans builder ; valeurs uniques, aucun gain FPS revendiqué. Remplacement d’un poids force un miss ; échec de construction conserve les anciens engines terminés. Deux reconstructions indépendantes diffèrent de 10 660 octets (max 1/255) ; investigation nécessaire avec exactement le même plan TensorRT : 0 octet différent avant/après, cold/hit candidat identiques. Ne pas annoncer une équivalence bit à bit entre reconstructions. Build/link local et ABI 24 symboles aji\\_ identique ; publication Windows/Linux du binaire exact encore à vérifier, pas de release 3.8.0.36 annoncée complète. Dépendances AH-28/AH-32 partielles, ticket In Progress. Preuves : backend docs/CAC04-20261015.md et artifacts/performance/lots-20261015/lot-05/.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "parent": "AH-28",
+  "marker": "split-20261015-cac-provider-program-keys",
+  "summary": "Compléter les identités des caches de providers ORT et MIGraphX natif",
+  "target_status": "To Do",
+  "criterion": "Inventorier les programmes persistés existants, intégrer leur contenu/convertisseur/options/formes/types/runtime/device dans les clés propres à chaque provider, puis vérifier invalidation ciblée. Ne pas annoncer un futur cache inexistant comme livré.",
+  "evidence": "CAC-08 et INT-11 conservent leurs tickets existants ; ce sous-ticket fournit le contrat/identité à leurs consommateurs, sans réimporter ces features.",
+  "status": "planned",
+  "issue_key": "AH-241",
+  "create_result": {
+    "id": "10243",
+    "key": "AH-241"
+  },
+  "actual_status": "To Do"
+}

@@ -1,0 +1,272 @@
+{
+  "date": "2026-10-17",
+  "baseline": {
+    "player_ref": "0f3f6bfb7e76ca15647d74fc5a91405d3072be69",
+    "player_path": "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017",
+    "backend_ref": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+    "backend_path": "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017",
+    "bundle_ref": "5217111b754412338fe94d236d80f39dcd42b957",
+    "cleanup_checkout": "/tmp/animejanai-audit-cleanup-20261017"
+  },
+  "method": "Lecture statique des cibles, sources, workflows, appels directs et chargements dynamiques ; aucune compilation GPU ou mesure vidéo nouvelle. Deux retraits localisés autorisés par parent, syntaxe et fixture CPU ciblée seulement.",
+  "candidates": [
+    {
+      "id": "DD01",
+      "priority": "P3",
+      "classification": "unused_local_function",
+      "title": "Retirer la fonction locale Lua bridged",
+      "state": "implemented_in_isolated_checkout_not_released",
+      "compilation_or_runtime_scope": "Linux : script de sélection des moteurs chargé par hardware_auto.lua",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/linux-playback.lua:82 : définition locale, seule occurrence de l’identifiant bridged dans le code production recherché",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/hardware_auto.lua:9 : chargement dynamique du script, pas exposition de ce local",
+        "rg -n \\bbridged\\b : une définition ; suppression d’une ligne dans le checkout isolé"
+      ],
+      "recommended_approach": "Définition supprimée uniquement. Aucun changement de sélection de moteur.",
+      "targeted_validation": "luac -p PASS ; git diff --check PASS. Pas de gain FPS revendiqué.",
+      "dynamic_reference_limits": "Un script Lua est chargé dynamiquement, mais le local retiré n’est ni retourné, ni enregistré comme callback, ni capturé. Aucun usage debug de locals découvert.",
+      "related_jira_keys": []
+    },
+    {
+      "id": "DD02",
+      "priority": "P2",
+      "classification": "redundant_io",
+      "title": "Supprimer la seconde copie scripts/shaders au démarrage AppImage",
+      "state": "implemented_in_isolated_checkout_not_released",
+      "compilation_or_runtime_scope": "Linux AppRun ; préparation des fichiers gérés, pas flux vidéo",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/installer/linux/AppRun:103 : boucle copiant déjà scripts et shaders parmi cinq répertoires",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/installer/linux/AppRun:125 : seconde copie scripts puis shaders immédiatement après",
+        "Fixture extraite des sources avant/après : 31 entrées identiques ; invocations cp 7 → 5 ; contenu, modes, symlinks et fichiers utilisateur conservés"
+      ],
+      "recommended_approach": "Deux commandes retirées, boucle globale inchangée. Réduction déterministe des appels et des recopies ; latence non mesurée.",
+      "targeted_validation": "sh -n PASS ; fixture CPU PASS dans deadcode-validation/apprun-copy-result.json ; git diff --check PASS.",
+      "dynamic_reference_limits": "Pas de lancement complet AppImage. Équivalence vérifiée sur fichiers locaux stables et succès cp ; la première copie échouait déjà sous set -e, la seconde ne constituait pas une récupération.",
+      "related_jira_keys": []
+    },
+    {
+      "id": "DD03",
+      "priority": "P3",
+      "classification": "unused_include",
+      "title": "Include cstdlib résiduel dans pipeline_config.cpp",
+      "state": "candidate_not_edited",
+      "compilation_or_runtime_scope": "Backend CUDA : unité parser pipeline",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/pipeline_config.cpp:6 : #include <cstdlib>",
+        "rg getenv|malloc|free|strto|abs|atoi|cstdlib dans ce fichier : seulement cet include"
+      ],
+      "recommended_approach": "Retrait cosmétique à regrouper avec un prochain changement de ce fichier ; aucun bénéfice runtime.",
+      "targeted_validation": "Compiler cette unité lors du changement pour exclure une dépendance transitive accidentelle.",
+      "dynamic_reference_limits": "Une recherche lexicale ne prouve pas toutes les exigences des headers ; ne pas nettoyer toute la liste d’includes automatiquement.",
+      "related_jira_keys": []
+    },
+    {
+      "id": "DD04",
+      "priority": "P2",
+      "classification": "unnecessary_release_build_target",
+      "title": "Deux exécutables CPU de test construits mais non livrés par les workflows ORT",
+      "state": "candidate_not_edited",
+      "compilation_or_runtime_scope": "native/linux-ort ; release Linux et macOS",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/native/linux-ort/CMakeLists.txt:62 : animejanai-tiles-test et :64 animejanai-pixel-workers-test sont des cibles ALL",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/.github/workflows/release-linux.yml:93 : build ALL ; :95 seuls libaji_ort.so et animejanai-ort-test copiés",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/.github/workflows/release-macos.yml:71 : build ALL ; :77 seuls libaji_ort.dylib et animejanai-ort-test copiés",
+        "rg des deux noms dans .github, installer et BuildMpvUpscale2xAnimeJaNai : aucune référence"
+      ],
+      "recommended_approach": "Construire explicitement les cibles livrées en release, ou rendre les deux tests EXCLUDE_FROM_ALL/BUILD_TESTING avec exécution explicite dans la qualification CPU. Préserver leurs sources.",
+      "targeted_validation": "Contrôle des cibles CMake puis comparaison de la liste des fichiers packagés ; aucun GPU nécessaire.",
+      "dynamic_reference_limits": "Les exécutables peuvent être lancés manuellement. Non livrés ne signifie pas inutiles. animejanai-ort-test est livré et doit rester.",
+      "related_jira_keys": []
+    },
+    {
+      "id": "DD05",
+      "priority": "P1",
+      "classification": "active_feature_user_requested_removal",
+      "title": "Retrait FRUC complet, pas suppression de code supposé mort",
+      "state": "requires_coordinated_feature_removal",
+      "compilation_or_runtime_scope": "Backend CUDA, compilation pipeline, filtre mpv, Manager, Lua, packaging",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/CMakeLists.txt:44 : AJI_FRUC_ROOT conditionne aussi aji_pipeline aux lignes 68–77 et TrueHDR aux lignes 78–83",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/pipeline_config.cpp:121 : FRUC accepté ; /home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/aji_pipeline.cpp:85 : chargement dynamique fournisseur",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/BuildMpvUpscale2xAnimeJaNai/Program.cs:798 : copie FRUC ; :1062 gestion des assets",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/linux-playback.lua:163 : paramètre fruc-lib actif",
+        "/home/ta2b/.animejanai-tools/work/rife-regression-build-20261017/CMakeCache.txt:18 : AJI_FRUC_ROOT effectivement renseigné"
+      ],
+      "recommended_approach": "D’abord rendre la compilation pipeline indépendante du SDK FRUC, puis retirer fournisseur, configuration, choix UI, installation et assets ensemble. Migrer les profils FRUC explicitement sans remplacement silencieux.",
+      "targeted_validation": "Configurer/construire pipeline sans SDK FRUC ; contrôle de profil ancien et contrôle ciblé RIFE + resize/upscale + HDR ; aucun asset FRUC dans paquet.",
+      "dynamic_reference_limits": "API chargée par dlsym, schémas et assets indirects : absence d’appel C++ direct insuffisante. Préserver SDK utilisateur non suivi et preuves historiques.",
+      "related_jira_keys": [
+        "AH-328"
+      ]
+    },
+    {
+      "id": "DD06",
+      "priority": "P1",
+      "classification": "live_compatibility_path",
+      "title": "Ne pas confondre ancienne configuration et code backend mort",
+      "state": "keep_until_parity_and_migration",
+      "compilation_or_runtime_scope": "Legacy ABI9 et pipeline CUDA mixte ; profil existant et cadence rationnelle",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/pipeline_config.cpp:26 : legacy_equivalent ; :103 routage legacy ; :116 facteurs rationnels renvoyés à ABI9",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/aji_pipeline.cpp:532 : retour AJI_PIPELINE_LEGACY",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/native/linux-cuda/vf_animejanai-pipeline.patch:162 : lecteur traite ce retour"
+      ],
+      "recommended_approach": "Séparer suppression de l’ancien éditeur et migration du runtime. Versionner le schéma, établir parité des cas utiles et migrer avant de supprimer la voie de compatibilité.",
+      "targeted_validation": "Profil rationnel, modèle temporel et profil actuel migré : géométrie, cadence et erreur explicite si capacité absente.",
+      "dynamic_reference_limits": "Routage piloté par données de configuration, ABI et dlsym ; une branche rarement exercée localement reste exploitable.",
+      "related_jira_keys": [
+        "AH-325",
+        "AH-332"
+      ]
+    },
+    {
+      "id": "DD07",
+      "priority": "P2",
+      "classification": "live_binary_alias",
+      "title": "Alias libaji_trt_rtx identique mais encore sélectionné",
+      "state": "keep_until_hdr_route_migration",
+      "compilation_or_runtime_scope": "Linux TrueHDR historique et packaging ; alias TRT",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/CMakeLists.txt:110 : copie aji_trt vers aji_trt_rtx après build",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/linux-playback.lua:37 : disponibilité alias ; :170 sélection effective",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/BuildMpvUpscale2xAnimeJaNai/Program.cs:456 : alias géré ; :787 fichiers spécialisés"
+      ],
+      "recommended_approach": "Conserver tant que cette sélection existe. Après migration HDR, consolider le nom et les règles de remplacement des anciens fichiers. Un hardlink/symlink éventuel est une optimisation de distribution, pas de FPS.",
+      "targeted_validation": "Lancement avec HDR ancien et nouveau, inventaire réel des bibliothèques chargées ; contrôle des archives et installateurs si liens employés.",
+      "dynamic_reference_limits": "Noms de fichiers construits et configuration persistante empêchent une suppression fondée sur hash identique seul.",
+      "related_jira_keys": [
+        "AH-326",
+        "AH-330"
+      ]
+    },
+    {
+      "id": "DD08",
+      "priority": "P2",
+      "classification": "parallel_dependency_ownership",
+      "title": "Parser externe v0.11.1 encore utilisé par ORT/AMD/Apple",
+      "state": "candidate_contract_consolidation",
+      "compilation_or_runtime_scope": "Workflows Linux ORT, Apple et AMD ; parser seulement",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/native/linux-ort/CMakeLists.txt:13 : source externe aji_conf.cpp et headers via AJI_SOURCE",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/.github/workflows/release-linux.yml:89 et release-macos.yml:42 : clone tag v0.11.1",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/.github/workflows/build-amd-native.yml:33 : même source externe",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/pipeline_config.cpp:65 : nouveau pipeline repose sur son parser AjiConf local"
+      ],
+      "recommended_approach": "Établir un contrat commun versionné et comparer les champs effectivement lus avant de consolider le parser ou le pin. Éviter trois évolutions implicites du schéma.",
+      "targeted_validation": "Petite matrice de configurations sérialisées : valeurs par défaut, Fast/Quality, redimensionnement et options non supportées.",
+      "dynamic_reference_limits": "Divergence structurelle prouvée, défaut de lecture actuel non démontré. Ne pas remplacer aveuglément le parser upstream par celui du backend.",
+      "related_jira_keys": [
+        "AH-325"
+      ]
+    },
+    {
+      "id": "DD09",
+      "priority": "P2",
+      "classification": "potential_exact_optimization",
+      "title": "Ne pas préparer le moteur motion si la configuration ne peut jamais appeler warp",
+      "state": "candidate_not_benchmarked",
+      "compilation_or_runtime_scope": "RIFE Fast seul et bloc Fast ×2 séparé",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/aji_trt.cpp:1345 : setup_warp dès before_upscale sans ensemble",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/aji_trt.cpp:1245 : freeze_motion_model ; :1250 ensure_engine peut construire/charger le plan",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/aji_trt.cpp:2036 : RIFE seul retourne avant active=true ; :2576 warp_ready refuse !active",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/pipeline_config.cpp:189 : Fast ×2 gardé en bloc séparé après qualification"
+      ],
+      "recommended_approach": "Décider l’éligibilité motion à partir du plan spatial final avant de construire/charger ses ressources. Préserver le chemin complet de prédiction RIFE et tous les caches nécessaires.",
+      "targeted_validation": "Un profil RIFE-only Fast avec plans présents : aucune préparation motion, sorties exactes et comptage mémoire/temps de préparation. Puis seul cas fusion Fast ×4 pour vérifier motion toujours disponible.",
+      "dynamic_reference_limits": "Coût inutile déduit du contrôle de flux ; taille VRAM et délai non mesurés. Dépend des réglages warp et du modèle. Ne pas promettre de gain FPS.",
+      "related_jira_keys": [
+        "AH-329",
+        "AH-332"
+      ]
+    },
+    {
+      "id": "DD10",
+      "priority": "P2",
+      "classification": "potential_exact_optimization",
+      "title": "Regrouper les fences des copies finales d’un burst",
+      "state": "candidate_not_benchmarked",
+      "compilation_or_runtime_scope": "Pipeline CUDA : copie finale vers surfaces sorties du job",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/aji_pipeline.cpp:311 : copy soumet trois cuMemcpy2DAsync puis synchronise à :318",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/aji_pipeline.cpp:434 : copy répété pour chaque sortie du burst",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/aji_pipeline.cpp:506 : publication après run ; :511 libération owners ; :509 synchronisation en erreur"
+      ],
+      "recommended_approach": "Étudier une seule synchronisation après toutes les copies finales du job, en gardant points et owners vivants jusqu’au fence. Ne pas supprimer les fences entre SDK différents.",
+      "targeted_validation": "Un burst ×4 et EOF avec sortie pixel exacte, owners équilibrés, reset et erreur ciblée si modification de durée de vie ; timing court seulement pour décider de conserver.",
+      "dynamic_reference_limits": "Même stream et publication groupée observés statiquement ; bénéfice pas mesuré et sécurité de l’unwind à conserver. Les autres synchronisations ne sont pas présumées redondantes.",
+      "related_jira_keys": [
+        "AH-332"
+      ]
+    },
+    {
+      "id": "DD11",
+      "priority": "P2",
+      "classification": "build_dependency_modularity",
+      "title": "Le dispatcher sans CUDA reste dépendant du SDK au configure global",
+      "state": "candidate_build_refactor",
+      "compilation_or_runtime_scope": "CMake backend ; compilation ciblée dispatcher / DML",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/CMakeLists.txt:14 : project LANGUAGES C CXX CUDA",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/CMakeLists.txt:38 : CUDAToolkit REQUIRED avant sélection de cibles",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/CMakeLists.txt:86 : dispatcher annoncé sans dépendance CUDA/TRT/ORT ; cibles TRT toujours créées :97"
+      ],
+      "recommended_approach": "Introduire des options de fournisseurs et activer CUDA/TensorRT seulement pour les cibles qui en ont besoin ; conserver les configurations de livraison existantes.",
+      "targeted_validation": "Configuration + build du dispatcher seul sans SDK ; vérification du jeu de cibles CUDA de release inchangé.",
+      "dynamic_reference_limits": "Le besoin SDK du projet global est prouvé ; absence de dépendance runtime du dispatcher ne prouve pas une configuration de build alternative existante.",
+      "related_jira_keys": []
+    },
+    {
+      "id": "DD12",
+      "priority": "P3",
+      "classification": "keep_dynamic_and_test_reference",
+      "title": "Faux positifs : callbacks ORT, moteur reference, ablation pixel, ABI C",
+      "state": "keep",
+      "compilation_or_runtime_scope": "ORT/CPU tests ; API providers dynamiques",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/native/linux-ort/cpu_activations.cpp:43 : Ort::CustomOpBase ; :44 InferOutputShape callback CRTP ; :66 domain->Add",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/native/linux-ort/aji_ort.cpp:285 : provider reference appelle make_reference_executor ; exec_ref.cpp:145 factory",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/native/linux-ort/engine.h:30 : AJI_PIXEL_POOL=0 conserve la voie d’ablation ; :38 sélection pool",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/src/aji_pipeline.cpp:91 : symboles providers par dlsym ; nombreux exports aji_* sans appels statiques"
+      ],
+      "recommended_approach": "Conserver : consommateurs indirects explicitement identifiés. Documenter les points d’entrée plutôt que les supprimer.",
+      "targeted_validation": "Aucune validation supplémentaire requise pour conservation ; si fermeture future d’ABI, inventorier exports et clients packagés.",
+      "dynamic_reference_limits": "Une seule occurrence textuelle n’équivaut pas à une fonction morte : templates, callbacks, chaîne de caractères et consommateurs externes.",
+      "related_jira_keys": []
+    },
+    {
+      "id": "DD13",
+      "priority": "P3",
+      "classification": "keep_optional_tools",
+      "title": "Outils standalone et tests backend ne sont pas tous des dépendances produit",
+      "state": "keep_sources_consider_explicit_build_options",
+      "compilation_or_runtime_scope": "Backend CUDA ; CLI encode et sanity",
+      "evidence": [
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/CMakeLists.txt:133 : aji_encode décrit comme outil hors ligne, auto-détection FFmpeg :153–159",
+        "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017/CMakeLists.txt:213 : aji_msb444_test cible sanity",
+        "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/BuildMpvUpscale2xAnimeJaNai/Program.cs:1712 et :1736 : aji_harness et aji_kernel_test livrés"
+      ],
+      "recommended_approach": "Conserver l’outil hors ligne et les tests. Éventuellement rendre explicites les cibles dev non livrées pour éviter un coût accidentel des builds ALL.",
+      "targeted_validation": "Comparer liste des exécutables livrés ; préserver appel manuel et configuration FFmpeg optionnelle.",
+      "dynamic_reference_limits": "Absence du paquet ne démontre pas absence d’usage humain ; les noms harness/kernel_test restent contractuels dans les outils packagés.",
+      "related_jira_keys": []
+    },
+    {
+      "id": "DD14",
+      "priority": "P1",
+      "classification": "scope_safety",
+      "title": "Checkout utilisateur ancien et branches préparatoires ne sont pas des fichiers morts",
+      "state": "preserve_user_work",
+      "compilation_or_runtime_scope": "Root utilisateur, SDK téléchargés, docs et GMFSS non livré",
+      "evidence": [
+        "Root HEAD 55bbc8503736b29740e3857b0cd01132dbd64873 distinct du player .82 0f3f6bfb7e76ca15647d74fc5a91405d3072be69",
+        "git status root : docs modifiés/non suivis, NvOFFRUC/ et cache CoreML non suivis",
+        "/home/ta2b/.animejanai-tools/work/lot-54-vfi-preparation-20261017 : travail préparation VFI distinct de .82"
+      ],
+      "recommended_approach": "Auditer les refs livrées, puis intégrer/archiver par statut explicite. Aucun nettoyage automatique des fichiers non suivis, caches utilisateur ou branche de préparation.",
+      "targeted_validation": "Vérifier chaque chemin contre git ls-files et les refs de livraison ; inventaire et consentement existant pour toute mutation de données utilisateur.",
+      "dynamic_reference_limits": "Les caches et SDK ont des consommateurs hors repo ; aucune preuve de désaffectation globale ne peut venir de rg seul.",
+      "related_jira_keys": []
+    }
+  ]
+}

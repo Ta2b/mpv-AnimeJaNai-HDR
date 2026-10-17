@@ -1,0 +1,14 @@
+{
+  "scope": "Retrait du champ record Platform.ManagerAsset et des deux arguments morts ; aucun changement moteur/vidéo.",
+  "base_commit": "0f3f6bfb7e76ca15647d74fc5a91405d3072be69",
+  "worktree": "/tmp/animejanai-audit-cleanup-20261017",
+  "changed_file": "BuildMpvUpscale2xAnimeJaNai/Program.cs",
+  "source_sha256": "d0d36a690990c60dba35f3451cbc24835712129f1688d825ee854843ebcd8de0",
+  "diff_stat": "BuildMpvUpscale2xAnimeJaNai/Program.cs | 3 ---\n 1 file changed, 3 deletions(-)",
+  "diff_check": "passed",
+  "restore": "Local NuGet cache only, 124 ms, NuGetAudit disabled for this offline check.",
+  "build": "dotnet build BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj --no-restore -c Release --nologo -v:minimal",
+  "result": "Build succeeded; 0 Warning(s); 0 Error(s); 2.98 s.",
+  "remaining_assets": "Both HDR Windows/Linux download names retained unchanged.",
+  "runtime_test": "Not required for unused-field removal; no media execution or package assembly invoked."
+}

@@ -1,0 +1,12 @@
+{
+  "key": "AH-60",
+  "marker": "[sync-qualification-continuation-20261015]",
+  "source": "qualification-continuation-20261015.json",
+  "result": {
+    "message": "Comment added to AH-60 successfully",
+    "commentId": "10017",
+    "body": "\\[sync-qualification-continuation-20261015\\]\n\nSuite ciblée du 15/10/2026 — identité/promotion de paire, qualification partielle.\n\nMême lecteur 3.8.0.31 (bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6), backend 1468be6f24cac537407283d434bd5d542d642cf3, RTX4070Ti/TRT11.3 et mêmes poids que le premier lot.\n\nPromotion Fast B→A sans émission systématique de B, grille 5/2 : 18 sorties et PTS identiques cache/rafale off-on ; 6 promotions, préparations 8→7 et 0→1 hit. Durées 3,119/2,267 s démarrage/hash inclus : aucun gain isolé attribué. Seek réel du candidat comparé à processus neuf sans cache/rafale : source et deux intermédiaires PNG16 identiques, PTS identiques, 0 abandon observé sur ce parcours borné. Processus 2,987/2,812 s. Chemin dessins/lookahead et pré-resize1080→720 : 25 sorties/PTS identiques, 1 promotion avec cache, 2,968/2,868 s. Travail évité observé ; gain de temps non isolé.\n\nInventaire local Strata contrôlé : same_frame_view couvre 6 métadonnées, 3 plans et 3 strides pour la préparation RIFE ; les branches Fast ne comparent pas toutes cette vue. Aucune régression déduite statiquement, changements de métadonnées/stream avec mêmes IDs non testés. Rapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md ; commandes et artefacts dans artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

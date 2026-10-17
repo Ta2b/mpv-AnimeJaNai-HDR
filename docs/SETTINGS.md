@@ -24,8 +24,8 @@ tests. Le code RIFE partagé `30a3e83` est maintenant dépassé et intégré par
 lots suivants : `d639dc1` / `b3f9d5d` ajoutent la chaîne warp et la chronologie
 des dessins. La branche NVIDIA CUDA Graph `f4fcd17` reste isolée.
 
-Lire [l'état consolidé courant](ETAT-PROJET.md) et
-[le chantier 3.8.0.24–29 / 165 Hz](CHANTIER-RIFE-165HZ.md). Les sections datées
+Lire [l'état consolidé courant](archive/2026-10-17/chantiers/ETAT-PROJET.md) et
+[le chantier 3.8.0.24–29 / 165 Hz](archive/2026-10-17/chantiers/CHANTIER-RIFE-165HZ.md). Les sections datées
 3.8.0.23 ci-dessous restent un historique des preuves de cette session, pas
 l'état global actuel. La chaîne warp est livrée dans le moteur partagé ;
 **elle ne l'est pas dans NCNN/Vulkan ni dans les binaires Windows amont**.
@@ -46,7 +46,7 @@ Le souvenir SVP confirmé concerne RIFE 4.26/TensorRT, source 1080p et écran
 « upscale puis réduction écran puis RIFE » n'est ajouté par ce chantier.
 Les variables avancées de comparaison sont décrites dans
 [DEVELOPMENT.md](DEVELOPMENT.md), pas présentées comme des options du Manager.
-Voir [l'état consolidé](ETAT-PROJET.md) pour ce qui est livré ou reste sur une
+Voir [l'état consolidé](archive/2026-10-17/chantiers/ETAT-PROJET.md) pour ce qui est livré ou reste sur une
 branche ; les sections datées suivantes documentent la simplification d'origine.
 
 ## Demande du 12 octobre 2026

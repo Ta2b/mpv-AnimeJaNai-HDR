@@ -1,0 +1,5 @@
+# Document historique archivé
+
+Le contenu original de `docs/jira/source-snapshot.md` est conservé intégralement dans [l’archive du 17 octobre](../archive/reprise-avant-audit-20261017.tar.gz), sous ce même chemin. [Empreintes](../archive/reprise-avant-audit-20261017.json), [index/récupération](../ARCHIVES.md).
+
+Pour travailler : [état courant](../ETAT-COURANT.md) et [audit actualisé](../AUDIT-GLOBAL-2026-10-17.md). Les anciennes pauses, interdictions de tests et priorités de ce document sont historiques. Cette redirection préserve les anciens liens sans imposer leur lecture aux reprises IA.

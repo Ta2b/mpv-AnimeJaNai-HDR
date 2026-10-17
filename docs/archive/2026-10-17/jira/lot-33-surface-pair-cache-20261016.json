@@ -1,0 +1,25 @@
+{
+  "issue": "AH-284",
+  "parent": "AH-33",
+  "status": "Done",
+  "base": "122fa569a82dfc10c21be69e673ad758742fa780",
+  "backend_base": "3fcb6e4de075907388e44d6e46096290082770ec",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-33-surface-pair-cache-20261016",
+  "backend_worktree": "/home/ta2b/.animejanai-tools/work/backend-surface-pair-cache-20261016",
+  "implementation": "Implemented, qualified and published in 3.8.0.65; exact Quality/Fast outputs; preparation3to1; Fast material benefit; Quality FPS inconclusive, fence submission advantage established.",
+  "evidence": "Surface32 cuda_surface_reset before+after each job clears RIFE pair_ready/pair_cache/prepared_right and Fast endpoint state; prepare_rife_pair counts preparation and performs scene GPU scalar readback. Existing ABI9 exact cached route qualified earlier but new Surface path prevents its use.",
+  "design": [
+    "Only same exact previous/current pair: nonzero sequence+matching nonzero generation, t interior. Two fixed SourceKey arrays52 words include native/context/resource/UUID, geometry/crop/orientation, all8color fields, seq/gen and every plane ptr/extent/offset/stride; no structpadding/memcmp. Output policy12words includesformat,color,orientation, excludesoutputaddresses/timing. No extra model buffers or clientowner retention.",
+    "Eligible signature match preserves RIFE preparation/scene and Fast endpoints between phases; different pair/policy orzeroIDs/gen reset as before. Clientinputpixelimmutability is explicitpromise. DispatchRAII lets internalABI9 calls usecached state; externallegacy mutablecalls clearSurfacekey/derivedstate before mutation. Configure/reset/drain/disable/error invalidate; queue alone ownscontextwhileenabled.",
+    "Public cap EXACT_SOURCE_CACHE256 and optional cache_stats72bytes (Surfacehits/misses/uncached + actualRIFEpreps/hits/promote/Fastupscale/warp). QueryStats onlyidlewithasyncdisabled returnsBUSYotherwise. AJI_SURFACE_PAIR_CACHE=0 ablation fallback. Default drafton is not a delivered activation.",
+    "Guardtrials strictlytargeted: zeroIDs/gen no reuse, samepointers/IDs recycled withnewgeneration+pixels getcorrectreference; color/ROI/policy changeinvalidate; mixedlegacy and drain/disable reset. Callbackrefs balanced/outputs padding preserved; no repeatedoldconclusive .64contract suite unlessaffected.",
+    "Potential pitfalls review: c.surface_pair_keys numeric addresses can remainkeys but no owners ordescriptorpointers, R.pair copies numericviews onlyandcacheownsGPUpixels. Legacy hooks mustrunafterasyncguardbeforemutations; internaldispatch skips. SourceCurrentoutputjobs useoneCUDAstream, no crossjobrace. FastW.open/have surviveswarp_infer exceptnormal endpoint branch; actualcounters mustestablishbenefit.",
+    "Playerproducer/consumer AH36 stillToDo, examinedmpv pinpull pausedbehavior but no source edits there. Originalmpvsrc cleanbase19c, statsworktree modifieduserpreserved. Existingrelease concurrency alreadyperSHA withcancel=false; no CI fixneeded/ticketinvented. .64macwasqueued; verifyatendtask withoutwaiting."
+  ],
+  "progress_comment": "10115",
+  "backend_source": "7e9c87137e77046e5c521e635634bfdef751a277",
+  "player_source": "ba85db40e6b6869803c0537ad152b5d746633f0b",
+  "qualification_comment": "10116",
+  "close_comment": "10117",
+  "release_receipt": "docs/jira/release-20261016-3.8.0.65.json"
+}

@@ -1,0 +1,13 @@
+{
+  "issue": "AH-17",
+  "status": "Done",
+  "player_source": "826cb36de916fa62eccb9d144d92cd8536c75c23",
+  "manager_source": "132dab9525b5eab87e149f3d043b572b5f2d258a",
+  "manager_run": 38843001983,
+  "manager_build": "success",
+  "qualification": "Manager ViewModel notices and bindings, four provenance/capability CLI cases passed; no FPS or native provider claim",
+  "release": "3.8.0.45",
+  "release_source": "2943d34bf423894278bede36391a7376324de22a",
+  "qualification_comment_id": "10056",
+  "closing_comment_id": "10058"
+}

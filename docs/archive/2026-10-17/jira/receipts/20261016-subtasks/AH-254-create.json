@@ -1,0 +1,15 @@
+{
+  "parent": "AH-32",
+  "marker": "split-20261015-tx-other-platforms-formats",
+  "summary": "Porter et qualifier les transactions des autres formats et plateformes",
+  "target_status": "To Do",
+  "criterion": "Couvrir .mlmodelc, programmes de providers et Windows : publication atomique, validation et coordination par clé selon le contrat commun ; qualifier l’API native concernée, sans assimiler compilation et exécution.",
+  "evidence": "Les essais transactionnels flow/TRT sont Linux ; APIs Apple et autres providers absentes, Windows uniquement compilé pour les engines.",
+  "status": "created",
+  "issue_key": "AH-254",
+  "create_result": {
+    "id": "10256",
+    "key": "AH-254"
+  },
+  "actual_status": "To Do"
+}

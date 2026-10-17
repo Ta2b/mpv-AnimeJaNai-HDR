@@ -1,0 +1,23 @@
+{
+  "issue": "AH-280",
+  "parent": "AH-50",
+  "remaining": "AH-281",
+  "status": "Done",
+  "base": "0ee0e2b55888899eb9686236da6bf933e888e453",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-30-submit-complete-20261016",
+  "scope": "CPU async queue + ownership/tickets/complete/deferred errors/bounded memory/drain and actual consumer; generic fence descriptors with only supported dependencies accepted",
+  "implementation": "Completed: bounded worker queue, six optional exports, contract checks, two exact neural outputs and two deferred errors.",
+  "design": [
+    "Queue exclusively owns existing context after enable; worker is only caller of old/new synchronous processing, block legacy configure/process/hints while enabled. Lifecycle calls serial; Submit/Complete concurrent once enabled. Disable/contextdestroy cancel/drain before models released.",
+    "Fixed-capacity slot array allocated once, persistent worker. Submit checks capacity and validates descriptor copies before retain; no wait on inference or capacity. OWNERS acquired once at submit, snapshot callbacks held externally while worker receives borrowed copies, release before marking DONE.",
+    "Result states pending/finished/failed/cancelled + message per ticket, complete(nonblocking) optionalconsume onlyDONE. Completed but unconsumed slots count toward capacity; tickets never recycled across disable/re-enable for context. No model inference on full/invalid requests.",
+    "Drain optional cancelqueued/dropresults; running task finishes; reset derived views/IDs after seek. Resource callbacks outside heavy compute/mutex where safe; no reentry allowed. Unsupported external execution queue/fences fail, no fake GPU async.",
+    "Reuse qualified Surfacev1 validation and cached NN references; deterministic queue lifecycle tests using controlled barriers, actual short RIFE/SPAN output parity only as necessary. Preserve prior conclusive tests, no broad reruns.",
+    "Owner callbacks may execute on submit/worker/drain threads and must be thread-safe. Lifecycle enable/disable/destroy must exclude concurrent API access; ordinary Submit/Complete can be concurrent while queue lives. CPU dependency mask only NONE, no native GPU fence proof."
+  ],
+  "source": "d5e11ff32e4bde2fa9e903740d6b50022677167e",
+  "release_source": "78ceca8863ea74e1b1de12276c65185849dc7b2a",
+  "release": "3.8.0.62",
+  "qualification_comment": "10105",
+  "closure_comment": "10107"
+}

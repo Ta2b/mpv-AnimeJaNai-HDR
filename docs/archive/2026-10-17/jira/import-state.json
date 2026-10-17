@@ -1,0 +1,2273 @@
+{
+  "schema_version": 1,
+  "site_url": "https://tatoub.atlassian.net",
+  "project_key": "AH",
+  "board_id": 2,
+  "board_url": "https://tatoub.atlassian.net/jira/software/projects/AH/boards/2",
+  "status": "complete",
+  "private_access_required": true,
+  "private_access_verified": true,
+  "last_read_error": null,
+  "authorized_site_at_last_check": "https://tatoub.atlassian.net",
+  "epics": {
+    "FOND": {
+      "id": "10003",
+      "key": "AH-1",
+      "url": "https://tatoub.atlassian.net/browse/AH-1"
+    },
+    "ARCH": {
+      "id": "10004",
+      "key": "AH-2",
+      "url": "https://tatoub.atlassian.net/browse/AH-2"
+    },
+    "NVIDIA": {
+      "id": "10005",
+      "key": "AH-3",
+      "url": "https://tatoub.atlassian.net/browse/AH-3"
+    },
+    "AMD": {
+      "id": "10006",
+      "key": "AH-4",
+      "url": "https://tatoub.atlassian.net/browse/AH-4"
+    },
+    "INTEL": {
+      "id": "10007",
+      "key": "AH-5",
+      "url": "https://tatoub.atlassian.net/browse/AH-5"
+    },
+    "APPLE": {
+      "id": "10008",
+      "key": "AH-6",
+      "url": "https://tatoub.atlassian.net/browse/AH-6"
+    },
+    "VULKAN": {
+      "id": "10009",
+      "key": "AH-7",
+      "url": "https://tatoub.atlassian.net/browse/AH-7"
+    },
+    "VFI": {
+      "id": "10010",
+      "key": "AH-8",
+      "url": "https://tatoub.atlassian.net/browse/AH-8"
+    },
+    "KERNELS": {
+      "id": "10011",
+      "key": "AH-9",
+      "url": "https://tatoub.atlassian.net/browse/AH-9"
+    },
+    "QUAL": {
+      "id": "10012",
+      "key": "AH-10",
+      "url": "https://tatoub.atlassian.net/browse/AH-10"
+    }
+  },
+  "tasks": {
+    "REF-01": {
+      "id": "10013",
+      "key": "AH-11",
+      "url": "https://tatoub.atlassian.net/browse/AH-11",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "REF-02": {
+      "id": "10014",
+      "key": "AH-12",
+      "url": "https://tatoub.atlassian.net/browse/AH-12",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "REF-03": {
+      "id": "10015",
+      "key": "AH-13",
+      "url": "https://tatoub.atlassian.net/browse/AH-13",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "REF-04": {
+      "id": "10016",
+      "key": "AH-14",
+      "url": "https://tatoub.atlassian.net/browse/AH-14",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "REF-05": {
+      "id": "10017",
+      "key": "AH-15",
+      "url": "https://tatoub.atlassian.net/browse/AH-15",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "REF-06": {
+      "id": "10018",
+      "key": "AH-16",
+      "url": "https://tatoub.atlassian.net/browse/AH-16",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "REF-07": {
+      "id": "10019",
+      "key": "AH-17",
+      "url": "https://tatoub.atlassian.net/browse/AH-17",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "REF-08": {
+      "id": "10020",
+      "key": "AH-18",
+      "url": "https://tatoub.atlassian.net/browse/AH-18",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "OBS-01": {
+      "id": "10021",
+      "key": "AH-19",
+      "url": "https://tatoub.atlassian.net/browse/AH-19",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "OBS-02": {
+      "id": "10022",
+      "key": "AH-20",
+      "url": "https://tatoub.atlassian.net/browse/AH-20",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "OBS-03": {
+      "id": "10023",
+      "key": "AH-21",
+      "url": "https://tatoub.atlassian.net/browse/AH-21",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "OBS-04": {
+      "id": "10024",
+      "key": "AH-22",
+      "url": "https://tatoub.atlassian.net/browse/AH-22",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "OBS-05": {
+      "id": "10025",
+      "key": "AH-23",
+      "url": "https://tatoub.atlassian.net/browse/AH-23",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "OBS-06": {
+      "id": "10026",
+      "key": "AH-24",
+      "url": "https://tatoub.atlassian.net/browse/AH-24",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "OBS-07": {
+      "id": "10027",
+      "key": "AH-25",
+      "url": "https://tatoub.atlassian.net/browse/AH-25",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "OBS-08": {
+      "id": "10028",
+      "key": "AH-26",
+      "url": "https://tatoub.atlassian.net/browse/AH-26",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "OBS-09": {
+      "id": "10029",
+      "key": "AH-27",
+      "url": "https://tatoub.atlassian.net/browse/AH-27",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "CAC-01": {
+      "id": "10030",
+      "key": "AH-28",
+      "url": "https://tatoub.atlassian.net/browse/AH-28",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "CAC-02": {
+      "id": "10031",
+      "key": "AH-29",
+      "url": "https://tatoub.atlassian.net/browse/AH-29",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "CAC-03": {
+      "id": "10032",
+      "key": "AH-30",
+      "url": "https://tatoub.atlassian.net/browse/AH-30",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "CAC-04": {
+      "id": "10033",
+      "key": "AH-31",
+      "url": "https://tatoub.atlassian.net/browse/AH-31",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "CAC-05": {
+      "id": "10034",
+      "key": "AH-32",
+      "url": "https://tatoub.atlassian.net/browse/AH-32",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "CAC-06": {
+      "id": "10035",
+      "key": "AH-33",
+      "url": "https://tatoub.atlassian.net/browse/AH-33",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "CAC-07": {
+      "id": "10036",
+      "key": "AH-34",
+      "url": "https://tatoub.atlassian.net/browse/AH-34",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "CAC-08": {
+      "id": "10037",
+      "key": "AH-35",
+      "url": "https://tatoub.atlassian.net/browse/AH-35",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "PLY-01": {
+      "id": "10038",
+      "key": "AH-36",
+      "url": "https://tatoub.atlassian.net/browse/AH-36",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-02": {
+      "id": "10039",
+      "key": "AH-37",
+      "url": "https://tatoub.atlassian.net/browse/AH-37",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-03": {
+      "id": "10040",
+      "key": "AH-38",
+      "url": "https://tatoub.atlassian.net/browse/AH-38",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-04": {
+      "id": "10041",
+      "key": "AH-39",
+      "url": "https://tatoub.atlassian.net/browse/AH-39",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-05": {
+      "id": "10042",
+      "key": "AH-40",
+      "url": "https://tatoub.atlassian.net/browse/AH-40",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-06": {
+      "id": "10043",
+      "key": "AH-41",
+      "url": "https://tatoub.atlassian.net/browse/AH-41",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-07": {
+      "id": "10044",
+      "key": "AH-42",
+      "url": "https://tatoub.atlassian.net/browse/AH-42",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-08": {
+      "id": "10045",
+      "key": "AH-43",
+      "url": "https://tatoub.atlassian.net/browse/AH-43",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-09": {
+      "id": "10046",
+      "key": "AH-44",
+      "url": "https://tatoub.atlassian.net/browse/AH-44",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-10": {
+      "id": "10047",
+      "key": "AH-45",
+      "url": "https://tatoub.atlassian.net/browse/AH-45",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-11": {
+      "id": "10048",
+      "key": "AH-46",
+      "url": "https://tatoub.atlassian.net/browse/AH-46",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-12": {
+      "id": "10049",
+      "key": "AH-47",
+      "url": "https://tatoub.atlassian.net/browse/AH-47",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "PLY-13": {
+      "id": "10050",
+      "key": "AH-48",
+      "url": "https://tatoub.atlassian.net/browse/AH-48",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SUR-01": {
+      "id": "10051",
+      "key": "AH-49",
+      "url": "https://tatoub.atlassian.net/browse/AH-49",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SUR-02": {
+      "id": "10052",
+      "key": "AH-50",
+      "url": "https://tatoub.atlassian.net/browse/AH-50",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SUR-03": {
+      "id": "10053",
+      "key": "AH-51",
+      "url": "https://tatoub.atlassian.net/browse/AH-51",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SUR-04": {
+      "id": "10054",
+      "key": "AH-52",
+      "url": "https://tatoub.atlassian.net/browse/AH-52",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SUR-05": {
+      "id": "10055",
+      "key": "AH-53",
+      "url": "https://tatoub.atlassian.net/browse/AH-53",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SUR-06": {
+      "id": "10056",
+      "key": "AH-54",
+      "url": "https://tatoub.atlassian.net/browse/AH-54",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SUR-07": {
+      "id": "10057",
+      "key": "AH-55",
+      "url": "https://tatoub.atlassian.net/browse/AH-55",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SUR-08": {
+      "id": "10058",
+      "key": "AH-56",
+      "url": "https://tatoub.atlassian.net/browse/AH-56",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SUR-09": {
+      "id": "10059",
+      "key": "AH-57",
+      "url": "https://tatoub.atlassian.net/browse/AH-57",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SUR-10": {
+      "id": "10060",
+      "key": "AH-58",
+      "url": "https://tatoub.atlassian.net/browse/AH-58",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SHR-01": {
+      "id": "10061",
+      "key": "AH-59",
+      "url": "https://tatoub.atlassian.net/browse/AH-59",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SHR-02": {
+      "id": "10062",
+      "key": "AH-60",
+      "url": "https://tatoub.atlassian.net/browse/AH-60",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SHR-03": {
+      "id": "10063",
+      "key": "AH-61",
+      "url": "https://tatoub.atlassian.net/browse/AH-61",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SHR-04": {
+      "id": "10064",
+      "key": "AH-62",
+      "url": "https://tatoub.atlassian.net/browse/AH-62",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SHR-05": {
+      "id": "10065",
+      "key": "AH-63",
+      "url": "https://tatoub.atlassian.net/browse/AH-63",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SHR-06": {
+      "id": "10066",
+      "key": "AH-64",
+      "url": "https://tatoub.atlassian.net/browse/AH-64",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "SHR-07": {
+      "id": "10067",
+      "key": "AH-65",
+      "url": "https://tatoub.atlassian.net/browse/AH-65",
+      "epic_id": "ARCH",
+      "parent": "AH-2"
+    },
+    "GRA-01": {
+      "id": "10068",
+      "key": "AH-66",
+      "url": "https://tatoub.atlassian.net/browse/AH-66",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "GRA-02": {
+      "id": "10069",
+      "key": "AH-67",
+      "url": "https://tatoub.atlassian.net/browse/AH-67",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "GRA-03": {
+      "id": "10070",
+      "key": "AH-68",
+      "url": "https://tatoub.atlassian.net/browse/AH-68",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "GRA-04": {
+      "id": "10071",
+      "key": "AH-69",
+      "url": "https://tatoub.atlassian.net/browse/AH-69",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "GRA-05": {
+      "id": "10072",
+      "key": "AH-70",
+      "url": "https://tatoub.atlassian.net/browse/AH-70",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "GRA-06": {
+      "id": "10073",
+      "key": "AH-71",
+      "url": "https://tatoub.atlassian.net/browse/AH-71",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "GRA-07": {
+      "id": "10074",
+      "key": "AH-72",
+      "url": "https://tatoub.atlassian.net/browse/AH-72",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "GRA-08": {
+      "id": "10075",
+      "key": "AH-73",
+      "url": "https://tatoub.atlassian.net/browse/AH-73",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "TRT-01": {
+      "id": "10076",
+      "key": "AH-74",
+      "url": "https://tatoub.atlassian.net/browse/AH-74",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-02": {
+      "id": "10077",
+      "key": "AH-75",
+      "url": "https://tatoub.atlassian.net/browse/AH-75",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-03": {
+      "id": "10078",
+      "key": "AH-76",
+      "url": "https://tatoub.atlassian.net/browse/AH-76",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-04": {
+      "id": "10079",
+      "key": "AH-77",
+      "url": "https://tatoub.atlassian.net/browse/AH-77",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-05": {
+      "id": "10080",
+      "key": "AH-78",
+      "url": "https://tatoub.atlassian.net/browse/AH-78",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-06": {
+      "id": "10081",
+      "key": "AH-79",
+      "url": "https://tatoub.atlassian.net/browse/AH-79",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-07": {
+      "id": "10082",
+      "key": "AH-80",
+      "url": "https://tatoub.atlassian.net/browse/AH-80",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-08": {
+      "id": "10083",
+      "key": "AH-81",
+      "url": "https://tatoub.atlassian.net/browse/AH-81",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-09": {
+      "id": "10084",
+      "key": "AH-82",
+      "url": "https://tatoub.atlassian.net/browse/AH-82",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-10": {
+      "id": "10085",
+      "key": "AH-83",
+      "url": "https://tatoub.atlassian.net/browse/AH-83",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-11": {
+      "id": "10086",
+      "key": "AH-84",
+      "url": "https://tatoub.atlassian.net/browse/AH-84",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-12": {
+      "id": "10087",
+      "key": "AH-85",
+      "url": "https://tatoub.atlassian.net/browse/AH-85",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "TRT-13": {
+      "id": "10088",
+      "key": "AH-86",
+      "url": "https://tatoub.atlassian.net/browse/AH-86",
+      "epic_id": "NVIDIA",
+      "parent": "AH-3"
+    },
+    "DML-01": {
+      "id": "10089",
+      "key": "AH-87",
+      "url": "https://tatoub.atlassian.net/browse/AH-87",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "DML-02": {
+      "id": "10090",
+      "key": "AH-88",
+      "url": "https://tatoub.atlassian.net/browse/AH-88",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "DML-03": {
+      "id": "10091",
+      "key": "AH-89",
+      "url": "https://tatoub.atlassian.net/browse/AH-89",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "DML-04": {
+      "id": "10092",
+      "key": "AH-90",
+      "url": "https://tatoub.atlassian.net/browse/AH-90",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "DML-05": {
+      "id": "10093",
+      "key": "AH-91",
+      "url": "https://tatoub.atlassian.net/browse/AH-91",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "DML-06": {
+      "id": "10094",
+      "key": "AH-92",
+      "url": "https://tatoub.atlassian.net/browse/AH-92",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "DML-07": {
+      "id": "10095",
+      "key": "AH-93",
+      "url": "https://tatoub.atlassian.net/browse/AH-93",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-01": {
+      "id": "10096",
+      "key": "AH-94",
+      "url": "https://tatoub.atlassian.net/browse/AH-94",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-02": {
+      "id": "10097",
+      "key": "AH-95",
+      "url": "https://tatoub.atlassian.net/browse/AH-95",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-03": {
+      "id": "10098",
+      "key": "AH-96",
+      "url": "https://tatoub.atlassian.net/browse/AH-96",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-04": {
+      "id": "10099",
+      "key": "AH-97",
+      "url": "https://tatoub.atlassian.net/browse/AH-97",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-05": {
+      "id": "10100",
+      "key": "AH-98",
+      "url": "https://tatoub.atlassian.net/browse/AH-98",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-06": {
+      "id": "10101",
+      "key": "AH-99",
+      "url": "https://tatoub.atlassian.net/browse/AH-99",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-07": {
+      "id": "10102",
+      "key": "AH-100",
+      "url": "https://tatoub.atlassian.net/browse/AH-100",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-08": {
+      "id": "10103",
+      "key": "AH-101",
+      "url": "https://tatoub.atlassian.net/browse/AH-101",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-09": {
+      "id": "10104",
+      "key": "AH-102",
+      "url": "https://tatoub.atlassian.net/browse/AH-102",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-10": {
+      "id": "10105",
+      "key": "AH-103",
+      "url": "https://tatoub.atlassian.net/browse/AH-103",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-11": {
+      "id": "10106",
+      "key": "AH-104",
+      "url": "https://tatoub.atlassian.net/browse/AH-104",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "AMD-12": {
+      "id": "10107",
+      "key": "AH-105",
+      "url": "https://tatoub.atlassian.net/browse/AH-105",
+      "epic_id": "AMD",
+      "parent": "AH-4"
+    },
+    "INT-01": {
+      "id": "10108",
+      "key": "AH-106",
+      "url": "https://tatoub.atlassian.net/browse/AH-106",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "INT-02": {
+      "id": "10109",
+      "key": "AH-107",
+      "url": "https://tatoub.atlassian.net/browse/AH-107",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "INT-03": {
+      "id": "10110",
+      "key": "AH-108",
+      "url": "https://tatoub.atlassian.net/browse/AH-108",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "INT-04": {
+      "id": "10111",
+      "key": "AH-109",
+      "url": "https://tatoub.atlassian.net/browse/AH-109",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "INT-05": {
+      "id": "10112",
+      "key": "AH-110",
+      "url": "https://tatoub.atlassian.net/browse/AH-110",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "INT-06": {
+      "id": "10113",
+      "key": "AH-111",
+      "url": "https://tatoub.atlassian.net/browse/AH-111",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "INT-07": {
+      "id": "10114",
+      "key": "AH-112",
+      "url": "https://tatoub.atlassian.net/browse/AH-112",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "INT-08": {
+      "id": "10115",
+      "key": "AH-113",
+      "url": "https://tatoub.atlassian.net/browse/AH-113",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "INT-09": {
+      "id": "10116",
+      "key": "AH-114",
+      "url": "https://tatoub.atlassian.net/browse/AH-114",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "INT-10": {
+      "id": "10117",
+      "key": "AH-115",
+      "url": "https://tatoub.atlassian.net/browse/AH-115",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "INT-11": {
+      "id": "10118",
+      "key": "AH-116",
+      "url": "https://tatoub.atlassian.net/browse/AH-116",
+      "epic_id": "INTEL",
+      "parent": "AH-5"
+    },
+    "APL-01": {
+      "id": "10119",
+      "key": "AH-117",
+      "url": "https://tatoub.atlassian.net/browse/AH-117",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "APL-02": {
+      "id": "10120",
+      "key": "AH-118",
+      "url": "https://tatoub.atlassian.net/browse/AH-118",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "APL-03": {
+      "id": "10121",
+      "key": "AH-119",
+      "url": "https://tatoub.atlassian.net/browse/AH-119",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "APL-04": {
+      "id": "10122",
+      "key": "AH-120",
+      "url": "https://tatoub.atlassian.net/browse/AH-120",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "APL-05": {
+      "id": "10123",
+      "key": "AH-121",
+      "url": "https://tatoub.atlassian.net/browse/AH-121",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "APL-06": {
+      "id": "10124",
+      "key": "AH-122",
+      "url": "https://tatoub.atlassian.net/browse/AH-122",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "APL-07": {
+      "id": "10125",
+      "key": "AH-123",
+      "url": "https://tatoub.atlassian.net/browse/AH-123",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "APL-08": {
+      "id": "10126",
+      "key": "AH-124",
+      "url": "https://tatoub.atlassian.net/browse/AH-124",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "APL-09": {
+      "id": "10127",
+      "key": "AH-125",
+      "url": "https://tatoub.atlassian.net/browse/AH-125",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "APL-10": {
+      "id": "10128",
+      "key": "AH-126",
+      "url": "https://tatoub.atlassian.net/browse/AH-126",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "APL-11": {
+      "id": "10129",
+      "key": "AH-127",
+      "url": "https://tatoub.atlassian.net/browse/AH-127",
+      "epic_id": "APPLE",
+      "parent": "AH-6"
+    },
+    "VK-01": {
+      "id": "10130",
+      "key": "AH-128",
+      "url": "https://tatoub.atlassian.net/browse/AH-128",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-02": {
+      "id": "10131",
+      "key": "AH-129",
+      "url": "https://tatoub.atlassian.net/browse/AH-129",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-03": {
+      "id": "10132",
+      "key": "AH-130",
+      "url": "https://tatoub.atlassian.net/browse/AH-130",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-04": {
+      "id": "10133",
+      "key": "AH-131",
+      "url": "https://tatoub.atlassian.net/browse/AH-131",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-05": {
+      "id": "10134",
+      "key": "AH-132",
+      "url": "https://tatoub.atlassian.net/browse/AH-132",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-06": {
+      "id": "10135",
+      "key": "AH-133",
+      "url": "https://tatoub.atlassian.net/browse/AH-133",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-07": {
+      "id": "10136",
+      "key": "AH-134",
+      "url": "https://tatoub.atlassian.net/browse/AH-134",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-08": {
+      "id": "10137",
+      "key": "AH-135",
+      "url": "https://tatoub.atlassian.net/browse/AH-135",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-09": {
+      "id": "10138",
+      "key": "AH-136",
+      "url": "https://tatoub.atlassian.net/browse/AH-136",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-10": {
+      "id": "10139",
+      "key": "AH-137",
+      "url": "https://tatoub.atlassian.net/browse/AH-137",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-11": {
+      "id": "10140",
+      "key": "AH-138",
+      "url": "https://tatoub.atlassian.net/browse/AH-138",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VK-12": {
+      "id": "10141",
+      "key": "AH-139",
+      "url": "https://tatoub.atlassian.net/browse/AH-139",
+      "epic_id": "VULKAN",
+      "parent": "AH-7"
+    },
+    "VFI-01": {
+      "id": "10142",
+      "key": "AH-140",
+      "url": "https://tatoub.atlassian.net/browse/AH-140",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-02": {
+      "id": "10143",
+      "key": "AH-141",
+      "url": "https://tatoub.atlassian.net/browse/AH-141",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-03": {
+      "id": "10144",
+      "key": "AH-142",
+      "url": "https://tatoub.atlassian.net/browse/AH-142",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-04": {
+      "id": "10145",
+      "key": "AH-143",
+      "url": "https://tatoub.atlassian.net/browse/AH-143",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-05": {
+      "id": "10146",
+      "key": "AH-144",
+      "url": "https://tatoub.atlassian.net/browse/AH-144",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-06": {
+      "id": "10147",
+      "key": "AH-145",
+      "url": "https://tatoub.atlassian.net/browse/AH-145",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-07": {
+      "id": "10148",
+      "key": "AH-146",
+      "url": "https://tatoub.atlassian.net/browse/AH-146",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-08": {
+      "id": "10149",
+      "key": "AH-147",
+      "url": "https://tatoub.atlassian.net/browse/AH-147",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-09": {
+      "id": "10150",
+      "key": "AH-148",
+      "url": "https://tatoub.atlassian.net/browse/AH-148",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-10": {
+      "id": "10151",
+      "key": "AH-149",
+      "url": "https://tatoub.atlassian.net/browse/AH-149",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-11": {
+      "id": "10152",
+      "key": "AH-150",
+      "url": "https://tatoub.atlassian.net/browse/AH-150",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-12": {
+      "id": "10153",
+      "key": "AH-151",
+      "url": "https://tatoub.atlassian.net/browse/AH-151",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-13": {
+      "id": "10154",
+      "key": "AH-152",
+      "url": "https://tatoub.atlassian.net/browse/AH-152",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-14": {
+      "id": "10155",
+      "key": "AH-153",
+      "url": "https://tatoub.atlassian.net/browse/AH-153",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-15": {
+      "id": "10156",
+      "key": "AH-154",
+      "url": "https://tatoub.atlassian.net/browse/AH-154",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-16": {
+      "id": "10157",
+      "key": "AH-155",
+      "url": "https://tatoub.atlassian.net/browse/AH-155",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-17": {
+      "id": "10158",
+      "key": "AH-156",
+      "url": "https://tatoub.atlassian.net/browse/AH-156",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-18": {
+      "id": "10159",
+      "key": "AH-157",
+      "url": "https://tatoub.atlassian.net/browse/AH-157",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-19": {
+      "id": "10160",
+      "key": "AH-158",
+      "url": "https://tatoub.atlassian.net/browse/AH-158",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-20": {
+      "id": "10161",
+      "key": "AH-159",
+      "url": "https://tatoub.atlassian.net/browse/AH-159",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-21": {
+      "id": "10162",
+      "key": "AH-160",
+      "url": "https://tatoub.atlassian.net/browse/AH-160",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-22": {
+      "id": "10163",
+      "key": "AH-161",
+      "url": "https://tatoub.atlassian.net/browse/AH-161",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-23": {
+      "id": "10164",
+      "key": "AH-162",
+      "url": "https://tatoub.atlassian.net/browse/AH-162",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-24": {
+      "id": "10165",
+      "key": "AH-163",
+      "url": "https://tatoub.atlassian.net/browse/AH-163",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-25": {
+      "id": "10166",
+      "key": "AH-164",
+      "url": "https://tatoub.atlassian.net/browse/AH-164",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-26": {
+      "id": "10167",
+      "key": "AH-165",
+      "url": "https://tatoub.atlassian.net/browse/AH-165",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-27": {
+      "id": "10168",
+      "key": "AH-166",
+      "url": "https://tatoub.atlassian.net/browse/AH-166",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-28": {
+      "id": "10169",
+      "key": "AH-167",
+      "url": "https://tatoub.atlassian.net/browse/AH-167",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-29": {
+      "id": "10170",
+      "key": "AH-168",
+      "url": "https://tatoub.atlassian.net/browse/AH-168",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-30": {
+      "id": "10171",
+      "key": "AH-169",
+      "url": "https://tatoub.atlassian.net/browse/AH-169",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-31": {
+      "id": "10172",
+      "key": "AH-170",
+      "url": "https://tatoub.atlassian.net/browse/AH-170",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-32": {
+      "id": "10173",
+      "key": "AH-171",
+      "url": "https://tatoub.atlassian.net/browse/AH-171",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-33": {
+      "id": "10174",
+      "key": "AH-172",
+      "url": "https://tatoub.atlassian.net/browse/AH-172",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-34": {
+      "id": "10175",
+      "key": "AH-173",
+      "url": "https://tatoub.atlassian.net/browse/AH-173",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-35": {
+      "id": "10176",
+      "key": "AH-174",
+      "url": "https://tatoub.atlassian.net/browse/AH-174",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-36": {
+      "id": "10177",
+      "key": "AH-175",
+      "url": "https://tatoub.atlassian.net/browse/AH-175",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-37": {
+      "id": "10178",
+      "key": "AH-176",
+      "url": "https://tatoub.atlassian.net/browse/AH-176",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "VFI-38": {
+      "id": "10179",
+      "key": "AH-177",
+      "url": "https://tatoub.atlassian.net/browse/AH-177",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "TMP-01": {
+      "id": "10180",
+      "key": "AH-178",
+      "url": "https://tatoub.atlassian.net/browse/AH-178",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "TMP-02": {
+      "id": "10181",
+      "key": "AH-179",
+      "url": "https://tatoub.atlassian.net/browse/AH-179",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "TMP-03": {
+      "id": "10182",
+      "key": "AH-180",
+      "url": "https://tatoub.atlassian.net/browse/AH-180",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "TMP-04": {
+      "id": "10183",
+      "key": "AH-181",
+      "url": "https://tatoub.atlassian.net/browse/AH-181",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "TMP-05": {
+      "id": "10184",
+      "key": "AH-182",
+      "url": "https://tatoub.atlassian.net/browse/AH-182",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "TMP-06": {
+      "id": "10185",
+      "key": "AH-183",
+      "url": "https://tatoub.atlassian.net/browse/AH-183",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "TMP-07": {
+      "id": "10186",
+      "key": "AH-184",
+      "url": "https://tatoub.atlassian.net/browse/AH-184",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "TMP-08": {
+      "id": "10187",
+      "key": "AH-185",
+      "url": "https://tatoub.atlassian.net/browse/AH-185",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "TMP-09": {
+      "id": "10188",
+      "key": "AH-186",
+      "url": "https://tatoub.atlassian.net/browse/AH-186",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    },
+    "COL-01": {
+      "id": "10189",
+      "key": "AH-187",
+      "url": "https://tatoub.atlassian.net/browse/AH-187",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "COL-02": {
+      "id": "10190",
+      "key": "AH-188",
+      "url": "https://tatoub.atlassian.net/browse/AH-188",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "COL-03": {
+      "id": "10191",
+      "key": "AH-189",
+      "url": "https://tatoub.atlassian.net/browse/AH-189",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "COL-04": {
+      "id": "10192",
+      "key": "AH-190",
+      "url": "https://tatoub.atlassian.net/browse/AH-190",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "COL-05": {
+      "id": "10193",
+      "key": "AH-191",
+      "url": "https://tatoub.atlassian.net/browse/AH-191",
+      "epic_id": "FOND",
+      "parent": "AH-1"
+    },
+    "RES-01": {
+      "id": "10194",
+      "key": "AH-192",
+      "url": "https://tatoub.atlassian.net/browse/AH-192",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "RES-02": {
+      "id": "10195",
+      "key": "AH-193",
+      "url": "https://tatoub.atlassian.net/browse/AH-193",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "RES-03": {
+      "id": "10196",
+      "key": "AH-194",
+      "url": "https://tatoub.atlassian.net/browse/AH-194",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "RES-04": {
+      "id": "10197",
+      "key": "AH-195",
+      "url": "https://tatoub.atlassian.net/browse/AH-195",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "RES-05": {
+      "id": "10198",
+      "key": "AH-196",
+      "url": "https://tatoub.atlassian.net/browse/AH-196",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "RES-06": {
+      "id": "10199",
+      "key": "AH-197",
+      "url": "https://tatoub.atlassian.net/browse/AH-197",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "RES-07": {
+      "id": "10200",
+      "key": "AH-198",
+      "url": "https://tatoub.atlassian.net/browse/AH-198",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "RES-08": {
+      "id": "10201",
+      "key": "AH-199",
+      "url": "https://tatoub.atlassian.net/browse/AH-199",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "RES-09": {
+      "id": "10202",
+      "key": "AH-200",
+      "url": "https://tatoub.atlassian.net/browse/AH-200",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-01": {
+      "id": "10203",
+      "key": "AH-201",
+      "url": "https://tatoub.atlassian.net/browse/AH-201",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-02": {
+      "id": "10204",
+      "key": "AH-202",
+      "url": "https://tatoub.atlassian.net/browse/AH-202",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-03": {
+      "id": "10205",
+      "key": "AH-203",
+      "url": "https://tatoub.atlassian.net/browse/AH-203",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-04": {
+      "id": "10206",
+      "key": "AH-204",
+      "url": "https://tatoub.atlassian.net/browse/AH-204",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-05": {
+      "id": "10207",
+      "key": "AH-205",
+      "url": "https://tatoub.atlassian.net/browse/AH-205",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-06": {
+      "id": "10208",
+      "key": "AH-206",
+      "url": "https://tatoub.atlassian.net/browse/AH-206",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-07": {
+      "id": "10209",
+      "key": "AH-207",
+      "url": "https://tatoub.atlassian.net/browse/AH-207",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-08": {
+      "id": "10210",
+      "key": "AH-208",
+      "url": "https://tatoub.atlassian.net/browse/AH-208",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-09": {
+      "id": "10211",
+      "key": "AH-209",
+      "url": "https://tatoub.atlassian.net/browse/AH-209",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-10": {
+      "id": "10212",
+      "key": "AH-210",
+      "url": "https://tatoub.atlassian.net/browse/AH-210",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "LOW-11": {
+      "id": "10213",
+      "key": "AH-211",
+      "url": "https://tatoub.atlassian.net/browse/AH-211",
+      "epic_id": "KERNELS",
+      "parent": "AH-9"
+    },
+    "QUA-01": {
+      "id": "10214",
+      "key": "AH-212",
+      "url": "https://tatoub.atlassian.net/browse/AH-212",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-02": {
+      "id": "10215",
+      "key": "AH-213",
+      "url": "https://tatoub.atlassian.net/browse/AH-213",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-03": {
+      "id": "10216",
+      "key": "AH-214",
+      "url": "https://tatoub.atlassian.net/browse/AH-214",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-04": {
+      "id": "10217",
+      "key": "AH-215",
+      "url": "https://tatoub.atlassian.net/browse/AH-215",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-05": {
+      "id": "10218",
+      "key": "AH-216",
+      "url": "https://tatoub.atlassian.net/browse/AH-216",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-06": {
+      "id": "10219",
+      "key": "AH-217",
+      "url": "https://tatoub.atlassian.net/browse/AH-217",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-07": {
+      "id": "10220",
+      "key": "AH-218",
+      "url": "https://tatoub.atlassian.net/browse/AH-218",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-08": {
+      "id": "10221",
+      "key": "AH-219",
+      "url": "https://tatoub.atlassian.net/browse/AH-219",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-09": {
+      "id": "10222",
+      "key": "AH-220",
+      "url": "https://tatoub.atlassian.net/browse/AH-220",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-10": {
+      "id": "10223",
+      "key": "AH-221",
+      "url": "https://tatoub.atlassian.net/browse/AH-221",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-11": {
+      "id": "10224",
+      "key": "AH-222",
+      "url": "https://tatoub.atlassian.net/browse/AH-222",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "QUA-12": {
+      "id": "10225",
+      "key": "AH-223",
+      "url": "https://tatoub.atlassian.net/browse/AH-223",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "DEL-01": {
+      "id": "10226",
+      "key": "AH-224",
+      "url": "https://tatoub.atlassian.net/browse/AH-224",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "DEL-02": {
+      "id": "10227",
+      "key": "AH-225",
+      "url": "https://tatoub.atlassian.net/browse/AH-225",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "DEL-03": {
+      "id": "10228",
+      "key": "AH-226",
+      "url": "https://tatoub.atlassian.net/browse/AH-226",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "DEL-04": {
+      "id": "10229",
+      "key": "AH-227",
+      "url": "https://tatoub.atlassian.net/browse/AH-227",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "DEL-05": {
+      "id": "10230",
+      "key": "AH-228",
+      "url": "https://tatoub.atlassian.net/browse/AH-228",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "DEL-06": {
+      "id": "10231",
+      "key": "AH-229",
+      "url": "https://tatoub.atlassian.net/browse/AH-229",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "DEL-07": {
+      "id": "10232",
+      "key": "AH-230",
+      "url": "https://tatoub.atlassian.net/browse/AH-230",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "DEL-08": {
+      "id": "10233",
+      "key": "AH-231",
+      "url": "https://tatoub.atlassian.net/browse/AH-231",
+      "epic_id": "QUAL",
+      "parent": "AH-10"
+    },
+    "TMP-10": {
+      "id": "10234",
+      "key": "AH-232",
+      "url": "https://tatoub.atlassian.net/browse/AH-232",
+      "epic_id": "VFI",
+      "parent": "AH-8"
+    }
+  },
+  "dependencies": [
+    {
+      "task_id": "REF-02",
+      "depends_on": "REF-01",
+      "inwardIssue": "AH-11",
+      "outwardIssue": "AH-12",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "CAC-02",
+      "depends_on": "CAC-01",
+      "inwardIssue": "AH-28",
+      "outwardIssue": "AH-29",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "CAC-02",
+      "depends_on": "CAC-05",
+      "inwardIssue": "AH-32",
+      "outwardIssue": "AH-29",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "CAC-03",
+      "depends_on": "CAC-01",
+      "inwardIssue": "AH-28",
+      "outwardIssue": "AH-30",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "CAC-03",
+      "depends_on": "CAC-05",
+      "inwardIssue": "AH-32",
+      "outwardIssue": "AH-30",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "CAC-04",
+      "depends_on": "CAC-01",
+      "inwardIssue": "AH-28",
+      "outwardIssue": "AH-31",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "CAC-04",
+      "depends_on": "CAC-05",
+      "inwardIssue": "AH-32",
+      "outwardIssue": "AH-31",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "CAC-08",
+      "depends_on": "CAC-01",
+      "inwardIssue": "AH-28",
+      "outwardIssue": "AH-35",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "CAC-08",
+      "depends_on": "CAC-05",
+      "inwardIssue": "AH-32",
+      "outwardIssue": "AH-35",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-01",
+      "depends_on": "REF-01",
+      "inwardIssue": "AH-11",
+      "outwardIssue": "AH-36",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-01",
+      "depends_on": "SUR-01",
+      "inwardIssue": "AH-49",
+      "outwardIssue": "AH-36",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-01",
+      "depends_on": "SUR-02",
+      "inwardIssue": "AH-50",
+      "outwardIssue": "AH-36",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-05",
+      "depends_on": "PLY-01",
+      "inwardIssue": "AH-36",
+      "outwardIssue": "AH-40",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-05",
+      "depends_on": "OBS-05",
+      "inwardIssue": "AH-23",
+      "outwardIssue": "AH-40",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-06",
+      "depends_on": "PLY-01",
+      "inwardIssue": "AH-36",
+      "outwardIssue": "AH-41",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-06",
+      "depends_on": "PLY-02",
+      "inwardIssue": "AH-37",
+      "outwardIssue": "AH-41",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-07",
+      "depends_on": "PLY-01",
+      "inwardIssue": "AH-36",
+      "outwardIssue": "AH-42",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-07",
+      "depends_on": "SUR-02",
+      "inwardIssue": "AH-50",
+      "outwardIssue": "AH-42",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-11",
+      "depends_on": "PLY-01",
+      "inwardIssue": "AH-36",
+      "outwardIssue": "AH-46",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-11",
+      "depends_on": "CAC-01",
+      "inwardIssue": "AH-28",
+      "outwardIssue": "AH-46",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "PLY-11",
+      "depends_on": "CAC-05",
+      "inwardIssue": "AH-32",
+      "outwardIssue": "AH-46",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "SUR-01",
+      "depends_on": "REF-05",
+      "inwardIssue": "AH-15",
+      "outwardIssue": "AH-49",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "SUR-01",
+      "depends_on": "REF-06",
+      "inwardIssue": "AH-16",
+      "outwardIssue": "AH-49",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "SUR-03",
+      "depends_on": "SUR-01",
+      "inwardIssue": "AH-49",
+      "outwardIssue": "AH-51",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "SUR-03",
+      "depends_on": "SUR-02",
+      "inwardIssue": "AH-50",
+      "outwardIssue": "AH-51",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "SUR-03",
+      "depends_on": "REF-05",
+      "inwardIssue": "AH-15",
+      "outwardIssue": "AH-51",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "TRT-01",
+      "depends_on": "SUR-03",
+      "inwardIssue": "AH-51",
+      "outwardIssue": "AH-74",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "TRT-01",
+      "depends_on": "REF-04",
+      "inwardIssue": "AH-14",
+      "outwardIssue": "AH-74",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "TRT-01",
+      "depends_on": "REF-05",
+      "inwardIssue": "AH-15",
+      "outwardIssue": "AH-74",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "TRT-02",
+      "depends_on": "SUR-02",
+      "inwardIssue": "AH-50",
+      "outwardIssue": "AH-75",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "TRT-02",
+      "depends_on": "SUR-05",
+      "inwardIssue": "AH-53",
+      "outwardIssue": "AH-75",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "TRT-03",
+      "depends_on": "SUR-02",
+      "inwardIssue": "AH-50",
+      "outwardIssue": "AH-76",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "TRT-03",
+      "depends_on": "SUR-05",
+      "inwardIssue": "AH-53",
+      "outwardIssue": "AH-76",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "TRT-13",
+      "depends_on": "REF-05",
+      "inwardIssue": "AH-15",
+      "outwardIssue": "AH-86",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "TRT-13",
+      "depends_on": "TMP-10",
+      "inwardIssue": "AH-232",
+      "outwardIssue": "AH-86",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "AMD-02",
+      "depends_on": "AMD-01",
+      "inwardIssue": "AH-94",
+      "outwardIssue": "AH-95",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "AMD-03",
+      "depends_on": "SUR-01",
+      "inwardIssue": "AH-49",
+      "outwardIssue": "AH-96",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "AMD-03",
+      "depends_on": "SUR-03",
+      "inwardIssue": "AH-51",
+      "outwardIssue": "AH-96",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-03",
+      "depends_on": "INT-01",
+      "inwardIssue": "AH-106",
+      "outwardIssue": "AH-108",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-03",
+      "depends_on": "INT-02",
+      "inwardIssue": "AH-107",
+      "outwardIssue": "AH-108",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-04",
+      "depends_on": "INT-03",
+      "inwardIssue": "AH-108",
+      "outwardIssue": "AH-109",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-04",
+      "depends_on": "SUR-01",
+      "inwardIssue": "AH-49",
+      "outwardIssue": "AH-109",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-05",
+      "depends_on": "INT-04",
+      "inwardIssue": "AH-109",
+      "outwardIssue": "AH-110",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-05",
+      "depends_on": "SUR-03",
+      "inwardIssue": "AH-51",
+      "outwardIssue": "AH-110",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-06",
+      "depends_on": "INT-03",
+      "inwardIssue": "AH-108",
+      "outwardIssue": "AH-111",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-06",
+      "depends_on": "SUR-02",
+      "inwardIssue": "AH-50",
+      "outwardIssue": "AH-111",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-07",
+      "depends_on": "INT-01",
+      "inwardIssue": "AH-106",
+      "outwardIssue": "AH-112",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-07",
+      "depends_on": "INT-03",
+      "inwardIssue": "AH-108",
+      "outwardIssue": "AH-112",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-08",
+      "depends_on": "INT-07",
+      "inwardIssue": "AH-112",
+      "outwardIssue": "AH-113",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-08",
+      "depends_on": "SUR-08",
+      "inwardIssue": "AH-56",
+      "outwardIssue": "AH-113",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-11",
+      "depends_on": "CAC-01",
+      "inwardIssue": "AH-28",
+      "outwardIssue": "AH-116",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "INT-11",
+      "depends_on": "CAC-05",
+      "inwardIssue": "AH-32",
+      "outwardIssue": "AH-116",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "APL-03",
+      "depends_on": "SUR-01",
+      "inwardIssue": "AH-49",
+      "outwardIssue": "AH-119",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "APL-03",
+      "depends_on": "REF-05",
+      "inwardIssue": "AH-15",
+      "outwardIssue": "AH-119",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "APL-06",
+      "depends_on": "SUR-02",
+      "inwardIssue": "AH-50",
+      "outwardIssue": "AH-122",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "APL-06",
+      "depends_on": "SUR-05",
+      "inwardIssue": "AH-53",
+      "outwardIssue": "AH-122",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "APL-10",
+      "depends_on": "SUR-03",
+      "inwardIssue": "AH-51",
+      "outwardIssue": "AH-126",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "APL-10",
+      "depends_on": "LOW-02",
+      "inwardIssue": "AH-202",
+      "outwardIssue": "AH-126",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "APL-11",
+      "depends_on": "REF-04",
+      "inwardIssue": "AH-14",
+      "outwardIssue": "AH-127",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "APL-11",
+      "depends_on": "REF-05",
+      "inwardIssue": "AH-15",
+      "outwardIssue": "AH-127",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VK-02",
+      "depends_on": "VK-01",
+      "inwardIssue": "AH-128",
+      "outwardIssue": "AH-129",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VK-02",
+      "depends_on": "SUR-10",
+      "inwardIssue": "AH-58",
+      "outwardIssue": "AH-129",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VK-03",
+      "depends_on": "VK-02",
+      "inwardIssue": "AH-129",
+      "outwardIssue": "AH-130",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VK-03",
+      "depends_on": "TMP-01",
+      "inwardIssue": "AH-178",
+      "outwardIssue": "AH-130",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VK-12",
+      "depends_on": "SUR-09",
+      "inwardIssue": "AH-57",
+      "outwardIssue": "AH-139",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-02",
+      "depends_on": "SUR-10",
+      "inwardIssue": "AH-58",
+      "outwardIssue": "AH-141",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-02",
+      "depends_on": "VFI-26",
+      "inwardIssue": "AH-165",
+      "outwardIssue": "AH-141",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-03",
+      "depends_on": "VFI-02",
+      "inwardIssue": "AH-141",
+      "outwardIssue": "AH-142",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-03",
+      "depends_on": "VFI-26",
+      "inwardIssue": "AH-165",
+      "outwardIssue": "AH-142",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-04",
+      "depends_on": "SUR-10",
+      "inwardIssue": "AH-58",
+      "outwardIssue": "AH-143",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-04",
+      "depends_on": "TMP-01",
+      "inwardIssue": "AH-178",
+      "outwardIssue": "AH-143",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-11",
+      "depends_on": "SUR-10",
+      "inwardIssue": "AH-58",
+      "outwardIssue": "AH-150",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-11",
+      "depends_on": "APL-03",
+      "inwardIssue": "AH-119",
+      "outwardIssue": "AH-150",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-12",
+      "depends_on": "SUR-10",
+      "inwardIssue": "AH-58",
+      "outwardIssue": "AH-151",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-12",
+      "depends_on": "APL-03",
+      "inwardIssue": "AH-119",
+      "outwardIssue": "AH-151",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-15",
+      "depends_on": "SUR-10",
+      "inwardIssue": "AH-58",
+      "outwardIssue": "AH-154",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "VFI-17",
+      "depends_on": "SUR-10",
+      "inwardIssue": "AH-58",
+      "outwardIssue": "AH-156",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "LOW-09",
+      "depends_on": "REF-04",
+      "inwardIssue": "AH-14",
+      "outwardIssue": "AH-209",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "LOW-09",
+      "depends_on": "REF-05",
+      "inwardIssue": "AH-15",
+      "outwardIssue": "AH-209",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "LOW-10",
+      "depends_on": "LOW-09",
+      "inwardIssue": "AH-209",
+      "outwardIssue": "AH-210",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "LOW-10",
+      "depends_on": "SUR-02",
+      "inwardIssue": "AH-50",
+      "outwardIssue": "AH-210",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "LOW-11",
+      "depends_on": "LOW-09",
+      "inwardIssue": "AH-209",
+      "outwardIssue": "AH-211",
+      "relationship": "Blocks"
+    },
+    {
+      "task_id": "LOW-11",
+      "depends_on": "LOW-10",
+      "inwardIssue": "AH-210",
+      "outwardIssue": "AH-211",
+      "relationship": "Blocks"
+    }
+  ],
+  "notes": "Initial import complete: 10 epics, 222 tasks, 83 dependencies. Validation instructions updated in all existing issues: short targeted tests required, strict necessary, no fixed duration or count. No runtime feature tests performed during this documentation/Jira update.",
+  "last_authorization_check_utc": "2026-10-15T13:07:19.001897+00:00",
+  "last_authorization_check_result": "Project AH is accessible; empty project confirmed before import.",
+  "last_connector_error": null,
+  "prepared_backlog": {
+    "source_sha256": "0bc7de45bd7f7558cdc868ddb5b56d3cea687a68780fadd845904f954fcd2f45",
+    "epics": 10,
+    "tasks": 222,
+    "dependencies": 83,
+    "coverage_report": "docs/jira/VERIFICATION-COUVERTURE.md",
+    "consistency_record": "docs/jira/coverage-check.json"
+  },
+  "cloud_id": "f3f52acd-f094-4342-9a7e-dd267be54828",
+  "site_access_verified": true,
+  "privacy_verification": {
+    "method": "user_confirmation",
+    "answer": "Oui, AH est privé",
+    "date": "2026-10-15",
+    "note": "Board isPrivate is not proof of project confidentiality."
+  },
+  "deferred_creation_ids": [],
+  "creation_incidents": [
+    {
+      "source_id": "TMP-10",
+      "error": "MCP request timed out; initial reconciliation search returned no ticket. Defer retry until remaining tasks are created.",
+      "resolution": "Second search found no ticket; retry created AH-232. Final project read confirms exactly one ticket for each source ID."
+    },
+    {
+      "kind": "dependency",
+      "task_id": "TRT-03",
+      "depends_on": "SUR-02",
+      "inwardIssue": "AH-50",
+      "outwardIssue": "AH-76",
+      "error": "executeWrite timed out; read confirmed link absent; retry via addGraphContext succeeded."
+    }
+  ],
+  "completed_at_utc": "2026-10-15T13:35:27.014Z",
+  "verification": {
+    "method": "Jira paginated reads",
+    "issues": 232,
+    "epics": 10,
+    "tasks": 222,
+    "dependencies": 83,
+    "duplicates": 0,
+    "missing": 0,
+    "extra": 0,
+    "parents_verified": true,
+    "priorities_verified": true,
+    "labels_verified": true,
+    "descriptions_verified": true,
+    "description_normalization": "Trailing whitespace on each Markdown line only.",
+    "dependency_direction_verified": true,
+    "privacy": "Confirmed by user; connector does not expose project access setting."
+  },
+  "initial_import_source_sha256": "a2648e4d7fca41492c0f5b8096be21ecbfd14d38283db4a4d1bf1e9b834b511e",
+  "validation_policy_update": {
+    "status": "complete",
+    "source_sha256": "0bc7de45bd7f7558cdc868ddb5b56d3cea687a68780fadd845904f954fcd2f45",
+    "updated_issues": 232,
+    "journal": "docs/jira/validation-policy-state.json",
+    "policy": {
+      "tests_required_per_feature": true,
+      "short_targeted_tests": true,
+      "strict_necessary": true,
+      "fixed_duration_seconds": null,
+      "fixed_test_count": null,
+      "stop_when_conclusive": true,
+      "repeat_when": "Failure, ambiguity or genuinely unstable results only."
+    }
+  }
+}

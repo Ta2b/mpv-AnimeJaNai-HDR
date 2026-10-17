@@ -1,0 +1,15 @@
+{
+  "parent": "AH-28",
+  "marker": "split-20261015-cac-sha-primitive",
+  "summary": "Primitive SHA-256 portable, sérialisation encadrée et poids ONNX externes",
+  "target_status": "Done",
+  "criterion": "Empreinter les octets de graphes/ressources déclarées avec noms/tailles encadrés ; détecter changement à nom/taille/mtime constants et refuser ressources absentes. Scope primitive et scanner portables, pas totalité des clés compilées.",
+  "evidence": "3.8.0.34/35 et backend d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 ; native/common/content_identity.h, onnx_flow.* ; oracle hashlib, ressources imbriquées/sparse/fonctions, poids modifiés et chemins invalides. Rapports lots 03–05.",
+  "status": "planned",
+  "issue_key": "AH-238",
+  "create_result": {
+    "id": "10240",
+    "key": "AH-238"
+  },
+  "actual_status": "To Do"
+}

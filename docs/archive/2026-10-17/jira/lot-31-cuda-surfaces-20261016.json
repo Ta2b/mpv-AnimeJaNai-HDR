@@ -1,0 +1,21 @@
+{
+  "issue": "AH-279",
+  "parent": "AH-49",
+  "remaining": [
+    "AH-282",
+    "AH-281"
+  ],
+  "status": "Done",
+  "base": "78ceca8863ea74e1b1de12276c65185849dc7b2a",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-31-cuda-surfaces-20261016",
+  "backend_worktree": "/home/ta2b/.animejanai-tools/work/backend-surfaces-20261016",
+  "backend_base": "652fbc6bdd3a9d815367deeb2df65538636705dc",
+  "implementation": "Complete Linux CUDA Surface v1 adapter and optional dispatcher, nine exact outputs, allocation error without model inference, legacy fallback; published15assets3workflowssuccess. OtherAPIs/HDR/nativeasync open.",
+  "backend_source": "df7e02e7bd3f4d274986946d2e5a04e905d7a454",
+  "player_qualification_source": "a4e88c8c114385f41113e9ac047db3f894df3c87",
+  "binary_pin": "8f7d7b8414c27157de91d54270cab78bb64e0e5e",
+  "release": "3.8.0.63",
+  "release_source": "ec3b0753347594058097fd1838cdcc9024e096b5",
+  "qualification_comment": "10108",
+  "closure_comment": "10110"
+}

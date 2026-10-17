@@ -1,0 +1,15 @@
+{
+  "parent": "AH-29",
+  "marker": "split-20261015-coreml-runtime-cycle",
+  "summary": "Qualifier le cycle .mlmodelc et le diagnostic de reconstruction sur API Apple",
+  "target_status": "To Do",
+  "criterion": "Sur Core ML réel, tester hit, modification des poids, reconstruction et diagnostic ; vérifier fidélité sur mêmes entrées/poids et préserver les modèles. Le tag portable seul ne valide pas ce cycle.",
+  "evidence": "API Apple absente localement ; release .34 compilée macOS, aucune exécution .mlmodelc qualifiée.",
+  "status": "planned",
+  "issue_key": "AH-244",
+  "create_result": {
+    "id": "10246",
+    "key": "AH-244"
+  },
+  "actual_status": "To Do"
+}

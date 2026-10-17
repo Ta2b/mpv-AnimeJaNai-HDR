@@ -1,0 +1,932 @@
+{
+  "cloud_id": "f3f52acd-f094-4342-9a7e-dd267be54828",
+  "scope": "8 tickets d’implémentation partiellement traités ; parents/liens conservés, pas réimport du backlog",
+  "status": "reconciled",
+  "entries": [
+    {
+      "parent": "AH-11",
+      "marker": "split-20261015-ref-linux-export",
+      "summary": "Export CLI/Lua Linux de configuration et inventaire SHA-256",
+      "target_status": "Done",
+      "criterion": "Exporter la configuration effective observée par IPC, champs inconnus explicites, inventaire de fichiers/hash, sans écraser un rapport ni modifier le rendu.",
+      "evidence": "3.8.0.33 c7581ed98b2a0802fd495e9851f53d82c01568c3 ; docs/qualification/lot-02-reference-20261015.md ; 29 hashes vérifiés, PNG16/PTS identiques, CLI/Lua fonctionnels, coût ponctuel 1,6147 s. Portée : observation/inventaire Linux, pas preuve des poids déjà chargés.",
+      "status": "created",
+      "issue_key": "AH-233",
+      "create_result": {
+        "id": "10235",
+        "key": "AH-233"
+      },
+      "actual_status": "Done"
+    },
+    {
+      "parent": "AH-11",
+      "marker": "split-20261015-ref-loaded-chain",
+      "summary": "Rattacher les sorties aux modèles réellement chargés et dimensions de chaque étage",
+      "target_status": "To Do",
+      "criterion": "Lier média/sortie et instances de modèles/poids exécutés ; exporter dimensions intermédiaires, ensemble, facteur/coupe/ordre, scaler/HDR et fraîcheur des stats. Ne pas déduire la chaîne du seul nom Quality.",
+      "evidence": "Le rapport .33 signale ces champs comme inconnus ou non prouvés ; aucune qualification de cette extension.",
+      "status": "created",
+      "issue_key": "AH-234",
+      "create_result": {
+        "id": "10236",
+        "key": "AH-234"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-11",
+      "marker": "split-20261015-ref-precision-placement",
+      "summary": "Exporter précision et placement effectifs de la chaîne",
+      "target_status": "To Do",
+      "criterion": "Rendre explicites précision/tensor types, placements et runtime réellement employés par les opérations pertinentes ; couvrir les replis sans annoncer le réglage demandé comme preuve d’exécution.",
+      "evidence": "Limite REF-01 du lot 02, champs non disponibles dans le simple inventaire.",
+      "status": "created",
+      "issue_key": "AH-235",
+      "create_result": {
+        "id": "10237",
+        "key": "AH-235"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-11",
+      "marker": "split-20261015-ref-manager-ui",
+      "summary": "Intégrer l’export de référence dans le Manager",
+      "target_status": "To Do",
+      "criterion": "Point d’entrée Manager fonctionnel, export associé à la session/chaîne choisie, destination claire et erreurs rapportées ; essai court de l’action réelle.",
+      "evidence": "CLI et script-message existent ; aucune interface Manager de cet export déclarée livrée.",
+      "status": "created",
+      "issue_key": "AH-236",
+      "create_result": {
+        "id": "10238",
+        "key": "AH-236"
+      },
+      "actual_status": "Done",
+      "start_comment_id": "10057",
+      "release": "3.8.0.47",
+      "release_source": "cbbc10239e184691a7ea90284fff71422140145a",
+      "qualification_comment_id": "10060",
+      "release_comment_id": "10065"
+    },
+    {
+      "parent": "AH-11",
+      "marker": "split-20261015-ref-other-platforms",
+      "summary": "Qualifier l’export réel sous Windows et macOS",
+      "target_status": "To Do",
+      "criterion": "Exécuter les entrées CLI/Lua/Manager disponibles sur ces plateformes, vérifier IPC, artefacts/hash et parité de rendu ; noter séparément toute API manquante.",
+      "evidence": "3.8.0.33 compilée/publiée sur 3 plateformes ; seule exécution Linux qualifiée.",
+      "status": "created",
+      "issue_key": "AH-237",
+      "create_result": {
+        "id": "10239",
+        "key": "AH-237"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-28",
+      "marker": "split-20261015-cac-sha-primitive",
+      "summary": "Primitive SHA-256 portable, sérialisation encadrée et poids ONNX externes",
+      "target_status": "Done",
+      "criterion": "Empreinter les octets de graphes/ressources déclarées avec noms/tailles encadrés ; détecter changement à nom/taille/mtime constants et refuser ressources absentes. Scope primitive et scanner portables, pas totalité des clés compilées.",
+      "evidence": "3.8.0.34/35 et backend d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 ; native/common/content_identity.h, onnx_flow.* ; oracle hashlib, ressources imbriquées/sparse/fonctions, poids modifiés et chemins invalides. Rapports lots 03–05.",
+      "status": "reconciled",
+      "issue_key": "AH-238",
+      "create_result": {
+        "id": "10240",
+        "key": "AH-238"
+      },
+      "actual_status": "Done",
+      "closure_comment_id": "10035"
+    },
+    {
+      "parent": "AH-28",
+      "marker": "split-20261015-cac-key-contract",
+      "summary": "Formaliser le contrat commun complet des clés de programmes compilés",
+      "target_status": "To Do",
+      "criterion": "Définir et mutualiser champs graphe/poids, convertisseur/version, options, formes/types, runtime/device selon format et migration de version ; un changement pertinent doit changer la clé. Contrat partagé tous formats ; applications TRT ordinaire et flow qualifiées dans ce lot, adoption native autres formats AH-240/AH-241, audit dérivés AH-242.",
+      "evidence": "SHA encadré déjà disponible ; moteur TRT ordinaire et export flow intégrés. Contrat global tous formats encore incomplet.",
+      "status": "created",
+      "issue_key": "AH-239",
+      "create_result": {
+        "id": "10241",
+        "key": "AH-239"
+      },
+      "actual_status": "Done",
+      "qualification_comment_id": "10052",
+      "closure_comment_id": "10054",
+      "backend_source": "df489209a9758149f0e8e580539ebdc50c2ae577",
+      "player_technical_source": "85961914e75ca8478fc966a6cecaebdc1a385071",
+      "release": "3.8.0.44",
+      "release_source": "66f4be0b47b046429d0a2c0e91dfedb4bb63a455",
+      "binary_pin": "9bcc7d476e59f1bf87ed0af6c3c5a65ac420c76f",
+      "qualification": "Contrat commun complet : 16 invalidations/11 refus ; flow exact ; migration TRT 1cold/0warm, même plan exact, reconstructions max1/255 ; release complète"
+    },
+    {
+      "parent": "AH-28",
+      "marker": "split-20261015-cac-coreml-program-key",
+      "summary": "Compléter l’identité des programmes Core ML compilés",
+      "target_status": "To Do",
+      "criterion": "Appliquer le contrat complet aux programmes .mlmodelc : contenu, patch/conversion, formes/types/options et runtime pertinent ; garder les modèles et anciennes références, qualifier hit/miss ciblé sur API Apple.",
+      "evidence": "Le tag portable .mlpackage est livré dans AH-29 ; ce sous-ticket vise la clé complète du programme compilé.",
+      "status": "created",
+      "issue_key": "AH-240",
+      "create_result": {
+        "id": "10242",
+        "key": "AH-240"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-28",
+      "marker": "split-20261015-cac-provider-program-keys",
+      "summary": "Compléter les identités des caches de providers ORT et MIGraphX natif",
+      "target_status": "To Do",
+      "criterion": "Inventorier les programmes persistés existants, intégrer leur contenu/convertisseur/options/formes/types/runtime/device dans les clés propres à chaque provider, puis vérifier invalidation ciblée. Ne pas annoncer un futur cache inexistant comme livré.",
+      "evidence": "CAC-08 et INT-11 conservent leurs tickets existants ; ce sous-ticket fournit le contrat/identité à leurs consommateurs, sans réimporter ces features.",
+      "status": "created",
+      "issue_key": "AH-241",
+      "create_result": {
+        "id": "10243",
+        "key": "AH-241"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-28",
+      "marker": "split-20261015-cac-trt-derived-keys",
+      "summary": "Auditer et compléter les clés TensorRT dérivées et temporelles",
+      "target_status": "To Do",
+      "criterion": "Vérifier motion-only, transformations et fenêtres temporelles : graphes/poids externes, version de conversion, settings/formes/types et runtime/GPU complets ; compléter les omissions et qualifier les cas changés.",
+      "evidence": "Les engines TensorRT ordinaires sont intégrés/qualifiés Linux dans AH-31 ; motion-only a une empreinte historique dont la couverture complète reste à vérifier.",
+      "status": "created",
+      "issue_key": "AH-242",
+      "create_result": {
+        "id": "10244",
+        "key": "AH-242"
+      },
+      "actual_status": "Done",
+      "start_comment_id": "10053",
+      "backend_source": "66fcd9ded3310d009c5402e1a9f43900da59a690",
+      "qualification_comment_id": "10068",
+      "qualification": "Final v3 reuse exact, zero builders; independent fresh-plan parity nonconclusive and not forced",
+      "release": "3.8.0.50",
+      "release_source": "d8fe421176c54386ff389ad16186e16594468d4b",
+      "binary_pin": "e26a45381e4c91c82fcf533801d8e648e5e1931c",
+      "closing_comment_id": "10071"
+    },
+    {
+      "parent": "AH-29",
+      "marker": "split-20261015-coreml-content-tag",
+      "summary": "Tag Core ML portable incluant tous les vrais poids et migration v2",
+      "target_status": "Done",
+      "criterion": "coreml_template_tag change quand un poids change à nom/taille/mtime constants ; englober table et ressources mlpackage, refuser entrée incomplète, préserver modèles/anciens caches. Scope calcul du tag et package portable.",
+      "evidence": "3.8.0.34 52f440f ; docs/qualification/lot-03-coreml-20261015.md ; oracle SHA indépendant, relocation stable/renommage sensible, package redimensionné identique ; surcoût mesuré 1,2454 -> 86,8164 ms/16 Mio, utilité fidélité, pas FPS.",
+      "status": "reconciled",
+      "issue_key": "AH-243",
+      "create_result": {
+        "id": "10245",
+        "key": "AH-243"
+      },
+      "actual_status": "Done",
+      "closure_comment_id": "10036"
+    },
+    {
+      "parent": "AH-29",
+      "marker": "split-20261015-coreml-runtime-cycle",
+      "summary": "Qualifier le cycle .mlmodelc et le diagnostic de reconstruction sur API Apple",
+      "target_status": "To Do",
+      "criterion": "Sur Core ML réel, tester hit, modification des poids, reconstruction et diagnostic ; vérifier fidélité sur mêmes entrées/poids et préserver les modèles. Le tag portable seul ne valide pas ce cycle.",
+      "evidence": "API Apple absente localement ; release .34 compilée macOS, aucune exécution .mlmodelc qualifiée.",
+      "status": "created",
+      "issue_key": "AH-244",
+      "create_result": {
+        "id": "10246",
+        "key": "AH-244"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-30",
+      "marker": "split-20261015-flow-cache-cpu",
+      "summary": "Intégrer le cache flow identifié et transactionnel, qualifier RIFE partagé sur CPU",
+      "target_status": "Done",
+      "criterion": "load_rife utilise identité source/poids/transformation et cache provider isolé ; ancien flow ignoré, contenu vérifié, poids externes copiés correctement ; hit/miss/réparation/concurrence et inférence CPU exacts.",
+      "evidence": "3.8.0.35 735a33d87d228b3b77718b6d918111ed83e476af ; docs/qualification/lot-04-rife-flow-20261015.md ; même paire RIFE4.26/SPAN Fast, 3 instants : 0 octet changé, graphe identique ; configuration 217,80 -> 363,04 ms, correction fidélité. Pré-requis techniques flow local couverts, parents AH-28/AH-32 restent globaux.",
+      "status": "reconciled",
+      "issue_key": "AH-245",
+      "create_result": {
+        "id": "10247",
+        "key": "AH-245"
+      },
+      "actual_status": "Done",
+      "closure_comment_id": "10037"
+    },
+    {
+      "parent": "AH-30",
+      "marker": "split-20261015-flow-provider-qualification",
+      "summary": "Qualifier l’invalidation flow et les caches compilés sur les providers GPU concernés",
+      "target_status": "To Do",
+      "criterion": "Sur les APIs de providers effectivement supportés, vérifier source/poids remplacés, hit et reconstruction du programme compilé sous l’identité flow ; comparer mêmes inputs/poids et documenter chaque cible absente.",
+      "evidence": "Qualification CPU/portable acquise ; aucune validation GPU Apple/AMD/Intel substituée par le résultat CPU. Liens bloquants parent AH-28/AH-32 conservés.",
+      "status": "created",
+      "issue_key": "AH-246",
+      "create_result": {
+        "id": "10248",
+        "key": "AH-246"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-31",
+      "marker": "split-20261015-trt-ordinary-linux",
+      "summary": "Engines ordinaires par contenu, migration et qualification réelle Linux TensorRT",
+      "target_status": "Done",
+      "criterion": "Ne plus accepter un ancien engine désérialisable comme preuve de poids ; graphe/poids externes/settings/runtime/GPU courant dans la clé ; source figée, migration conservatrice et publication contrôlée. Vérifier build réel, hit sans builder, poids remplacés et parité avec même plan sur Linux.",
+      "evidence": "3.8.0.36 765763fd2991bca726595969cef4a43f7074bc71 ; backend d9d0a94, pin 9eee3504d82387035e4908909ca9621733fed68c ; docs/qualification/lot-05-tensorrt-20261015.md. 3 sorties même plan exactes, production multi-SM testée SM89, ABI 24 symboles identique ; reconstructions indépendantes delta max 1/255 explicite, aucun FPS revendiqué.",
+      "status": "reconciled",
+      "issue_key": "AH-247",
+      "create_result": {
+        "id": "10249",
+        "key": "AH-247"
+      },
+      "actual_status": "Done",
+      "closure_comment_id": "10038"
+    },
+    {
+      "parent": "AH-31",
+      "marker": "split-20261015-trt-ordinary-windows",
+      "summary": "Qualifier les engines ordinaires et leur migration sous Windows TensorRT",
+      "target_status": "To Do",
+      "criterion": "Sur Windows réel, vérifier cold build/hit, poids remplacés même nom, noms/UTF-8, publication et échec préservant un engine terminé ; comparer mêmes inputs/réglages et distinguer variation de reconstruction.",
+      "evidence": "Windows NVIDIA/AMD build 38801311797 success depuis d9d0a94, binaires publiés .36 ; compilation/linkage uniquement, pas inférence matérielle Windows.",
+      "status": "created",
+      "issue_key": "AH-248",
+      "create_result": {
+        "id": "10250",
+        "key": "AH-248"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-flow-linux",
+      "summary": "Transactions des exports flow : validation, concurrence et réparation Linux",
+      "target_status": "Done",
+      "criterion": "Temporaires uniques, écritures/fermetures contrôlées, rename atomique et cache invalide conservé/réparé ; deux processus demandant la même forme obtiennent un export complet. Scope flow partagé Linux, sans prétendre au verrou global.",
+      "evidence": "3.8.0.35 ; docs/qualification/lot-04-rife-flow-20261015.md ; sources/poids manquants refusés, corruption/hit/deux builders contrôlés.",
+      "status": "reconciled",
+      "issue_key": "AH-249",
+      "create_result": {
+        "id": "10251",
+        "key": "AH-249"
+      },
+      "actual_status": "Done",
+      "closure_comment_id": "10039"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-trt-linux",
+      "summary": "Snapshots et publication d’engines TensorRT contrôlés sur Linux",
+      "target_status": "Done",
+      "criterion": "Source figée atomique vérifiée, concurrence des snapshots, publication d’engine non vide uniquement après succès ; builder échoué/vide préserve l’engine terminé. Scope mécanismes Linux qualifiés, pas tous les cas de quota/arrêt.",
+      "evidence": "Backend d9d0a94, release .36 ; tests/model_identity_check.py, tests/engine_cache_gpu.py ; deux snapshots concurrents, engine échoué/vide, GPU réel poids remplacés et anciens engines inchangés ; rapport lot 05.",
+      "status": "reconciled",
+      "issue_key": "AH-250",
+      "create_result": {
+        "id": "10252",
+        "key": "AH-250"
+      },
+      "actual_status": "Done",
+      "closure_comment_id": "10040"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-key-locks",
+      "summary": "Coordonner par clé les builders Linux flow RIFE et TensorRT",
+      "target_status": "To Do",
+      "criterion": "Builders Linux flow/TRT : coordination interprocessus par clé, revalidation après attente, libération succès/échec, attente annulable au teardown, vrais builders et qualité. Autres formats/plateformes : AH-254 ; arrêt brutal AH-252, disque/quota AH-253.",
+      "evidence": "Temporaires/rename sont livrés ; verrou explicite par clé et concurrence complète de tous les builders non déclarés couverts.",
+      "status": "created",
+      "issue_key": "AH-251",
+      "create_result": {
+        "id": "10253",
+        "key": "AH-251"
+      },
+      "actual_status": "Done",
+      "qualification_comment_id": "10046",
+      "backend_source": "62c1c5a7cdc5ae65e77f9e511913aa1e59e95972",
+      "player_technical_source": "11682f1",
+      "qualification": "Flow 2→1 stagings exact ; TRT 2→1 builders réels, même plan exact ; échec/annulation 15ms/reprise/repair/motion natif passent ; livraison .41 en arrière-plan",
+      "closure_comment_id": "10047",
+      "release": "3.8.0.41",
+      "release_source": "1c0605695e0dea38a9f162795c2b9c52594ed6fb",
+      "binary_pin": "7b7b723a23029b421f9cfcffc8e15263d41252cb"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-interruption",
+      "summary": "Reprendre sûrement les caches Linux après arrêt brutal",
+      "target_status": "To Do",
+      "criterion": "Caches Linux flow RIFE/snapshots ONNX/plans TRT : arrêt brutal, reprise sûre sans import incomplet, nettoyage seulement de stagings à propriété prouvée, références/modèles préservés. Autres formats/plateformes AH-254 ; disque/quota AH-253.",
+      "evidence": "Les échecs normaux et snapshots corrompus sont couverts ; arrêt brutal de tous les formats non qualifié.",
+      "status": "created",
+      "issue_key": "AH-252",
+      "create_result": {
+        "id": "10254",
+        "key": "AH-252"
+      },
+      "actual_status": "Done",
+      "qualification_comment_id": "10048",
+      "backend_source": "694537a6dada3c0aec11947cdc5a6bda86c2c91b",
+      "player_technical_source": "0efe178",
+      "qualification": "Interruption 64 octets flow/model/TRT/motion : reprise sûre, orphans 1→0, builder meurt avec parent, sorties exactes ce cas, symlinks/inconnus/références préservés ; collision poids/métadonnée conservée ; .42 en livraison",
+      "closure_comment_id": "10049",
+      "release": "3.8.0.42",
+      "release_source": "01f93fbb746e561f1049a2f1b6a1590c63ca461b",
+      "binary_pin": "171220010f12298da39acead5269ad439d709bcc"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-disk-quota",
+      "summary": "Traiter les erreurs disque/quota des caches Linux sans perte de référence",
+      "target_status": "To Do",
+      "criterion": "Linux flow/snapshots/TRT : écritures partielles, permission/espace/quota, aucune publication incomplète, références préservées, diagnostics/reprise après correction, caches complets lecture seule. ENOSPC réel tmpfs privé/CUDA, EDQUOT injecté explicite ; autres formats/plateformes AH-254.",
+      "evidence": "Snapshots stats ont un essai permission ; cela ne valide pas les caches compilés/quotas globaux CAC-05.",
+      "status": "created",
+      "issue_key": "AH-253",
+      "create_result": {
+        "id": "10255",
+        "key": "AH-253"
+      },
+      "actual_status": "Done",
+      "qualification_comment_id": "10050",
+      "backend_source": "650c2a71f5c8bca8cfa52805e0db1c17dad8aa67",
+      "player_technical_source": "d6da9cea895f761823d2a46a16715ec320169566",
+      "release": "3.8.0.43",
+      "release_source": "267a004fbe5f22f0835d733a72fe64ca813de45b",
+      "binary_pin": "09eb15082918a858fc20642bd49837783ac94b69",
+      "qualification": "ENOSPC réel tmpfs privé, EDQUOT injecté, permissions/publication/ref illisible/read-only, plan tronqué refusé/latched ; 2→1 et 1→0 builders indus ; same-plan sortie exacte ; .43 publication en cours",
+      "closure_comment_id": "10051"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-other-platforms-formats",
+      "summary": "Porter et qualifier les transactions des autres formats et plateformes",
+      "target_status": "To Do",
+      "criterion": "Couvrir .mlmodelc, programmes de providers et Windows : publication atomique, validation et coordination par clé selon le contrat commun ; qualifier l’API native concernée, sans assimiler compilation et exécution.",
+      "evidence": "Les essais transactionnels flow/TRT sont Linux ; APIs Apple et autres providers absentes, Windows uniquement compilé pour les engines.",
+      "status": "created",
+      "issue_key": "AH-254",
+      "create_result": {
+        "id": "10256",
+        "key": "AH-254"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-22",
+      "marker": "split-20261015-stats-native-linux",
+      "summary": "Snapshots natifs bornés et lecteurs Lua/mémoire, qualifiés Linux",
+      "target_status": "Done",
+      "criterion": "Compteurs complets en mémoire, publications <=4 Hz avec états immédiats, remplacement atomique préservant ancien fichier sur erreur ; Lua ne prend pas absence pour fin de build, outil ORT lit les compteurs courants.",
+      "evidence": "3.8.0.37 a0622c7094211483346a3ac0c865d2c99c7a4b2e ; rapport lot 06. Écritures 302 -> 5, 0 snapshot incomplet après, 9 sorties par chemin ORT/CPU et NCNN/Vulkan exactes, révisions 9 -> 3, compteurs/erreurs/final exacts. Autres matériels non qualifiés, aucun gain FPS.",
+      "status": "reconciled",
+      "issue_key": "AH-255",
+      "create_result": {
+        "id": "10257",
+        "key": "AH-255"
+      },
+      "actual_status": "Done",
+      "closure_comment_id": "10041"
+    },
+    {
+      "parent": "AH-22",
+      "marker": "split-20261015-stats-cuda-linux",
+      "summary": "Log CUDA Linux atomique au configure et nettoyage de l’échec",
+      "target_status": "Done",
+      "criterion": "Log complet ancien/nouveau par remplacement atomique au configure ; échec préserve ancien état et ne fuit pas de temporaire ; mêmes sorties/PTS et contenu de log.",
+      "evidence": "3.8.0.38 212c286dd3181ac112804811ded55679a70b97fd ; rapport lot 07. Vrais objets C, fuite 1 -> 0 ; NVDEC/SPAN Quality 3 sorties exactes, texte log identique, inode réellement remplacé, aucun gain FPS.",
+      "status": "reconciled",
+      "issue_key": "AH-256",
+      "create_result": {
+        "id": "10258",
+        "key": "AH-256"
+      },
+      "actual_status": "Done",
+      "closure_comment_id": "10042"
+    },
+    {
+      "parent": "AH-22",
+      "marker": "split-20261015-stats-windows-qualification",
+      "summary": "Livrer et qualifier les publications atomiques Windows, dont le mpv CUDA/D3D11",
+      "target_status": "To Do",
+      "criterion": "Reconstruire/épingler le mpv Windows avec écriture atomique ; vérifier readers simultanés, états build/erreur, compteurs et cadence des producteurs natifs Windows, puis publier les binaires/qualification.",
+      "evidence": "Le mpv Windows précompilé épinglé ne contient pas le patch .38. Les moteurs spécialisés GPU et leur publication .36 n’équivalent pas à un nouveau mpv Windows.",
+      "status": "created",
+      "issue_key": "AH-257",
+      "create_result": {
+        "id": "10259",
+        "key": "AH-257"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-33",
+      "marker": "split-20261015-ids-abi1-linux",
+      "summary": "Extension ABI1 d’identités immuables et bridge Linux, qualifiés avant/après",
+      "target_status": "Done",
+      "criterion": "Négocier un hook facultatif, IDs monotones/générations avec fallback octets, vues/dimensions/stride et refus de compteur régressé ; prouver parité et travail évité sur CPU/Vulkan, seek réel, compatibilité ancienne bibliothèque ; release complète.",
+      "evidence": "3.8.0.39 f05cf41c1448597a1929f7a8be318572a29c5ded publiée (16 assets uploaded, Windows/Linux/macOS success) ; rapport lot 08. ORT/CPU et NCNN : 14 sorties exactes chacun ; bridge off/on 13 hashes/PTS exacts, comparaisons 32 -> 5, seek 3 PNG16/PTS exacts, vieille bibliothèque acceptée. Publication vérifiée le 16/10/2026 : Windows 38808584132, Linux 38808584166, macOS 38808584174 success.",
+      "status": "reconciled",
+      "issue_key": "AH-258",
+      "create_result": {
+        "id": "10260",
+        "key": "AH-258"
+      },
+      "actual_status": "Done",
+      "closure_comment_id": "10043"
+    },
+    {
+      "parent": "AH-33",
+      "marker": "split-20261015-ids-abi9-fast-views",
+      "summary": "Compléter les identités et gardes de vues des caches Fast ABI9 CUDA",
+      "target_status": "To Do",
+      "criterion": "Éliminer toute identité par pointeur recyclé dans Fast/promotion ; inclure métadonnées couleur/format/strides/plans/stream et lifetime, invalider au reset, fallback sûr sans IDs ; ablation ciblée sur métadonnées et mêmes adresses.",
+      "evidence": "Inspection du source montre gardes partielles Fast ; aucun nouveau correctif de cette portée implémenté avant l’arrêt .39. Pas de bug runtime universel déduit de la seule lecture.",
+      "status": "created",
+      "issue_key": "AH-259",
+      "create_result": {
+        "id": "10261",
+        "key": "AH-259"
+      },
+      "actual_status": "Done",
+      "qualification_comment_id": "10044",
+      "backend_source": "3f6f60fa58b5ed649bb94c11030d8e354a6d3fc0",
+      "qualification": "11 cas Fast exacts contre recalcul frais, Quality exact, 13 sorties/PTS client Linux multi-SM identiques ; livraison .40 en cours",
+      "closure_comment_id": "10045",
+      "release": "3.8.0.40",
+      "release_source": "94d1cc7c0b07b0e91f1e4db79883ed59548ab20b",
+      "binary_pin": "a2908cf4d3166011c9b853be9f480a52b7a7867f"
+    },
+    {
+      "parent": "AH-33",
+      "marker": "split-20261015-ids-windows-clients",
+      "summary": "Intégrer et qualifier la négociation d’identités dans les clients Windows concernés",
+      "target_status": "To Do",
+      "criterion": "Clients ABI1/ABI9 réellement livrés : négociation facultative, sources immuables, génération/IDs monotones, ancien binaire compatible et fallback exact/sûr ; qualifier seek/buffers recyclés et publier le client correspondant.",
+      "evidence": "Extension ABI1 disponible dans le code partagé ; intégration des clients Windows non déclarée faite. Ancien mpv Windows précompilé inchangé.",
+      "status": "created",
+      "issue_key": "AH-260",
+      "create_result": {
+        "id": "10262",
+        "key": "AH-260"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-33",
+      "marker": "split-20261015-ids-temporal-window",
+      "summary": "Inclure la fenêtre temporelle rank-5 dans l’identité et les resets",
+      "target_status": "To Do",
+      "criterion": "L’identité de calcul doit couvrir toute la fenêtre et son ordre, modèle/vue/couleur et génération ; un seek ou reset ne réutilise pas une ancienne fenêtre. Test ciblé sur cache/réinitialisation quand le chemin supporte réellement rank-5.",
+      "evidence": "Les preuves .39 portent sur paires RIFE et sources RGB24 ABI1, pas sur toutes les fenêtres temporelles ABI9.",
+      "status": "created",
+      "issue_key": "AH-261",
+      "create_result": {
+        "id": "10263",
+        "key": "AH-261"
+      },
+      "actual_status": "Done",
+      "start_comment_id": "10061",
+      "qualification_comment_id": "10063",
+      "backend_source": "635424ef27356fac94745419e46da48978804702",
+      "binary_pin": "a1998637f2c3c243da8b7b9847f66eaaad1958ca",
+      "release": "3.8.0.48",
+      "release_source": "aa2afa039a36b46bc54ab75e7061fa45e56f1422",
+      "closing_comment_id": "10067"
+    }
+  ],
+  "pause_checkpoint": "pause-20261015.json",
+  "resumed_at": "2026-10-16",
+  "release39": "published_16_assets_three_platforms_success",
+  "release40": {
+    "version": "3.8.0.40",
+    "source": "94d1cc7c0b07b0e91f1e4db79883ed59548ab20b",
+    "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.40",
+    "workflows": [
+      {
+        "id": 38823959955,
+        "name": "Release macOS",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38823959955"
+      },
+      {
+        "id": 38823959890,
+        "name": "Release Windows",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38823959890"
+      },
+      {
+        "id": 38823959863,
+        "name": "Release Linux",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38823959863"
+      }
+    ],
+    "assets": [
+      {
+        "name": "AnimeJaNai-mac-bench.zip",
+        "state": "uploaded",
+        "size": 65589609,
+        "digest": "sha256:e1d718bfbfe3dbfa69f6eea7e5a77347156f4cef8f5581535d4e027bf909b31f",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/AnimeJaNai-mac-bench.zip"
+      },
+      {
+        "name": "LISEZ-MOI-macOS.txt",
+        "state": "uploaded",
+        "size": 7403,
+        "digest": "sha256:d4c9510f640f976fa7f1386bfe9621968d21f5f6d7c4f7b520c5394893660a16",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/LISEZ-MOI-macOS.txt"
+      },
+      {
+        "name": "manifest-linux-x64.json",
+        "state": "uploaded",
+        "size": 2326,
+        "digest": "sha256:7950b8af1428ba62b48fc24b45b76abcbcce9efc0149cfe85d9858c7f8027d61",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/manifest-linux-x64.json"
+      },
+      {
+        "name": "manifest.json",
+        "state": "uploaded",
+        "size": 1913,
+        "digest": "sha256:618f6b5fb9ea63642d1fcbdf6ea79779aaab9b2e2e9ba489b0fa233946f7be68",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/manifest.json"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-Setup-3.8.0.40.exe",
+        "state": "uploaded",
+        "size": 260531354,
+        "digest": "sha256:ff2f738650f758978e5bd79ffa64ad5dd9f7e60d3339deae8e45359124f647a9",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-AnimeJaNai-HDR-Setup-3.8.0.40.exe"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-v3.8.0.40-linux-x64.AppImage",
+        "state": "uploaded",
+        "size": 206436856,
+        "digest": "sha256:a32cf15af62e6809110b035adb3c38ef2a8789e668536d3f2437c3a0c1125c86",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-AnimeJaNai-HDR-v3.8.0.40-linux-x64.AppImage"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-v3.8.0.40-macos-arm64.zip",
+        "state": "uploaded",
+        "size": 177683767,
+        "digest": "sha256:e4852968f4a6f4727d535632455f30fd91d3cdd527a7e361fda10e1e877a0f68",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-AnimeJaNai-HDR-v3.8.0.40-macos-arm64.zip"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-v3.8.0.40-macos-arm64.zip.sha256",
+        "state": "uploaded",
+        "size": 111,
+        "digest": "sha256:3d2de38fb31467a58ca79c5ec2edc458ff45361ae35ac94224b84a0a8aecea76",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-AnimeJaNai-HDR-v3.8.0.40-macos-arm64.zip.sha256"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-full-package-3.8.0.40.7z.001",
+        "state": "uploaded",
+        "size": 248936858,
+        "digest": "sha256:cde532b88415bf5a8943b17b8a40faf158b813250096ca475e29f04af50b7607",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-upscale-2x_animejanai-full-package-3.8.0.40.7z.001"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.40-linux-x64.7z",
+        "state": "uploaded",
+        "size": 51468423,
+        "digest": "sha256:c6ed4d67529f9f176fb27b73e367d2d669ae18972292dc623cb5163dc007166c",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-upscale-2x_animejanai-overlay-3.8.0.40-linux-x64.7z"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.40.7z",
+        "state": "uploaded",
+        "size": 28792101,
+        "digest": "sha256:d58fe61fbc13c774d6e0c1cf1e5bfcd70ea531a0910f507d46eaaf9e629fa9b1",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-upscale-2x_animejanai-overlay-3.8.0.40.7z"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-v3.8.0.40-linux-x64.tar.zst",
+        "state": "uploaded",
+        "size": 192323358,
+        "digest": "sha256:8e5933eaf67a2782ad07bd61d5839f478ded0b04b14d198de9eec4277c7bea0e",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-upscale-2x_animejanai-v3.8.0.40-linux-x64.tar.zst"
+      },
+      {
+        "name": "packs-linux-x64.json",
+        "state": "uploaded",
+        "size": 10819,
+        "digest": "sha256:43eaa28e1a765d891ece246c1b9e4483b54bf450e326f2102181ce4a939eefaf",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/packs-linux-x64.json"
+      },
+      {
+        "name": "packs.json",
+        "state": "uploaded",
+        "size": 863701,
+        "digest": "sha256:46433e6219895d622f8e63eef405e9dc0001bb9158b5a04aea41322c5b882977",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/packs.json"
+      },
+      {
+        "name": "SHA256SUMS",
+        "state": "uploaded",
+        "size": 533,
+        "digest": "sha256:2aae0a648c7768a2b4d687f3040ecfb4c340a2452ec7deb074a29438a6ef64d5",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/SHA256SUMS"
+      }
+    ]
+  },
+  "release41": {
+    "version": "3.8.0.41",
+    "source": "1c0605695e0dea38a9f162795c2b9c52594ed6fb",
+    "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.41",
+    "workflows": [
+      {
+        "id": 38826473744,
+        "name": "Release Linux",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38826473744"
+      },
+      {
+        "id": 38826473729,
+        "name": "Release Windows",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38826473729"
+      },
+      {
+        "id": 38826473703,
+        "name": "Release macOS",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38826473703"
+      }
+    ],
+    "assets": [
+      {
+        "name": "AnimeJaNai-mac-bench.zip",
+        "state": "uploaded",
+        "size": 65590922,
+        "digest": "sha256:f4e85c033394b255c5cce9b0d0451d416429920b3c00392815b3e1e3c77c0de4",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/AnimeJaNai-mac-bench.zip"
+      },
+      {
+        "name": "component-onnxruntime-linux-x64.7z",
+        "state": "uploaded",
+        "size": 33547784,
+        "digest": "sha256:22dc1e9b9370bc99f8ea1ee8d88b72fd7e485ec03b0ee344637a2df4ab138e39",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/component-onnxruntime-linux-x64.7z"
+      },
+      {
+        "name": "LISEZ-MOI-macOS.txt",
+        "state": "uploaded",
+        "size": 7403,
+        "digest": "sha256:d4c9510f640f976fa7f1386bfe9621968d21f5f6d7c4f7b520c5394893660a16",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/LISEZ-MOI-macOS.txt"
+      },
+      {
+        "name": "manifest-linux-x64.json",
+        "state": "uploaded",
+        "size": 2326,
+        "digest": "sha256:67a1bec92058e70f64ac9eb273af79191711ef29ca819d8328bc795bf6cc7ee2",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/manifest-linux-x64.json"
+      },
+      {
+        "name": "manifest.json",
+        "state": "uploaded",
+        "size": 1913,
+        "digest": "sha256:35ea00003e5cc272f1eee7919da27744c5a28ef92162fd679fe81504197ecfb2",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/manifest.json"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-Setup-3.8.0.41.exe",
+        "state": "uploaded",
+        "size": 260532741,
+        "digest": "sha256:f948de65d6cbe303fa7c0a40db41170f1cf4f4fc2ab8e7bc3c194ea149f68e9e",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/mpv-AnimeJaNai-HDR-Setup-3.8.0.41.exe"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-v3.8.0.41-linux-x64.AppImage",
+        "state": "uploaded",
+        "size": 206440952,
+        "digest": "sha256:aee362dd79d8c75502dd303a80c32d1c3811c3e118f3f3f3e5f1c06eb53741ab",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/mpv-AnimeJaNai-HDR-v3.8.0.41-linux-x64.AppImage"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-v3.8.0.41-macos-arm64.zip",
+        "state": "uploaded",
+        "size": 177685088,
+        "digest": "sha256:a0006c835eb679afd7bd003a580f2d245ff33a3af06b5d8d2243d46b769a513a",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/mpv-AnimeJaNai-HDR-v3.8.0.41-macos-arm64.zip"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-v3.8.0.41-macos-arm64.zip.sha256",
+        "state": "uploaded",
+        "size": 111,
+        "digest": "sha256:b92d50cd8e9c783cac0307e947791343ac5074eca39a626fd24bf485feec945f",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/mpv-AnimeJaNai-HDR-v3.8.0.41-macos-arm64.zip.sha256"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-full-package-3.8.0.41.7z.001",
+        "state": "uploaded",
+        "size": 248962082,
+        "digest": "sha256:568cd10a0e6c43bdd10d38bd73409909934cf22529bcb776959c8c3a1ec1fe8b",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/mpv-upscale-2x_animejanai-full-package-3.8.0.41.7z.001"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.41-linux-x64.7z",
+        "state": "uploaded",
+        "size": 51474014,
+        "digest": "sha256:28445008a71761f4c5d22bd5da3903759dde1fd1b37a8a53f3273960bcca824f",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/mpv-upscale-2x_animejanai-overlay-3.8.0.41-linux-x64.7z"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.41.7z",
+        "state": "uploaded",
+        "size": 28799913,
+        "digest": "sha256:c45d657ee57de442b12302323c33ec80bf8559473d698770ed318f0121964696",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/mpv-upscale-2x_animejanai-overlay-3.8.0.41.7z"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-v3.8.0.41-linux-x64.tar.zst",
+        "state": "uploaded",
+        "size": 192326132,
+        "digest": "sha256:54fd94c95a8531c9cc30e4bec62178e33fb64efcbac475fc28af4f6e412b2603",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/mpv-upscale-2x_animejanai-v3.8.0.41-linux-x64.tar.zst"
+      },
+      {
+        "name": "packs-linux-x64.json",
+        "state": "uploaded",
+        "size": 10698,
+        "digest": "sha256:ab6e4f068084712934a746f61a8548de30e4126ae0f2919a09cd35b4d0710d2f",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/packs-linux-x64.json"
+      },
+      {
+        "name": "packs.json",
+        "state": "uploaded",
+        "size": 863701,
+        "digest": "sha256:10fcfe89ecc8fadad772cd20aa340a23e118d4247d35417f874ef77c99afafea",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/packs.json"
+      },
+      {
+        "name": "SHA256SUMS",
+        "state": "uploaded",
+        "size": 634,
+        "digest": "sha256:efdc2f93ebd5e16bef509fabacb1dc159904d590af1d693f807b994d457b02a1",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.41/SHA256SUMS"
+      }
+    ]
+  },
+  "release42": {
+    "version": "3.8.0.42",
+    "source": "01f93fbb746e561f1049a2f1b6a1590c63ca461b",
+    "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.42",
+    "workflows": [
+      {
+        "id": 38830677108,
+        "name": "Release Linux",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38830677108"
+      },
+      {
+        "id": 38830677086,
+        "name": "Release Windows",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38830677086"
+      },
+      {
+        "id": 38830677062,
+        "name": "Release macOS",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38830677062"
+      }
+    ],
+    "assets": [
+      {
+        "name": "AnimeJaNai-mac-bench.zip",
+        "state": "uploaded",
+        "size": 65593860,
+        "digest": "sha256:118076c74ad584f8933f1179af714dca376bdb5955275328c974e6a771832002",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/AnimeJaNai-mac-bench.zip"
+      },
+      {
+        "name": "component-onnxruntime-linux-x64.7z",
+        "state": "uploaded",
+        "size": 33552981,
+        "digest": "sha256:d106ae9f6bacf12d31c22645c47633939f8e8407609bdaa9993ee26fdeca901a",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/component-onnxruntime-linux-x64.7z"
+      },
+      {
+        "name": "LISEZ-MOI-macOS.txt",
+        "state": "uploaded",
+        "size": 7403,
+        "digest": "sha256:d4c9510f640f976fa7f1386bfe9621968d21f5f6d7c4f7b520c5394893660a16",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/LISEZ-MOI-macOS.txt"
+      },
+      {
+        "name": "manifest-linux-x64.json",
+        "state": "uploaded",
+        "size": 2326,
+        "digest": "sha256:2206666cc2fc8c5228e36bad1d965cf7b99b732dae4eeec40665ca9fda4d71df",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/manifest-linux-x64.json"
+      },
+      {
+        "name": "manifest.json",
+        "state": "uploaded",
+        "size": 1913,
+        "digest": "sha256:166ad49187d566dd4eaa4cbb455ed9decfb52034b8f99cbe9d5d185058e20f56",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/manifest.json"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-Setup-3.8.0.42.exe",
+        "state": "uploaded",
+        "size": 260536361,
+        "digest": "sha256:cea7822d551d590b887f636e745b36492364736148e96954f5d8d58c8e00d500",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/mpv-AnimeJaNai-HDR-Setup-3.8.0.42.exe"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-v3.8.0.42-linux-x64.AppImage",
+        "state": "uploaded",
+        "size": 206449144,
+        "digest": "sha256:1579deb555a8aaed34cb5e8048971aa3381480eef83caff2bb4d8281359e76b4",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/mpv-AnimeJaNai-HDR-v3.8.0.42-linux-x64.AppImage"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-v3.8.0.42-macos-arm64.zip",
+        "state": "uploaded",
+        "size": 177688074,
+        "digest": "sha256:1871d720089a8ce824931d33013475ab420466ae55e0e3d53c0171ba0d7a1d9c",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/mpv-AnimeJaNai-HDR-v3.8.0.42-macos-arm64.zip"
+      },
+      {
+        "name": "mpv-AnimeJaNai-HDR-v3.8.0.42-macos-arm64.zip.sha256",
+        "state": "uploaded",
+        "size": 111,
+        "digest": "sha256:6e64fdb46f6dd1943ace2650baa58e0eb5ea4154e9f0c1cafb31098488a2b01e",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/mpv-AnimeJaNai-HDR-v3.8.0.42-macos-arm64.zip.sha256"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-full-package-3.8.0.42.7z.001",
+        "state": "uploaded",
+        "size": 248956817,
+        "digest": "sha256:579b949ad3d87e7162dbc009cfc38520c26efb4cf389213ea3129b8bc9339cae",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/mpv-upscale-2x_animejanai-full-package-3.8.0.42.7z.001"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.42-linux-x64.7z",
+        "state": "uploaded",
+        "size": 51486560,
+        "digest": "sha256:5056ef02922120ce8bf10587f7dd71ec361dedad974b8bca10243faa5d3256ee",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/mpv-upscale-2x_animejanai-overlay-3.8.0.42-linux-x64.7z"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.42.7z",
+        "state": "uploaded",
+        "size": 28798134,
+        "digest": "sha256:9c39d28941ca4aeba588c00bff18ed0b4c63ad86d0bb3541579ab057016276bf",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/mpv-upscale-2x_animejanai-overlay-3.8.0.42.7z"
+      },
+      {
+        "name": "mpv-upscale-2x_animejanai-v3.8.0.42-linux-x64.tar.zst",
+        "state": "uploaded",
+        "size": 192371323,
+        "digest": "sha256:84f0201f7a57e06a19af70668cf392ce885efabd75ebefd57e5d763b004d8db0",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/mpv-upscale-2x_animejanai-v3.8.0.42-linux-x64.tar.zst"
+      },
+      {
+        "name": "packs-linux-x64.json",
+        "state": "uploaded",
+        "size": 10698,
+        "digest": "sha256:9cd78b613aabd2434b6774bfbe7fc62baeeb1c8274653d822cafb5756fb3aa94",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/packs-linux-x64.json"
+      },
+      {
+        "name": "packs.json",
+        "state": "uploaded",
+        "size": 863701,
+        "digest": "sha256:9e6498d76130635c07fbfcce043adb5e6ba50b0a72a034998f6e2582fe6cedbc",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/packs.json"
+      },
+      {
+        "name": "SHA256SUMS",
+        "state": "uploaded",
+        "size": 634,
+        "digest": "sha256:c6c91e365a490d1372999808c51922b19925006d299b35c929a2512d258a2610",
+        "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.42/SHA256SUMS"
+      }
+    ]
+  }
+}

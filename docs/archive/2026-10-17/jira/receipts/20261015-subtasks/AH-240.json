@@ -1,0 +1,15 @@
+{
+  "parent": "AH-28",
+  "marker": "split-20261015-cac-coreml-program-key",
+  "summary": "Compléter l’identité des programmes Core ML compilés",
+  "target_status": "To Do",
+  "criterion": "Appliquer le contrat complet aux programmes .mlmodelc : contenu, patch/conversion, formes/types/options et runtime pertinent ; garder les modèles et anciennes références, qualifier hit/miss ciblé sur API Apple.",
+  "evidence": "Le tag portable .mlpackage est livré dans AH-29 ; ce sous-ticket vise la clé complète du programme compilé.",
+  "status": "planned",
+  "issue_key": "AH-240",
+  "create_result": {
+    "id": "10242",
+    "key": "AH-240"
+  },
+  "actual_status": "To Do"
+}

@@ -1,0 +1,430 @@
+{
+  "issue": "AH-294",
+  "parent": "AH-141",
+  "status": "Done",
+  "base": "2e745ffa3f1861e53470386ceeb5c31025e7d2a0",
+  "worktree": "/home/ta2b/.animejanai-tools/work/lot-38-gmfss-evaluation-20261016",
+  "candidate_source": {
+    "url": "https://github.com/98mxr/GMFSS_Fortuna",
+    "revision": "0fb7ac1dc292e2615217110dd9d82557845fb919",
+    "checkout": "/home/ta2b/.animejanai-tools/work/gmfss-fortuna-source-20261016",
+    "inference": "model/GMFSS_infer_b.py",
+    "code_license": "MIT root LICENSE; dependent files and weights rights remain to inspect",
+    "weights_official_url": "https://drive.google.com/file/d/1BKz8UDAPEt713IVUSZSpzpfz_Fi2Tfd_/view?usp=sharing",
+    "weights_sha256": {
+      "feat.pkl": "7442a19d7e2eda6c8f70ddb5b477cb00ae311626355a84393189d8f4d4b1f03c",
+      "flownet.pkl": "31fa34960d6326f231c35db9070728419dbad78b463567601dfb6b34049789ef",
+      "fusionnet.pkl": "58809ca28e2594bfbef49d68d8e675a33c477cee05d18d4c75035010019c68bf",
+      "metric.pkl": "488d3ec1d7cfb04e84ee5a733b03086beb995cd3a51099d65e7a6e01e662fa16"
+    },
+    "weights_archive": {
+      "file": "artifacts/performance/lots-20261016/lot-38/GMFSS-official.zip",
+      "bytes": 50206652,
+      "sha256": "c60e55ac9984b651d2c39c8ce833c6792e4bd3b49ed28bd8ee39c18b631a8d96",
+      "official_readme_id": "1BKz8UDAPEt713IVUSZSpzpfz_Fi2Tfd_"
+    }
+  },
+  "observed_source": [
+    "reuse(img0,img1,scale): features, two GMFlow directions, two metrics; once per pair",
+    "inference(t): eight real softsplats on RGB/features and GridNet fusion; arbitrary scalar t",
+    "CuPy CUDA path selected if import and CUDA toolkit path succeed, otherwise PyTorch splat fallback; actual GPU/runtime route must be recorded",
+    "Four required weights: flownet.pkl,metric.pkl,feat.pkl,fusionnet.pkl; not fetched/tested yet"
+  ],
+  "qualification": {
+    "gmfss": {
+      "provider": "official GMFSS Fortuna, eager PyTorch FP32 + CUDA CuPy softsplat",
+      "torch": "2.14.1+cu130",
+      "cupy": "14.2.0",
+      "cuda": "13.0",
+      "device": "NVIDIA GeForce RTX 4070 Ti",
+      "setup_ms": 304.133676996571,
+      "calls": [
+        {
+          "pair": 0,
+          "cold": true,
+          "phase": 0.5,
+          "prepare_stream_ms": 1560.4825439453125,
+          "synthesis_stream_ms": 1139.821533203125,
+          "complete_wall_ms": 2700.3443040011916,
+          "softsplat_calls": 8,
+          "softsplat_stream_ms": 148.56838437914848
+        },
+        {
+          "pair": 1,
+          "cold": false,
+          "phase": 0.5,
+          "prepare_stream_ms": 160.88255310058594,
+          "synthesis_stream_ms": 69.43891143798828,
+          "complete_wall_ms": 230.36612899886677,
+          "softsplat_calls": 8,
+          "softsplat_stream_ms": 6.481312025338411
+        },
+        {
+          "pair": 2,
+          "cold": false,
+          "phase": 0.5,
+          "prepare_stream_ms": 149.22044372558594,
+          "synthesis_stream_ms": 63.98124694824219,
+          "complete_wall_ms": 213.23824299906846,
+          "softsplat_calls": 8,
+          "softsplat_stream_ms": 7.0574719570577145
+        },
+        {
+          "pair": 3,
+          "cold": false,
+          "phase": 0.5,
+          "prepare_stream_ms": 147.3184356689453,
+          "synthesis_stream_ms": 66.44121551513672,
+          "complete_wall_ms": 213.79992199945264,
+          "softsplat_calls": 8,
+          "softsplat_stream_ms": 5.926751844584942
+        },
+        {
+          "pair": 4,
+          "cold": false,
+          "phase": 0.5,
+          "prepare_stream_ms": 150.84031677246094,
+          "synthesis_stream_ms": 63.17055892944336,
+          "complete_wall_ms": 214.04811600223184,
+          "softsplat_calls": 8,
+          "softsplat_stream_ms": 6.634943924844265
+        }
+      ],
+      "peak_torch_allocated_bytes": 6948852224,
+      "peak_torch_reserved_bytes": 6994001920,
+      "memory_scope": "PyTorch allocator only; CUDA/CuPy/driver allocations are additional",
+      "outputs": 5,
+      "padding": [
+        0,
+        0,
+        0,
+        48
+      ],
+      "scale": 1.0,
+      "precision": "FP32, TF32 disabled; weights unmodified",
+      "passed": true,
+      "identity": {
+        "mode": "gmfss",
+        "width": 1280,
+        "height": 720,
+        "files": {
+          "input": "ff88858e1830323b9a85de0719477f9a7fed36385ef4f32670122322388bc6fb",
+          "source/model/FeatureNet.py": "63d1103c34e30b1f8504fce68aad50cc99ed0150fffaed8ceadd6ffb530646b5",
+          "source/model/FusionNet_b.py": "32886cdcc182fd136ba563fb10f2791044ef35fdb8000379499c49c1db753fe2",
+          "source/model/FusionNet_u.py": "2354e0ceb034c8e612de9c5e12b34b95265497bd702360f405c34d95cca7b094",
+          "source/model/GMFSS_infer_b.py": "922badc95cf9b560b91136f32f8ab8d3c92857a199bc91e3dea65ebdae9c85dc",
+          "source/model/GMFSS_infer_u.py": "b40587a732de8381c2087fa21c36e1d081807bc0e34a9307ad24beecf70f45a6",
+          "source/model/GMFSS_train_b.py": "f19586817426bfe57fa03ad2efec067bbd2330af5aa0aaa0f9649c0bf39395d4",
+          "source/model/GMFSS_train_g.py": "e2cf497730328724aea43705e6e57402bbbba42b21df903c33ebe482d23e85ce",
+          "source/model/GMFSS_train_u.py": "18dbe013ebe9b7d2960e9be58ae753cc1ef29614276b4b6371f1396fd80bc3c3",
+          "source/model/IFNet_HDv3.py": "e13fa0fd8bfddc075d35fe9a0557bed1e1b6c0e4bcf19cdfeb27a2285eff430b",
+          "source/model/MetricNet.py": "2c98513922731f393cbfb29bea2f7b897363c47638d50924ee929d4b8a81af21",
+          "source/model/dataset.py": "b5206499b206c96d0db813cb56a89fa62670a697bb807e098d5fd5a3c9daa8ef",
+          "source/model/discriminator.py": "ef4928282ddc0e4757b726b681ef81661db81aef2ee8a3e159a5de349c5a3141",
+          "source/model/gmflow/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source/model/gmflow/backbone.py": "eb40bddfa236ce678e9d2257ee1e8860b1b2f3acb19273afd80d230823747703",
+          "source/model/gmflow/geometry.py": "dd124c124cbc4314bc4079f098ae23aa67b9c9a8bb958ebb037c197697b64be0",
+          "source/model/gmflow/gmflow.py": "9f9d0cfa34a8feaf5a63b4cceb75014a00048196f7dedb88a03324f3058dcd8c",
+          "source/model/gmflow/matching.py": "c2baa9d6b388a17a63a45ac149878def7ad6de2f3df805c74120bc815a8459a6",
+          "source/model/gmflow/position.py": "ff034a0161a4ab1b33574a88e340dbc8ba10062fceee4da59e8029cef349fc7a",
+          "source/model/gmflow/transformer.py": "df68e3a18648b41035a2f11a0f82bdea0ba78753ae416ce2bacfc95497051ffe",
+          "source/model/gmflow/trident_conv.py": "08189c1c8310953939ad10902a684f64abf5e7ba6dfaed4edb2fdd8964487180",
+          "source/model/gmflow/utils.py": "7ce669baec4565a8b252813b561c27d5b5e0590d18cb9e6469047723243c96dc",
+          "source/model/loss.py": "a85f156854ffb182c29c2cc7ef7cc5bb45d7de72b7df958d7ecb0f337eb26a63",
+          "source/model/lpips/__init__.py": "eccfb23848beefe67bed3d0698e40c7e2f4ed43f7e92320e411681523a7a1776",
+          "source/model/lpips/lpips.py": "1c094538af10d6e0b73f87d65620dcf0fcafa001f1f79de0bdf8908b9a673f6b",
+          "source/model/lpips/pretrained_networks.py": "6a27f714c51796db466e86bebba6a617c1bfc4d566f3a1756497629c1248686e",
+          "source/model/lpips/trainer.py": "c44726c274bd31ff20cc1491375a3dc930e61e5dc2660a63e863ce607ceac213",
+          "source/model/softsplat.py": "f5b28e68cd1cecff6f5220bbf579aa5836248fa9963326e29a03f96ac9d75258",
+          "source/model/softsplat_torch.py": "9255f930a3564e64bb1a9b170c46e3a31fe9e6edac516a85b649f3443a0b6697",
+          "source/model/warplayer.py": "255c3886459eec6115fa71bff5fafbd19ed5a63956e4f3831b5ad1ada6b363d7",
+          "weights/feat.pkl": "7442a19d7e2eda6c8f70ddb5b477cb00ae311626355a84393189d8f4d4b1f03c",
+          "weights/flownet.pkl": "31fa34960d6326f231c35db9070728419dbad78b463567601dfb6b34049789ef",
+          "weights/fusionnet.pkl": "58809ca28e2594bfbef49d68d8e675a33c477cee05d18d4c75035010019c68bf",
+          "weights/metric.pkl": "488d3ec1d7cfb04e84ee5a733b03086beb995cd3a51099d65e7a6e01e662fa16"
+        }
+      },
+      "client_sha256": "34275e8d8801f680daa8e1851748ea52de37879f3edec953270aa22daabc1a85",
+      "input_sources": 6,
+      "scope": "Short exploratory comparison on one machine; not an integrated player or universal quality/FPS qualification"
+    },
+    "rife": {
+      "provider": "native TensorRT Quality",
+      "calls": [
+        {
+          "pair_or_input": 0,
+          "cold": true,
+          "complete_wall_ms": 30.162285002006683
+        },
+        {
+          "pair_or_input": 1,
+          "cold": false,
+          "complete_wall_ms": 14.54375199682545
+        },
+        {
+          "pair_or_input": 2,
+          "cold": false,
+          "complete_wall_ms": 13.848334994690958
+        },
+        {
+          "pair_or_input": 3,
+          "cold": false,
+          "complete_wall_ms": 14.12126899958821
+        },
+        {
+          "pair_or_input": 4,
+          "cold": false,
+          "complete_wall_ms": 14.358383996295743
+        }
+      ],
+      "outputs": 5,
+      "client_allocated_bytes": 16588800,
+      "device_free_delta_bytes": 454492160,
+      "memory_scope": "Global device free-memory delta after CUDA init; includes this context but may include other processes",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "format": "YUV444P16 full-range BT.709",
+      "color_conversion": "canonical RGB24 input -> 16-bit YUV444; no subsampling, <=1 RGB8 code roundtrip expected",
+      "passed": true,
+      "identity": {
+        "mode": "rife",
+        "width": 1280,
+        "height": 720,
+        "files": {
+          "rife_v4.26.onnx": "fd6b06538898c9a94d20f0fe55febceadbcde5ad64952240733b7275ef4c9d59",
+          "aji-v3-a7f6e533c809f7a01572db72a5e0cf4164fb582c2900a6c9e00ea3c2ccbcfea6.engine": "9c85de7691a0c10bfdf42bccda987c2632a100dd60f9e3d4005aae24f29c8545",
+          "input": "ff88858e1830323b9a85de0719477f9a7fed36385ef4f32670122322388bc6fb",
+          "library": "20c29cdbdc34461a94e1cb746dd456334df7c6bb55d13f1d929b60be973389c7",
+          "conf": "000b747fde268490bbf02e99c94685c8bde6ec37b71687da5ee4b0b38ab8691f"
+        }
+      },
+      "client_sha256": "ba166fc5a47479927f67f857aaa5cf5e038a4e7790257d1fcad4bdea4ae9e286",
+      "input_sources": 6,
+      "scope": "Short exploratory comparison on one machine; not an integrated player or universal quality/FPS qualification"
+    },
+    "span": {
+      "provider": "native TensorRT Quality",
+      "calls": [
+        {
+          "pair_or_input": 0,
+          "cold": true,
+          "complete_wall_ms": 19.273123994935304
+        },
+        {
+          "pair_or_input": 1,
+          "cold": false,
+          "complete_wall_ms": 8.616068997071125
+        },
+        {
+          "pair_or_input": 2,
+          "cold": false,
+          "complete_wall_ms": 8.524990000296384
+        },
+        {
+          "pair_or_input": 3,
+          "cold": false,
+          "complete_wall_ms": 8.506559999659657
+        }
+      ],
+      "outputs": 4,
+      "client_allocated_bytes": 33177600,
+      "device_free_delta_bytes": 343277568,
+      "memory_scope": "Global device free-memory delta after CUDA init; includes this context but may include other processes",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "format": "YUV444P16 full-range BT.709",
+      "color_conversion": "canonical RGB24 input -> 16-bit YUV444; no subsampling, <=1 RGB8 code roundtrip expected",
+      "passed": true,
+      "identity": {
+        "mode": "span",
+        "width": 1280,
+        "height": 720,
+        "files": {
+          "2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16.onnx": "72246eded3aab52f8d1a71613c0a1d900734b358d1820b62eb36f1ed376e1cf4",
+          "aji-v3-db2f5d4408393ae0f522c77bfd2eba7a0e82d5c0cc3091b03f0ea93edf80d9d4.engine": "920c313c8a53224dd1209db8d625532a85229687d821c5c38849d1c92d4d6d95",
+          "input": "ff88858e1830323b9a85de0719477f9a7fed36385ef4f32670122322388bc6fb",
+          "library": "20c29cdbdc34461a94e1cb746dd456334df7c6bb55d13f1d929b60be973389c7",
+          "conf": "80fb66bebc07f332377cf0fb75a4e4c926f2f95803181122b155fd377e3a0fa1",
+          "span_input/0": "d10d5b7735b6cd3bce9b9ba6c46e7546ad09f4a7dd310559070e9ff59a57210c",
+          "span_input/1": "c186b6467e98ef42df686c409e6e49d01e63b0db781b13b2e5c9fbd5a1e2d622",
+          "span_input/2": "64742c2834a3234a1fc624fbaaf8494768b0f6e91d3667816e29080794e7e6cf",
+          "span_input/3": "00c53df6f67dca3f28b869dd40440da4cb64d66d6de5021885a6ac5fd1472c5f"
+        }
+      },
+      "client_sha256": "ba166fc5a47479927f67f857aaa5cf5e038a4e7790257d1fcad4bdea4ae9e286",
+      "input_sources": 6,
+      "scope": "Short exploratory comparison on one machine; not an integrated player or universal quality/FPS qualification"
+    },
+    "fruc": {
+      "width": 1280,
+      "height": 720,
+      "fps": 23.976,
+      "format": "ARGBSurface (RGBA byte order)",
+      "setup_ms": 116.086,
+      "client_allocated_bytes": 11059200,
+      "calls": [
+        {
+          "source": 0,
+          "prime": true,
+          "output_timestamp_ms": 20.8542,
+          "repeated": false,
+          "call_ms": 2.15982,
+          "complete_ms": 2.16333,
+          "upload_ms": 0.281636,
+          "download_ms": 0.426087
+        },
+        {
+          "source": 1,
+          "prime": false,
+          "output_timestamp_ms": 62.5625,
+          "repeated": false,
+          "call_ms": 5.61181,
+          "complete_ms": 5.6133,
+          "upload_ms": 0.264774,
+          "download_ms": 0.352782
+        },
+        {
+          "source": 2,
+          "prime": false,
+          "output_timestamp_ms": 104.271,
+          "repeated": false,
+          "call_ms": 1.98649,
+          "complete_ms": 1.98887,
+          "upload_ms": 0.276622,
+          "download_ms": 0.43363
+        },
+        {
+          "source": 3,
+          "prime": false,
+          "output_timestamp_ms": 145.979,
+          "repeated": false,
+          "call_ms": 5.44656,
+          "complete_ms": 5.44951,
+          "upload_ms": 0.275876,
+          "download_ms": 0.38599
+        },
+        {
+          "source": 4,
+          "prime": false,
+          "output_timestamp_ms": 187.688,
+          "repeated": false,
+          "call_ms": 3.67971,
+          "complete_ms": 3.68195,
+          "upload_ms": 0.263095,
+          "download_ms": 0.428379
+        },
+        {
+          "source": 5,
+          "prime": false,
+          "output_timestamp_ms": 229.396,
+          "repeated": false,
+          "call_ms": 1.98712,
+          "complete_ms": 1.9884,
+          "upload_ms": 0.265184,
+          "download_ms": 0.454526
+        }
+      ],
+      "outputs": 5,
+      "repetitions": 0,
+      "device_free_delta_bytes": 123797504,
+      "cleanup_success": true,
+      "passed": true
+    },
+    "summary": {
+      "gmfss": {
+        "outputs": 5,
+        "complete_wall_ms": [
+          2700.3443040011916,
+          230.36612899886677,
+          213.23824299906846,
+          213.79992199945264,
+          214.04811600223184
+        ]
+      },
+      "rife": {
+        "outputs": 5,
+        "complete_wall_ms": [
+          30.162285002006683,
+          14.54375199682545,
+          13.848334994690958,
+          14.12126899958821,
+          14.358383996295743
+        ]
+      },
+      "span": {
+        "outputs": 4,
+        "complete_wall_ms": [
+          19.273123994935304,
+          8.616068997071125,
+          8.524990000296384,
+          8.506559999659657
+        ]
+      },
+      "fruc": {
+        "outputs": 5,
+        "repetitions": 0,
+        "complete_ms": [
+          5.6133,
+          1.98887,
+          5.44951,
+          3.68195,
+          1.9884
+        ]
+      },
+      "range0_excluded": true
+    }
+  },
+  "decision": {
+    "FRUC": "Approfondir Fast opt-in sur RTX/Linux ; défauts contours/bouche excluent défaut Quality, AH-296",
+    "GMFSS": "Comparateur recherche/préparé ; gain visuel décisif non établi sur ce plan, portage généralisé non justifié par ce résultat, eagerFP32 distinct de TRT FP16"
+  },
+  "remaining": [],
+  "priority_change": {
+    "AH-293": "To Do; source audit only, no implementation",
+    "AH-154": "SDK supplied by user; AH-295 and AH-154 In Progress, comment10136",
+    "comments": {
+      "AH-293": "10131",
+      "AH-141": "10132",
+      "AH-154": "10133"
+    }
+  },
+  "production_dependencies_still_open": [
+    "AH-58",
+    "AH-165"
+  ],
+  "issues": [
+    "AH-294",
+    "AH-295"
+  ],
+  "fruc_parent": "AH-154",
+  "fruc_sdk": {
+    "archive": "/home/ta2b/Downloads/Optical_Flow_SDK_5.0.7.zip",
+    "sha256": "89b0923adc6f34fbe86e63cc17d5db452e34b945c03ba90d8e09bd1a0158e917",
+    "extract": "/home/ta2b/.animejanai-tools/work/optical-flow-sdk-5.0.7-20261016",
+    "bytes": 239049440,
+    "files": {
+      "NvOFFRUC/Interface/NvOFFRUC.h": "44de0430d90ae3f8453ea8907c040d470e4060bc56ac2835702ffd4c6077e5f2",
+      "NvOFFRUC/NvOFFRUCSample/bin/ubuntu/libNvOFFRUC.so": "04fcecca2540776b6e5fc08db03128c8133c4b3a749457a93896064f6c90533d",
+      "NvOFFRUC/NvOFFRUCSample/bin/ubuntu/libcudart.so.11.6.55": "45da57e39bb0009af905c2ba531fb687ac9d6d4504c7800ed394c2ca0add1c6e"
+    }
+  },
+  "release": "3.8.0.70",
+  "release_source": "918a0e505dd6cc3b774b0dd41d7045e04ea09d6c",
+  "qualification_source": "d69cef729ff8947e51c77b67a1cdc032db95f973",
+  "qualification_comments": {
+    "AH-294": "10137",
+    "AH-295": "10138"
+  },
+  "release_pushed": true,
+  "publication_verified": true,
+  "followup": "AH-296",
+  "next_lot_started": true,
+  "closure_comments": {
+    "AH-294": "10142",
+    "AH-295": "10143"
+  }
+}

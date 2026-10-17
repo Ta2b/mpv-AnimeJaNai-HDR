@@ -1,0 +1,122 @@
+{
+  "source": "comparatif_interpolation_anime_2026-10-16.md",
+  "source_sha256": "8ba3cf5d92be83fbd5f7283dbf6ef78bb99dca355b9f6465de8ed6ac39c5fe29",
+  "epic": "AH-8",
+  "parents": [
+    {
+      "summary": "Composer des étages d'interpolation ordonnés dans le Manager et le lecteur",
+      "description": "Mandat utilisateur du16octobre : permettre d'ajouter/cumuler des technologies comme les upscalers, par exemple RIFE×2 puis NVIDIA FRUC×2. Source locale comparatif_interpolation_anime_2026-10-16.md SHA2568ba3cf5d92be83fbd5f7283dbf6ef78bb99dca355b9f6465de8ed6ac39c5fe29. Conserver profils et moteurs utilisateur.\n\nPérimètre complet : schéma versionné ordonné et migration de la configuration RIFE unique ; cadences rationnelles, PTS, durée EOF, identités par étage/génération et lookahead borné ; exécuteur réellement raccordé au lecteur, puis éditeur Manager ajouter/supprimer/réordonner/activer, méthode/modèle/runtime/facteur/placement et disponibilité réelle. Montrer cadence cumulée et coût/compromis ; aucune option silencieusement ignorée. RIFE Quality demeure référence, chaînes approximatives explicites. Décliner lecture et préparation/génération selon vraies capacités ; modèles nécessitant plusieurs images ou une phase spatiale ne doivent pas simuler une signature RIFE.\n\nPremière qualification : RIFE×2→FRUC×2 face à RIFE seul×4 aux mêmes phases, court extrait720p déjà acquis, mesurer économie et pertes de qualité ; ne pas rejouer les médianes concluantes. Sous-tickets complets pour comparaison/contrat, runtime et Manager ; Done seulement après consommation réelle, sauvegarde/migration et release vérifiées.",
+      "key": "AH-297"
+    },
+    {
+      "summary": "Intégrer les méthodes locales supplémentaires du comparatif et leur choix Manager",
+      "description": "Mandat utilisateur explicite : implémenter au mieux toutes les solutions du comparatif_interpolation_anime_2026-10-16.md et permettre les choix personnels dans le Manager, même si certains candidats sont lourds. Ce parent complète les VFI existants sans les dupliquer : DistilDRBA, EISAI/SoftsplatLite (un même système), SG-RIFE et FrameFusion.\n\nChaque sous-ticket doit figer sources/poids/droits, isoler inférence, respecter contexte temporel et opérateurs, fournir adaptateur local fidèle et choix Manager raccordé (lecture ou préparation selon capacités). Aucun modèle allégé/approximé par défaut Quality, aucun nom affiché comme fonctionnel sans exécuteur. Courts essais réellement nécessaires et résultats/limites par méthode, puis release. Matériel/poids/API absents : qualification ouverte et disponibilité explicite, aucun faux Done. Les travaux multiplateformes restent à qualifier et découper selon matériel.",
+      "key": "AH-298"
+    },
+    {
+      "summary": "Intégrer les générateurs et outils de préparation du comparatif dans le Manager",
+      "description": "Mandat utilisateur du16octobre, source comparatif_interpolation_anime_2026-10-16.md : proposer aussi Wan2.2-Fun Control/InP, Wan2.7, MiniMax H3 (+RIFE4.9), Seedance2.5, ToonCrafter et Trajectory-Guided. Ils ne sont pas tous des interpolateurs de lecture fidèle.\n\nLivrer workflows de préparation/création réellement exécutables et cumulables ensuite avec l'interpolation/upscale : entrées propres au modèle, modèle/runtime ou service externe explicite, paramètres, prévisualisation/export et cache identifié, progression/annulation/reprise bornées. Conserver images originales, audio/timing selon contrat et déclarer la génération de contenu/mouvement. Vérifier code/poids/API officiels et droits avant intégration ; accès privés/non publiés clairement indiqués, pas de faux adaptateur fonctionnel. Identifiants de services configurés par l'utilisateur ; aucun transfert de ses médias ni appel payant par l'agent sans instruction spécifique. Qualification réelle quand ressources disponibles, tests de protocole locaux distincts de l'inférence réelle. Sous-tickets par famille, critères complets et release avant Done.",
+      "key": "AH-299"
+    }
+  ],
+  "subtasks": [
+    {
+      "key": "AH-300",
+      "parent": "AH-297",
+      "summary": "Comparer RIFE×2→FRUC×2 à RIFE×4 et figer cadence/PTS des étages"
+    },
+    {
+      "key": "AH-301",
+      "parent": "AH-297",
+      "summary": "Exécuter une chaîne native ordonnée RIFE→FRUC→upscale dans le lecteur Linux"
+    },
+    {
+      "key": "AH-302",
+      "parent": "AH-297",
+      "summary": "Éditer les étages d'interpolation cumulables dans le Manager et migrer les profils"
+    },
+    {
+      "key": "AH-303",
+      "parent": "AH-298",
+      "summary": "Intégrer DistilDRBA et son choix de temporalité dans le Manager"
+    },
+    {
+      "key": "AH-304",
+      "parent": "AH-298",
+      "summary": "Intégrer EISAI/SoftsplatLite comme méthode anime locale sélectionnable"
+    },
+    {
+      "key": "AH-305",
+      "parent": "AH-298",
+      "summary": "Intégrer SG-RIFE et ses entrées sémantiques dans les étages Manager"
+    },
+    {
+      "key": "AH-306",
+      "parent": "AH-298",
+      "summary": "Intégrer FrameFusion et sa réutilisation multi-instant dans le Manager"
+    },
+    {
+      "key": "AH-307",
+      "parent": "AH-299",
+      "summary": "Intégrer Wan2.2-Fun Control et InP en préparation configurable"
+    },
+    {
+      "key": "AH-308",
+      "parent": "AH-299",
+      "summary": "Intégrer Wan2.7 via son API vidéo asynchrone et le Manager"
+    },
+    {
+      "key": "AH-309",
+      "parent": "AH-299",
+      "summary": "Intégrer MiniMax H3 local/API puis RIFE comme chaîne de préparation"
+    },
+    {
+      "key": "AH-310",
+      "parent": "AH-299",
+      "summary": "Intégrer Seedance2.5 par une interface officielle dans la préparation Manager"
+    },
+    {
+      "key": "AH-311",
+      "parent": "AH-299",
+      "summary": "Intégrer ToonCrafter en génération locale puis interpolation/upscale"
+    },
+    {
+      "key": "AH-312",
+      "parent": "AH-299",
+      "summary": "Rendre utilisable Trajectory-Guided si code ou outil officiel accessible"
+    }
+  ],
+  "in_progress": [
+    "AH-297",
+    "AH-300"
+  ],
+  "existing": {
+    "RIFE": "AH-140",
+    "GMFSS_Fortuna": "AH-141",
+    "GMFSS_Union": "AH-142",
+    "DRBA": "AH-143",
+    "GIMM": "AH-147",
+    "SPEED": "AH-148",
+    "Tariff_Waft": "AH-149",
+    "FILM": "AH-157",
+    "FRUC": "AH-154",
+    "Native_FRUC": "AH-296",
+    "Open_interface": "AH-58"
+  },
+  "comments": {
+    "epic_update": "10141",
+    "gmfss_scope_update": "10140"
+  },
+  "manager_worktree": "/home/ta2b/.animejanai-tools/work/manager-interpolation-stages-20261016",
+  "manager_base": "50ff160f534699015f01d4fd8beb8c3f53464a58",
+  "implementation_state": "User document read completely; additive backlog created in existing epic; hybrid quarter-phase comparison and rational timeline work started. No new Manager UI or native composition is claimed yet.",
+  "additional_subtasks": [
+    {
+      "key": "AH-313",
+      "parent": "AH-141",
+      "summary": "GMFSS Fortuna préparation vidéo fidèle depuis le Manager",
+      "status": "In Progress",
+      "source": "Continuation of AH-294; heavy candidate kept by explicit user mandate"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "source": "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017/installer/linux/AppRun",
+  "exit_code": 0,
+  "stderr": "",
+  "fixture": "/tmp/aji-audit-launcher-asc1gtk_",
+  "regular_engine_after": "old regular engine",
+  "regular_engine_is_symlink": false,
+  "retired_managed_script_still_present": true,
+  "current_script_installed": true,
+  "manifest_refreshed": true
+}

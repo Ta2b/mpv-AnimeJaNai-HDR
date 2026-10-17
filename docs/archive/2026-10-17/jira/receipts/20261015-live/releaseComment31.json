@@ -1,0 +1,10 @@
+{
+  "key": "AH-31",
+  "result": {
+    "message": "Comment added to AH-31 successfully",
+    "commentId": "10029",
+    "body": "\\[lot-05-release-20261015\\]\n\nPublication 3.8.0.36 déclenchée, source player 765763f, pin binaire immuable 9eee3504d82387035e4908909ca9621733fed68c. Windows NVIDIA/AMD compilés depuis le SHA backend d9d0a941d62f1dfcb3ed2f87018c4871aea12be7, run 38801311797 success. Linux multi-SM construit sous Ubuntu baseline ; contrôle du binaire empaqueté (SHA 2cef3796af600b752fa0805ca6ff800b6d2ddfe4f42067b60390f1fbdbedac8c) avec le même plan TensorRT : trois sorties strictement identiques à la référence, hit sans builder, 24 exports ABI inchangés. Le contrôle supplémentaire concerne ce nouveau binaire de production. Diagnostic initial de préparation : mauvais nom SPAN, aucun modèle chargé ; exclu puis corrigé. Assets 3.8.0.36 à suivre, installation inchangée. Ticket In Progress, dépendances globales AH-28/AH-32 encore partielles. Rapport docs/qualification/lot-05-tensorrt-20261015.md. Lot 06 AH-22 commencé pendant les builds.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

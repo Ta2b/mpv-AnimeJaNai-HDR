@@ -1,0 +1,15 @@
+{
+  "parent": "AH-32",
+  "marker": "split-20261015-tx-flow-linux",
+  "summary": "Transactions des exports flow : validation, concurrence et réparation Linux",
+  "target_status": "Done",
+  "criterion": "Temporaires uniques, écritures/fermetures contrôlées, rename atomique et cache invalide conservé/réparé ; deux processus demandant la même forme obtiennent un export complet. Scope flow partagé Linux, sans prétendre au verrou global.",
+  "evidence": "3.8.0.35 ; docs/qualification/lot-04-rife-flow-20261015.md ; sources/poids manquants refusés, corruption/hit/deux builders contrôlés.",
+  "status": "planned",
+  "issue_key": "AH-249",
+  "create_result": {
+    "id": "10251",
+    "key": "AH-249"
+  },
+  "actual_status": "To Do"
+}

@@ -1,0 +1,15 @@
+{
+  "parent": "AH-32",
+  "marker": "split-20261015-tx-trt-linux",
+  "summary": "Snapshots et publication d’engines TensorRT contrôlés sur Linux",
+  "target_status": "Done",
+  "criterion": "Source figée atomique vérifiée, concurrence des snapshots, publication d’engine non vide uniquement après succès ; builder échoué/vide préserve l’engine terminé. Scope mécanismes Linux qualifiés, pas tous les cas de quota/arrêt.",
+  "evidence": "Backend d9d0a94, release .36 ; tests/model_identity_check.py, tests/engine_cache_gpu.py ; deux snapshots concurrents, engine échoué/vide, GPU réel poids remplacés et anciens engines inchangés ; rapport lot 05.",
+  "status": "planned",
+  "issue_key": "AH-250",
+  "create_result": {
+    "id": "10252",
+    "key": "AH-250"
+  },
+  "actual_status": "To Do"
+}

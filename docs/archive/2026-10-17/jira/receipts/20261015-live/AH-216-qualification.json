@@ -1,0 +1,12 @@
+{
+  "key": "AH-216",
+  "marker": "[sync-qualification-continuation-20261015]",
+  "source": "qualification-continuation-20261015.json",
+  "result": {
+    "message": "Comment added to AH-216 successfully",
+    "commentId": "10015",
+    "body": "\\[sync-qualification-continuation-20261015\\]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nNouveau facteur Fast 5/2 avec cache/rafale 0/0→1/1, même clip 8 images : 18 images YUV444P16 et PTS identiques ; nombre attendu 1+floor(7×5/2)=18, EOF drainé. Grille indépendante : pas 1001/60000 s, PTS croissants et erreur max 16,667 µs < un tick muxeur 41,667 µs. Processus 3,119/2,267 s, incluant démarrage/readback/hash, donc aucun gain isolé attribué. Même poids, ni changement automatique de facteur ni test exhaustif de formes. Pré-resize 1080→720/dessins ×4 : 25 sorties/PTS identiques entre variantes. Décision : ces deux cas supplémentaires sont qualifiés fonctionnellement ; le reste de la matrice demeure partiel.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "sync_status": "posted",
+  "user_policy": "In Progress dès le début ; Done uniquement après tous critères remplis et résultats consignés. Lire les états Jira avant toute transition ; conserver tickets existants.",
+  "source_worktree": "/home/ta2b/.animejanai-tools/work/tickets-20261015",
+  "updates": [
+    {
+      "issue_key": "AH-229",
+      "start_status": "In Progress",
+      "desired_status": "Done",
+      "ready_after_comment": true,
+      "completion_basis": "DEL-06 : commits ciblés, pins inchangés, référence 3.8.0.31 conservée, release 3.8.0.32 vérifiée : trois workflows success, 15 assets uploaded ; essai de publication avant/après concluant ; états qualifié localement/publié/non installé et absence de mesure FPS distingués dans notes/relai. Aucun changement de rendu.",
+      "comment_file": "lot-01-20261015.pending.json",
+      "followup_comment": "Mise à jour : release 3.8.0.32 désormais complète sur les trois plateformes, 15 assets uploaded. Windows run 38794340030, Linux 38794340190, macOS 38794340109 tous success. Queue de promotion acceptée par GitHub, tous jobs latest success. DEL-06 livrable de livraison achevé ; non installé sur cette machine, aucune qualification matérielle nouvelle ni gain FPS annoncé. Transition Done à effectuer après ce commentaire.",
+      "actual_status": "Done"
+    },
+    {
+      "issue_key": "AH-11",
+      "desired_status": "In Progress",
+      "done_ready": false,
+      "remaining": "Dimensions intermédiaires, précision/placement effectifs, liaison aux modèles chargés et interface Manager ; qualification autres plateformes.",
+      "comment_file": "lot-02-20261015.pending.json",
+      "actual_status": "In Progress"
+    },
+    {
+      "issue_key": "AH-28",
+      "desired_status": "In Progress",
+      "done_ready": false,
+      "remaining": "Identités générales graphe/poids externes, convertisseur/options/formes/types, GPU/runtime selon format.",
+      "comment_file": "lot-03-20261015.pending.json",
+      "actual_status": "In Progress"
+    },
+    {
+      "issue_key": "AH-29",
+      "desired_status": "In Progress",
+      "done_ready": false,
+      "remaining": "Cycle cache .mlmodelc et diagnostic sur API Apple.",
+      "comment_file": "lot-03-20261015.pending.json",
+      "actual_status": "In Progress"
+    },
+    {
+      "issue_key": "AH-30",
+      "desired_status": "In Progress",
+      "done_ready": false,
+      "comment": "Lot 04 commencé : identité des sources/poids et version de transformation pour les exports flow RIFE partagés, lecture/écriture vérifiées ; essais courts avant/après à réaliser.",
+      "ready_after_release_and_comment": true,
+      "remaining": "Prérequis globaux AH-28/AH-32 partiels ; liens bloquants conservés. Critère flow local qualifié et release 3.8.0.35 publiée.",
+      "comment_file": "lot-04-20261015.pending.json",
+      "actual_status": "In Progress"
+    },
+    {
+      "issue_key": "AH-230",
+      "desired_status": "In Progress",
+      "done_ready": false,
+      "remaining": "Relais et synchronisation Jira des lots actifs.",
+      "actual_status": "In Progress"
+    },
+    {
+      "issue_key": "AH-31",
+      "desired_status": "In Progress",
+      "done_ready": false,
+      "comment": "Lot 05 commencé : invalidation des engines TensorRT ordinaires par contenu graphe/poids. Backend isolé /home/ta2b/.animejanai-tools/work/backend-tickets-20261015, référence 1468be6 ; aucune modification du backend utilisateur d’origine.",
+      "actual_status": "In Progress",
+      "release": "3.8.0.36",
+      "publication": "complete_15_assets",
+      "posted_comment_ids": [
+        "10028",
+        "10029",
+        "10030"
+      ]
+    },
+    {
+      "issue_key": "AH-22",
+      "actual_status": "In Progress",
+      "desired_status": "In Progress",
+      "done_ready": false,
+      "posted_comment_ids": [
+        "10031",
+        "10032",
+        "10034"
+      ],
+      "remaining": "3.8.0.37 et 3.8.0.38 publiées, 16 assets chacune ; reste livraison/qualification Windows mpv atomique."
+    },
+    {
+      "issue_key": "AH-33",
+      "actual_status": "In Progress",
+      "desired_status": "In Progress",
+      "done_ready": false,
+      "remaining": "Extension ABI1 qualifiée et release 3.8.0.39 en cours. Restent clients Windows ABI9, gardes Fast/vues, état temporel rank-5 et autres matériels non qualifiés.",
+      "posted_comment_ids": [
+        "10033"
+      ]
+    }
+  ],
+  "synced_at_utc": "2026-10-15T20:33:56.521195+00:00",
+  "receipt_file": "sync-20261015-live.json",
+  "stop_requested_after_release": "3.8.0.39",
+  "future_policy": "Prioriser achèvement complet des tickets déjà entrepris ; conserver In Progress si critères/qualification/livraison manquent."
+}

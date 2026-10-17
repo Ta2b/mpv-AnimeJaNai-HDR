@@ -1,0 +1,135 @@
+{
+  "version": "3.8.0.40",
+  "source": "94d1cc7c0b07b0e91f1e4db79883ed59548ab20b",
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.40",
+  "workflows": [
+    {
+      "id": 38823959955,
+      "name": "Release macOS",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38823959955"
+    },
+    {
+      "id": 38823959890,
+      "name": "Release Windows",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38823959890"
+    },
+    {
+      "id": 38823959863,
+      "name": "Release Linux",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/38823959863"
+    }
+  ],
+  "assets": [
+    {
+      "name": "AnimeJaNai-mac-bench.zip",
+      "state": "uploaded",
+      "size": 65589609,
+      "digest": "sha256:e1d718bfbfe3dbfa69f6eea7e5a77347156f4cef8f5581535d4e027bf909b31f",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/AnimeJaNai-mac-bench.zip"
+    },
+    {
+      "name": "LISEZ-MOI-macOS.txt",
+      "state": "uploaded",
+      "size": 7403,
+      "digest": "sha256:d4c9510f640f976fa7f1386bfe9621968d21f5f6d7c4f7b520c5394893660a16",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/LISEZ-MOI-macOS.txt"
+    },
+    {
+      "name": "manifest-linux-x64.json",
+      "state": "uploaded",
+      "size": 2326,
+      "digest": "sha256:7950b8af1428ba62b48fc24b45b76abcbcce9efc0149cfe85d9858c7f8027d61",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/manifest-linux-x64.json"
+    },
+    {
+      "name": "manifest.json",
+      "state": "uploaded",
+      "size": 1913,
+      "digest": "sha256:618f6b5fb9ea63642d1fcbdf6ea79779aaab9b2e2e9ba489b0fa233946f7be68",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/manifest.json"
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-Setup-3.8.0.40.exe",
+      "state": "uploaded",
+      "size": 260531354,
+      "digest": "sha256:ff2f738650f758978e5bd79ffa64ad5dd9f7e60d3339deae8e45359124f647a9",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-AnimeJaNai-HDR-Setup-3.8.0.40.exe"
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.40-linux-x64.AppImage",
+      "state": "uploaded",
+      "size": 206436856,
+      "digest": "sha256:a32cf15af62e6809110b035adb3c38ef2a8789e668536d3f2437c3a0c1125c86",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-AnimeJaNai-HDR-v3.8.0.40-linux-x64.AppImage"
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.40-macos-arm64.zip",
+      "state": "uploaded",
+      "size": 177683767,
+      "digest": "sha256:e4852968f4a6f4727d535632455f30fd91d3cdd527a7e361fda10e1e877a0f68",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-AnimeJaNai-HDR-v3.8.0.40-macos-arm64.zip"
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.40-macos-arm64.zip.sha256",
+      "state": "uploaded",
+      "size": 111,
+      "digest": "sha256:3d2de38fb31467a58ca79c5ec2edc458ff45361ae35ac94224b84a0a8aecea76",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-AnimeJaNai-HDR-v3.8.0.40-macos-arm64.zip.sha256"
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-full-package-3.8.0.40.7z.001",
+      "state": "uploaded",
+      "size": 248936858,
+      "digest": "sha256:cde532b88415bf5a8943b17b8a40faf158b813250096ca475e29f04af50b7607",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-upscale-2x_animejanai-full-package-3.8.0.40.7z.001"
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.40-linux-x64.7z",
+      "state": "uploaded",
+      "size": 51468423,
+      "digest": "sha256:c6ed4d67529f9f176fb27b73e367d2d669ae18972292dc623cb5163dc007166c",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-upscale-2x_animejanai-overlay-3.8.0.40-linux-x64.7z"
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.40.7z",
+      "state": "uploaded",
+      "size": 28792101,
+      "digest": "sha256:d58fe61fbc13c774d6e0c1cf1e5bfcd70ea531a0910f507d46eaaf9e629fa9b1",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-upscale-2x_animejanai-overlay-3.8.0.40.7z"
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-v3.8.0.40-linux-x64.tar.zst",
+      "state": "uploaded",
+      "size": 192323358,
+      "digest": "sha256:8e5933eaf67a2782ad07bd61d5839f478ded0b04b14d198de9eec4277c7bea0e",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/mpv-upscale-2x_animejanai-v3.8.0.40-linux-x64.tar.zst"
+    },
+    {
+      "name": "packs-linux-x64.json",
+      "state": "uploaded",
+      "size": 10819,
+      "digest": "sha256:43eaa28e1a765d891ece246c1b9e4483b54bf450e326f2102181ce4a939eefaf",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/packs-linux-x64.json"
+    },
+    {
+      "name": "packs.json",
+      "state": "uploaded",
+      "size": 863701,
+      "digest": "sha256:46433e6219895d622f8e63eef405e9dc0001bb9158b5a04aea41322c5b882977",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/packs.json"
+    },
+    {
+      "name": "SHA256SUMS",
+      "state": "uploaded",
+      "size": 533,
+      "digest": "sha256:2aae0a648c7768a2b4d687f3040ecfb4c340a2452ec7deb074a29438a6ef64d5",
+      "browser_download_url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/download/3.8.0.40/SHA256SUMS"
+    }
+  ]
+}

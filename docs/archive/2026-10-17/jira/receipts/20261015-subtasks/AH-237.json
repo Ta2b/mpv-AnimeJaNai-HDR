@@ -1,0 +1,15 @@
+{
+  "parent": "AH-11",
+  "marker": "split-20261015-ref-other-platforms",
+  "summary": "Qualifier l’export réel sous Windows et macOS",
+  "target_status": "To Do",
+  "criterion": "Exécuter les entrées CLI/Lua/Manager disponibles sur ces plateformes, vérifier IPC, artefacts/hash et parité de rendu ; noter séparément toute API manquante.",
+  "evidence": "3.8.0.33 compilée/publiée sur 3 plateformes ; seule exécution Linux qualifiée.",
+  "status": "planned",
+  "issue_key": "AH-237",
+  "create_result": {
+    "id": "10239",
+    "key": "AH-237"
+  },
+  "actual_status": "To Do"
+}

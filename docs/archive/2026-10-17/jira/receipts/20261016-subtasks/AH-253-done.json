@@ -1,0 +1,9 @@
+{
+  "issue": "AH-253",
+  "status": "Done",
+  "qualification_comment_id": "10050",
+  "closure_comment_id": "10051",
+  "release": "3.8.0.43",
+  "source": "267a004fbe5f22f0835d733a72fe64ca813de45b",
+  "binary_pin": "09eb15082918a858fc20642bd49837783ac94b69"
+}

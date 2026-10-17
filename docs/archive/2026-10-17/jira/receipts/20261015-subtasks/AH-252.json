@@ -1,0 +1,15 @@
+{
+  "parent": "AH-32",
+  "marker": "split-20261015-tx-interruption",
+  "summary": "Gérer les arrêts et la reprise des caches partiels",
+  "target_status": "To Do",
+  "criterion": "Arrêt de builder/processus à une étape sensible, reprise sûre, aucun import incomplet ; nettoyer seulement ses propres temporaires et conserver les références/modèles.",
+  "evidence": "Les échecs normaux et snapshots corrompus sont couverts ; arrêt brutal de tous les formats non qualifié.",
+  "status": "planned",
+  "issue_key": "AH-252",
+  "create_result": {
+    "id": "10254",
+    "key": "AH-252"
+  },
+  "actual_status": "To Do"
+}

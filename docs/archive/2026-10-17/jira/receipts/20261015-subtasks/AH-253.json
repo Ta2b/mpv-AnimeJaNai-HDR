@@ -1,0 +1,15 @@
+{
+  "parent": "AH-32",
+  "marker": "split-20261015-tx-disk-quota",
+  "summary": "Gérer quota, manque d’espace et erreurs disque sans perte de référence",
+  "target_status": "To Do",
+  "criterion": "Écriture partielle, permission/espace/quota et nettoyage : aucune publication incomplète ni destruction d’un cache terminé/modèle utilisateur ; diagnostic exploitable, essais ciblés d’erreur.",
+  "evidence": "Snapshots stats ont un essai permission ; cela ne valide pas les caches compilés/quotas globaux CAC-05.",
+  "status": "planned",
+  "issue_key": "AH-253",
+  "create_result": {
+    "id": "10255",
+    "key": "AH-253"
+  },
+  "actual_status": "To Do"
+}

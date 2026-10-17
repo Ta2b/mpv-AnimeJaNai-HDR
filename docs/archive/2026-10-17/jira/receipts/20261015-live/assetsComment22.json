@@ -1,0 +1,10 @@
+{
+  "key": "AH-22",
+  "result": {
+    "message": "Comment added to AH-22 successfully",
+    "commentId": "10034",
+    "body": "\\[lots-06-07-assets-20261015\\]\n\n3.8.0.37 : Windows 38805264666, Linux 38805264674, macOS 38805264621 tous success ; 16 assets uploaded, build AMD 38805264216 success. 3.8.0.38 : 16 assets uploaded, Windows 38806488655 et macOS 38806488451 success ; workflow Linux 38806488633 encore en attente de fin/promotion au dernier relevé. Assets publiés, aucune installation de ce poste modifiée. AH-22 reste In Progress pour la portée Windows mpv décrite dans le rapport, pas de clôture anticipée.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

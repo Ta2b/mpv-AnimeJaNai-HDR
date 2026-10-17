@@ -1,0 +1,15 @@
+{
+  "parent": "AH-11",
+  "marker": "split-20261015-ref-precision-placement",
+  "summary": "Exporter précision et placement effectifs de la chaîne",
+  "target_status": "To Do",
+  "criterion": "Rendre explicites précision/tensor types, placements et runtime réellement employés par les opérations pertinentes ; couvrir les replis sans annoncer le réglage demandé comme preuve d’exécution.",
+  "evidence": "Limite REF-01 du lot 02, champs non disponibles dans le simple inventaire.",
+  "status": "planned",
+  "issue_key": "AH-235",
+  "create_result": {
+    "id": "10237",
+    "key": "AH-235"
+  },
+  "actual_status": "To Do"
+}

@@ -1,0 +1,15 @@
+{
+  "parent": "AH-32",
+  "marker": "split-20261015-tx-key-locks",
+  "summary": "Ajouter les verrous par clé et tester les builders concurrents complets",
+  "target_status": "To Do",
+  "criterion": "Sérialiser ou coordonner les builders d’une même identité pour éviter travail concurrent inutile et conflit ; attente/libération en succès/échec, essai ciblé de deux builders réels lorsque nécessaire.",
+  "evidence": "Temporaires/rename sont livrés ; verrou explicite par clé et concurrence complète de tous les builders non déclarés couverts.",
+  "status": "planned",
+  "issue_key": "AH-251",
+  "create_result": {
+    "id": "10253",
+    "key": "AH-251"
+  },
+  "actual_status": "To Do"
+}

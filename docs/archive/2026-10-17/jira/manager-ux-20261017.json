@@ -1,0 +1,38 @@
+[
+  {
+    "task": {
+      "summary": "Refondre la navigation et la présentation du Manager autour des parcours utilisateur",
+      "description": "Demande utilisateur17octobre : refonte complète, plus agréable/beau et BEAUCOUP plus intuitif/pratique, après achèvement de l’audit/nettoyage courant AH-334/AH-340. Conserver la composition libre et modulaire des profils.\n\nLivrer navigation Profils / Préparer une vidéo / Moteurs et composants / Réglages, hiérarchie visuelle cohérente, actions principales visibles, réglages avancés secondaires, états vide/enregistré/incomplet clairs. Conserver Avalonia/services/profils ; pas nouveaux préréglages imposés. Largeur réduite, clavier/focus, libellés et contrastes cohérents. Contrôle CPU UI court : ouvrir/choisir/créer/renommer/sauvegarder profil, changer de page sans perdre édition, captures réellement rendues large/étroit. Migrations et ancien éditeur AH-325 restent identifiés. Release vérifiée avant Done."
+    },
+    "result": {
+      "data": {
+        "id": "10343",
+        "key": "AH-341"
+      }
+    }
+  },
+  {
+    "task": {
+      "summary": "Rendre l’éditeur de profils libre, modulaire et compréhensible à chaque étape",
+      "description": "Confirmation utilisateur : constitution de profil modulaire à souhait. Ajout/suppression/réordre/désactivation libres, quatre catégories fixes interpolation/upscale/downscale/HDR, technologie choisie DANS la catégorie, cartes compactes et réglages de l’étape sélectionnée. Règles d’application du profil distinctes des étapes. HDR unique par profil, uniquement contraintes d’exécution réelles expliquées, aucun réordre ou remplacement silencieux.\n\nQuality/Fast seulement RIFE ; downscale séparé ; HDRmpv/TrueHDR AH-326 ; retrait FRUC AH-328 ; aucun choix fictif. Résumé sans média prévisionnel, dimensions inconnues/exemple identifié, pas trace prétendue. Réutiliser modèle persistant et validation ; contrat minimal AH-339. Contrôler création Area720→Q2→F2→SPAN→HDR, réordre/désactivation/persistance, second HDR refusé, import inconnu conservé et largeur réduite. Migration exacte AH-325. Tests vidéo seulement si flux/contrat change, release vérifiée avant Done."
+    },
+    "result": {
+      "data": {
+        "id": "10344",
+        "key": "AH-342"
+      }
+    }
+  },
+  {
+    "task": {
+      "summary": "Guider l’installation des moteurs et la préparation vidéo depuis le Manager",
+      "description": "Refonte UX17octobre : réunir moteurs/composants/SDK dans un espace clair avec raison d’indisponibilité et action contextuelle. Distinguer prêt/absent/incompatible/non qualifié et lecture temps réel/préparation. Réutiliser importeurs/installateurs, aider vers la source officielle/import d’archive ; chemins techniques dans réglages avancés, aucun moteur fictif. Présence fichier seule ne vaut pas capacité. Préserver SDK/configs et ne pas réclamer de SDK pour HDRmpv.\n\nIntégrer le préparateur GMFSS AH-313 à la navigation sans dupliquer worker : progression/annulation/completion lisibles. Retrait FRUC AH-328 coordonné ; transactions générales AH-337 distinctes. Contrôles CPU UI courts sur états factices manque moteur/import erreur ou succès/retour profil/job terminé ou annulé ; inférence réelle et qualité dans AH-313 sans campagne dupliquée. Release vérifiée avant Done."
+    },
+    "result": {
+      "data": {
+        "id": "10345",
+        "key": "AH-343"
+      }
+    }
+  }
+]

@@ -1,0 +1,114 @@
+{
+  "issue": "AH-296",
+  "parent": "AH-154",
+  "status": "Done",
+  "base": "918a0e505dd6cc3b774b0dd41d7045e04ea09d6c",
+  "worktree": "/home/ta2b/.animejanai-tools/work/lot-39-fruc-surface-provider-20261016",
+  "backend_worktree": "/home/ta2b/.animejanai-tools/work/backend-fruc-surface-provider-20261016",
+  "backend_base": "861ab52efda5f1313bd39b8e15053b6d3c31f130",
+  "start_comment": "10139",
+  "dependency": "AH-295 Done / release70 verified",
+  "state": "Released71 and both scoped tickets AH-296/AH-300 Done. Native functional/lifecycle/GPU SPAN qualified; exact SDK reproducibility remains nonconclusive. Ordered reader AH-301 In Progress; Manager AH-302 To Do.",
+  "design": [
+    "Separate negotiated interpolator interface from RIFE, represent input count/lookahead and scalar/spatial phase capability; FRUC advertises only supported subset, not whole AH-58 completion",
+    "Optional independently built CUDA provider loading user SDK; never bundle proprietary library/header without established distribution rights",
+    "Owned persistent registered buffers: SDK cached previous source cannot depend on client owners after Complete; exact source/generation/view keys, reset on discontinuity",
+    "Dedicated bounded worker around blocking Process with dependencies/ownership/drain/error and repetition metadata; no host pixel staging",
+    "Start exact RGB8 CUDA comparison to saved prototype outputs; add NV12/YUV444 paths for real SPAN chaining with explicit SDR/8-bit quantization compromise, no HDR fiction",
+    "Native Surface common validation is include/surface_validation.h; CUDA lifecycle src/surface_cuda_async.h/include/surface_cuda_state.h, generic portable queue currently in PLAYER native/common/surface_queue.h (not backend include directory)",
+    "Current backend CMake standalone aji_trt target shares src/kernels.cu; optional FRUC target can link CUDA helpers independently of TRT. Actual SDK headers are external NvOFFRUC/Interface/NvOFFRUC.h; runtime11 may coexist with provider CUDA13 helpers",
+    "Pause/seek/generation, queued cancel, failure, owners, colors/PTS affected need short targeted tests; reuse conclusive prototype/RIFE references",
+    "Consider Driver-only CUDA kernels/fatbin for provider to avoid coupling modern helper cudart13 with SDK cudart11; validate actual interop instead of assuming. No provider code exists yet."
+  ],
+  "remaining": [],
+  "issues": [
+    "AH-296",
+    "AH-300"
+  ],
+  "hybrid_parent": "AH-297",
+  "hybrid_qualification_comment": "10144",
+  "hybrid_source": "5bbfcb7bac092083ee547905560e84b291183573",
+  "hybrid_qualification": {
+    "passed": true,
+    "source_frames": 6,
+    "output_frames": 21,
+    "reused_rife_medians": 5,
+    "new_quarters_per_method": 10,
+    "shared_sources_medians_exact": true,
+    "fruc_repetitions": 0,
+    "duration_exact": true,
+    "pairs": [
+      {
+        "pair": 0,
+        "contains_cold_rife": true,
+        "rife_quarters_ms": 108.04329100210452,
+        "fruc_quarters_ms": 20.807830000000003
+      },
+      {
+        "pair": 1,
+        "contains_cold_rife": false,
+        "rife_quarters_ms": 47.936908005794976,
+        "fruc_quarters_ms": 15.80642
+      },
+      {
+        "pair": 2,
+        "contains_cold_rife": false,
+        "rife_quarters_ms": 44.140607002191246,
+        "fruc_quarters_ms": 15.80988
+      },
+      {
+        "pair": 3,
+        "contains_cold_rife": false,
+        "rife_quarters_ms": 48.57428900140803,
+        "fruc_quarters_ms": 19.066499999999998
+      },
+      {
+        "pair": 4,
+        "contains_cold_rife": false,
+        "rife_quarters_ms": 44.26733100262936,
+        "fruc_quarters_ms": 14.66837
+      }
+    ],
+    "artifacts": {
+      "rife4x.rgb": "4908c02dbd63f0b802336049d0202731d07b3d59450531bd5a86c7cf258e0731",
+      "hybrid4x.rgb": "1fc6dc62b22f2ea7e01d9e1c0b1f7e945d1f4b266c41a63ea6fcf6694a59d3b0"
+    },
+    "scope": "Additional quarter-stage costs only; no claim of integrated player FPS or quality equivalence"
+  },
+  "manager_worktree": "/home/ta2b/.animejanai-tools/work/manager-interpolation-stages-20261016",
+  "manager_base": "50ff160f534699015f01d4fd8beb8c3f53464a58",
+  "manager_runtime_followups": [
+    "AH-301",
+    "AH-302"
+  ],
+  "comparison_backlog": "docs/jira/comparatif-20261016-backlog.json",
+  "backend_source": "f8da50a014fbf020bc3027e9bafc13feebb6323e",
+  "binary_source": "de2fe69c4f5b2999d8cbcdb1bb84df0fd286ced8",
+  "native_qualification_comment": "10145",
+  "native_module_sha256": "f320f5cc51f3aeec8385a49896e0aa2e1483c86394763a30610f09f2d5df13c1",
+  "fatbin_sha256": "f9c8c551aec2ee87cd1b7c3097d8538546b1de0cf8eb9569de43d5853e572469",
+  "native_qualification": {
+    "lifecycle_passed": true,
+    "yuv_span_passed": true,
+    "rgb_exact_passed": false,
+    "rgb_exact_conclusion": "nonconclusive; unchanged SDK prototype itself varies",
+    "packed_inputs_exact": true,
+    "prototype_control": {
+      "outputs": 1,
+      "changed_components": 95,
+      "max_delta": 85
+    },
+    "owned_pixel_bytes": 11059200,
+    "cpu_pixel_copies": 0,
+    "sdk_external": true,
+    "fast_opt_in": true,
+    "scope": "Linux RTX4070Ti SDR8-bit. Not native Windows/other hardware/HDR/complete reader/Manager qualification."
+  },
+  "release": "3.8.0.71",
+  "publication_verified": true,
+  "player_source": "b6e36cd40b6a0bb177056baf19d8cf53a54e7cc8",
+  "close_comments": {
+    "AH-296": "10148",
+    "AH-300": "10149"
+  }
+}

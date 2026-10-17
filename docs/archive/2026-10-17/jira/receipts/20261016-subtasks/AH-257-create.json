@@ -1,0 +1,15 @@
+{
+  "parent": "AH-22",
+  "marker": "split-20261015-stats-windows-qualification",
+  "summary": "Livrer et qualifier les publications atomiques Windows, dont le mpv CUDA/D3D11",
+  "target_status": "To Do",
+  "criterion": "Reconstruire/épingler le mpv Windows avec écriture atomique ; vérifier readers simultanés, états build/erreur, compteurs et cadence des producteurs natifs Windows, puis publier les binaires/qualification.",
+  "evidence": "Le mpv Windows précompilé épinglé ne contient pas le patch .38. Les moteurs spécialisés GPU et leur publication .36 n’équivalent pas à un nouveau mpv Windows.",
+  "status": "created",
+  "issue_key": "AH-257",
+  "create_result": {
+    "id": "10259",
+    "key": "AH-257"
+  },
+  "actual_status": "To Do"
+}

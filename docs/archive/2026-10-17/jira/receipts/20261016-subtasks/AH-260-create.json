@@ -1,0 +1,15 @@
+{
+  "parent": "AH-33",
+  "marker": "split-20261015-ids-windows-clients",
+  "summary": "Intégrer et qualifier la négociation d’identités dans les clients Windows concernés",
+  "target_status": "To Do",
+  "criterion": "Clients ABI1/ABI9 réellement livrés : négociation facultative, sources immuables, génération/IDs monotones, ancien binaire compatible et fallback exact/sûr ; qualifier seek/buffers recyclés et publier le client correspondant.",
+  "evidence": "Extension ABI1 disponible dans le code partagé ; intégration des clients Windows non déclarée faite. Ancien mpv Windows précompilé inchangé.",
+  "status": "created",
+  "issue_key": "AH-260",
+  "create_result": {
+    "id": "10262",
+    "key": "AH-260"
+  },
+  "actual_status": "To Do"
+}

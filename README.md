@@ -19,16 +19,16 @@ Aucun nouveau benchmark ni contrôle de qualité sur GPU n'a été exécuté.
 MIGraphX + HIP natif pour RX 9070 XT et TensorRT + CUDA spécialisé sont embarqués,
 avec les modèles actuels. Linux AMD nécessite un runtime ROCm 7.2 compatible.
 Les builds et la publication ont réussi ; le fonctionnement et les gains GPU
-restent à vérifier sur matériel. Voir [le checkpoint et les limites](docs/CHANTIER-GPU-SPECIALISE.md).
+restent à vérifier sur matériel. Voir [le checkpoint et les limites](docs/archive/2026-10-17/chantiers/CHANTIER-GPU-SPECIALISE.md).
 
 **Historique :** **État au 14 octobre 2026 :** [3.8.0.29 publiée sur Windows, Linux et macOS](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.29).
 Le moteur partagé dispose de la nouvelle chaîne RIFE : upscale des sources une
 seule fois, mouvement réutilisé par paire et lissage de la chronologie des dessins.
 Dans cette ancienne version, la chaîne CUDA était installée séparément ;
 la 3.8.0.30 embarque désormais les binaires spécialisés. Les paquets et mises à
-jour sont allégés. Voir [l'état du projet](docs/ETAT-PROJET.md),
-[le chantier 165 Hz](docs/CHANTIER-RIFE-165HZ.md) et
-[le relais des premiers lots](docs/CHANTIER-PERFORMANCE-RELAIS.md).
+jour sont allégés. Voir [l'état du projet](docs/archive/2026-10-17/chantiers/ETAT-PROJET.md),
+[le chantier 165 Hz](docs/archive/2026-10-17/chantiers/CHANTIER-RIFE-165HZ.md) et
+[le relais des premiers lots](docs/archive/2026-10-17/chantiers/CHANTIER-PERFORMANCE-RELAIS.md).
 
 
 Fork de [the-database/mpv-upscale-2x_animejanai](https://github.com/the-database/mpv-upscale-2x_animejanai), basé sur la version **3.8.0** (branche `hdr-3.8`, version publiée par défaut ; la branche `hdr` reste sur la 3.6.3). Il ajoute une conversion SDR → HDR soignée pour l'anime et s'adapte tout seul aux cartes NVIDIA et AMD :

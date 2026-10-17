@@ -8,8 +8,8 @@ tests. Le code RIFE partagé `30a3e83` est maintenant dépassé et intégré par
 lots suivants : `d639dc1` / `b3f9d5d` ajoutent la chaîne warp et la chronologie
 des dessins. La branche NVIDIA CUDA Graph `f4fcd17` reste isolée.
 
-Lire [l'état consolidé courant](ETAT-PROJET.md) et
-[le chantier 3.8.0.24–29 / 165 Hz](CHANTIER-RIFE-165HZ.md). Les sections datées
+Lire [l'état consolidé courant](archive/2026-10-17/chantiers/ETAT-PROJET.md) et
+[le chantier 3.8.0.24–29 / 165 Hz](archive/2026-10-17/chantiers/CHANTIER-RIFE-165HZ.md). Les sections datées
 3.8.0.23 ci-dessous restent un historique des preuves de cette session, pas
 l'état global actuel. La chaîne warp est livrée dans le moteur partagé ;
 **elle ne l'est pas dans NCNN/Vulkan ni dans les binaires Windows amont**.
@@ -29,7 +29,7 @@ vitesse ou la fidélité sur chaque GPU/NPU OpenVINO/MIGraphX physique.
 Suite non encore livrée : `30a3e83` (décision par paire et sortie RIFE préallouée,
 CI réussie) et `f4fcd17` (CUDA Graph RIFE dans un worktree NVIDIA isolé, compilation
 C++ seulement confirmée). La dépendance amont du paquet n'est pas remplacée.
-[État consolidé](ETAT-PROJET.md) / [relais et preuves](CHANTIER-PERFORMANCE-RELAIS.md).
+[État consolidé](archive/2026-10-17/chantiers/ETAT-PROJET.md) / [relais et preuves](archive/2026-10-17/chantiers/CHANTIER-PERFORMANCE-RELAIS.md).
 Les essais HDR physiques et RTX 4050 restent distincts des contrôles logiciels.
 
 ## Objectif

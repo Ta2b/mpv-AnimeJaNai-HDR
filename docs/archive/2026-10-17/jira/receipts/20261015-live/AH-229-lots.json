@@ -1,0 +1,12 @@
+{
+  "key": "AH-229",
+  "marker": "[sync-lots-01-05-20261015]",
+  "source": "lots-01-05",
+  "result": {
+    "message": "Comment added to AH-229 successfully",
+    "commentId": "10021",
+    "body": "\\[sync-lots-01-05-20261015\\]\n\nLot 01 : livraison concurrente implémentée. Les workflows de lots distincts ne s’annulent plus ; promotion latest sérialisée, comparaison numérique anti-retour arrière. Essai court avant/après des scripts réels via gh simulé : fin .33 puis .32, ancienne latest=.32, nouvelle latest=.33 ; ordre assets préservé, doublon ignoré, échec upload bloquant. Utilité livraison, aucun gain FPS ni changement pixels. Bash passe ; actionlint passe hors propriété queue:max documentée officiellement mais inconnue de son schéma 1.7.12. Release 3.8.0.32 publiée : Windows 38794340030, Linux 38794340190 et macOS 38794340109 tous success, 15 assets uploaded. Promotions latest réussies. Critères DEL-06 remplis : commits ciblés, pins inchangés, référence 3.8.0.31 conservée, statuts compilé/publié/non installé/qualifié localement distingués. Transition Done après consignation de ce résultat.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

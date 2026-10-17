@@ -1,0 +1,21 @@
+{
+  "issue": "AH-268",
+  "parent": "AH-70",
+  "native_qualification": "AH-269",
+  "status": "Done",
+  "base": "5b6331c0ad16a19a5cd0072647777ee9ae8928f8",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-23-cpu-layouts-20261016",
+  "qualification": "RIFE-only level2 rejected: Cast41 to167, 4305 changed bytes max2, slower short timing; keep default3, no repeat",
+  "source": "71bd9acfdbcd0b5bbe516fc37960f11ca8c3fc72",
+  "engine_source": "1e52038995fbf87939abba0181f36cf61fd67346",
+  "version": "3.8.0.55",
+  "push": "confirmed",
+  "qualification_comment_id": "10083",
+  "workflows": [
+    38859836522,
+    38859836485,
+    38859836482
+  ],
+  "release_receipt": "release-20261016-3.8.0.55.json",
+  "close_comment_id": "10087"
+}

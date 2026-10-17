@@ -1,0 +1,16 @@
+{
+  "issue": "AH-266",
+  "parent": "AH-64",
+  "native_qualification": "AH-267",
+  "status": "Done",
+  "base": "c153b17657d0d9416607a170ed579c928f27992e",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-22-fixed-shapes-20261016",
+  "qualification": "16 exact neural outputs; static RIFE IO, unchanged node counts; metadata guards/external FP32 oracle passed; static contract prerequisite, timing nonconclusive",
+  "source": "5b6331c0ad16a19a5cd0072647777ee9ae8928f8",
+  "engine_source": "75879262488bbd4e3b7ab8e5730014b090b991d0",
+  "version": "3.8.0.54",
+  "push": "confirmed",
+  "qualification_comment_id": "10081",
+  "release_receipt": "release-20261016-3.8.0.54.json",
+  "close_comment_id": "10084"
+}

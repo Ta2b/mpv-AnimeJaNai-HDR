@@ -1,0 +1,33 @@
+{
+  "issue": "AH-313",
+  "parent": "AH-141",
+  "status": "In Progress",
+  "start_comment": "10158",
+  "base": "64f2512",
+  "worktree": "/home/ta2b/.animejanai-tools/work/lot-42-gmfss-preparation-20261016",
+  "manager_worktree": "/home/ta2b/.animejanai-tools/work/manager-gmfss-preparation-20261016",
+  "manager_base": "2cc424c6257cf5081154512b9d3da5927a903ea5",
+  "source": "https://github.com/98mxr/GMFSS_Fortuna",
+  "revision": "0fb7ac1dc292e2615217110dd9d82557845fb919",
+  "state": "Preparation job v1/media preflight/model identities and rational CFR schedule implemented and CPU-qualified; executor/video export/audio/cancel/Manager UI not implemented. No provider availability claimed.",
+  "qualification": {
+    "receipt": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/artifacts/performance/lots-20261016/lot-42/cpu/contract.json",
+    "passed": true,
+    "scope": "CPU only, no Torch/CuPy or GPU imports",
+    "case": "Private3frame H264 VUI709,1280x72024000/1001,6outputx2 with last hold and exact duration1001/8000; explicit invalid config/VFR/overwrite refusals"
+  },
+  "remaining": [
+    "Implement faithful FP32 CuPy GMFSS persistent pair engine using same reference; one necessary existing pair comparison only",
+    "Implement bounded actual video export/progress/cancel/atomic publication and explicit audio/timing/SDR policy",
+    "Integrate actual preparation mode into Manager and packaged tool; do not advertise native GMFSS reader",
+    "Check release74 delivery and close AH-302 only if complete; then AH-297 criteria audit",
+    "Finish full scoped AH-313 lot and publish before Done"
+  ],
+  "design_limits": [
+    "CFR preflight streams metadata instead of retaining movie-sized arrays",
+    "Unknown transfer/primaries/HDR currently refused rather than assumed",
+    "InitialFFV1NUTfixture lost color transfer metadata; taggedH264 private timing fixture used. Export container/color metadata and later native CUDA interoperability need an explicit design",
+    "Offline last-source holds preserve duration without fictitious future predictions",
+    "Parent AH-141/AH-165 native subnetwork/softsplat porting stays open; prepared workflow is distinct"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "issue": "AH-278",
+  "status": "Done",
+  "base": "a22100c0fc9fb76fcabec01faf67b290cf565424",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-29-surfaces-20261016",
+  "scope": "Generic sized/versioned C surface descriptor + actual negotiated CPU adapter and client; native interop separate AH279, SubmitCompleteAH50, mpv metadataAH275",
+  "dependencies": "Contrats REF04 AH14 Done / couleurAH274 Done ; LinuxCPU-CUDA preflightAH276 qualifié en attente publication ; autres natifsAH275/AH277 restent ouverts.",
+  "parent": "AH-49",
+  "remaining": "AH-279",
+  "source": "0ee0e2b55888899eb9686236da6bf933e888e453",
+  "implementation_source": "6fb3e49cc7ea587d801095a3677bf6a9927b93d2",
+  "version": "3.8.0.61",
+  "push": "confirmed",
+  "qualification_comment_id": "10102",
+  "qualification": "complete CPU Surfacev1 adapter and generic C descriptor/caps:16 outputs exact vs reused Quality/Fast refs,6 new color/view/legacy guard outputs exact, ROI/layout/lifetimes/errors/failed configure verified; no FPS claim",
+  "close_comment_id": "10104",
+  "release_receipt": "release-20261016-3.8.0.61.json"
+}

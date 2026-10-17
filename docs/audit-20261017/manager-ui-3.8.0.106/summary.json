@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "checks": [
+    "only named configured playback profiles are visible",
+    "profile identity uses the actual slot rather than its list index",
+    "PreparationNavigation reaches stable destination",
+    "EnginesNavigation reaches stable destination",
+    "SettingsNavigation reaches stable destination",
+    "ProfilesNavigation reaches stable destination",
+    "SDK entry and preparation settings share engines destination",
+    "preparation helper routes to engines",
+    "activation conditions are secondary and collapsed",
+    "new profile uses a free slot without replacing existing profiles",
+    "duplicate keeps source and creates independently named profile",
+    "explicit deletion releases only the selected profile",
+    "unknown and future data survive profile operations",
+    "profile edits are persisted and reload with their identity",
+    "profiles-wide renders",
+    "narrow layout uses profile picker and hides duplicate sidebar",
+    "narrow navigation shows icons without clipped labels",
+    "profiles-narrow renders",
+    "engines-narrow renders",
+    "settings-narrow renders",
+    "preparation-narrow renders",
+    "preparation-wide renders"
+  ],
+  "scope": "Headless native Avalonia UI; no GPU inference or video benchmark"
+}

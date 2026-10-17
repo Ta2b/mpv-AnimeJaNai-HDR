@@ -1,0 +1,234 @@
+{
+  "originals_verified": 51,
+  "changed": 28,
+  "removed": 5,
+  "condensed": 23,
+  "active_bytes_before": 4147584,
+  "active_bytes_after": 61703,
+  "rows": [
+    {
+      "path": "AGENTS.md",
+      "action": "condensed",
+      "before_bytes": 2514,
+      "after_bytes": 2278,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "abae57ae13b5ad44a1c7f9695304ae011cee2e3844971a564a29da773cd56f25"
+    },
+    {
+      "path": "CLAUDE.md",
+      "action": "condensed",
+      "before_bytes": 21059,
+      "after_bytes": 4863,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "43f222382f863c39d4fdaa273c3bb2e5de8b958ad28acfa6c7b9adc4a0bb689f"
+    },
+    {
+      "path": "docs/AUDIT-OPTIMISATIONS-NATIVES-2026-10-15.md",
+      "action": "condensed",
+      "before_bytes": 97808,
+      "after_bytes": 612,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "8e3ded47bc6ade30526cf5ffcf963a5e4e51a5c5b8c90b91d72602e2f93defc3"
+    },
+    {
+      "path": "docs/CHANTIER-GPU-SPECIALISE.md",
+      "action": "condensed",
+      "before_bytes": 15221,
+      "after_bytes": 597,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "ba7e99394736f4b40fc465910d1bd6711ce91795911f3bbfc5fa17242751c892"
+    },
+    {
+      "path": "docs/CHANTIER-PERFORMANCE-RELAIS.md",
+      "action": "condensed",
+      "before_bytes": 82878,
+      "after_bytes": 601,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "258c2a820accc8e8efc3b81f44b1d685bcd0f7d4202b9d7ae9ec7ac2ebfc84c2"
+    },
+    {
+      "path": "docs/CHANTIER-QUALITY-FAST.md",
+      "action": "condensed",
+      "before_bytes": 10373,
+      "after_bytes": 5106,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "692d4bd1fa84a61a8f0cb396ead2ff816349ab5764b6cfd54966785cee6befea"
+    },
+    {
+      "path": "docs/CHANTIER-RIFE-165HZ.md",
+      "action": "condensed",
+      "before_bytes": 10092,
+      "after_bytes": 593,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "0d7108b5b3cb27f247c0d6eb748d6ef4881930c00a5786e943fa3c4b4d7e43c4"
+    },
+    {
+      "path": "docs/ETAT-PROJET.md",
+      "action": "condensed",
+      "before_bytes": 13532,
+      "after_bytes": 470,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "da02ff17d670b7c8f0a6b70ccf1d23182fc8c1fa87a6341f321f77191216b4c5"
+    },
+    {
+      "path": "docs/INTERPOLATION-STAGES.md",
+      "action": "condensed",
+      "before_bytes": 8752,
+      "after_bytes": 7816,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "c2e61d8b9ac3204b13e038a95c16c80aaba9fcc572eb84a794e39c2926ef4e25"
+    },
+    {
+      "path": "docs/INTERPOLATION-VIDEO-ANIMEJANAI-HDR.md",
+      "action": "condensed",
+      "before_bytes": 15335,
+      "after_bytes": 6069,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "53f25a7aad6e667847b1f16d3541c7fcdc84875b283d44041a62393afdd70b68"
+    },
+    {
+      "path": "docs/OPTIMISATIONS-MOTEURS.md",
+      "action": "condensed",
+      "before_bytes": 47869,
+      "after_bytes": 595,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "8039e7159cb224903e19025b8073a75ec3dcc707782711bf2c7a76c328b9ddb3"
+    },
+    {
+      "path": "docs/PROMPT-REPRISE-IMPLEMENTATION.md",
+      "action": "removed",
+      "before_bytes": 1333,
+      "after_bytes": 0,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "be5ff805949c9a139c2bc043b5268fb7b4c5f306db18f2cbaefb90da3278006d"
+    },
+    {
+      "path": "docs/QUALIFICATION-FEATURES-2026-10-15.md",
+      "action": "condensed",
+      "before_bytes": 23102,
+      "after_bytes": 17901,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "590fd063823bc3518181078ddfa93e4f26a3a90be2c9d27c2064d91ede8c077b"
+    },
+    {
+      "path": "docs/REPRISE.md",
+      "action": "condensed",
+      "before_bytes": 32785,
+      "after_bytes": 525,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "f1efb0597ef43ef00e5d7a714b0382e7aa1e76c25223325d91db0d9e56549d2c"
+    },
+    {
+      "path": "docs/TODO-PERFORMANCE-INTERPOLATION.md",
+      "action": "condensed",
+      "before_bytes": 124531,
+      "after_bytes": 1347,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "861d447b241d6dd24754576e232a472f38a8176ea8a7df6acf063f06ed41e0e8"
+    },
+    {
+      "path": "docs/jira/DECOUPAGE-20261016.md",
+      "action": "condensed",
+      "before_bytes": 17373,
+      "after_bytes": 612,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "0409db040c2aa113f92ddc821653d71c99a04818267674d09989afb425302b6b"
+    },
+    {
+      "path": "docs/jira/INDEX-JIRA.md",
+      "action": "condensed",
+      "before_bytes": 28826,
+      "after_bytes": 1235,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "c231dafc7419bdb6c82ccf085b1c81ba300f75316c396e7f68835cb793a22018"
+    },
+    {
+      "path": "docs/jira/PAUSE-20261017.md",
+      "action": "condensed",
+      "before_bytes": 4643,
+      "after_bytes": 608,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "8047256dc00b63437ffb2b671292d897043dabb3426337ee9e49dd609cfe2c8e"
+    },
+    {
+      "path": "docs/jira/README.md",
+      "action": "condensed",
+      "before_bytes": 10480,
+      "after_bytes": 1561,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "dbecdfb3218a7349aaf67be2858563f1fcf5da1b3b2551278cd99cf70040d143"
+    },
+    {
+      "path": "docs/jira/VERIFICATION-COUVERTURE.md",
+      "action": "condensed",
+      "before_bytes": 9260,
+      "after_bytes": 617,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "85bc0adbd2179951098f4333e958008981a9238f56c4e099615452b17f94be45"
+    },
+    {
+      "path": "docs/jira/backlog-import.csv",
+      "action": "removed",
+      "before_bytes": 615216,
+      "after_bytes": 0,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "8bc10e03aadc33d5c48605017cfc399d47a91c4acef690d24f19c052310ad872"
+    },
+    {
+      "path": "docs/jira/backlog-plan-before-validation-policy.json",
+      "action": "removed",
+      "before_bytes": 675648,
+      "after_bytes": 0,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "d5bdb6a10e72dc8f99947321dd9e7fa5f77eb96dccd422f526ae610d2457ac8a"
+    },
+    {
+      "path": "docs/jira/backlog-plan.json",
+      "action": "removed",
+      "before_bytes": 915352,
+      "after_bytes": 0,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "d973a02822d9686fad0091c341f8c0dcacaa4817305534863996fdc4eb077a88"
+    },
+    {
+      "path": "docs/jira/source-snapshot-before-validation-policy.md",
+      "action": "condensed",
+      "before_bytes": 117194,
+      "after_bytes": 634,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "a2648e4d7fca41492c0f5b8096be21ecbfd14d38283db4a4d1bf1e9b834b511e"
+    },
+    {
+      "path": "docs/jira/source-snapshot.md",
+      "action": "condensed",
+      "before_bytes": 119181,
+      "after_bytes": 609,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "0bc7de45bd7f7558cdc868ddb5b56d3cea687a68780fadd845904f954fcd2f45"
+    },
+    {
+      "path": "docs/jira/validation-policy-update-plan.json",
+      "action": "removed",
+      "before_bytes": 1089546,
+      "after_bytes": 0,
+      "archive": "docs/archive/reprise-avant-audit-20261017.tar.gz",
+      "original_sha256": "1a1bf08c49f83417080d86fca233354be3e006ad700254b3ad25efd9f766758d"
+    },
+    {
+      "path": "docs/DEVELOPMENT.md",
+      "action": "condensed",
+      "before_bytes": 19685,
+      "after_bytes": 3303,
+      "archive": "docs/archive/procedures-avant-audit-20261017.tar.gz",
+      "original_sha256": "f68b7453b58dd189a7d858469ffac3bff920c42cdc26d388dc5d4ec53d510673"
+    },
+    {
+      "path": "docs/RELEASE.md",
+      "action": "condensed",
+      "before_bytes": 17996,
+      "after_bytes": 3151,
+      "archive": "docs/archive/procedures-avant-audit-20261017.tar.gz",
+      "original_sha256": "ff345569c84c9efcc06b309243fdeb11241ca80e69e3a744f686153041f2473a"
+    }
+  ]
+}

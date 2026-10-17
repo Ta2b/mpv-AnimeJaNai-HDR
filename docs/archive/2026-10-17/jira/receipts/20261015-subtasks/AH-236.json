@@ -1,0 +1,15 @@
+{
+  "parent": "AH-11",
+  "marker": "split-20261015-ref-manager-ui",
+  "summary": "Intégrer l’export de référence dans le Manager",
+  "target_status": "To Do",
+  "criterion": "Point d’entrée Manager fonctionnel, export associé à la session/chaîne choisie, destination claire et erreurs rapportées ; essai court de l’action réelle.",
+  "evidence": "CLI et script-message existent ; aucune interface Manager de cet export déclarée livrée.",
+  "status": "planned",
+  "issue_key": "AH-236",
+  "create_result": {
+    "id": "10238",
+    "key": "AH-236"
+  },
+  "actual_status": "To Do"
+}

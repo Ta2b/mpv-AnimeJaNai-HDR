@@ -1,0 +1,31 @@
+{
+  "source_commit": "0f3f6bfb7e76ca15647d74fc5a91405d3072be69",
+  "source": "AnimeJaNaiUpdater/Program.cs",
+  "methods_extracted_verbatim": [
+    "ReadUserPreserve",
+    "CopyTree",
+    "IsPreserved",
+    "TryDelete",
+    "NormalizeRel"
+  ],
+  "fixture": "/tmp/aji-audit-preserve-jx9x9opr",
+  "test_source_sha256": "3f3ffc77e9bf6eea6cea572ec6953bd5fe0d0c31e5f6899c888efcc5791f76e6",
+  "cases": [
+    {
+      "mode": "missing",
+      "preserved_count": 0,
+      "config_after": "SHIPPED DEFAULT"
+    },
+    {
+      "mode": "corrupt",
+      "preserved_count": 0,
+      "config_after": "SHIPPED DEFAULT"
+    },
+    {
+      "mode": "valid",
+      "preserved_count": 1,
+      "config_after": "USER PROFILE"
+    }
+  ],
+  "scope": "CPU temporary directories only; no actual installation touched"
+}

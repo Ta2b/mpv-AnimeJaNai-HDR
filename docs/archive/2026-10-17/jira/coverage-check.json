@@ -1,0 +1,52 @@
+{
+  "kind": "static_document_consistency",
+  "checked_at_utc": "2026-10-15T13:15:20.206331+00:00",
+  "source_sha256": "a2648e4d7fca41492c0f5b8096be21ecbfd14d38283db4a4d1bf1e9b834b511e",
+  "counts": {
+    "tasks": 222,
+    "previous_ids_retained": 217,
+    "epics": 10,
+    "families": 20,
+    "csv_work_rows": 232,
+    "dependencies": 83,
+    "vfi_cards": 38,
+    "delivered_checkboxes_excluded": 12
+  },
+  "new_task_ids": [
+    "APL-10",
+    "APL-11",
+    "INT-11",
+    "TRT-13",
+    "VK-12"
+  ],
+  "counts_by_epic": {
+    "FOND": 30,
+    "ARCH": 30,
+    "NVIDIA": 13,
+    "AMD": 19,
+    "INTEL": 11,
+    "APPLE": 11,
+    "VULKAN": 12,
+    "VFI": 48,
+    "KERNELS": 28,
+    "QUAL": 20
+  },
+  "errors": [],
+  "runtime_tests_executed": false,
+  "jira_writes_executed": false,
+  "reviewed_source_sha256": {
+    "docs/AUDIT-OPTIMISATIONS-NATIVES-2026-10-15.md": "8e3ded47bc6ade30526cf5ffcf963a5e4e51a5c5b8c90b91d72602e2f93defc3",
+    "docs/OPTIMISATIONS-MOTEURS.md": "8039e7159cb224903e19025b8073a75ec3dcc707782711bf2c7a76c328b9ddb3",
+    "docs/CHANTIER-QUALITY-FAST.md": "7e3d842bfe383c38c978ea262eb6dbab23fe8eba0225c39857fa90721fdecf06",
+    "docs/CHANTIER-GPU-SPECIALISE.md": "ba7e99394736f4b40fc465910d1bd6711ce91795911f3bbfc5fa17242751c892",
+    "docs/CHANTIER-PERFORMANCE-RELAIS.md": "258c2a820accc8e8efc3b81f44b1d685bcd0f7d4202b9d7ae9ec7ac2ebfc84c2",
+    "docs/CHANTIER-RIFE-165HZ.md": "0d7108b5b3cb27f247c0d6eb748d6ef4881930c00a5786e943fa3c4b4d7e43c4",
+    "docs/AMD-PERFORMANCE.md": "81b0ff20183b7c0da97cc82d93fc239970f59adf272f08cf45a3b4cabe9ed3f6",
+    "docs/INTERPOLATION-VIDEO-ANIMEJANAI-HDR.md": "53f25a7aad6e667847b1f16d3541c7fcdc84875b283d44041a62393afdd70b68",
+    "docs/MACOS.md": "58129ad1a13f780149832cf154bb7dc5aeac6d9b9f226086034603ce064be764",
+    "docs/ETAT-PROJET.md": "da02ff17d670b7c8f0a6b70ccf1d23182fc8c1fa87a6341f321f77191216b4c5",
+    "docs/REPRISE.md": "85a930051473ccc7782ca7fe61f62a7a4addc9be316f78fd89668f2262ec2664",
+    "docs/LINUX-INFERENCE.md": "35ca948f6e89e9f07c4ebbb0db861a6d3dad4e4d9b19586f65be8bfaa4b785d7",
+    "docs/LINUX.md": "cdebf81059f9e4345ffb676d33804be9af18869b621bf8fbb7989dcb1e9bf232"
+  }
+}

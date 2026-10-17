@@ -10,7 +10,7 @@ benchmarks remain disabled at the user's request.
 
 Release source `1c695d5`; Windows/Linux/macOS workflows succeeded, 19 uploaded assets.
 Compilation/publication only: hardware inference validation remains pending.
-See [the exact handoff](CHANTIER-GPU-SPECIALISE.md) and
+See [the exact handoff](archive/2026-10-17/chantiers/CHANTIER-GPU-SPECIALISE.md) and
 [AMD build/deployment commands](../native/amd/README.md). `AJI_NATIVE_AMD=ON`
 builds a separate Linux library; `native/amd` builds the Windows D3D/HIP module
 without CUDA. `AJI_LOCAL_BUILD` accepts a matching local Windows/Linux backend
@@ -28,8 +28,8 @@ tests. Le code RIFE partagé `30a3e83` est maintenant dépassé et intégré par
 lots suivants : `d639dc1` / `b3f9d5d` ajoutent la chaîne warp et la chronologie
 des dessins. La branche NVIDIA CUDA Graph `f4fcd17` reste isolée.
 
-Lire [l'état consolidé courant](ETAT-PROJET.md) et
-[le chantier 3.8.0.24–29 / 165 Hz](CHANTIER-RIFE-165HZ.md). Les sections datées
+Lire [l'état consolidé courant](archive/2026-10-17/chantiers/ETAT-PROJET.md) et
+[le chantier 3.8.0.24–29 / 165 Hz](archive/2026-10-17/chantiers/CHANTIER-RIFE-165HZ.md). Les sections datées
 3.8.0.23 ci-dessous restent un historique des preuves de cette session, pas
 l'état global actuel. La chaîne warp est livrée dans le moteur partagé ;
 **elle ne l'est pas dans NCNN/Vulkan ni dans les binaires Windows amont**.
@@ -45,8 +45,8 @@ paquets de test Linux sont décrits dans [`LINUX.md`](LINUX.md).
 
 ## Performance implementation status — 14 October 2026
 
-See [ETAT-PROJET.md](ETAT-PROJET.md) for current release/CI evidence and
-[CHANTIER-PERFORMANCE-RELAIS.md](CHANTIER-PERFORMANCE-RELAIS.md) for reproducible
+See [ETAT-PROJET.md](archive/2026-10-17/chantiers/ETAT-PROJET.md) for current release/CI evidence and
+[CHANTIER-PERFORMANCE-RELAIS.md](archive/2026-10-17/chantiers/CHANTIER-PERFORMANCE-RELAIS.md) for reproducible
 source/binary checkpoints. 3.8.0.23 is published on all three platforms at
 `aab89ba`. Shared-engine changes at `30a3e83` passed CI but are not in that release.
 The isolated NVIDIA branch at `f4fcd17` is not consumed by the player's upstream

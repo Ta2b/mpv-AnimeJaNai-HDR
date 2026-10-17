@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-17T02:44:19.220204+00:00",
+  "site": "https://tatoub.atlassian.net",
+  "project": "AH",
+  "request": "Consigner toutes les missions nouvellement demandées dans Jira",
+  "issues": {
+    "AH-325": {
+      "state": "In Progress",
+      "scope": "Ancien éditeur/profils intégrés/options doublons ; fidélité et ordre du resize importé à résoudre",
+      "comment": "10190"
+    },
+    "AH-326": {
+      "state": "In Progress",
+      "scope": "HDR mpv et NVIDIA TrueHDR dans un étage unique ; retrait des réglages de conversion globaux doublonnés",
+      "comment": "10189"
+    },
+    "AH-328": {
+      "id": "10330",
+      "state": "In Progress",
+      "scope": "Retrait FRUC du Manager/lecteur/distributions ; anciens profils conservés et traitement explicite"
+    },
+    "AH-329": {
+      "id": "10331",
+      "state": "To Do",
+      "scope": "Audit des optimisations sans perte du véritable Quality ; comparaison ciblée à référence identique"
+    },
+    "AH-330": {
+      "id": "10332",
+      "state": "To Do",
+      "scope": "Cohérence des bibliothèques locales anciennes et de la sémantique Quality"
+    }
+  },
+  "links": [
+    {
+      "type": "Blocks",
+      "from": "AH-330",
+      "to": "AH-329"
+    },
+    {
+      "type": "Relates",
+      "from": "AH-328",
+      "to": "AH-154"
+    },
+    {
+      "type": "Relates",
+      "from": "AH-329",
+      "to": "AH-301"
+    },
+    {
+      "type": "Relates",
+      "from": "AH-325",
+      "to": "AH-326"
+    }
+  ],
+  "comments": {
+    "AH-301": "10188",
+    "AH-154": "10191",
+    "AH-327": "10192"
+  },
+  "implementation_status": "Missions consignées, code préparé non livré ; aucun nouveau correctif ni gain FPS revendiqué. Autres lots en pause.",
+  "user_config_sha256": "402da001c17bb9949a992fbb9755ec7639bd643e2b8c4040f684283a3112f303",
+  "worktrees": {
+    "player": "/home/ta2b/.animejanai-tools/work/lot-53-remove-fruc-20261017",
+    "manager": "/home/ta2b/.animejanai-tools/work/manager-remove-fruc-20261017",
+    "backend": "/home/ta2b/.animejanai-tools/work/backend-remove-fruc-20261017"
+  },
+  "worktree_note": "Copies du travail lot51 déjà préparé dans player/manager ; backend propre à4603933 après annulation du cherry-pick qui avait échoué faute d’identité git. Worktrees de pause d’origine préservés."
+}

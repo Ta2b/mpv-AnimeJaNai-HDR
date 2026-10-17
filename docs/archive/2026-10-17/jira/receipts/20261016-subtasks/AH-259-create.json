@@ -1,0 +1,15 @@
+{
+  "parent": "AH-33",
+  "marker": "split-20261015-ids-abi9-fast-views",
+  "summary": "Compléter les identités et gardes de vues des caches Fast ABI9 CUDA",
+  "target_status": "To Do",
+  "criterion": "Éliminer toute identité par pointeur recyclé dans Fast/promotion ; inclure métadonnées couleur/format/strides/plans/stream et lifetime, invalider au reset, fallback sûr sans IDs ; ablation ciblée sur métadonnées et mêmes adresses.",
+  "evidence": "Inspection du source montre gardes partielles Fast ; aucun nouveau correctif de cette portée implémenté avant l’arrêt .39. Pas de bug runtime universel déduit de la seule lecture.",
+  "status": "created",
+  "issue_key": "AH-259",
+  "create_result": {
+    "id": "10261",
+    "key": "AH-259"
+  },
+  "actual_status": "To Do"
+}

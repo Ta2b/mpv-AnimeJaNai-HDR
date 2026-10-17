@@ -7,7 +7,7 @@ charge les modules présents et consomme leurs sondes optionnelles : conversion
 CPU réellement exécutée et kernel CUDA du module livré, périphérique/SM et versions.
 Un module ancien sans sonde reste inconnu ; un fichier présent mais non chargeable
 échoue explicitement. Cela ne qualifie ni les modèles ni leurs opérateurs.
-Voir [la portée et les preuves du lot28](qualification/lot-28-device-caps-20261016.md).
+Voir [la portée et les preuves du lot28](archive/2026-10-17/qualification/lot-28-device-caps-20261016.md).
 
 | Choix | Calcul d’inférence | Modèles / limites |
 |---|---|---|

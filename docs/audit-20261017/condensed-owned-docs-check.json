@@ -1,0 +1,42 @@
+[
+  {
+    "path": "CLAUDE.md",
+    "lines": 38,
+    "bytes": 4863,
+    "local_links_checked": 12,
+    "missing_links": [],
+    "trailing_whitespace_lines": []
+  },
+  {
+    "path": "docs/ETAT-PROJET.md",
+    "lines": 5,
+    "bytes": 470,
+    "local_links_checked": 3,
+    "missing_links": [],
+    "trailing_whitespace_lines": []
+  },
+  {
+    "path": "docs/CHANTIER-QUALITY-FAST.md",
+    "lines": 43,
+    "bytes": 5106,
+    "local_links_checked": 5,
+    "missing_links": [],
+    "trailing_whitespace_lines": []
+  },
+  {
+    "path": "docs/INTERPOLATION-STAGES.md",
+    "lines": 89,
+    "bytes": 7816,
+    "local_links_checked": 9,
+    "missing_links": [],
+    "trailing_whitespace_lines": []
+  },
+  {
+    "path": "docs/INTERPOLATION-VIDEO-ANIMEJANAI-HDR.md",
+    "lines": 38,
+    "bytes": 6069,
+    "local_links_checked": 8,
+    "missing_links": [],
+    "trailing_whitespace_lines": []
+  }
+]

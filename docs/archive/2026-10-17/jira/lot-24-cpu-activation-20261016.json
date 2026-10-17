@@ -1,0 +1,23 @@
+{
+  "issue": "AH-270",
+  "parent": "AH-68",
+  "native_qualification": "AH-271",
+  "status": "Done",
+  "base": "71bd9acfdbcd0b5bbe516fc37960f11ca8c3fc72",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-24-cpu-activation-20261016",
+  "qualification": "complete Linux CPU: native 53 activations, 106 materializations removed, 16 exact outputs Quality/Fast; 56 FP32 boundary values exact; content guards/off/compile fallback passed; timing nonconclusive",
+  "artifacts": "artifacts/performance/lots-20261016/lot-24/native-float-prototype/",
+  "source": "4d7ff64d667d6204bf4acb6fd52a50c7c1310920",
+  "engine_source": "9f04bee0e42840be0c24237110e097ede91930a1",
+  "version": "3.8.0.56",
+  "push": "confirmed",
+  "qualification_comment_id": "10088",
+  "binary_sha256": "d5f0ca2975c92903ce3b9fdba033bbc0c93a3ee1d7eb823b0accdd0b4f77313a",
+  "workflows": [
+    38865536183,
+    38865536093,
+    38865536080
+  ],
+  "release_receipt": "release-20261016-3.8.0.56.json",
+  "close_comment_id": "10090"
+}

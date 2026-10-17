@@ -1,0 +1,15 @@
+{
+  "parent": "AH-33",
+  "marker": "split-20261015-ids-abi1-linux",
+  "summary": "Extension ABI1 d’identités immuables et bridge Linux, qualifiés avant/après",
+  "target_status": "Done",
+  "criterion": "Négocier un hook facultatif, IDs monotones/générations avec fallback octets, vues/dimensions/stride et refus de compteur régressé ; prouver parité et travail évité sur CPU/Vulkan, seek réel, compatibilité ancienne bibliothèque ; release complète.",
+  "evidence": "3.8.0.39 f05cf41c1448597a1929f7a8be318572a29c5ded publiée (16 assets uploaded, Windows/Linux/macOS success) ; rapport lot 08. ORT/CPU et NCNN : 14 sorties exactes chacun ; bridge off/on 13 hashes/PTS exacts, comparaisons 32 -> 5, seek 3 PNG16/PTS exacts, vieille bibliothèque acceptée. Publication vérifiée le 16/10/2026 : Windows 38808584132, Linux 38808584166, macOS 38808584174 success.",
+  "status": "created",
+  "issue_key": "AH-258",
+  "create_result": {
+    "id": "10260",
+    "key": "AH-258"
+  },
+  "actual_status": "To Do"
+}

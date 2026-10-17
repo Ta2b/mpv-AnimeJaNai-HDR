@@ -1,0 +1,10 @@
+{
+  "issue": "AH-13",
+  "status": "Done",
+  "release": "3.8.0.49",
+  "release_source": "764d8ad0628686544854ebc395781bf28623e15c",
+  "manager_source": "50ff160f534699015f01d4fd8beb8c3f53464a58",
+  "manager_run": 38848948867,
+  "qualification_comment": "10066",
+  "closing_comment": "10069"
+}

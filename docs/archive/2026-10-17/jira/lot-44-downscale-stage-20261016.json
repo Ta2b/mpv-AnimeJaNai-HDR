@@ -1,0 +1,19 @@
+{
+  "ticket": "AH-315",
+  "status": "In Progress",
+  "backend": "624ff49",
+  "manager": "d5e7cc4",
+  "native_library_sha256": "64d9bd1101ae6c30ec224629938b7901dfbea7dbd06d9e836d60046dfa58a2e7",
+  "native_kernel_sha256": "8a8a3f6917ead46b50cc7d2e8902ac2379018de9d2687c63c89174d0db6e5f15",
+  "qualified": [
+    "native area3:2 max0code",
+    "reader NVDEC identity+EOF",
+    "CPU schema guards",
+    "UI9+autosave1"
+  ],
+  "remaining": [
+    "RIFE comparison/quality",
+    "binary packaging and release"
+  ],
+  "comment": "10161"
+}

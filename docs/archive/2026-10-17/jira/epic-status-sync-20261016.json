@@ -1,0 +1,12 @@
+{
+  "status": "In Progress",
+  "epics": [
+    "AH-1",
+    "AH-2",
+    "AH-3",
+    "AH-8",
+    "AH-10"
+  ],
+  "reason": "User asks active tickets In Progress; existing work within these epics remains active/partially completed. No epic is closed; AH-9 was already In Progress.",
+  "tests": "Jira status bookkeeping only; no engine/video test needed"
+}

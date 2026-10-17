@@ -1,0 +1,12 @@
+{
+  "key": "AH-29",
+  "marker": "[sync-lots-01-05-20261015]",
+  "source": "lots-01-05",
+  "result": {
+    "message": "Comment added to AH-29 successfully",
+    "commentId": "10024",
+    "body": "\\[sync-lots-01-05-20261015\\]\n\nLot 03 / 3.8.0.34 : tag Core ML natif SHA-256 de la table et de toutes les ressources mlpackage, vrais poids inclus. Nouveau namespace v2, anciens caches/modèles conservés, diagnostic de reconstruction. Essai avant/après ciblé C++17 Linux : poids même nom/taille/mtime, ancien tag inchangé, nouveau changé ; oracle hashlib, relocation stable, renommage sensible, description absente refusée. Packages redimensionnés identiques octet pour octet. Build/link libaji_ort réussi. Coût processus unique 16 Mio : 1,2454 -> 86,8164 ms, pas une mesure FPS. Correctif de fidélité conservé. Qualification partielle Apple : .mlmodelc et diagnostic runtime non exercés ; ticket non Done avant cet essai. Détails docs/qualification/lot-03-coreml-20261015.md. Release 3.8.0.34 publiée, 16 assets uploaded ; Windows 38796590938, Linux 38796590933 et macOS 38796590949 success.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

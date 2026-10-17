@@ -1,0 +1,10 @@
+{
+  "key": "AH-31",
+  "result": {
+    "message": "Comment added to AH-31 successfully",
+    "commentId": "10030",
+    "body": "\\[lot-05-assets-20261015\\]\n\nRelease 3.8.0.36 désormais publiée sur les trois plateformes : Windows 38803534058, Linux 38803534125, macOS 38803534433 tous success ; 15 assets, tous uploaded. https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.36 . Publié et qualifié localement sur les cas décrits, pas installé sur cette machine. Les dépendances globales AH-28/AH-32 et leurs limites restent ouvertes ; AH-31 reste In Progress.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "issue": "AH-290",
+  "parent": "AH-36",
+  "status": "Done",
+  "followups": [
+    "AH-291",
+    "AH-292"
+  ],
+  "base": "ea24deaf24f9091afcb27b44c7718da9f04f943e",
+  "worktree": "/home/ta2b/.animejanai-tools/work/lot-37-player-surface-worker-20261016",
+  "backend_readonly": "/home/ta2b/.animejanai-tools/work/backend-surface-pair-cache-20261016",
+  "implementation": "Qualified optional native spatial CUDA player worker and terminal wakeup; same-plan NV12/444 pixels and PTS exact, paused reserve3, controlled responsiveness, seek and error ownership checks successful. Portable multi-SM CUDA build fixed before project(), affected outputs requalified to existing references. Published release69; RIFE/temporal/specialized and other clients remain followup tickets, Quality/default unchanged.",
+  "design": [
+    "Optional opt-in standard CUDA spatial route after capability/configure negotiation; RIFE,temporal,pre-resize,RTX unsupported routes remain explicit legacy/followup, never claim universal worker.",
+    "Resolve Surface/async symbols on existing module. Worker exclusively owns context after enable; disable/drain before any legacy configure/hints/reset/destroy.",
+    "Native NVDEC recorded CUDA event dependency and own stream remain alive until terminal completion; output GPU frames and inputs retained using thread-safe lifetime callbacks or explicit BORROW_UNTIL_COMPLETE with ring ownership; no CPU pixels.",
+    "Bound capacity independently of result FIFO, probably min(MAX_DEPTH4,async_caps.max_capacity), preserve immutable input/output descriptors, source dimensions/crops/all8color fields/PTS; generation after seek.",
+    "Current ring pop blocks aji_wait; worker route needs nonblocking Complete polling + graph wakeup/retry, and all other paths calling wait/done/flush must be audited. Do not use legacy while queue owns context.",
+    "Short necessary same-plan/input comparison to saved lot34 output refs: paused reserve ready, pixel/PTS/EOF exact, seek/drain/ownership and model execution decoupled from core; demonstrate utility without arbitrary FPS claims.",
+    "Public headers native/common/surface.h,surface_async.h,surface_queue.h. Need copy appropriate pure-C headers into mpv source via installer and hash cache, without modifying user mpv/backend worktrees."
+  ],
+  "remaining": [],
+  "backend_worktree": "/home/ta2b/.animejanai-tools/work/backend-player-worker-wakeup-20261016",
+  "mpv_worktree": "/home/ta2b/.animejanai-tools/work/mpv-player-surface-worker-20261016",
+  "release": "3.8.0.69",
+  "release_source": "2e745ffa3f1861e53470386ceeb5c31025e7d2a0",
+  "qualification_source": "8ed6c622e125df68dfc82803e1bceb565655863f",
+  "backend_source": "861ab52efda5f1313bd39b8e15053b6d3c31f130",
+  "binary_source": "4c0eb212a7d1426a8904bb378be3308135179846",
+  "qualification_comment": "10129",
+  "closure_comment": "10134",
+  "publication_receipt": "docs/jira/release-20261016-3.8.0.69.json"
+}

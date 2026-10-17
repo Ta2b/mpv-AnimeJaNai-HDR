@@ -1,0 +1,12 @@
+{
+  "key": "AH-230",
+  "marker": "[sync-lots-01-05-20261015]",
+  "source": "lots-01-05",
+  "result": {
+    "message": "Comment added to AH-230 successfully",
+    "commentId": "10022",
+    "body": "\\[sync-lots-01-05-20261015\\]\n\nRelais du lot 01 dans docs/qualification/lot-01-delivery-20261015.md, notes versionnées .github/release-notes/3.8.0.32.md. Sources isolées ; modèles/binaries/Manager inchangés. Lot suivant AH-11 commencé sans attendre les builds.\n\nRelais lots 01–04 actualisé : releases 3.8.0.32 à 3.8.0.35 publiées et assets vérifiés ; lot 05 TensorRT isolé en cours. Jira disponible à nouveau sur tatoub.atlassian.net, projet AH : résultats et transitions réelles consignés avec reçus dans docs/jira/sync-20261015-live.json. Les états historiques « connecteur absent » ne décrivent plus la connexion actuelle. Pas de clôture des qualifications partielles.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

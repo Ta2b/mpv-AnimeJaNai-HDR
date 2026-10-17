@@ -1,0 +1,15 @@
+{
+  "parent": "AH-22",
+  "marker": "split-20261015-stats-cuda-linux",
+  "summary": "Log CUDA Linux atomique au configure et nettoyage de l’échec",
+  "target_status": "Done",
+  "criterion": "Log complet ancien/nouveau par remplacement atomique au configure ; échec préserve ancien état et ne fuit pas de temporaire ; mêmes sorties/PTS et contenu de log.",
+  "evidence": "3.8.0.38 212c286dd3181ac112804811ded55679a70b97fd ; rapport lot 07. Vrais objets C, fuite 1 -> 0 ; NVDEC/SPAN Quality 3 sorties exactes, texte log identique, inode réellement remplacé, aucun gain FPS.",
+  "status": "created",
+  "issue_key": "AH-256",
+  "create_result": {
+    "id": "10258",
+    "key": "AH-256"
+  },
+  "actual_status": "To Do"
+}

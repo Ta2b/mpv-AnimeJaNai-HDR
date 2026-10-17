@@ -8,8 +8,8 @@ tests. Le code RIFE partagé `30a3e83` est maintenant dépassé et intégré par
 lots suivants : `d639dc1` / `b3f9d5d` ajoutent la chaîne warp et la chronologie
 des dessins. La branche NVIDIA CUDA Graph `f4fcd17` reste isolée.
 
-Lire [l'état consolidé courant](ETAT-PROJET.md) et
-[le chantier 3.8.0.24–29 / 165 Hz](CHANTIER-RIFE-165HZ.md). Les sections datées
+Lire [l'état consolidé courant](archive/2026-10-17/chantiers/ETAT-PROJET.md) et
+[le chantier 3.8.0.24–29 / 165 Hz](archive/2026-10-17/chantiers/CHANTIER-RIFE-165HZ.md). Les sections datées
 3.8.0.23 ci-dessous restent un historique des preuves de cette session, pas
 l'état global actuel. La chaîne warp est livrée dans le moteur partagé ;
 **elle ne l'est pas dans NCNN/Vulkan ni dans les binaires Windows amont**.
@@ -33,7 +33,7 @@ contre la veille automatique. Il ne garantit pas l'absence de verrouillage.
 `upscale work` et `other` remplacent les anciennes colonnes trompeuses ; `other`
 n'est pas un temps de copies. Les durées RIFE sont par intervalle source.
 
-[État du projet](ETAT-PROJET.md) et [relais détaillé](CHANTIER-PERFORMANCE-RELAIS.md).
+[État du projet](archive/2026-10-17/chantiers/ETAT-PROJET.md) et [relais détaillé](archive/2026-10-17/chantiers/CHANTIER-PERFORMANCE-RELAIS.md).
 Mode d'emploi : `installer/macos/LISEZ-MOI.txt` ; notice de mesure :
 `native/macos-bench/LISEZ-MOI.txt`. Aucun nouveau test local après la demande d'arrêt.
 

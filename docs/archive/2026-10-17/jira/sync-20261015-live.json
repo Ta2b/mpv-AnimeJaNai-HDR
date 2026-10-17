@@ -1,0 +1,359 @@
+{
+  "cloud_id": "f3f52acd-f094-4342-9a7e-dd267be54828",
+  "status": "posted",
+  "comments": [
+    {
+      "key": "AH-223",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "body": "[sync-qualification-continuation-20261015]\n\nSuite de qualification du 15/10/2026, après le premier lot publié dans AH-223 — contrôles supplémentaires ciblés, sans répéter les cas concluants.\n\nRéférences inchangées : lecteur publié 3.8.0.31, source bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6 ; backend CUDA 1468be6f24cac537407283d434bd5d542d642cf3, lib SHA-256 bbaf06e374f74d6ad82d0a986abb30406e34c2ad49af459d0d37ecfdaa061f12. Machine Linux CachyOS/i7-10700K/RTX 4070 Ti, pilote 615.78.08, TRT 11.3.0. Même clip anime H.264 de 8 images, 1280×720, RIFE 4.26 sans Ensemble, seuil 0,150, avant SPAN V3.1Sharp1 Performance → 2560×1440. Fast, dessins désactivés, facteur 5/2. Poids identiques.\n\n1) Cadence fractionnaire et promotion B→A : AJI_RIFE_PAIR_CACHE=0/AJI_RIFE_BURST=0 vs 1/1 dans le même binaire. 18 sorties YUV444P16, SHA-256 de chaque image et PTS strictement identiques ; 1+floor(7×5/2)=18 attendu, EOF drainé. Grille contrôlée indépendamment : pas idéal 1001/60000 s, erreur maximale 16,667 µs, inférieure à un tick du muxeur (41,667 µs), PTS strictement croissants. Préparations 8→7, 0→1 hit, 0→6 promotions ; 12 warps/7 upscales d'endpoints des deux côtés. La grille ne présente pas B dans une paire sur deux : cette comparaison exerce la promotion sans émission systématique de l'endpoint. Durées totales 3.119/2.267 s, incluant démarrage/readback/hash : aucun gain isolé de FPS attribué à cette comparaison combinant deux bascules.\n\n2) Seek réel : référence processus neuf sans cache/rafale à --start=0.0834 ; candidat avec cache/rafale, trois pas de lecture pour établir l'état, seek avant vers 0.2084 puis arrière vers 0.0834. Décodeur nvdec et sortie gpu-next/Vulkan actifs. Source et deux intermédiaires : PTS 0.083417/0.100100/0.116783 s et PNG 16 bits identiques à l'octet. 0 frame-drop-count observé sur ce parcours borné ; processus fermés, sockets de test absents après nettoyage explicite. Processus 2.987/2.812 s ; seeks candidat 34,3/32,3 ms de réponse IPC, pas des percentiles de latence.\n\nCommandes exactes, paramètres, hashes et résultats : artifacts/performance/qualification-20261015/continuation/rational-{off,on}-command.json, rational-summary.json, seek-summary.json, seek_probe.py et manifest.json. Les captures sont comparées après conversion screenshot, pas sur les tenseurs natifs. Audio/sous-titres/HDR physique et seeks prolongés/rapidement répétés ne sont pas certifiés. Les erreurs initiales du pilote (chemin de socket trop long, attente d'événement ne drainant pas IPC) sont séparées dans excluded-setup-diagnostics.json ; aucun échec natif retenu. La référence réussie a été réutilisée.\n\nDécision : conserver ces preuves de fidélité/cycle de vie sur cette cible ; qualification globale toujours partielle. Aucun modèle, défaut produit, configuration installée ou worktree backend modifié. Pas d'essai plus long ni de gain universel inventé.\n\nStrata : service initialement indisponible, puis /health=ok et modèle chargé qwen3.8-flash-next-coder-iq1_m. Une mission de lecture seule a produit un inventaire des gardes du cache en 92.557 s (10 818 tokens locaux selon l'API). Références décisives contrôlées dans le source. La généralisation « aucune garde locale absente » n'est pas retenue ; les champs exacts du cache RIFE ne sont pas tous comparés dans les branches Fast. Aucun bug runtime déduit de cela. Artefacts Strata conservés ; aucun test GPU du projet pendant son inférence. Aucune économie GPT chiffrée revendiquée.\n\n\n3) Chemin dessins tenus/pré-resize : fixture contrôlée [A,A,A,B,B,C,C], H.264 sans perte à 1920×1080, RIFE-first à 1280×720 puis SPAN→1440p, Fast ×4, dessins activés, mêmes poids. Les 7 images décodées et groupes de tenue ont été vérifiés par framehash (3 images uniques). Cache/rafale 0/0 vs 1/1 : 25 sorties YUV444P16 et PTS identiques, EOF drainé, chemin dessins/lookahead réellement actif. 18 warps/7 upscales/4 paires motion des deux côtés ; promotions 0→1. Durées 2,968/2,868 s, hash/readback/démarrage inclus : gain non concluant.\n\n4) Retiming désactivé vs activé, témoin activé déjà acquis réutilisé : 25 PTS identiques mais 21 images différentes ; préparations/paires motion 6→4. Effet temporel réel et travail évité, sans preuve de supériorité perceptuelle ni d'équivalence aux poses source. Temps 2,918/2,868 s : gain non concluant. Conserver comme variante Fast avec compromis explicite, Quality continue de l'interdire. Logs/commandes/sorties dans drawings-*-command.json, drawings-summary.json, retiming-disabled-command.json et retiming-summary.json.\n\nAprès cette mission Strata, l'utilisateur précise qu'il peut être omis s'il ralentit les tickets. Aucun autre appel local n'a été lancé ; les vérifications et comptes rendus ont été terminés avec des scripts déterministes et l'agent principal.\n",
+      "source": "qualification-continuation-20261015.json"
+    },
+    {
+      "key": "AH-218",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "body": "[sync-qualification-continuation-20261015]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nSeek réel Fast 5/2, NVDEC/gpu-next Vulkan : candidat cache/rafale actifs après trois pas de lecture, seek avant 0,2084 s puis arrière 0,0834 s ; témoin neuf sans cache/rafale démarrant à 0,0834 s. Source et deux intermédiaires : PNG16 identiques à l'octet, PTS 0,083417/0,100100/0,116783 s, frame-drop-count=0 sur ce parcours. Fermeture réussie, sockets absents après nettoyage explicite. Processus 2,987/2,812 s ; seeks 34,3/32,3 ms de réponse IPC, sans portée statistique. Les captures passent par screenshot, pas par accès aux tenseurs natifs. Audio/changements de modèle/erreurs GPU/seeks prolongés restent non qualifiés. Pilote et commandes dans seek_probe.py et seek-summary.json. Décision : fidélité/cycle de vie observés sur ce parcours borné, pas de garantie universelle.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+      "source": "qualification-continuation-20261015.json"
+    },
+    {
+      "key": "AH-216",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "body": "[sync-qualification-continuation-20261015]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nNouveau facteur Fast 5/2 avec cache/rafale 0/0→1/1, même clip 8 images : 18 images YUV444P16 et PTS identiques ; nombre attendu 1+floor(7×5/2)=18, EOF drainé. Grille indépendante : pas 1001/60000 s, PTS croissants et erreur max 16,667 µs < un tick muxeur 41,667 µs. Processus 3,119/2,267 s, incluant démarrage/readback/hash, donc aucun gain isolé attribué. Même poids, ni changement automatique de facteur ni test exhaustif de formes. Pré-resize 1080→720/dessins ×4 : 25 sorties/PTS identiques entre variantes. Décision : ces deux cas supplémentaires sont qualifiés fonctionnellement ; le reste de la matrice demeure partiel.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+      "source": "qualification-continuation-20261015.json"
+    },
+    {
+      "key": "AH-181",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "body": "[sync-qualification-continuation-20261015]\n\nSuite ciblée du 15/10/2026 — cadence Fast 5/2, qualification partielle.\n\nMême lecteur 3.8.0.31 (bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6), backend 1468be6f24cac537407283d434bd5d542d642cf3, RTX4070Ti/TRT11.3 et mêmes poids RIFE4.26/SPAN que le premier lot. 8 sources anime 720p : 18 sorties YUV444P16 et PTS identiques cache/rafale off-on. Oracle indépendant : 1+floor(7×5/2)=18, pas 1001/60000 s, erreur maximale 16,667 µs < tick 1/24000 s. EOF drainé. Aucune promesse sur écran 165Hz/VRR, aucun facteur adapté implicitement. Durées 3,119/2,267 s chargement/hash compris : aucune qualification FPS.\n\nRetiming sur fixture de dessins tenus : conserve les 25 PTS mais change 21 images, distinction cadence/poses explicite. Rapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md. Commandes, hashes et limites : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale, de réglage installé modifié ni de nouvelle campagne longue.",
+      "source": "qualification-continuation-20261015.json"
+    },
+    {
+      "key": "AH-60",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "body": "[sync-qualification-continuation-20261015]\n\nSuite ciblée du 15/10/2026 — identité/promotion de paire, qualification partielle.\n\nMême lecteur 3.8.0.31 (bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6), backend 1468be6f24cac537407283d434bd5d542d642cf3, RTX4070Ti/TRT11.3 et mêmes poids que le premier lot.\n\nPromotion Fast B→A sans émission systématique de B, grille 5/2 : 18 sorties et PTS identiques cache/rafale off-on ; 6 promotions, préparations 8→7 et 0→1 hit. Durées 3,119/2,267 s démarrage/hash inclus : aucun gain isolé attribué. Seek réel du candidat comparé à processus neuf sans cache/rafale : source et deux intermédiaires PNG16 identiques, PTS identiques, 0 abandon observé sur ce parcours borné. Processus 2,987/2,812 s. Chemin dessins/lookahead et pré-resize1080→720 : 25 sorties/PTS identiques, 1 promotion avec cache, 2,968/2,868 s. Travail évité observé ; gain de temps non isolé.\n\nInventaire local Strata contrôlé : same_frame_view couvre 6 métadonnées, 3 plans et 3 strides pour la préparation RIFE ; les branches Fast ne comparent pas toutes cette vue. Aucune régression déduite statiquement, changements de métadonnées/stream avec mêmes IDs non testés. Rapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md ; commandes et artefacts dans artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale.",
+      "source": "qualification-continuation-20261015.json"
+    },
+    {
+      "key": "AH-83",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "body": "[sync-qualification-continuation-20261015]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nChemins publiés NVDEC→RIFE→SPAN contrôlés sur facteur Fast 5/2 et seek avant/arrière. 18 sorties/PTS identiques off-on pour le fichier complet ; après seek, source et deux intermédiaires identiques au processus neuf sans cache. Présentation Vulkan active pour le seek. Chemin pré-resize 1080→720 et dessins ×4 : 25 sorties/PTS identiques off-on, EOF drainé. TrueHDR/VSR/audio non activés, gain de synchronisation non attribué. Aucun retrait du correctif NVDEC.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+      "source": "qualification-continuation-20261015.json"
+    },
+    {
+      "key": "AH-179",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "body": "[sync-qualification-continuation-20261015]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nRetiming Fast sur une fixture tenue [A,A,A,B,B,C,C], ×4, pré-resize 1080→720 : désactivé→activé donne 25 PTS identiques, 21 images différentes. Réduction de 6 à 4 paires motion/préparations, 18 warps dans les deux modes. Effet temporel réel ; fidélité aux poses volontairement changée. Durées 2,918/2,868 s (readback/hash/démarrage) : gain non concluant. Conserver comme variante Fast explicite, exclue de Quality ; supériorité perceptuelle non démontrée. Les 7 sources décodées comportent bien 3 images uniques tenues 3/2/2 fois. Témoin retiming activé déjà acquis réutilisé.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+      "source": "qualification-continuation-20261015.json"
+    },
+    {
+      "key": "AH-214",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "body": "[sync-qualification-continuation-20261015]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nContrôle d'une autre politique temporelle Fast : retiming off/on sur 7 sources tenues contrôlées, mêmes poids/×4/pré-resize 1080→720. 25 PTS identiques mais 21 images différentes ; 6→4 paires motion. Cela démontre une variante de temporalité et du travail évité, pas une équivalence Quality ou une supériorité perceptuelle. 2,918/2,868 s par processus : gain non concluant. Quality reste protégée. La déformation Fast vue au premier lot n'est pas retestée ; ce contrôle cible le retiming jusque-là non exercé.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+      "source": "qualification-continuation-20261015.json"
+    },
+    {
+      "key": "AH-229",
+      "marker": "[sync-lots-01-05-20261015]",
+      "body": "[sync-lots-01-05-20261015]\n\nLot 01 : livraison concurrente implémentée. Les workflows de lots distincts ne s’annulent plus ; promotion latest sérialisée, comparaison numérique anti-retour arrière. Essai court avant/après des scripts réels via gh simulé : fin .33 puis .32, ancienne latest=.32, nouvelle latest=.33 ; ordre assets préservé, doublon ignoré, échec upload bloquant. Utilité livraison, aucun gain FPS ni changement pixels. Bash passe ; actionlint passe hors propriété queue:max documentée officiellement mais inconnue de son schéma 1.7.12. Release 3.8.0.32 publiée : Windows 38794340030, Linux 38794340190 et macOS 38794340109 tous success, 15 assets uploaded. Promotions latest réussies. Critères DEL-06 remplis : commits ciblés, pins inchangés, référence 3.8.0.31 conservée, statuts compilé/publié/non installé/qualifié localement distingués. Transition Done après consignation de ce résultat.",
+      "source": "lots-01-05"
+    },
+    {
+      "key": "AH-230",
+      "marker": "[sync-lots-01-05-20261015]",
+      "body": "[sync-lots-01-05-20261015]\n\nRelais du lot 01 dans docs/qualification/lot-01-delivery-20261015.md, notes versionnées .github/release-notes/3.8.0.32.md. Sources isolées ; modèles/binaries/Manager inchangés. Lot suivant AH-11 commencé sans attendre les builds.\n\nRelais lots 01–04 actualisé : releases 3.8.0.32 à 3.8.0.35 publiées et assets vérifiés ; lot 05 TensorRT isolé en cours. Jira disponible à nouveau sur tatoub.atlassian.net, projet AH : résultats et transitions réelles consignés avec reçus dans docs/jira/sync-20261015-live.json. Les états historiques « connecteur absent » ne décrivent plus la connexion actuelle. Pas de clôture des qualifications partielles.",
+      "source": "lots-01-05"
+    },
+    {
+      "key": "AH-11",
+      "marker": "[sync-lots-01-05-20261015]",
+      "body": "[sync-lots-01-05-20261015]\n\nLot 02 / 3.8.0.33 : incrément export de référence implémenté, ticket partiel non clos. CLI --export-reference et script-message animejanai-export-reference ; mpv observé, configuration réelle du vf, runtime, inventaire modèles/exports et poids SHA-256. Fonctionnel Linux NVDEC/Vulkan : exports CLI et Lua, mêmes PNG16/PTS avant/après ; 29 hashes vérifiés indépendamment, coût CLI ponctuel 1,6147 s. Fixture ciblée : poids remplacés même nom/taille/mtime détectés, changement chaîne détecté, symlink/cycle, absence vidéo, rapport existant. Pas de gain FPS attendu ; utilité reproductibilité. Limites explicites JSON qualification=partial : pas de précision par opérateur/placement/dimensions intermédiaires ni preuve des poids déjà chargés, stats fraîcheur inconnue, média non hashé. Release 3.8.0.33 publiée, 15 assets uploaded ; trois workflows Windows 38795603934, Linux 38795604009, macOS 38795603995 success. Autres plateformes compilées/publiées, non qualifiées matériellement. Détails docs/qualification/lot-02-reference-20261015.md.",
+      "source": "lots-01-05"
+    },
+    {
+      "key": "AH-29",
+      "marker": "[sync-lots-01-05-20261015]",
+      "body": "[sync-lots-01-05-20261015]\n\nLot 03 / 3.8.0.34 : tag Core ML natif SHA-256 de la table et de toutes les ressources mlpackage, vrais poids inclus. Nouveau namespace v2, anciens caches/modèles conservés, diagnostic de reconstruction. Essai avant/après ciblé C++17 Linux : poids même nom/taille/mtime, ancien tag inchangé, nouveau changé ; oracle hashlib, relocation stable, renommage sensible, description absente refusée. Packages redimensionnés identiques octet pour octet. Build/link libaji_ort réussi. Coût processus unique 16 Mio : 1,2454 -> 86,8164 ms, pas une mesure FPS. Correctif de fidélité conservé. Qualification partielle Apple : .mlmodelc et diagnostic runtime non exercés ; ticket non Done avant cet essai. Détails docs/qualification/lot-03-coreml-20261015.md. Release 3.8.0.34 publiée, 16 assets uploaded ; Windows 38796590938, Linux 38796590933 et macOS 38796590949 success.",
+      "source": "lots-01-05"
+    },
+    {
+      "key": "AH-28",
+      "marker": "[sync-lots-01-05-20261015]",
+      "body": "[sync-lots-01-05-20261015]\n\nPrimitive portable SHA-256 et sérialisation encadrée ajoutée dans native/common/content_identity.h ; utilisée pour le template Core ML CAC-02. Incrément seulement : identités générales ONNX/TensorRT, poids externes, convertisseur, options et GPU/runtime encore à faire. AH-28 non Done.\n\nExtension de la primitive contenu aux graphes ONNX et poids externes déclarés, utilisée pour exports flow CAC-03. Le ticket global CAC-01 reste ouvert : les identités de tous les formats compilés et options/runtime/GPU ne sont pas encore couvertes.\n\nCAC-04 : même sérialisation et scanner ONNX mutualisés avec le backend isolé d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 ; snapshots source/poids, options, TensorRT/CUDA/driver/GPU courant inclus dans les noms v2. Qualification GPU locale faite, publication du lot 05 encore en attente. CAC-01 reste globalement partiel : tous les formats compilés ne sont pas couverts.",
+      "source": "lots-01-05"
+    },
+    {
+      "key": "AH-30",
+      "marker": "[sync-lots-01-05-20261015]",
+      "body": "[sync-lots-01-05-20261015]\n\nLot 04 / 3.8.0.35 : cache exports flow RIFE partagé identifié par octets graphe, tous poids externes déclarés et transformation v2 ; cache compilé provider isolé sous identité. Lecture checksum, copies poids relatives, écritures contrôlées + rename atomique, cache invalide conservé/réparé, anciens flow ignorés/préservés. Essais ciblés sources/poids remplacés même nom/taille/mtime, graphes imbriqués/sparse/fonctions, inputs invalides, cache corrompu, hit et deux builders : succès. Inférence réelle CPU RIFE4.26/SPAN Fast x4 même paire/3 instants : 0 octet changé, graphe flow identique. Configuration unique 217,8029 -> 363,0445 ms, surcoût fidélité, aucun gain FPS. Scope moteur partagé Linux/macOS, engines Windows distincts inchangés. Qualification GPU non disponible, aucune vitesse ou fidélité GPU revendiquée. Release 3.8.0.35 publiée : Windows 38798216421, Linux 38798216398, macOS 38798216458 success, 16 assets uploaded. Critère local CAC-03 couvert. Le ticket reste In Progress : les prérequis globaux CAC-01/AH-28 et CAC-05/AH-32 sont encore partiels ; leurs liens bloquants sont conservés. Pas de clôture anticipée. Détails docs/qualification/lot-04-rife-flow-20261015.md.",
+      "source": "lots-01-05"
+    },
+    {
+      "key": "AH-32",
+      "marker": "[sync-lots-01-05-20261015]",
+      "body": "[sync-lots-01-05-20261015]\n\nPrérequis transactionnels implémentés pour les exports flow (lot 04, release 3.8.0.35) et les snapshots/engines TensorRT ordinaires (lot 05, backend d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 en cours de publication). Temporaires uniques, publication par rename, cache partiel vérifié et conservé/réparé, échec builder sans destruction des engines terminés ; deux processus concurrents sur snapshots/flow vérifiés. CAC-05 reste In Progress : verrou par clé, arrêts/quota/erreur disque et tous les autres caches ne sont pas intégralement couverts. Les tickets dépendants ne sont pas clos tant que leur contrat requis reste incomplet.",
+      "source": "lots-01-05"
+    },
+    {
+      "key": "AH-31",
+      "marker": "[sync-lots-01-05-20261015]",
+      "body": "[sync-lots-01-05-20261015]\n\nLot 05 CAC-04 en cours. Backend isolé d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 ; original utilisateur 1468be6 intact. Engines v2 SHA-256 : graphe + poids externes, settings, version TensorRT, CUDA runtime/driver et GPU courant (UUID/SM). Anciennes clés ignorées/préservées ; source figée sous identité et builders temporaires publiés uniquement après succès. Essai ciblé CPU : remplacement poids même nom/taille/mtime, oracle SHA, runtime/settings/device, snapshot invalide, concurrence et échec builder : succès.\n\nEssai GPU réel RTX4070Ti/TRT11.3, Quality SPAN V3.1Sharp1 Performance, 3 images anime NV12 128×72, mêmes inputs/settings. Configure ancien 3,1267 s → candidat 2,7537 s, hit 0,0336 s sans builder ; valeurs uniques, aucun gain FPS revendiqué. Remplacement d’un poids force un miss ; échec de construction conserve les anciens engines terminés. Deux reconstructions indépendantes diffèrent de 10 660 octets (max 1/255) ; investigation nécessaire avec exactement le même plan TensorRT : 0 octet différent avant/après, cold/hit candidat identiques. Ne pas annoncer une équivalence bit à bit entre reconstructions. Build/link local et ABI 24 symboles aji_ identique ; publication Windows/Linux du binaire exact encore à vérifier, pas de release 3.8.0.36 annoncée complète. Dépendances AH-28/AH-32 partielles, ticket In Progress. Preuves : backend docs/CAC04-20261015.md et artifacts/performance/lots-20261015/lot-05/.",
+      "source": "lots-01-05"
+    }
+  ],
+  "receipts": [
+    {
+      "key": "AH-11",
+      "marker": "[sync-lots-01-05-20261015]",
+      "source": "lots-01-05",
+      "result": {
+        "message": "Comment added to AH-11 successfully",
+        "commentId": "10023",
+        "body": "\\[sync-lots-01-05-20261015\\]\n\nLot 02 / 3.8.0.33 : incrément export de référence implémenté, ticket partiel non clos. CLI --export-reference et script-message animejanai-export-reference ; mpv observé, configuration réelle du vf, runtime, inventaire modèles/exports et poids SHA-256. Fonctionnel Linux NVDEC/Vulkan : exports CLI et Lua, mêmes PNG16/PTS avant/après ; 29 hashes vérifiés indépendamment, coût CLI ponctuel 1,6147 s. Fixture ciblée : poids remplacés même nom/taille/mtime détectés, changement chaîne détecté, symlink/cycle, absence vidéo, rapport existant. Pas de gain FPS attendu ; utilité reproductibilité. Limites explicites JSON qualification=partial : pas de précision par opérateur/placement/dimensions intermédiaires ni preuve des poids déjà chargés, stats fraîcheur inconnue, média non hashé. Release 3.8.0.33 publiée, 15 assets uploaded ; trois workflows Windows 38795603934, Linux 38795604009, macOS 38795603995 success. Autres plateformes compilées/publiées, non qualifiées matériellement. Détails docs/qualification/lot-02-reference-20261015.md.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-179",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "source": "qualification-continuation-20261015.json",
+      "result": {
+        "message": "Comment added to AH-179 successfully",
+        "commentId": "10019",
+        "body": "\\[sync-qualification-continuation-20261015\\]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nRetiming Fast sur une fixture tenue \\[A,A,A,B,B,C,C\\], ×4, pré-resize 1080→720 : désactivé→activé donne 25 PTS identiques, 21 images différentes. Réduction de 6 à 4 paires motion/préparations, 18 warps dans les deux modes. Effet temporel réel ; fidélité aux poses volontairement changée. Durées 2,918/2,868 s (readback/hash/démarrage) : gain non concluant. Conserver comme variante Fast explicite, exclue de Quality ; supériorité perceptuelle non démontrée. Les 7 sources décodées comportent bien 3 images uniques tenues 3/2/2 fois. Témoin retiming activé déjà acquis réutilisé.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-181",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "source": "qualification-continuation-20261015.json",
+      "result": {
+        "message": "Comment added to AH-181 successfully",
+        "commentId": "10016",
+        "body": "\\[sync-qualification-continuation-20261015\\]\n\nSuite ciblée du 15/10/2026 — cadence Fast 5/2, qualification partielle.\n\nMême lecteur 3.8.0.31 (bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6), backend 1468be6f24cac537407283d434bd5d542d642cf3, RTX4070Ti/TRT11.3 et mêmes poids RIFE4.26/SPAN que le premier lot. 8 sources anime 720p : 18 sorties YUV444P16 et PTS identiques cache/rafale off-on. Oracle indépendant : 1+floor(7×5/2)=18, pas 1001/60000 s, erreur maximale 16,667 µs < tick 1/24000 s. EOF drainé. Aucune promesse sur écran 165Hz/VRR, aucun facteur adapté implicitement. Durées 3,119/2,267 s chargement/hash compris : aucune qualification FPS.\n\nRetiming sur fixture de dessins tenus : conserve les 25 PTS mais change 21 images, distinction cadence/poses explicite. Rapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md. Commandes, hashes et limites : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale, de réglage installé modifié ni de nouvelle campagne longue.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-214",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "source": "qualification-continuation-20261015.json",
+      "result": {
+        "message": "Comment added to AH-214 successfully",
+        "commentId": "10020",
+        "body": "\\[sync-qualification-continuation-20261015\\]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nContrôle d'une autre politique temporelle Fast : retiming off/on sur 7 sources tenues contrôlées, mêmes poids/×4/pré-resize 1080→720. 25 PTS identiques mais 21 images différentes ; 6→4 paires motion. Cela démontre une variante de temporalité et du travail évité, pas une équivalence Quality ou une supériorité perceptuelle. 2,918/2,868 s par processus : gain non concluant. Quality reste protégée. La déformation Fast vue au premier lot n'est pas retestée ; ce contrôle cible le retiming jusque-là non exercé.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-216",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "source": "qualification-continuation-20261015.json",
+      "result": {
+        "message": "Comment added to AH-216 successfully",
+        "commentId": "10015",
+        "body": "\\[sync-qualification-continuation-20261015\\]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nNouveau facteur Fast 5/2 avec cache/rafale 0/0→1/1, même clip 8 images : 18 images YUV444P16 et PTS identiques ; nombre attendu 1+floor(7×5/2)=18, EOF drainé. Grille indépendante : pas 1001/60000 s, PTS croissants et erreur max 16,667 µs < un tick muxeur 41,667 µs. Processus 3,119/2,267 s, incluant démarrage/readback/hash, donc aucun gain isolé attribué. Même poids, ni changement automatique de facteur ni test exhaustif de formes. Pré-resize 1080→720/dessins ×4 : 25 sorties/PTS identiques entre variantes. Décision : ces deux cas supplémentaires sont qualifiés fonctionnellement ; le reste de la matrice demeure partiel.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-218",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "source": "qualification-continuation-20261015.json",
+      "result": {
+        "message": "Comment added to AH-218 successfully",
+        "commentId": "10014",
+        "body": "\\[sync-qualification-continuation-20261015\\]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nSeek réel Fast 5/2, NVDEC/gpu-next Vulkan : candidat cache/rafale actifs après trois pas de lecture, seek avant 0,2084 s puis arrière 0,0834 s ; témoin neuf sans cache/rafale démarrant à 0,0834 s. Source et deux intermédiaires : PNG16 identiques à l'octet, PTS 0,083417/0,100100/0,116783 s, frame-drop-count=0 sur ce parcours. Fermeture réussie, sockets absents après nettoyage explicite. Processus 2,987/2,812 s ; seeks 34,3/32,3 ms de réponse IPC, sans portée statistique. Les captures passent par screenshot, pas par accès aux tenseurs natifs. Audio/changements de modèle/erreurs GPU/seeks prolongés restent non qualifiés. Pilote et commandes dans seek_probe.py et seek-summary.json. Décision : fidélité/cycle de vie observés sur ce parcours borné, pas de garantie universelle.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-223",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "source": "qualification-continuation-20261015.json",
+      "result": {
+        "message": "Comment added to AH-223 successfully",
+        "commentId": "10013",
+        "body": "\\[sync-qualification-continuation-20261015\\]\n\nSuite de qualification du 15/10/2026, après le premier lot publié dans AH-223 — contrôles supplémentaires ciblés, sans répéter les cas concluants.\n\nRéférences inchangées : lecteur publié 3.8.0.31, source bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6 ; backend CUDA 1468be6f24cac537407283d434bd5d542d642cf3, lib SHA-256 bbaf06e374f74d6ad82d0a986abb30406e34c2ad49af459d0d37ecfdaa061f12. Machine Linux CachyOS/i7-10700K/RTX 4070 Ti, pilote 615.78.08, TRT 11.3.0. Même clip anime H.264 de 8 images, 1280×720, RIFE 4.26 sans Ensemble, seuil 0,150, avant SPAN V3.1Sharp1 Performance → 2560×1440. Fast, dessins désactivés, facteur 5/2. Poids identiques.\n\n1. Cadence fractionnaire et promotion B→A : AJI_RIFE_PAIR_CACHE=0/AJI_RIFE_BURST=0 vs 1/1 dans le même binaire. 18 sorties YUV444P16, SHA-256 de chaque image et PTS strictement identiques ; 1+floor(7×5/2)=18 attendu, EOF drainé. Grille contrôlée indépendamment : pas idéal 1001/60000 s, erreur maximale 16,667 µs, inférieure à un tick du muxeur (41,667 µs), PTS strictement croissants. Préparations 8→7, 0→1 hit, 0→6 promotions ; 12 warps/7 upscales d'endpoints des deux côtés. La grille ne présente pas B dans une paire sur deux : cette comparaison exerce la promotion sans émission systématique de l'endpoint. Durées totales 3.119/2.267 s, incluant démarrage/readback/hash : aucun gain isolé de FPS attribué à cette comparaison combinant deux bascules.\n2. Seek réel : référence processus neuf sans cache/rafale à --start=0.0834 ; candidat avec cache/rafale, trois pas de lecture pour établir l'état, seek avant vers 0.2084 puis arrière vers 0.0834. Décodeur nvdec et sortie gpu-next/Vulkan actifs. Source et deux intermédiaires : PTS 0.083417/0.100100/0.116783 s et PNG 16 bits identiques à l'octet. 0 frame-drop-count observé sur ce parcours borné ; processus fermés, sockets de test absents après nettoyage explicite. Processus 2.987/2.812 s ; seeks candidat 34,3/32,3 ms de réponse IPC, pas des percentiles de latence.\n\nCommandes exactes, paramètres, hashes et résultats : artifacts/performance/qualification-20261015/continuation/rational-{off,on}-command.json, rational-summary.json, seek-summary.json, seek_probe.py et manifest.json. Les captures sont comparées après conversion screenshot, pas sur les tenseurs natifs. Audio/sous-titres/HDR physique et seeks prolongés/rapidement répétés ne sont pas certifiés. Les erreurs initiales du pilote (chemin de socket trop long, attente d'événement ne drainant pas IPC) sont séparées dans excluded-setup-diagnostics.json ; aucun échec natif retenu. La référence réussie a été réutilisée.\n\nDécision : conserver ces preuves de fidélité/cycle de vie sur cette cible ; qualification globale toujours partielle. Aucun modèle, défaut produit, configuration installée ou worktree backend modifié. Pas d'essai plus long ni de gain universel inventé.\n\nStrata : service initialement indisponible, puis /health=ok et modèle chargé qwen3.8-flash-next-coder-iq1_m. Une mission de lecture seule a produit un inventaire des gardes du cache en 92.557 s (10 818 tokens locaux selon l'API). Références décisives contrôlées dans le source. La généralisation « aucune garde locale absente » n'est pas retenue ; les champs exacts du cache RIFE ne sont pas tous comparés dans les branches Fast. Aucun bug runtime déduit de cela. Artefacts Strata conservés ; aucun test GPU du projet pendant son inférence. Aucune économie GPT chiffrée revendiquée.\n\n3. Chemin dessins tenus/pré-resize : fixture contrôlée \\[A,A,A,B,B,C,C\\], H.264 sans perte à 1920×1080, RIFE-first à 1280×720 puis SPAN→1440p, Fast ×4, dessins activés, mêmes poids. Les 7 images décodées et groupes de tenue ont été vérifiés par framehash (3 images uniques). Cache/rafale 0/0 vs 1/1 : 25 sorties YUV444P16 et PTS identiques, EOF drainé, chemin dessins/lookahead réellement actif. 18 warps/7 upscales/4 paires motion des deux côtés ; promotions 0→1. Durées 2,968/2,868 s, hash/readback/démarrage inclus : gain non concluant.\n4. Retiming désactivé vs activé, témoin activé déjà acquis réutilisé : 25 PTS identiques mais 21 images différentes ; préparations/paires motion 6→4. Effet temporel réel et travail évité, sans preuve de supériorité perceptuelle ni d'équivalence aux poses source. Temps 2,918/2,868 s : gain non concluant. Conserver comme variante Fast avec compromis explicite, Quality continue de l'interdire. Logs/commandes/sorties dans drawings-\\*-command.json, drawings-summary.json, retiming-disabled-command.json et retiming-summary.json.\n\nAprès cette mission Strata, l'utilisateur précise qu'il peut être omis s'il ralentit les tickets. Aucun autre appel local n'a été lancé ; les vérifications et comptes rendus ont été terminés avec des scripts déterministes et l'agent principal.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-229",
+      "marker": "[sync-lots-01-05-20261015]",
+      "source": "lots-01-05",
+      "result": {
+        "message": "Comment added to AH-229 successfully",
+        "commentId": "10021",
+        "body": "\\[sync-lots-01-05-20261015\\]\n\nLot 01 : livraison concurrente implémentée. Les workflows de lots distincts ne s’annulent plus ; promotion latest sérialisée, comparaison numérique anti-retour arrière. Essai court avant/après des scripts réels via gh simulé : fin .33 puis .32, ancienne latest=.32, nouvelle latest=.33 ; ordre assets préservé, doublon ignoré, échec upload bloquant. Utilité livraison, aucun gain FPS ni changement pixels. Bash passe ; actionlint passe hors propriété queue:max documentée officiellement mais inconnue de son schéma 1.7.12. Release 3.8.0.32 publiée : Windows 38794340030, Linux 38794340190 et macOS 38794340109 tous success, 15 assets uploaded. Promotions latest réussies. Critères DEL-06 remplis : commits ciblés, pins inchangés, référence 3.8.0.31 conservée, statuts compilé/publié/non installé/qualifié localement distingués. Transition Done après consignation de ce résultat.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-230",
+      "marker": "[sync-lots-01-05-20261015]",
+      "source": "lots-01-05",
+      "result": {
+        "message": "Comment added to AH-230 successfully",
+        "commentId": "10022",
+        "body": "\\[sync-lots-01-05-20261015\\]\n\nRelais du lot 01 dans docs/qualification/lot-01-delivery-20261015.md, notes versionnées .github/release-notes/3.8.0.32.md. Sources isolées ; modèles/binaries/Manager inchangés. Lot suivant AH-11 commencé sans attendre les builds.\n\nRelais lots 01–04 actualisé : releases 3.8.0.32 à 3.8.0.35 publiées et assets vérifiés ; lot 05 TensorRT isolé en cours. Jira disponible à nouveau sur tatoub.atlassian.net, projet AH : résultats et transitions réelles consignés avec reçus dans docs/jira/sync-20261015-live.json. Les états historiques « connecteur absent » ne décrivent plus la connexion actuelle. Pas de clôture des qualifications partielles.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-28",
+      "marker": "[sync-lots-01-05-20261015]",
+      "source": "lots-01-05",
+      "result": {
+        "message": "Comment added to AH-28 successfully",
+        "commentId": "10025",
+        "body": "\\[sync-lots-01-05-20261015\\]\n\nPrimitive portable SHA-256 et sérialisation encadrée ajoutée dans native/common/content_identity.h ; utilisée pour le template Core ML CAC-02. Incrément seulement : identités générales ONNX/TensorRT, poids externes, convertisseur, options et GPU/runtime encore à faire. AH-28 non Done.\n\nExtension de la primitive contenu aux graphes ONNX et poids externes déclarés, utilisée pour exports flow CAC-03. Le ticket global CAC-01 reste ouvert : les identités de tous les formats compilés et options/runtime/GPU ne sont pas encore couvertes.\n\nCAC-04 : même sérialisation et scanner ONNX mutualisés avec le backend isolé d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 ; snapshots source/poids, options, TensorRT/CUDA/driver/GPU courant inclus dans les noms v2. Qualification GPU locale faite, publication du lot 05 encore en attente. CAC-01 reste globalement partiel : tous les formats compilés ne sont pas couverts.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-29",
+      "marker": "[sync-lots-01-05-20261015]",
+      "source": "lots-01-05",
+      "result": {
+        "message": "Comment added to AH-29 successfully",
+        "commentId": "10024",
+        "body": "\\[sync-lots-01-05-20261015\\]\n\nLot 03 / 3.8.0.34 : tag Core ML natif SHA-256 de la table et de toutes les ressources mlpackage, vrais poids inclus. Nouveau namespace v2, anciens caches/modèles conservés, diagnostic de reconstruction. Essai avant/après ciblé C++17 Linux : poids même nom/taille/mtime, ancien tag inchangé, nouveau changé ; oracle hashlib, relocation stable, renommage sensible, description absente refusée. Packages redimensionnés identiques octet pour octet. Build/link libaji_ort réussi. Coût processus unique 16 Mio : 1,2454 -> 86,8164 ms, pas une mesure FPS. Correctif de fidélité conservé. Qualification partielle Apple : .mlmodelc et diagnostic runtime non exercés ; ticket non Done avant cet essai. Détails docs/qualification/lot-03-coreml-20261015.md. Release 3.8.0.34 publiée, 16 assets uploaded ; Windows 38796590938, Linux 38796590933 et macOS 38796590949 success.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-30",
+      "marker": "[sync-lots-01-05-20261015]",
+      "source": "lots-01-05",
+      "result": {
+        "message": "Comment added to AH-30 successfully",
+        "commentId": "10026",
+        "body": "\\[sync-lots-01-05-20261015\\]\n\nLot 04 / 3.8.0.35 : cache exports flow RIFE partagé identifié par octets graphe, tous poids externes déclarés et transformation v2 ; cache compilé provider isolé sous identité. Lecture checksum, copies poids relatives, écritures contrôlées + rename atomique, cache invalide conservé/réparé, anciens flow ignorés/préservés. Essais ciblés sources/poids remplacés même nom/taille/mtime, graphes imbriqués/sparse/fonctions, inputs invalides, cache corrompu, hit et deux builders : succès. Inférence réelle CPU RIFE4.26/SPAN Fast x4 même paire/3 instants : 0 octet changé, graphe flow identique. Configuration unique 217,8029 -> 363,0445 ms, surcoût fidélité, aucun gain FPS. Scope moteur partagé Linux/macOS, engines Windows distincts inchangés. Qualification GPU non disponible, aucune vitesse ou fidélité GPU revendiquée. Release 3.8.0.35 publiée : Windows 38798216421, Linux 38798216398, macOS 38798216458 success, 16 assets uploaded. Critère local CAC-03 couvert. Le ticket reste In Progress : les prérequis globaux CAC-01/AH-28 et CAC-05/AH-32 sont encore partiels ; leurs liens bloquants sont conservés. Pas de clôture anticipée. Détails docs/qualification/lot-04-rife-flow-20261015.md.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-31",
+      "marker": "[sync-lots-01-05-20261015]",
+      "source": "lots-01-05",
+      "result": {
+        "message": "Comment added to AH-31 successfully",
+        "commentId": "10028",
+        "body": "\\[sync-lots-01-05-20261015\\]\n\nLot 05 CAC-04 en cours. Backend isolé d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 ; original utilisateur 1468be6 intact. Engines v2 SHA-256 : graphe + poids externes, settings, version TensorRT, CUDA runtime/driver et GPU courant (UUID/SM). Anciennes clés ignorées/préservées ; source figée sous identité et builders temporaires publiés uniquement après succès. Essai ciblé CPU : remplacement poids même nom/taille/mtime, oracle SHA, runtime/settings/device, snapshot invalide, concurrence et échec builder : succès.\n\nEssai GPU réel RTX4070Ti/TRT11.3, Quality SPAN V3.1Sharp1 Performance, 3 images anime NV12 128×72, mêmes inputs/settings. Configure ancien 3,1267 s → candidat 2,7537 s, hit 0,0336 s sans builder ; valeurs uniques, aucun gain FPS revendiqué. Remplacement d’un poids force un miss ; échec de construction conserve les anciens engines terminés. Deux reconstructions indépendantes diffèrent de 10 660 octets (max 1/255) ; investigation nécessaire avec exactement le même plan TensorRT : 0 octet différent avant/après, cold/hit candidat identiques. Ne pas annoncer une équivalence bit à bit entre reconstructions. Build/link local et ABI 24 symboles aji\\_ identique ; publication Windows/Linux du binaire exact encore à vérifier, pas de release 3.8.0.36 annoncée complète. Dépendances AH-28/AH-32 partielles, ticket In Progress. Preuves : backend docs/CAC04-20261015.md et artifacts/performance/lots-20261015/lot-05/.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-32",
+      "marker": "[sync-lots-01-05-20261015]",
+      "source": "lots-01-05",
+      "result": {
+        "message": "Comment added to AH-32 successfully",
+        "commentId": "10027",
+        "body": "\\[sync-lots-01-05-20261015\\]\n\nPrérequis transactionnels implémentés pour les exports flow (lot 04, release 3.8.0.35) et les snapshots/engines TensorRT ordinaires (lot 05, backend d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 en cours de publication). Temporaires uniques, publication par rename, cache partiel vérifié et conservé/réparé, échec builder sans destruction des engines terminés ; deux processus concurrents sur snapshots/flow vérifiés. CAC-05 reste In Progress : verrou par clé, arrêts/quota/erreur disque et tous les autres caches ne sont pas intégralement couverts. Les tickets dépendants ne sont pas clos tant que leur contrat requis reste incomplet.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-60",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "source": "qualification-continuation-20261015.json",
+      "result": {
+        "message": "Comment added to AH-60 successfully",
+        "commentId": "10017",
+        "body": "\\[sync-qualification-continuation-20261015\\]\n\nSuite ciblée du 15/10/2026 — identité/promotion de paire, qualification partielle.\n\nMême lecteur 3.8.0.31 (bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6), backend 1468be6f24cac537407283d434bd5d542d642cf3, RTX4070Ti/TRT11.3 et mêmes poids que le premier lot.\n\nPromotion Fast B→A sans émission systématique de B, grille 5/2 : 18 sorties et PTS identiques cache/rafale off-on ; 6 promotions, préparations 8→7 et 0→1 hit. Durées 3,119/2,267 s démarrage/hash inclus : aucun gain isolé attribué. Seek réel du candidat comparé à processus neuf sans cache/rafale : source et deux intermédiaires PNG16 identiques, PTS identiques, 0 abandon observé sur ce parcours borné. Processus 2,987/2,812 s. Chemin dessins/lookahead et pré-resize1080→720 : 25 sorties/PTS identiques, 1 promotion avec cache, 2,968/2,868 s. Travail évité observé ; gain de temps non isolé.\n\nInventaire local Strata contrôlé : same_frame_view couvre 6 métadonnées, 3 plans et 3 strides pour la préparation RIFE ; les branches Fast ne comparent pas toutes cette vue. Aucune régression déduite statiquement, changements de métadonnées/stream avec mêmes IDs non testés. Rapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md ; commandes et artefacts dans artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-83",
+      "marker": "[sync-qualification-continuation-20261015]",
+      "source": "qualification-continuation-20261015.json",
+      "result": {
+        "message": "Comment added to AH-83 successfully",
+        "commentId": "10018",
+        "body": "\\[sync-qualification-continuation-20261015\\]\n\nSuite ciblée du 15/10/2026 — qualification partielle. Références : lecteur 3.8.0.31 bf4dc2b67ddfa5731fbfc91a89d5114f8bf7e8d6, backend 1468be6f24cac537407283d434bd5d542d642cf3 ; Linux/i7-10700K/RTX4070Ti, TRT11.3, mêmes modèles/poids et configurations qu'au premier lot. Aucun code d'exécution ou réglage installé modifié.\n\nChemins publiés NVDEC→RIFE→SPAN contrôlés sur facteur Fast 5/2 et seek avant/arrière. 18 sorties/PTS identiques off-on pour le fichier complet ; après seek, source et deux intermédiaires identiques au processus neuf sans cache. Présentation Vulkan active pour le seek. Chemin pré-resize 1080→720 et dessins ×4 : 25 sorties/PTS identiques off-on, EOF drainé. TrueHDR/VSR/audio non activés, gain de synchronisation non attribué. Aucun retrait du correctif NVDEC.\n\nRapport complet destiné à AH-223 : docs/QUALIFICATION-FEATURES-2026-10-15.md, section « Suite de reprise ». Commandes exactes, SHA, logs, manifestes et résultats : artifacts/performance/qualification-20261015/continuation/. Résultats synchronisés après rétablissement de la connexion Atlassian. Pas de clôture globale ni de réexécution d'un cas concluant. Audio/HDR physique/autres matériels et longues séquences non certifiés.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-22",
+      "result": {
+        "message": "Comment added to AH-22 successfully",
+        "commentId": "10034",
+        "body": "\\[lots-06-07-assets-20261015\\]\n\n3.8.0.37 : Windows 38805264666, Linux 38805264674, macOS 38805264621 tous success ; 16 assets uploaded, build AMD 38805264216 success. 3.8.0.38 : 16 assets uploaded, Windows 38806488655 et macOS 38806488451 success ; workflow Linux 38806488633 encore en attente de fin/promotion au dernier relevé. Assets publiés, aucune installation de ce poste modifiée. AH-22 reste In Progress pour la portée Windows mpv décrite dans le rapport, pas de clôture anticipée.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-31",
+      "result": {
+        "message": "Comment added to AH-31 successfully",
+        "commentId": "10030",
+        "body": "\\[lot-05-assets-20261015\\]\n\nRelease 3.8.0.36 désormais publiée sur les trois plateformes : Windows 38803534058, Linux 38803534125, macOS 38803534433 tous success ; 15 assets, tous uploaded. https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.36 . Publié et qualifié localement sur les cas décrits, pas installé sur cette machine. Les dépendances globales AH-28/AH-32 et leurs limites restent ouvertes ; AH-31 reste In Progress.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-22",
+      "result": {
+        "message": "Comment added to AH-22 successfully",
+        "commentId": "10031",
+        "body": "\\[lot-06-stats-20261015\\]\n\nIn Progress appliqué avant le travail. Incrément OBS-04 : producteurs partagés ORT/Core ML/Metal/MIGraphX et NCNN/Vulkan, compteurs mémoire complets, rendu paresseux/publication toutes les 250 ms, états immédiats, temporaires uniques et remplacement atomique contrôlé. Erreur d’écriture : ancien snapshot préservé ; dix erreurs moteur identiques supplémentaires n’entraînent aucun remplacement supplémentaire. API optionnelle aji_vk_stats_snapshot, ABI1 conservée ; outil ORT adapté. Ctrl+j rafraîchit à 4 Hz seulement quand visible ; moniteur Lua ne confond plus absence/vide et fin de build, conserve les erreurs immédiates.\n\nEssai même séquence/payload : 302 -> 5 écritures, 39 589 260 -> 655 449 octets de payload. Lecteur concurrent : 17 418 observations incomplètes avec troncature, 0 après sur 2 806 lectures. 608,889/572,271 ms pauses comprises : réduction I/O prouvée, aucun gain FPS. Erreur permission et récupération : succès.\n\nAvant/après mêmes sources/config/poids : ORT/CPU RIFE4.26/SPAN Quality 128×72 et NCNN/Vulkan RTX4070Ti RIFE4.6/SPAN 64×64, neuf sorties par chemin, 0 octet différent. Révisions disque 9 -> 3 sur chaque chemin, compteurs mémoire 1..9 et dernier Frames=9 complets, premier état d’erreur immédiat. Processus ORT 0,2659/0,2636 s et NCNN 1,1051/1,1006 s : gain temporel non concluant. Contrats Lua passés, outil ORT sans RIFE contrôlé séparément ; son débit sur un seul intervalle n’est pas retenu. Pas de répétition des cas d’image concluants après les ajustements limités aux erreurs/API de stats.\n\nConserver pour réduction des écritures et cohérence des lecteurs, sans compromis pixels. Portée restante : remplacement atomique du log au configure du filtre CUDA/D3D11 amont, qui écrit déjà seulement au configure. API Apple/AMD/Intel non qualifiées matériellement ici. AH-22 reste In Progress pour cette portée restante. Release 3.8.0.37 préparée, assets à suivre. Rapport docs/qualification/lot-06-stats-20261015.md ; artefacts locaux lots-20261015/lot-06 et pilotes tests/observability.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-22",
+      "result": {
+        "message": "Comment added to AH-22 successfully",
+        "commentId": "10032",
+        "body": "\\[lot-07-stats-configure-20261015\\]\n\nSuite OBS-04, release 3.8.0.38 poussée (source 212c286). Sous Linux, le log CUDA au configure utilise le helper mpv existant mp_save_to_file : fichier exclusif unique, écriture/fermeture contrôlées, remplacement atomique ; échec préservant l’ancien état et diagnostic. Correction du helper : suppression du temporaire après rename échoué.\n\nEssais courts : vrais objets C avant/après, ancien fopen(w) expose un fichier vide entre ouverture/écriture ; publication atomique préserve le lecteur de l’ancien état et rend le nouveau complet. Échec de rename injecté : ancien état conservé, temporaire résiduel 1 -> 0. Baseline mpv locale reconstruite avec exactement les mêmes autres patchs que le candidat. Lecteur réel NVDEC/SPAN Quality, même clip/config/poids/plan TensorRT, builder désactivé : 3 sorties/hashes/PTS et texte complet de log identiques ; inode conservé avant, remplacé après. Processus 0,51450/0,51442 s, aucun gain FPS. Build/link C, assembleur .NET et bash -n réussis. Comparaisons concluantes non répétées.\n\nConserver pour cohérence et nettoyage d’échec. Windows utilise encore le mpv précompilé sans ce patch : AH-22 reste In Progress pour livraison/qualification Windows. Assets 3.8.0.38 à suivre ; lots 06 et 07 ne sont pas une qualification matérielle Apple/AMD/Intel. Rapport docs/qualification/lot-07-stats-configure-20261015.md, artefacts lots-20261015/lot-07.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-33",
+      "result": {
+        "message": "Comment added to AH-33 successfully",
+        "commentId": "10033",
+        "body": "\\[lot-08-source-ids-20261015\\]\n\nExtension facultative ABI1 aji_vk_source_ids, symbole négocié ; IDs de source monotones, générations au seek/reset/changement de format-couleur. Consommation par prochain process seulement, dimensions et stride inclus ; aucun pointeur utilisé comme identité. Compteur régressé : confiance désactivée pour cette époque jusqu’à génération supérieure ; ancienne génération refusée. Sans IDs/symbole : comparaison des octets ; similarité NCNN opt-in inchangée. Modèles/Quality/backend spécialisé conservés.\n\nEssais courts : contrat vues/générations et régression, succès. ORT/CPU RIFE4.26/SPAN Quality 128×72 et NCNN/Vulkan RTX4070Ti RIFE4.6/SPAN 64×64, mêmes sources/config/poids : 14 sorties avant/après identiques sur chaque chemin, 14 hits ID et 2 refus. Cas inclus : buffers recyclés/compteur régressé, époque refusée, nouvelle époque, stride changé et appel sans ID. Processus ORT 0,2958/0,2668 s, NCNN 0,8924/0,8596 s ; aucun gain FPS revendiqué.\n\nBridge réel asynchrone, ablation off/on même binaire, anime lossless 128×72 : 13 hashes/PTS identiques, comparaisons 32 -> 5, hits ID 0 -> 18, aucun refus. Travail évité établi. Nouveau bridge/ancienne bibliothèque sans symbole : première sortie identique. Seek réel après trois pas comparé au processus neuf IDs off : trois PNG16 et PTS identiques 0,041708/0,052135/0,062562 ; processus 1,3227/1,2670 s. Présentation OpenGL locale, inférence NCNN/Vulkan. Diagnostic initial d’option renderer Vulkan absente : avant IPC/inférence, corrigé, hors qualification. Comparaisons concluantes non répétées.\n\nConserver pour contrat d’identité et réduction démontrée des comparaisons, sans perte observée ; pas de FPS universel. Les octets doivent rester immuables pour un ID répété : le bridge fourni respecte ce contrat, un client mensonger ne peut être vérifié sans relire les octets. AH-33 reste In Progress pour clients Windows ABI9, gardes Fast/vues et état temporel rank-5 ; autres matériels/API non qualifiés localement. Release de cet incrément 3.8.0.39 préparée, assets à suivre. Rapport docs/qualification/lot-08-source-ids-20261015.md, artefacts lots-20261015/lot-08.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    },
+    {
+      "key": "AH-31",
+      "result": {
+        "message": "Comment added to AH-31 successfully",
+        "commentId": "10029",
+        "body": "\\[lot-05-release-20261015\\]\n\nPublication 3.8.0.36 déclenchée, source player 765763f, pin binaire immuable 9eee3504d82387035e4908909ca9621733fed68c. Windows NVIDIA/AMD compilés depuis le SHA backend d9d0a941d62f1dfcb3ed2f87018c4871aea12be7, run 38801311797 success. Linux multi-SM construit sous Ubuntu baseline ; contrôle du binaire empaqueté (SHA 2cef3796af600b752fa0805ca6ff800b6d2ddfe4f42067b60390f1fbdbedac8c) avec le même plan TensorRT : trois sorties strictement identiques à la référence, hit sans builder, 24 exports ABI inchangés. Le contrôle supplémentaire concerne ce nouveau binaire de production. Diagnostic initial de préparation : mauvais nom SPAN, aucun modèle chargé ; exclu puis corrigé. Assets 3.8.0.36 à suivre, installation inchangée. Ticket In Progress, dépendances globales AH-28/AH-32 encore partielles. Rapport docs/qualification/lot-05-tensorrt-20261015.md. Lot 06 AH-22 commencé pendant les builds.",
+        "appliedContentFormat": "markdown",
+        "jsmCommentType": "publicComment"
+      }
+    }
+  ],
+  "synced_at_utc": "2026-10-15T20:33:56.521195+00:00",
+  "latest_instruction": "Utilisateur : essayer de terminer entièrement chaque ticket entrepris ; pour cette session arrêter après publication de 3.8.0.39, pas de lot 09.",
+  "updated_at_utc": "2026-10-15T21:18:55.882645+00:00"
+}

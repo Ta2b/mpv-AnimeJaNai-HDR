@@ -1,0 +1,9 @@
+{
+  "issue": "AH-239",
+  "status": "Done",
+  "qualification_comment_id": "10052",
+  "closure_comment_id": "10054",
+  "release": "3.8.0.44",
+  "source": "66f4be0b47b046429d0a2c0e91dfedb4bb63a455",
+  "binary_pin": "9bcc7d476e59f1bf87ed0af6c3c5a65ac420c76f"
+}

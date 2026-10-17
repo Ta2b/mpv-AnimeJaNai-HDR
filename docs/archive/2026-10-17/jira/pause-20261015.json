@@ -1,0 +1,339 @@
+{
+  "status": "resumed_by_user_20261016",
+  "instruction": "Pause explicite ; aucune nouvelle action Jira ni nouveau lot jusqu’à reprise utilisateur.",
+  "release": "3.8.0.39",
+  "release_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
+  "publication_last_observed": "Windows/macOS success, Linux in progress, 9 assets uploaded. Les workflows déjà lancés continuent ; pas de publication complète prétendue.",
+  "subtasks_created": 21,
+  "subtasks_planned": 29,
+  "subtasks_receipts": [
+    {
+      "parent": "AH-11",
+      "marker": "split-20261015-ref-linux-export",
+      "summary": "Export CLI/Lua Linux de configuration et inventaire SHA-256",
+      "target_status": "Done",
+      "criterion": "Exporter la configuration effective observée par IPC, champs inconnus explicites, inventaire de fichiers/hash, sans écraser un rapport ni modifier le rendu.",
+      "evidence": "3.8.0.33 c7581ed98b2a0802fd495e9851f53d82c01568c3 ; docs/qualification/lot-02-reference-20261015.md ; 29 hashes vérifiés, PNG16/PTS identiques, CLI/Lua fonctionnels, coût ponctuel 1,6147 s. Portée : observation/inventaire Linux, pas preuve des poids déjà chargés.",
+      "status": "planned",
+      "issue_key": "AH-233",
+      "create_result": {
+        "id": "10235",
+        "key": "AH-233"
+      },
+      "actual_status": "Done"
+    },
+    {
+      "parent": "AH-11",
+      "marker": "split-20261015-ref-loaded-chain",
+      "summary": "Rattacher les sorties aux modèles réellement chargés et dimensions de chaque étage",
+      "target_status": "To Do",
+      "criterion": "Lier média/sortie et instances de modèles/poids exécutés ; exporter dimensions intermédiaires, ensemble, facteur/coupe/ordre, scaler/HDR et fraîcheur des stats. Ne pas déduire la chaîne du seul nom Quality.",
+      "evidence": "Le rapport .33 signale ces champs comme inconnus ou non prouvés ; aucune qualification de cette extension.",
+      "status": "planned",
+      "issue_key": "AH-234",
+      "create_result": {
+        "id": "10236",
+        "key": "AH-234"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-11",
+      "marker": "split-20261015-ref-precision-placement",
+      "summary": "Exporter précision et placement effectifs de la chaîne",
+      "target_status": "To Do",
+      "criterion": "Rendre explicites précision/tensor types, placements et runtime réellement employés par les opérations pertinentes ; couvrir les replis sans annoncer le réglage demandé comme preuve d’exécution.",
+      "evidence": "Limite REF-01 du lot 02, champs non disponibles dans le simple inventaire.",
+      "status": "planned",
+      "issue_key": "AH-235",
+      "create_result": {
+        "id": "10237",
+        "key": "AH-235"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-11",
+      "marker": "split-20261015-ref-manager-ui",
+      "summary": "Intégrer l’export de référence dans le Manager",
+      "target_status": "To Do",
+      "criterion": "Point d’entrée Manager fonctionnel, export associé à la session/chaîne choisie, destination claire et erreurs rapportées ; essai court de l’action réelle.",
+      "evidence": "CLI et script-message existent ; aucune interface Manager de cet export déclarée livrée.",
+      "status": "planned",
+      "issue_key": "AH-236",
+      "create_result": {
+        "id": "10238",
+        "key": "AH-236"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-11",
+      "marker": "split-20261015-ref-other-platforms",
+      "summary": "Qualifier l’export réel sous Windows et macOS",
+      "target_status": "To Do",
+      "criterion": "Exécuter les entrées CLI/Lua/Manager disponibles sur ces plateformes, vérifier IPC, artefacts/hash et parité de rendu ; noter séparément toute API manquante.",
+      "evidence": "3.8.0.33 compilée/publiée sur 3 plateformes ; seule exécution Linux qualifiée.",
+      "status": "planned",
+      "issue_key": "AH-237",
+      "create_result": {
+        "id": "10239",
+        "key": "AH-237"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-28",
+      "marker": "split-20261015-cac-sha-primitive",
+      "summary": "Primitive SHA-256 portable, sérialisation encadrée et poids ONNX externes",
+      "target_status": "Done",
+      "criterion": "Empreinter les octets de graphes/ressources déclarées avec noms/tailles encadrés ; détecter changement à nom/taille/mtime constants et refuser ressources absentes. Scope primitive et scanner portables, pas totalité des clés compilées.",
+      "evidence": "3.8.0.34/35 et backend d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 ; native/common/content_identity.h, onnx_flow.* ; oracle hashlib, ressources imbriquées/sparse/fonctions, poids modifiés et chemins invalides. Rapports lots 03–05.",
+      "status": "planned",
+      "issue_key": "AH-238",
+      "create_result": {
+        "id": "10240",
+        "key": "AH-238"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-28",
+      "marker": "split-20261015-cac-key-contract",
+      "summary": "Formaliser le contrat commun complet des clés de programmes compilés",
+      "target_status": "To Do",
+      "criterion": "Définir et mutualiser champs graphe/poids, convertisseur/version, options, formes/types, runtime/device selon format et migration de version ; un changement pertinent doit changer la clé.",
+      "evidence": "SHA encadré déjà disponible ; moteur TRT ordinaire et export flow intégrés. Contrat global tous formats encore incomplet.",
+      "status": "planned",
+      "issue_key": "AH-239",
+      "create_result": {
+        "id": "10241",
+        "key": "AH-239"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-28",
+      "marker": "split-20261015-cac-coreml-program-key",
+      "summary": "Compléter l’identité des programmes Core ML compilés",
+      "target_status": "To Do",
+      "criterion": "Appliquer le contrat complet aux programmes .mlmodelc : contenu, patch/conversion, formes/types/options et runtime pertinent ; garder les modèles et anciennes références, qualifier hit/miss ciblé sur API Apple.",
+      "evidence": "Le tag portable .mlpackage est livré dans AH-29 ; ce sous-ticket vise la clé complète du programme compilé.",
+      "status": "planned",
+      "issue_key": "AH-240",
+      "create_result": {
+        "id": "10242",
+        "key": "AH-240"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-28",
+      "marker": "split-20261015-cac-provider-program-keys",
+      "summary": "Compléter les identités des caches de providers ORT et MIGraphX natif",
+      "target_status": "To Do",
+      "criterion": "Inventorier les programmes persistés existants, intégrer leur contenu/convertisseur/options/formes/types/runtime/device dans les clés propres à chaque provider, puis vérifier invalidation ciblée. Ne pas annoncer un futur cache inexistant comme livré.",
+      "evidence": "CAC-08 et INT-11 conservent leurs tickets existants ; ce sous-ticket fournit le contrat/identité à leurs consommateurs, sans réimporter ces features.",
+      "status": "planned",
+      "issue_key": "AH-241",
+      "create_result": {
+        "id": "10243",
+        "key": "AH-241"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-28",
+      "marker": "split-20261015-cac-trt-derived-keys",
+      "summary": "Auditer et compléter les clés TensorRT dérivées et temporelles",
+      "target_status": "To Do",
+      "criterion": "Vérifier motion-only, transformations et fenêtres temporelles : graphes/poids externes, version de conversion, settings/formes/types et runtime/GPU complets ; compléter les omissions et qualifier les cas changés.",
+      "evidence": "Les engines TensorRT ordinaires sont intégrés/qualifiés Linux dans AH-31 ; motion-only a une empreinte historique dont la couverture complète reste à vérifier.",
+      "status": "planned",
+      "issue_key": "AH-242",
+      "create_result": {
+        "id": "10244",
+        "key": "AH-242"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-29",
+      "marker": "split-20261015-coreml-content-tag",
+      "summary": "Tag Core ML portable incluant tous les vrais poids et migration v2",
+      "target_status": "Done",
+      "criterion": "coreml_template_tag change quand un poids change à nom/taille/mtime constants ; englober table et ressources mlpackage, refuser entrée incomplète, préserver modèles/anciens caches. Scope calcul du tag et package portable.",
+      "evidence": "3.8.0.34 52f440f ; docs/qualification/lot-03-coreml-20261015.md ; oracle SHA indépendant, relocation stable/renommage sensible, package redimensionné identique ; surcoût mesuré 1,2454 -> 86,8164 ms/16 Mio, utilité fidélité, pas FPS.",
+      "status": "planned",
+      "issue_key": "AH-243",
+      "create_result": {
+        "id": "10245",
+        "key": "AH-243"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-29",
+      "marker": "split-20261015-coreml-runtime-cycle",
+      "summary": "Qualifier le cycle .mlmodelc et le diagnostic de reconstruction sur API Apple",
+      "target_status": "To Do",
+      "criterion": "Sur Core ML réel, tester hit, modification des poids, reconstruction et diagnostic ; vérifier fidélité sur mêmes entrées/poids et préserver les modèles. Le tag portable seul ne valide pas ce cycle.",
+      "evidence": "API Apple absente localement ; release .34 compilée macOS, aucune exécution .mlmodelc qualifiée.",
+      "status": "planned",
+      "issue_key": "AH-244",
+      "create_result": {
+        "id": "10246",
+        "key": "AH-244"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-30",
+      "marker": "split-20261015-flow-cache-cpu",
+      "summary": "Intégrer le cache flow identifié et transactionnel, qualifier RIFE partagé sur CPU",
+      "target_status": "Done",
+      "criterion": "load_rife utilise identité source/poids/transformation et cache provider isolé ; ancien flow ignoré, contenu vérifié, poids externes copiés correctement ; hit/miss/réparation/concurrence et inférence CPU exacts.",
+      "evidence": "3.8.0.35 735a33d87d228b3b77718b6d918111ed83e476af ; docs/qualification/lot-04-rife-flow-20261015.md ; même paire RIFE4.26/SPAN Fast, 3 instants : 0 octet changé, graphe identique ; configuration 217,80 -> 363,04 ms, correction fidélité. Pré-requis techniques flow local couverts, parents AH-28/AH-32 restent globaux.",
+      "status": "planned",
+      "issue_key": "AH-245",
+      "create_result": {
+        "id": "10247",
+        "key": "AH-245"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-30",
+      "marker": "split-20261015-flow-provider-qualification",
+      "summary": "Qualifier l’invalidation flow et les caches compilés sur les providers GPU concernés",
+      "target_status": "To Do",
+      "criterion": "Sur les APIs de providers effectivement supportés, vérifier source/poids remplacés, hit et reconstruction du programme compilé sous l’identité flow ; comparer mêmes inputs/poids et documenter chaque cible absente.",
+      "evidence": "Qualification CPU/portable acquise ; aucune validation GPU Apple/AMD/Intel substituée par le résultat CPU. Liens bloquants parent AH-28/AH-32 conservés.",
+      "status": "planned",
+      "issue_key": "AH-246",
+      "create_result": {
+        "id": "10248",
+        "key": "AH-246"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-31",
+      "marker": "split-20261015-trt-ordinary-linux",
+      "summary": "Engines ordinaires par contenu, migration et qualification réelle Linux TensorRT",
+      "target_status": "Done",
+      "criterion": "Ne plus accepter un ancien engine désérialisable comme preuve de poids ; graphe/poids externes/settings/runtime/GPU courant dans la clé ; source figée, migration conservatrice et publication contrôlée. Vérifier build réel, hit sans builder, poids remplacés et parité avec même plan sur Linux.",
+      "evidence": "3.8.0.36 765763fd2991bca726595969cef4a43f7074bc71 ; backend d9d0a94, pin 9eee3504d82387035e4908909ca9621733fed68c ; docs/qualification/lot-05-tensorrt-20261015.md. 3 sorties même plan exactes, production multi-SM testée SM89, ABI 24 symboles identique ; reconstructions indépendantes delta max 1/255 explicite, aucun FPS revendiqué.",
+      "status": "planned",
+      "issue_key": "AH-247",
+      "create_result": {
+        "id": "10249",
+        "key": "AH-247"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-31",
+      "marker": "split-20261015-trt-ordinary-windows",
+      "summary": "Qualifier les engines ordinaires et leur migration sous Windows TensorRT",
+      "target_status": "To Do",
+      "criterion": "Sur Windows réel, vérifier cold build/hit, poids remplacés même nom, noms/UTF-8, publication et échec préservant un engine terminé ; comparer mêmes inputs/réglages et distinguer variation de reconstruction.",
+      "evidence": "Windows NVIDIA/AMD build 38801311797 success depuis d9d0a94, binaires publiés .36 ; compilation/linkage uniquement, pas inférence matérielle Windows.",
+      "status": "planned",
+      "issue_key": "AH-248",
+      "create_result": {
+        "id": "10250",
+        "key": "AH-248"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-flow-linux",
+      "summary": "Transactions des exports flow : validation, concurrence et réparation Linux",
+      "target_status": "Done",
+      "criterion": "Temporaires uniques, écritures/fermetures contrôlées, rename atomique et cache invalide conservé/réparé ; deux processus demandant la même forme obtiennent un export complet. Scope flow partagé Linux, sans prétendre au verrou global.",
+      "evidence": "3.8.0.35 ; docs/qualification/lot-04-rife-flow-20261015.md ; sources/poids manquants refusés, corruption/hit/deux builders contrôlés.",
+      "status": "planned",
+      "issue_key": "AH-249",
+      "create_result": {
+        "id": "10251",
+        "key": "AH-249"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-trt-linux",
+      "summary": "Snapshots et publication d’engines TensorRT contrôlés sur Linux",
+      "target_status": "Done",
+      "criterion": "Source figée atomique vérifiée, concurrence des snapshots, publication d’engine non vide uniquement après succès ; builder échoué/vide préserve l’engine terminé. Scope mécanismes Linux qualifiés, pas tous les cas de quota/arrêt.",
+      "evidence": "Backend d9d0a94, release .36 ; tests/model_identity_check.py, tests/engine_cache_gpu.py ; deux snapshots concurrents, engine échoué/vide, GPU réel poids remplacés et anciens engines inchangés ; rapport lot 05.",
+      "status": "planned",
+      "issue_key": "AH-250",
+      "create_result": {
+        "id": "10252",
+        "key": "AH-250"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-key-locks",
+      "summary": "Ajouter les verrous par clé et tester les builders concurrents complets",
+      "target_status": "To Do",
+      "criterion": "Sérialiser ou coordonner les builders d’une même identité pour éviter travail concurrent inutile et conflit ; attente/libération en succès/échec, essai ciblé de deux builders réels lorsque nécessaire.",
+      "evidence": "Temporaires/rename sont livrés ; verrou explicite par clé et concurrence complète de tous les builders non déclarés couverts.",
+      "status": "planned",
+      "issue_key": "AH-251",
+      "create_result": {
+        "id": "10253",
+        "key": "AH-251"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-interruption",
+      "summary": "Gérer les arrêts et la reprise des caches partiels",
+      "target_status": "To Do",
+      "criterion": "Arrêt de builder/processus à une étape sensible, reprise sûre, aucun import incomplet ; nettoyer seulement ses propres temporaires et conserver les références/modèles.",
+      "evidence": "Les échecs normaux et snapshots corrompus sont couverts ; arrêt brutal de tous les formats non qualifié.",
+      "status": "planned",
+      "issue_key": "AH-252",
+      "create_result": {
+        "id": "10254",
+        "key": "AH-252"
+      },
+      "actual_status": "To Do"
+    },
+    {
+      "parent": "AH-32",
+      "marker": "split-20261015-tx-disk-quota",
+      "summary": "Gérer quota, manque d’espace et erreurs disque sans perte de référence",
+      "target_status": "To Do",
+      "criterion": "Écriture partielle, permission/espace/quota et nettoyage : aucune publication incomplète ni destruction d’un cache terminé/modèle utilisateur ; diagnostic exploitable, essais ciblés d’erreur.",
+      "evidence": "Snapshots stats ont un essai permission ; cela ne valide pas les caches compilés/quotas globaux CAC-05.",
+      "status": "planned",
+      "issue_key": "AH-253",
+      "create_result": {
+        "id": "10255",
+        "key": "AH-253"
+      },
+      "actual_status": "To Do"
+    }
+  ],
+  "remaining_creation_markers": [
+    "split-20261015-tx-other-platforms-formats",
+    "split-20261015-stats-native-linux",
+    "split-20261015-stats-cuda-linux",
+    "split-20261015-stats-windows-qualification",
+    "split-20261015-ids-abi1-linux",
+    "split-20261015-ids-abi9-fast-views",
+    "split-20261015-ids-windows-clients",
+    "split-20261015-ids-temporal-window"
+  ],
+  "resume": "Relire ce fichier et subtasks-20261015.json. Vérifier par label decomposition-20261015 et parent avant toute création (éviter doublons). AH-233 réellement Done ; autres enfants créés initialement To Do, transitions vers leur cible encore à faire après preuves. Restent 8 créations, transitions, tableaux parents/docs, vérification complète de release .39. Aucun lot 09 commencé. Priorité future : achever chaque sous-ticket entrepris.",
+  "resumed_instruction": "Reprendre découpage puis chaque lot en entier",
+  "current_state": "subtasks-20261015.json"
+}

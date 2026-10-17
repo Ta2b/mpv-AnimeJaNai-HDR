@@ -1,0 +1,11 @@
+{
+  "issue": "AH-259",
+  "status": "Done",
+  "qualification_comment": "10044",
+  "closure_comment": "10045",
+  "release": "3.8.0.40",
+  "source": "94d1cc7c0b07b0e91f1e4db79883ed59548ab20b",
+  "backend": "3f6f60fa58b5ed649bb94c11030d8e354a6d3fc0",
+  "pin": "a2908cf4d3166011c9b853be9f480a52b7a7867f",
+  "proof": "docs/jira/release-20261016-3.8.0.40.json"
+}

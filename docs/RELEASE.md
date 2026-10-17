@@ -47,8 +47,8 @@ La chaîne warp RIFE du moteur partagé est maintenant livrée en 3.8.0.29.
 Le backend NVIDIA `warp-chain`, installé séparément, et la branche CUDA Graph
 `perf-rife-cuda-graphs-20261014` sont deux branches distinctes : leur présence
 locale ne prouve pas qu'elles sont dans les paquets Windows/Linux, qui consomment
-encore `AjiVersion=v0.11.1`. Voir [l'état courant](ETAT-PROJET.md) et
-[le chantier 165 Hz](CHANTIER-RIFE-165HZ.md) pour la matrice des moteurs.
+encore `AjiVersion=v0.11.1`. Voir [l'état courant](archive/2026-10-17/chantiers/ETAT-PROJET.md) et
+[le chantier 165 Hz](archive/2026-10-17/chantiers/CHANTIER-RIFE-165HZ.md) pour la matrice des moteurs.
 
 ## Archive — procédure et publications jusqu'à la 3.8.0.23
 
@@ -69,7 +69,7 @@ Le code suivant `30a3e83` a sa propre CI réussie sur `hdr-3.8`, mais n'est pas 
 cette release. La branche NVIDIA `f4fcd17` n'est pas intégrée à la dépendance
 `AjiVersion=v0.11.1`. Ne pas remplacer les assets 3.8.0.23 avec ces nouveaux lots ;
 une future livraison devra avoir son numéro et ses références propres.
-[État consolidé](ETAT-PROJET.md), [relais performances](CHANTIER-PERFORMANCE-RELAIS.md).
+[État consolidé](archive/2026-10-17/chantiers/ETAT-PROJET.md), [relais performances](archive/2026-10-17/chantiers/CHANTIER-PERFORMANCE-RELAIS.md).
 Les étapes datées du 12 octobre plus bas restent un historique de packaging.
 
 Les dépôts actifs sont `Ta2b/mpv-AnimeJaNai-HDR` (branche `hdr-3.8`) et

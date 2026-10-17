@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "parent": "AH-15",
+      "issue_key": "AH-274",
+      "summary": "Contractualiser les frontières couleur/profondeur et les exposer dans le diagnostic Linux",
+      "marker": "split-20261016-ref5-colour-contract",
+      "actual_status": "Done"
+    },
+    {
+      "parent": "AH-15",
+      "issue_key": "AH-275",
+      "summary": "Transporter et qualifier les métadonnées couleur complètes sur les surfaces et clients natifs",
+      "marker": "split-20261016-ref5-colour-native",
+      "actual_status": "To Do"
+    }
+  ],
+  "parent_comment_id": "10094"
+}

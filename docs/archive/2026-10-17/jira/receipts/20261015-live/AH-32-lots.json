@@ -1,0 +1,12 @@
+{
+  "key": "AH-32",
+  "marker": "[sync-lots-01-05-20261015]",
+  "source": "lots-01-05",
+  "result": {
+    "message": "Comment added to AH-32 successfully",
+    "commentId": "10027",
+    "body": "\\[sync-lots-01-05-20261015\\]\n\nPrérequis transactionnels implémentés pour les exports flow (lot 04, release 3.8.0.35) et les snapshots/engines TensorRT ordinaires (lot 05, backend d9d0a941d62f1dfcb3ed2f87018c4871aea12be7 en cours de publication). Temporaires uniques, publication par rename, cache partiel vérifié et conservé/réparé, échec builder sans destruction des engines terminés ; deux processus concurrents sur snapshots/flow vérifiés. CAC-05 reste In Progress : verrou par clé, arrêts/quota/erreur disque et tous les autres caches ne sont pas intégralement couverts. Les tickets dépendants ne sont pas clos tant que leur contrat requis reste incomplet.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

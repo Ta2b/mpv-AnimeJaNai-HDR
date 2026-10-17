@@ -1,0 +1,16 @@
+{
+  "lot": 50,
+  "tickets": {
+    "AH-321": "In Progress"
+  },
+  "state": "Worktrees created and acceptance criteria read; implementation and qualification not yet performed.",
+  "player_base": "e9930ec4c36738a1671c267d771cad4fa50bb5eb",
+  "backend_base": "9f2541e3dee1f159800b3a20c0e0729adc18491b",
+  "manager_base": "b6ebb1a696d8e8bc04a960651784d3e4c662b1b2",
+  "worktrees": [
+    "lot-50-downscale-algorithms-20261017",
+    "backend-downscale-algorithms-20261017",
+    "manager-downscale-algorithms-20261017"
+  ],
+  "decision": "Keep Area as the reference/default; evaluate at least one actual antialiased alternative with explicit sharpening/ringing/cost, no neural placeholder."
+}

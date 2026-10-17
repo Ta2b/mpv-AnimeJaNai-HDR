@@ -1,0 +1,1199 @@
+[
+  {
+    "path": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "55bbc8503736b29740e3857b0cd01132dbd64873",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/Documents/animejanai-inference-rtx",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "2577252efb05f9d60530855895619c90d1d37568",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/Documents/AnimeJaNaiManager-HDR",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "90ac6c7ec3d95e671aabb58ad219cc1b6867deec",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/Documents/Headroom-HDR-AnimeJaNai",
+    "common_dir": "/home/ta2b/Documents/Headroom-HDR-AnimeJaNai/.git",
+    "head": "be5bc41013f682bddd047f5cc749f1f105b3cf45",
+    "remotes": [
+      "origin\thttps://github.com/96dot/SDR-to-HDR-Video.git (fetch)",
+      "origin\thttps://github.com/96dot/SDR-to-HDR-Video.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/aji-source",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/aji-source/.git",
+    "head": "8cb3c65ed4d9e04dec75370fad3c1b750240adde",
+    "remotes": [
+      "origin\thttps://github.com/the-database/animejanai-inference.git (fetch)",
+      "origin\thttps://github.com/the-database/animejanai-inference.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/mpv-src",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/mpv-src/.git",
+    "head": "19c0fcf89595e6ab33908299207c555b67e81558",
+    "remotes": [
+      "origin\thttps://github.com/the-database/mpv.git (fetch) [blob:none]",
+      "origin\thttps://github.com/the-database/mpv.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/mpv-build-src",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/mpv-build-src/.git",
+    "head": "19c0fcf89595e6ab33908299207c555b67e81558",
+    "remotes": [
+      "origin\thttps://github.com/the-database/mpv.git (fetch) [blob:none]",
+      "origin\thttps://github.com/the-database/mpv.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/rtx-warp",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "3e309985358c4e72ea0977e25ce95bf08c6266c8",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/nv-codec-headers",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/nv-codec-headers/.git",
+    "head": "e844e5b26f46bb77479f063029595293aa8f812d",
+    "remotes": [
+      "origin\thttps://github.com/FFmpeg/nv-codec-headers.git (fetch)",
+      "origin\thttps://github.com/FFmpeg/nv-codec-headers.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/gpu-specialized",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "1468be6f24cac537407283d434bd5d542d642cf3",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-specialized",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "b3a8c1fcfd7b5acc846c0fb6ecba2fea793ef740",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/tickets-20261015",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "765763fd2991bca726595969cef4a43f7074bc71",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-tickets-20261015",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "d9d0a941d62f1dfcb3ed2f87018c4871aea12be7",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-06-stats-20261015",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "a0622c7094211483346a3ac0c865d2c99c7a4b2e",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-cac04-20261015",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "9eee3504d82387035e4908909ca9621733fed68c",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-07-stats-configure-20261015",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "212c286dd3181ac112804811ded55679a70b97fd",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/mpv-stats-configure-20261015",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/mpv-build-src/.git",
+    "head": "19c0fcf89595e6ab33908299207c555b67e81558",
+    "remotes": [
+      "origin\thttps://github.com/the-database/mpv.git (fetch) [blob:none]",
+      "origin\thttps://github.com/the-database/mpv.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-08-source-ids-20261015",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "f05cf41c1448597a1929f7a8be318572a29c5ded",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-09-fast-views-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "94d1cc7c0b07b0e91f1e4db79883ed59548ab20b",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-fastviews-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "3f6f60fa58b5ed649bb94c11030d8e354a6d3fc0",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-keylocks-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "62c1c5a7cdc5ae65e77f9e511913aa1e59e95972",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-10-keylocks-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "1c0605695e0dea38a9f162795c2b9c52594ed6fb",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-fastviews-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "a2908cf4d3166011c9b853be9f480a52b7a7867f",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-recovery-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "694537a6dada3c0aec11947cdc5a6bda86c2c91b",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-11-recovery-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "01f93fbb746e561f1049a2f1b6a1590c63ca461b",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-keylocks-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "7b7b723a23029b421f9cfcffc8e15263d41252cb",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-disk-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "650c2a71f5c8bca8cfa52805e0db1c17dad8aa67",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-12-disk-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "267a004fbe5f22f0835d733a72fe64ca813de45b",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-recovery-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "171220010f12298da39acead5269ad439d709bcc",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-disk-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "09eb15082918a858fc20642bd49837783ac94b69",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-13-key-contract-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "66f4be0b47b046429d0a2c0e91dfedb4bb63a455",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-key-contract-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "df489209a9758149f0e8e580539ebdc50c2ae577",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-derived-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "66fcd9ded3310d009c5402e1a9f43900da59a690",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-14-derived-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "d8fe421176c54386ff389ad16186e16594468d4b",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-contract-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "9bcc7d476e59f1bf87ed0af6c3c5a65ac420c76f",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-15-descriptions-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "2943d34bf423894278bede36391a7376324de22a",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-notices-20261016",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "132dab9525b5eab87e149f3d043b572b5f2d258a",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-notices-reference-20261016",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "b3a8c1fcfd7b5acc846c0fb6ecba2fea793ef740",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-16-reference-ui-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "cbbc10239e184691a7ea90284fff71422140145a",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-reference-ui-20261016",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "4c4af97f322706682c38ff4d630f4156b50999ef",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-17-temporal-ids-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "aa2afa039a36b46bc54ab75e7061fa45e56f1422",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-temporal-ids-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "635424ef27356fac94745419e46da48978804702",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-18-quality-meaning-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "764d8ad0628686544854ebc395781bf28623e15c",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-quality-meaning-20261016",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "50ff160f534699015f01d4fd8beb8c3f53464a58",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-temporal-ids-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "a1998637f2c3c243da8b7b9847f66eaaad1958ca",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-19-comparable-reports-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "51ce932230cf2a2f70ab3ba27f0f0a2c92facd98",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-derived-final-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "e26a45381e4c91c82fcf533801d8e648e5e1931c",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-20-submission-workers-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "94161dfce0348ceb20fdd5ef0b58f2e7edf2dfe4",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/reference-shared-workers-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "51ce932230cf2a2f70ab3ba27f0f0a2c92facd98",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-21-ort-buffers-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "c153b17657d0d9416607a170ed579c928f27992e",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-22-fixed-shapes-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "5b6331c0ad16a19a5cd0072647777ee9ae8928f8",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-23-cpu-layouts-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "71bd9acfdbcd0b5bbe516fc37960f11ca8c3fc72",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-24-cpu-activation-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "4d7ff64d667d6204bf4acb6fd52a50c7c1310920",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-25-cpu-motion-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "10b15a18018c5ed88e1dfa42fa48536541ec003d",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-26-precision-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "76e92c21b49b773880f8aee88f9049d531d51723",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-27-colour-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "d8c908804c019f9e66ddf6be7dc3b5bbb78cc05e",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-28-device-caps-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "afbd22a89ea3a7665cb8a3150699c3fa135bb465",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-capabilities-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "652fbc6bdd3a9d815367deeb2df65538636705dc",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-29-surfaces-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "0ee0e2b55888899eb9686236da6bf933e888e453",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-capabilities-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "d00ed919d8337a89b68f519f1ab1ce71e68a8628",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-30-submit-complete-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "78ceca8863ea74e1b1de12276c65185849dc7b2a",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-31-cuda-surfaces-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "ec3b0753347594058097fd1838cdcc9024e096b5",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-surfaces-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "df7e02e7bd3f4d274986946d2e5a04e905d7a454",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-surfaces-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "8f7d7b8414c27157de91d54270cab78bb64e0e5e",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-32-cuda-submit-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "122fa569a82dfc10c21be69e673ad758742fa780",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-cuda-submit-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "3fcb6e4de075907388e44d6e46096290082770ec",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-cuda-submit-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "cabec957531fa0c812f40c2e420e11f9d6e9c07c",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-33-surface-pair-cache-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "ba85db40e6b6869803c0537ad152b5d746633f0b",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-surface-pair-cache-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "7e9c87137e77046e5c521e635634bfdef751a277",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-surface-pair-cache-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "3d434bd856afed2f63f51e117c96d4b259cd8083",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-34-player-prototype-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "ac407bca07771db0bf9da0b4e37ce245fea895cd",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/mpv-player-prototype-20261016",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/mpv-src/.git",
+    "head": "19c0fcf89595e6ab33908299207c555b67e81558",
+    "remotes": [
+      "origin\thttps://github.com/the-database/mpv.git (fetch) [blob:none]",
+      "origin\thttps://github.com/the-database/mpv.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-35-playback-state-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "3f09cd036a218d600fd285c74924d9e8a069d530",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-36-prefetch-budget-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "ea24deaf24f9091afcb27b44c7718da9f04f943e",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/mpv-prefetch-budget-20261016",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/mpv-src/.git",
+    "head": "19c0fcf89595e6ab33908299207c555b67e81558",
+    "remotes": [
+      "origin\thttps://github.com/the-database/mpv.git (fetch) [blob:none]",
+      "origin\thttps://github.com/the-database/mpv.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-37-player-surface-worker-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "2e745ffa3f1861e53470386ceeb5c31025e7d2a0",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-player-worker-wakeup-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "861ab52efda5f1313bd39b8e15053b6d3c31f130",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/mpv-player-surface-worker-20261016",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/mpv-src/.git",
+    "head": "19c0fcf89595e6ab33908299207c555b67e81558",
+    "remotes": [
+      "origin\thttps://github.com/the-database/mpv.git (fetch) [blob:none]",
+      "origin\thttps://github.com/the-database/mpv.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-player-worker-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "4c0eb212a7d1426a8904bb378be3308135179846",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-38-rife-spatial-endpoints-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "2e745ffa3f1861e53470386ceeb5c31025e7d2a0",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-rife-spatial-endpoints-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "861ab52efda5f1313bd39b8e15053b6d3c31f130",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/gmfss-fortuna-source-20261016",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/gmfss-fortuna-source-20261016/.git",
+    "head": "0fb7ac1dc292e2615217110dd9d82557845fb919",
+    "remotes": [
+      "origin\thttps://github.com/98mxr/GMFSS_Fortuna.git (fetch) [blob:none]",
+      "origin\thttps://github.com/98mxr/GMFSS_Fortuna.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-38-gmfss-evaluation-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "918a0e505dd6cc3b774b0dd41d7045e04ea09d6c",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-fruc-surface-provider-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "f8da50a014fbf020bc3027e9bafc13feebb6323e",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-39-fruc-surface-provider-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "b6e36cd40b6a0bb177056baf19d8cf53a54e7cc8",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-interpolation-stages-20261016",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "2cc424c6257cf5081154512b9d3da5927a903ea5",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-player-fruc-provider-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "de2fe69c4f5b2999d8cbcdb1bb84df0fd286ced8",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-40-ordered-interpolation-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "c40496d242beea4f20ae08ee548ef1b10a29f540",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-ordered-interpolation-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "35c0049ffd2977fe196a34bbbd3b051647486c4d",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/mpv-ordered-interpolation-20261016",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/mpv-src/.git",
+    "head": "19c0fcf89595e6ab33908299207c555b67e81558",
+    "remotes": [
+      "origin\thttps://github.com/the-database/mpv.git (fetch) [blob:none]",
+      "origin\thttps://github.com/the-database/mpv.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-player-ordered-pipeline-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "33c803dcc1dcb57c3753a9c5864ef46957cb7131",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/mpv-pipeline-patch-delivery-20261016",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/mpv-src/.git",
+    "head": "19c0fcf89595e6ab33908299207c555b67e81558",
+    "remotes": [
+      "origin\thttps://github.com/the-database/mpv.git (fetch) [blob:none]",
+      "origin\thttps://github.com/the-database/mpv.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-41-manager-stages-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "6f7d95b3967ea493b608c4494fe69f9f7d8389cf",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-42-gmfss-preparation-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "472637b557b10d97379f9eb014831e1cc7805ec4",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-41-manager-release-fix-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "64f2512427d4bf8141571f4abb4349233f650e96",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-gmfss-preparation-20261016",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "1048b2a9a1bbdf10a603f86c5ae50983e26accdc",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-43-chain-ux-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "fe360943b1ae1c744542850ce81bf759f13aa63d",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-chain-ux-20261016",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "f5e2a0fd9ad7576f285b67bce17499a10cc2e5ca",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-downscale-stage-20261016",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "8d4ea4e28a660523bf2264dbb56627472400b10a",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-downscale-stage-20261016",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "d5e7cc4aaeb8a76456df3f86f1336e8b6761644a",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-44-downscale-stage-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "4ffe81b5a18325fe9d868f58312590c6540134eb",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-45-sdk-import-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "9306849e4995d98b87ad653d073276d3557b496b",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-sdk-import-20261016",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "98c8d27f0efcc7e8b2240ec1dd103457eb9d6b76",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-46-fruc-quality-20261016",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "850b669f8ee5d7fcf807ea078d579c50b7d23a59",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-fruc-quality-20261017",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "6a781fdf0ecad9ce60db4f9a340a41af365e5385",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-downscale-stage-20261017",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "df4e7f31058016567916df23cf51f99a5b8c13de",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-47-downscale-hdr-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "bd6c57a1be7e50a81755c28e9ee6c2f26055645d",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-player-downscale-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "2968000274d7f1cd41e0b1ac027c3f522a19a430",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-hdr-stage-20261017",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "9f2541e3dee1f159800b3a20c0e0729adc18491b",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-48-hdr-stage-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "f0c4632b4de8f8ccbcd69858f01562eede84955c",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-hdr-stage-20261017",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "f69589d7656ba5237cd29784e0c49f5106ff156b",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/mpv-hdr-stage-20261017",
+    "common_dir": "/home/ta2b/.animejanai-tools/work/mpv-src/.git",
+    "head": "19c0fcf89595e6ab33908299207c555b67e81558",
+    "remotes": [
+      "origin\thttps://github.com/the-database/mpv.git (fetch) [blob:none]",
+      "origin\thttps://github.com/the-database/mpv.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-player-hdr-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "f638d0023d019efd2188cecb748238d4b00ef344",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-49-truehdr-import-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "e9930ec4c36738a1671c267d771cad4fa50bb5eb",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-truehdr-import-20261017",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "b6ebb1a696d8e8bc04a960651784d3e4c662b1b2",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-downscale-algorithms-20261017",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "b6ebb1a696d8e8bc04a960651784d3e4c662b1b2",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-downscale-algorithms-20261017",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "9f2541e3dee1f159800b3a20c0e0729adc18491b",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-50-downscale-algorithms-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "e9930ec4c36738a1671c267d771cad4fa50bb5eb",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-51-chain-cleanup-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "e5df509c67bd6281d8d9acfa17a4c0317ca4b2c9",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-chain-cleanup-20261017",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "2847c79961c0d14241234d2ef8799b399e4b6a9d",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-mpv-hdr-stage-20261017",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "aecb858299e3366ec85fc26e735c16cf9f07607c",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-fruc-protection-20261017",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "2847c79961c0d14241234d2ef8799b399e4b6a9d",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-fruc-protection-20261017",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "4603933f363bc35ab2bcfab433ae665e7d4b7397",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-52-fruc-protection-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "e5df509c67bd6281d8d9acfa17a4c0317ca4b2c9",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-fruc-protection-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "92fb311a7f5b7ae522c4e7a88c7798c5c97c2f32",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-53-remove-fruc-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "e5df509c67bd6281d8d9acfa17a4c0317ca4b2c9",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-remove-fruc-20261017",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "2847c79961c0d14241234d2ef8799b399e4b6a9d",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-remove-fruc-20261017",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "4603933f363bc35ab2bcfab433ae665e7d4b7397",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-54-vfi-preparation-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "c475aee79d705942cc1f192357b38162ce4d70f4",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/manager-vfi-preparation-20261017",
+    "common_dir": "/home/ta2b/Documents/AnimeJaNaiManager-HDR/.git",
+    "head": "d4b868f0dba3c26b8ed438c412c0c55df376a4d0",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/AnimeJaNaiManager-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/backend-rife-regression-20261017",
+    "common_dir": "/home/ta2b/Documents/animejanai-inference-rtx/.git",
+    "head": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (fetch)",
+      "origin\tgit@github.com:Ta2b/animejanai-inference-rtx.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/lot-55-rife-regression-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "0f3f6bfb7e76ca15647d74fc5a91405d3072be69",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  },
+  {
+    "path": "/home/ta2b/.animejanai-tools/work/binaries-rife-fusion-20261017",
+    "common_dir": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/.git",
+    "head": "5217111b754412338fe94d236d80f39dcd42b957",
+    "remotes": [
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (fetch)",
+      "origin\tgit@github.com:Ta2b/mpv-AnimeJaNai-HDR.git (push)"
+    ]
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "entries": [
+    {
+      "parent": "AH-49",
+      "issue_key": "AH-278",
+      "summary": "Livrer le descripteur de surface versionn\u00e9 et un adaptateur CPU r\u00e9ellement consomm\u00e9",
+      "marker": "split-20261016-sur1-cpu-surfaces",
+      "actual_status": "Done"
+    },
+    {
+      "parent": "AH-49",
+      "issue_key": "AH-279",
+      "summary": "Int\u00e9grer les surfaces CUDA Linux typ\u00e9es et leur ownership sur la cha\u00eene spatiale/RIFE",
+      "marker": "split-20261016-sur1-native-surfaces",
+      "actual_status": "Done"
+    },
+    {
+      "parent": "AH-49",
+      "issue_key": "AH-282",
+      "summary": "Compl\u00e9ter les surfaces natives hors CUDA Linux et les configurations sp\u00e9cialis\u00e9es restantes",
+      "marker": "split-20261016-sur1-native-remaining",
+      "actual_status": "To Do"
+    }
+  ],
+  "parent_comment_id": "10100",
+  "native_split_comment_id": "10106"
+}

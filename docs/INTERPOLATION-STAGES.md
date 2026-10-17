@@ -124,7 +124,7 @@ et exécution sont asynchrones, avec annulation des constructions en cours.
 Le lot 55 qualifie la fusion sur Linux/RTX 4070 Ti : pixels Quality/hybrides,
 cadence, EOF, propriétaires et invalidations. Son gain Fast ×4 local ne garantit
 pas les FPS affichés, une chaîne HDR complète ou les autres matériels.
-Voir [qualification lot 55](qualification/lot-55-rife-fusion-20261017.md).
+Voir [qualification lot 55](archive/2026-10-17/qualification/lot-55-rife-fusion-20261017.md).
 Le lot 57 vérifie séparément le retrait FRUC et le nouvel étage Spline36 ; ses
 résultats ciblés et limites sont consignés dans le rapport de ce lot. Une
 compilation portable ne vaut pas qualification sur chaque architecture CUDA.

@@ -1,0 +1,979 @@
+{
+  "status": "complete",
+  "source_sha256": "0bc7de45bd7f7558cdc868ddb5b56d3cea687a68780fadd845904f954fcd2f45",
+  "updated": {
+    "AH-1": {
+      "source_id": "FOND",
+      "kind": "epics"
+    },
+    "AH-2": {
+      "source_id": "ARCH",
+      "kind": "epics"
+    },
+    "AH-3": {
+      "source_id": "NVIDIA",
+      "kind": "epics"
+    },
+    "AH-4": {
+      "source_id": "AMD",
+      "kind": "epics"
+    },
+    "AH-5": {
+      "source_id": "INTEL",
+      "kind": "epics"
+    },
+    "AH-6": {
+      "source_id": "APPLE",
+      "kind": "epics"
+    },
+    "AH-7": {
+      "source_id": "VULKAN",
+      "kind": "epics"
+    },
+    "AH-8": {
+      "source_id": "VFI",
+      "kind": "epics"
+    },
+    "AH-9": {
+      "source_id": "KERNELS",
+      "kind": "epics"
+    },
+    "AH-10": {
+      "source_id": "QUAL",
+      "kind": "epics"
+    },
+    "AH-11": {
+      "source_id": "REF-01",
+      "kind": "tasks"
+    },
+    "AH-12": {
+      "source_id": "REF-02",
+      "kind": "tasks"
+    },
+    "AH-13": {
+      "source_id": "REF-03",
+      "kind": "tasks"
+    },
+    "AH-14": {
+      "source_id": "REF-04",
+      "kind": "tasks"
+    },
+    "AH-15": {
+      "source_id": "REF-05",
+      "kind": "tasks"
+    },
+    "AH-16": {
+      "source_id": "REF-06",
+      "kind": "tasks"
+    },
+    "AH-17": {
+      "source_id": "REF-07",
+      "kind": "tasks"
+    },
+    "AH-18": {
+      "source_id": "REF-08",
+      "kind": "tasks"
+    },
+    "AH-19": {
+      "source_id": "OBS-01",
+      "kind": "tasks"
+    },
+    "AH-20": {
+      "source_id": "OBS-02",
+      "kind": "tasks"
+    },
+    "AH-21": {
+      "source_id": "OBS-03",
+      "kind": "tasks"
+    },
+    "AH-22": {
+      "source_id": "OBS-04",
+      "kind": "tasks"
+    },
+    "AH-23": {
+      "source_id": "OBS-05",
+      "kind": "tasks"
+    },
+    "AH-24": {
+      "source_id": "OBS-06",
+      "kind": "tasks"
+    },
+    "AH-25": {
+      "source_id": "OBS-07",
+      "kind": "tasks"
+    },
+    "AH-26": {
+      "source_id": "OBS-08",
+      "kind": "tasks"
+    },
+    "AH-27": {
+      "source_id": "OBS-09",
+      "kind": "tasks"
+    },
+    "AH-28": {
+      "source_id": "CAC-01",
+      "kind": "tasks"
+    },
+    "AH-29": {
+      "source_id": "CAC-02",
+      "kind": "tasks"
+    },
+    "AH-30": {
+      "source_id": "CAC-03",
+      "kind": "tasks"
+    },
+    "AH-31": {
+      "source_id": "CAC-04",
+      "kind": "tasks"
+    },
+    "AH-32": {
+      "source_id": "CAC-05",
+      "kind": "tasks"
+    },
+    "AH-33": {
+      "source_id": "CAC-06",
+      "kind": "tasks"
+    },
+    "AH-34": {
+      "source_id": "CAC-07",
+      "kind": "tasks"
+    },
+    "AH-35": {
+      "source_id": "CAC-08",
+      "kind": "tasks"
+    },
+    "AH-36": {
+      "source_id": "PLY-01",
+      "kind": "tasks"
+    },
+    "AH-37": {
+      "source_id": "PLY-02",
+      "kind": "tasks"
+    },
+    "AH-38": {
+      "source_id": "PLY-03",
+      "kind": "tasks"
+    },
+    "AH-39": {
+      "source_id": "PLY-04",
+      "kind": "tasks"
+    },
+    "AH-40": {
+      "source_id": "PLY-05",
+      "kind": "tasks"
+    },
+    "AH-41": {
+      "source_id": "PLY-06",
+      "kind": "tasks"
+    },
+    "AH-42": {
+      "source_id": "PLY-07",
+      "kind": "tasks"
+    },
+    "AH-43": {
+      "source_id": "PLY-08",
+      "kind": "tasks"
+    },
+    "AH-44": {
+      "source_id": "PLY-09",
+      "kind": "tasks"
+    },
+    "AH-45": {
+      "source_id": "PLY-10",
+      "kind": "tasks"
+    },
+    "AH-46": {
+      "source_id": "PLY-11",
+      "kind": "tasks"
+    },
+    "AH-47": {
+      "source_id": "PLY-12",
+      "kind": "tasks"
+    },
+    "AH-48": {
+      "source_id": "PLY-13",
+      "kind": "tasks"
+    },
+    "AH-49": {
+      "source_id": "SUR-01",
+      "kind": "tasks"
+    },
+    "AH-50": {
+      "source_id": "SUR-02",
+      "kind": "tasks"
+    },
+    "AH-51": {
+      "source_id": "SUR-03",
+      "kind": "tasks"
+    },
+    "AH-52": {
+      "source_id": "SUR-04",
+      "kind": "tasks"
+    },
+    "AH-53": {
+      "source_id": "SUR-05",
+      "kind": "tasks"
+    },
+    "AH-54": {
+      "source_id": "SUR-06",
+      "kind": "tasks"
+    },
+    "AH-55": {
+      "source_id": "SUR-07",
+      "kind": "tasks"
+    },
+    "AH-56": {
+      "source_id": "SUR-08",
+      "kind": "tasks"
+    },
+    "AH-57": {
+      "source_id": "SUR-09",
+      "kind": "tasks"
+    },
+    "AH-58": {
+      "source_id": "SUR-10",
+      "kind": "tasks"
+    },
+    "AH-59": {
+      "source_id": "SHR-01",
+      "kind": "tasks"
+    },
+    "AH-60": {
+      "source_id": "SHR-02",
+      "kind": "tasks"
+    },
+    "AH-61": {
+      "source_id": "SHR-03",
+      "kind": "tasks"
+    },
+    "AH-62": {
+      "source_id": "SHR-04",
+      "kind": "tasks"
+    },
+    "AH-63": {
+      "source_id": "SHR-05",
+      "kind": "tasks"
+    },
+    "AH-64": {
+      "source_id": "SHR-06",
+      "kind": "tasks"
+    },
+    "AH-65": {
+      "source_id": "SHR-07",
+      "kind": "tasks"
+    },
+    "AH-66": {
+      "source_id": "GRA-01",
+      "kind": "tasks"
+    },
+    "AH-67": {
+      "source_id": "GRA-02",
+      "kind": "tasks"
+    },
+    "AH-68": {
+      "source_id": "GRA-03",
+      "kind": "tasks"
+    },
+    "AH-69": {
+      "source_id": "GRA-04",
+      "kind": "tasks"
+    },
+    "AH-70": {
+      "source_id": "GRA-05",
+      "kind": "tasks"
+    },
+    "AH-71": {
+      "source_id": "GRA-06",
+      "kind": "tasks"
+    },
+    "AH-72": {
+      "source_id": "GRA-07",
+      "kind": "tasks"
+    },
+    "AH-73": {
+      "source_id": "GRA-08",
+      "kind": "tasks"
+    },
+    "AH-74": {
+      "source_id": "TRT-01",
+      "kind": "tasks"
+    },
+    "AH-75": {
+      "source_id": "TRT-02",
+      "kind": "tasks"
+    },
+    "AH-76": {
+      "source_id": "TRT-03",
+      "kind": "tasks"
+    },
+    "AH-77": {
+      "source_id": "TRT-04",
+      "kind": "tasks"
+    },
+    "AH-78": {
+      "source_id": "TRT-05",
+      "kind": "tasks"
+    },
+    "AH-79": {
+      "source_id": "TRT-06",
+      "kind": "tasks"
+    },
+    "AH-80": {
+      "source_id": "TRT-07",
+      "kind": "tasks"
+    },
+    "AH-81": {
+      "source_id": "TRT-08",
+      "kind": "tasks"
+    },
+    "AH-82": {
+      "source_id": "TRT-09",
+      "kind": "tasks"
+    },
+    "AH-83": {
+      "source_id": "TRT-10",
+      "kind": "tasks"
+    },
+    "AH-84": {
+      "source_id": "TRT-11",
+      "kind": "tasks"
+    },
+    "AH-85": {
+      "source_id": "TRT-12",
+      "kind": "tasks"
+    },
+    "AH-86": {
+      "source_id": "TRT-13",
+      "kind": "tasks"
+    },
+    "AH-87": {
+      "source_id": "DML-01",
+      "kind": "tasks"
+    },
+    "AH-88": {
+      "source_id": "DML-02",
+      "kind": "tasks"
+    },
+    "AH-89": {
+      "source_id": "DML-03",
+      "kind": "tasks"
+    },
+    "AH-90": {
+      "source_id": "DML-04",
+      "kind": "tasks"
+    },
+    "AH-91": {
+      "source_id": "DML-05",
+      "kind": "tasks"
+    },
+    "AH-92": {
+      "source_id": "DML-06",
+      "kind": "tasks"
+    },
+    "AH-93": {
+      "source_id": "DML-07",
+      "kind": "tasks"
+    },
+    "AH-94": {
+      "source_id": "AMD-01",
+      "kind": "tasks"
+    },
+    "AH-95": {
+      "source_id": "AMD-02",
+      "kind": "tasks"
+    },
+    "AH-96": {
+      "source_id": "AMD-03",
+      "kind": "tasks"
+    },
+    "AH-97": {
+      "source_id": "AMD-04",
+      "kind": "tasks"
+    },
+    "AH-98": {
+      "source_id": "AMD-05",
+      "kind": "tasks"
+    },
+    "AH-99": {
+      "source_id": "AMD-06",
+      "kind": "tasks"
+    },
+    "AH-100": {
+      "source_id": "AMD-07",
+      "kind": "tasks"
+    },
+    "AH-101": {
+      "source_id": "AMD-08",
+      "kind": "tasks"
+    },
+    "AH-102": {
+      "source_id": "AMD-09",
+      "kind": "tasks"
+    },
+    "AH-103": {
+      "source_id": "AMD-10",
+      "kind": "tasks"
+    },
+    "AH-104": {
+      "source_id": "AMD-11",
+      "kind": "tasks"
+    },
+    "AH-105": {
+      "source_id": "AMD-12",
+      "kind": "tasks"
+    },
+    "AH-106": {
+      "source_id": "INT-01",
+      "kind": "tasks"
+    },
+    "AH-107": {
+      "source_id": "INT-02",
+      "kind": "tasks"
+    },
+    "AH-108": {
+      "source_id": "INT-03",
+      "kind": "tasks"
+    },
+    "AH-109": {
+      "source_id": "INT-04",
+      "kind": "tasks"
+    },
+    "AH-110": {
+      "source_id": "INT-05",
+      "kind": "tasks"
+    },
+    "AH-111": {
+      "source_id": "INT-06",
+      "kind": "tasks"
+    },
+    "AH-112": {
+      "source_id": "INT-07",
+      "kind": "tasks"
+    },
+    "AH-113": {
+      "source_id": "INT-08",
+      "kind": "tasks"
+    },
+    "AH-114": {
+      "source_id": "INT-09",
+      "kind": "tasks"
+    },
+    "AH-115": {
+      "source_id": "INT-10",
+      "kind": "tasks"
+    },
+    "AH-116": {
+      "source_id": "INT-11",
+      "kind": "tasks"
+    },
+    "AH-117": {
+      "source_id": "APL-01",
+      "kind": "tasks"
+    },
+    "AH-118": {
+      "source_id": "APL-02",
+      "kind": "tasks"
+    },
+    "AH-119": {
+      "source_id": "APL-03",
+      "kind": "tasks"
+    },
+    "AH-120": {
+      "source_id": "APL-04",
+      "kind": "tasks"
+    },
+    "AH-121": {
+      "source_id": "APL-05",
+      "kind": "tasks"
+    },
+    "AH-122": {
+      "source_id": "APL-06",
+      "kind": "tasks"
+    },
+    "AH-123": {
+      "source_id": "APL-07",
+      "kind": "tasks"
+    },
+    "AH-124": {
+      "source_id": "APL-08",
+      "kind": "tasks"
+    },
+    "AH-125": {
+      "source_id": "APL-09",
+      "kind": "tasks"
+    },
+    "AH-126": {
+      "source_id": "APL-10",
+      "kind": "tasks"
+    },
+    "AH-127": {
+      "source_id": "APL-11",
+      "kind": "tasks"
+    },
+    "AH-128": {
+      "source_id": "VK-01",
+      "kind": "tasks"
+    },
+    "AH-129": {
+      "source_id": "VK-02",
+      "kind": "tasks"
+    },
+    "AH-130": {
+      "source_id": "VK-03",
+      "kind": "tasks"
+    },
+    "AH-131": {
+      "source_id": "VK-04",
+      "kind": "tasks"
+    },
+    "AH-132": {
+      "source_id": "VK-05",
+      "kind": "tasks"
+    },
+    "AH-133": {
+      "source_id": "VK-06",
+      "kind": "tasks"
+    },
+    "AH-134": {
+      "source_id": "VK-07",
+      "kind": "tasks"
+    },
+    "AH-135": {
+      "source_id": "VK-08",
+      "kind": "tasks"
+    },
+    "AH-136": {
+      "source_id": "VK-09",
+      "kind": "tasks"
+    },
+    "AH-137": {
+      "source_id": "VK-10",
+      "kind": "tasks"
+    },
+    "AH-138": {
+      "source_id": "VK-11",
+      "kind": "tasks"
+    },
+    "AH-139": {
+      "source_id": "VK-12",
+      "kind": "tasks"
+    },
+    "AH-140": {
+      "source_id": "VFI-01",
+      "kind": "tasks"
+    },
+    "AH-141": {
+      "source_id": "VFI-02",
+      "kind": "tasks"
+    },
+    "AH-142": {
+      "source_id": "VFI-03",
+      "kind": "tasks"
+    },
+    "AH-143": {
+      "source_id": "VFI-04",
+      "kind": "tasks"
+    },
+    "AH-144": {
+      "source_id": "VFI-05",
+      "kind": "tasks"
+    },
+    "AH-145": {
+      "source_id": "VFI-06",
+      "kind": "tasks"
+    },
+    "AH-146": {
+      "source_id": "VFI-07",
+      "kind": "tasks"
+    },
+    "AH-147": {
+      "source_id": "VFI-08",
+      "kind": "tasks"
+    },
+    "AH-148": {
+      "source_id": "VFI-09",
+      "kind": "tasks"
+    },
+    "AH-149": {
+      "source_id": "VFI-10",
+      "kind": "tasks"
+    },
+    "AH-150": {
+      "source_id": "VFI-11",
+      "kind": "tasks"
+    },
+    "AH-151": {
+      "source_id": "VFI-12",
+      "kind": "tasks"
+    },
+    "AH-152": {
+      "source_id": "VFI-13",
+      "kind": "tasks"
+    },
+    "AH-153": {
+      "source_id": "VFI-14",
+      "kind": "tasks"
+    },
+    "AH-154": {
+      "source_id": "VFI-15",
+      "kind": "tasks"
+    },
+    "AH-155": {
+      "source_id": "VFI-16",
+      "kind": "tasks"
+    },
+    "AH-156": {
+      "source_id": "VFI-17",
+      "kind": "tasks"
+    },
+    "AH-157": {
+      "source_id": "VFI-18",
+      "kind": "tasks"
+    },
+    "AH-158": {
+      "source_id": "VFI-19",
+      "kind": "tasks"
+    },
+    "AH-159": {
+      "source_id": "VFI-20",
+      "kind": "tasks"
+    },
+    "AH-160": {
+      "source_id": "VFI-21",
+      "kind": "tasks"
+    },
+    "AH-161": {
+      "source_id": "VFI-22",
+      "kind": "tasks"
+    },
+    "AH-162": {
+      "source_id": "VFI-23",
+      "kind": "tasks"
+    },
+    "AH-163": {
+      "source_id": "VFI-24",
+      "kind": "tasks"
+    },
+    "AH-164": {
+      "source_id": "VFI-25",
+      "kind": "tasks"
+    },
+    "AH-165": {
+      "source_id": "VFI-26",
+      "kind": "tasks"
+    },
+    "AH-166": {
+      "source_id": "VFI-27",
+      "kind": "tasks"
+    },
+    "AH-167": {
+      "source_id": "VFI-28",
+      "kind": "tasks"
+    },
+    "AH-168": {
+      "source_id": "VFI-29",
+      "kind": "tasks"
+    },
+    "AH-169": {
+      "source_id": "VFI-30",
+      "kind": "tasks"
+    },
+    "AH-170": {
+      "source_id": "VFI-31",
+      "kind": "tasks"
+    },
+    "AH-171": {
+      "source_id": "VFI-32",
+      "kind": "tasks"
+    },
+    "AH-172": {
+      "source_id": "VFI-33",
+      "kind": "tasks"
+    },
+    "AH-173": {
+      "source_id": "VFI-34",
+      "kind": "tasks"
+    },
+    "AH-174": {
+      "source_id": "VFI-35",
+      "kind": "tasks"
+    },
+    "AH-175": {
+      "source_id": "VFI-36",
+      "kind": "tasks"
+    },
+    "AH-176": {
+      "source_id": "VFI-37",
+      "kind": "tasks"
+    },
+    "AH-177": {
+      "source_id": "VFI-38",
+      "kind": "tasks"
+    },
+    "AH-178": {
+      "source_id": "TMP-01",
+      "kind": "tasks"
+    },
+    "AH-179": {
+      "source_id": "TMP-02",
+      "kind": "tasks"
+    },
+    "AH-180": {
+      "source_id": "TMP-03",
+      "kind": "tasks"
+    },
+    "AH-181": {
+      "source_id": "TMP-04",
+      "kind": "tasks"
+    },
+    "AH-182": {
+      "source_id": "TMP-05",
+      "kind": "tasks"
+    },
+    "AH-183": {
+      "source_id": "TMP-06",
+      "kind": "tasks"
+    },
+    "AH-184": {
+      "source_id": "TMP-07",
+      "kind": "tasks"
+    },
+    "AH-185": {
+      "source_id": "TMP-08",
+      "kind": "tasks"
+    },
+    "AH-186": {
+      "source_id": "TMP-09",
+      "kind": "tasks"
+    },
+    "AH-232": {
+      "source_id": "TMP-10",
+      "kind": "tasks"
+    },
+    "AH-187": {
+      "source_id": "COL-01",
+      "kind": "tasks"
+    },
+    "AH-188": {
+      "source_id": "COL-02",
+      "kind": "tasks"
+    },
+    "AH-189": {
+      "source_id": "COL-03",
+      "kind": "tasks"
+    },
+    "AH-190": {
+      "source_id": "COL-04",
+      "kind": "tasks"
+    },
+    "AH-191": {
+      "source_id": "COL-05",
+      "kind": "tasks"
+    },
+    "AH-192": {
+      "source_id": "RES-01",
+      "kind": "tasks"
+    },
+    "AH-193": {
+      "source_id": "RES-02",
+      "kind": "tasks"
+    },
+    "AH-194": {
+      "source_id": "RES-03",
+      "kind": "tasks"
+    },
+    "AH-195": {
+      "source_id": "RES-04",
+      "kind": "tasks"
+    },
+    "AH-196": {
+      "source_id": "RES-05",
+      "kind": "tasks"
+    },
+    "AH-197": {
+      "source_id": "RES-06",
+      "kind": "tasks"
+    },
+    "AH-198": {
+      "source_id": "RES-07",
+      "kind": "tasks"
+    },
+    "AH-199": {
+      "source_id": "RES-08",
+      "kind": "tasks"
+    },
+    "AH-200": {
+      "source_id": "RES-09",
+      "kind": "tasks"
+    },
+    "AH-201": {
+      "source_id": "LOW-01",
+      "kind": "tasks"
+    },
+    "AH-202": {
+      "source_id": "LOW-02",
+      "kind": "tasks"
+    },
+    "AH-203": {
+      "source_id": "LOW-03",
+      "kind": "tasks"
+    },
+    "AH-204": {
+      "source_id": "LOW-04",
+      "kind": "tasks"
+    },
+    "AH-205": {
+      "source_id": "LOW-05",
+      "kind": "tasks"
+    },
+    "AH-206": {
+      "source_id": "LOW-06",
+      "kind": "tasks"
+    },
+    "AH-207": {
+      "source_id": "LOW-07",
+      "kind": "tasks"
+    },
+    "AH-208": {
+      "source_id": "LOW-08",
+      "kind": "tasks"
+    },
+    "AH-209": {
+      "source_id": "LOW-09",
+      "kind": "tasks"
+    },
+    "AH-210": {
+      "source_id": "LOW-10",
+      "kind": "tasks"
+    },
+    "AH-211": {
+      "source_id": "LOW-11",
+      "kind": "tasks"
+    },
+    "AH-212": {
+      "source_id": "QUA-01",
+      "kind": "tasks"
+    },
+    "AH-213": {
+      "source_id": "QUA-02",
+      "kind": "tasks"
+    },
+    "AH-214": {
+      "source_id": "QUA-03",
+      "kind": "tasks"
+    },
+    "AH-215": {
+      "source_id": "QUA-04",
+      "kind": "tasks"
+    },
+    "AH-216": {
+      "source_id": "QUA-05",
+      "kind": "tasks"
+    },
+    "AH-217": {
+      "source_id": "QUA-06",
+      "kind": "tasks"
+    },
+    "AH-218": {
+      "source_id": "QUA-07",
+      "kind": "tasks"
+    },
+    "AH-219": {
+      "source_id": "QUA-08",
+      "kind": "tasks"
+    },
+    "AH-220": {
+      "source_id": "QUA-09",
+      "kind": "tasks"
+    },
+    "AH-221": {
+      "source_id": "QUA-10",
+      "kind": "tasks"
+    },
+    "AH-222": {
+      "source_id": "QUA-11",
+      "kind": "tasks"
+    },
+    "AH-223": {
+      "source_id": "QUA-12",
+      "kind": "tasks"
+    },
+    "AH-224": {
+      "source_id": "DEL-01",
+      "kind": "tasks"
+    },
+    "AH-225": {
+      "source_id": "DEL-02",
+      "kind": "tasks"
+    },
+    "AH-226": {
+      "source_id": "DEL-03",
+      "kind": "tasks"
+    },
+    "AH-227": {
+      "source_id": "DEL-04",
+      "kind": "tasks"
+    },
+    "AH-228": {
+      "source_id": "DEL-05",
+      "kind": "tasks"
+    },
+    "AH-229": {
+      "source_id": "DEL-06",
+      "kind": "tasks"
+    },
+    "AH-230": {
+      "source_id": "DEL-07",
+      "kind": "tasks"
+    },
+    "AH-231": {
+      "source_id": "DEL-08",
+      "kind": "tasks"
+    }
+  },
+  "conflicts": {},
+  "in_flight": null,
+  "notes": "Short, targeted tests only; strict necessary; no fixed duration or count. Existing issues only.",
+  "completed_at_utc": "2026-10-15T13:56:15.129Z",
+  "verification": {
+    "method": "232 successful edit acknowledgements, local source/export consistency and targeted remote reads",
+    "spot_checks": [
+      {
+        "key": "AH-11",
+        "summary": "[REF-01] Décrire une référence reproductible par machine",
+        "short_tests_policy": true,
+        "no_duration_cap": true,
+        "stop_rule": true,
+        "obsolete_labels_absent": true
+      },
+      {
+        "key": "AH-10",
+        "summary": "Qualification ciblée, Manager et livraison",
+        "short_tests_policy": true,
+        "no_duration_cap": true,
+        "stop_rule": true,
+        "obsolete_labels_absent": true
+      },
+      {
+        "key": "AH-220",
+        "summary": "[QUA-09] Mémoire et charge, contrôle court",
+        "short_tests_policy": true,
+        "no_duration_cap": true,
+        "stop_rule": true,
+        "obsolete_labels_absent": true
+      }
+    ],
+    "full_remote_reread": "Stopped after delayed read; targeted reads used instead. No full reread claimed.",
+    "created_issues": 0,
+    "changed_dependencies": 0
+  },
+  "policy": {
+    "tests_required_per_feature": true,
+    "short_targeted_tests": true,
+    "strict_necessary": true,
+    "fixed_duration_seconds": null,
+    "fixed_test_count": null,
+    "stop_when_conclusive": true,
+    "repeat_when": "Failure, ambiguity or genuinely unstable results only."
+  }
+}

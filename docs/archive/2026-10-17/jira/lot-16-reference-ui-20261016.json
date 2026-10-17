@@ -1,0 +1,9 @@
+{
+  "issue": "AH-236",
+  "status": "Done",
+  "release": "3.8.0.47",
+  "release_source": "cbbc10239e184691a7ea90284fff71422140145a",
+  "manager_source": "4c4af97f322706682c38ff4d630f4156b50999ef",
+  "qualification_comment": "10060",
+  "closing_comment": "10065"
+}

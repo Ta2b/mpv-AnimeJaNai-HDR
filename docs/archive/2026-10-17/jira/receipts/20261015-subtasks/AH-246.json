@@ -1,0 +1,15 @@
+{
+  "parent": "AH-30",
+  "marker": "split-20261015-flow-provider-qualification",
+  "summary": "Qualifier l’invalidation flow et les caches compilés sur les providers GPU concernés",
+  "target_status": "To Do",
+  "criterion": "Sur les APIs de providers effectivement supportés, vérifier source/poids remplacés, hit et reconstruction du programme compilé sous l’identité flow ; comparer mêmes inputs/poids et documenter chaque cible absente.",
+  "evidence": "Qualification CPU/portable acquise ; aucune validation GPU Apple/AMD/Intel substituée par le résultat CPU. Liens bloquants parent AH-28/AH-32 conservés.",
+  "status": "planned",
+  "issue_key": "AH-246",
+  "create_result": {
+    "id": "10248",
+    "key": "AH-246"
+  },
+  "actual_status": "To Do"
+}

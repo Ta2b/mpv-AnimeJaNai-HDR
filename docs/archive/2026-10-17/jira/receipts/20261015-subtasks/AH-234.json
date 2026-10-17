@@ -1,0 +1,15 @@
+{
+  "parent": "AH-11",
+  "marker": "split-20261015-ref-loaded-chain",
+  "summary": "Rattacher les sorties aux modèles réellement chargés et dimensions de chaque étage",
+  "target_status": "To Do",
+  "criterion": "Lier média/sortie et instances de modèles/poids exécutés ; exporter dimensions intermédiaires, ensemble, facteur/coupe/ordre, scaler/HDR et fraîcheur des stats. Ne pas déduire la chaîne du seul nom Quality.",
+  "evidence": "Le rapport .33 signale ces champs comme inconnus ou non prouvés ; aucune qualification de cette extension.",
+  "status": "planned",
+  "issue_key": "AH-234",
+  "create_result": {
+    "id": "10236",
+    "key": "AH-234"
+  },
+  "actual_status": "To Do"
+}

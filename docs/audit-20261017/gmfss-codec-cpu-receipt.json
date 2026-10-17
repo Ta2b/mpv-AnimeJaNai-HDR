@@ -1,0 +1,20 @@
+[
+  {
+    "codec": "lossless-rgb",
+    "audio": "drop",
+    "output_frames": 6,
+    "fps": "48/1",
+    "pixel_exact": true,
+    "source_video_index": 1,
+    "passed": true
+  },
+  {
+    "codec": "hevc44410-sdr",
+    "audio": "copy",
+    "output_frames": 6,
+    "fps": "48/1",
+    "pixel_exact": false,
+    "source_video_index": 1,
+    "passed": true
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "issue": "AH-262",
+  "status": "Done",
+  "parent": "AH-59",
+  "native_qualification": "AH-263",
+  "source": "94161dfce0348ceb20fdd5ef0b58f2e7edf2dfe4",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-20-submission-workers-20261016",
+  "version": "3.8.0.52",
+  "qualification": "24 exact outputs; pthread creations 2/2/4 to 0; timing nonconclusive; native integration AH-263 open",
+  "release_receipt": "release-20261016-3.8.0.52.json",
+  "close_comment_id": "10077"
+}

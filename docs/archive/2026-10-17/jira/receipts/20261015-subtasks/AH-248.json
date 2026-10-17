@@ -1,0 +1,15 @@
+{
+  "parent": "AH-31",
+  "marker": "split-20261015-trt-ordinary-windows",
+  "summary": "Qualifier les engines ordinaires et leur migration sous Windows TensorRT",
+  "target_status": "To Do",
+  "criterion": "Sur Windows réel, vérifier cold build/hit, poids remplacés même nom, noms/UTF-8, publication et échec préservant un engine terminé ; comparer mêmes inputs/réglages et distinguer variation de reconstruction.",
+  "evidence": "Windows NVIDIA/AMD build 38801311797 success depuis d9d0a94, binaires publiés .36 ; compilation/linkage uniquement, pas inférence matérielle Windows.",
+  "status": "planned",
+  "issue_key": "AH-248",
+  "create_result": {
+    "id": "10250",
+    "key": "AH-248"
+  },
+  "actual_status": "To Do"
+}

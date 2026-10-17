@@ -8,8 +8,8 @@ tests. Le code RIFE partagé `30a3e83` est maintenant dépassé et intégré par
 lots suivants : `d639dc1` / `b3f9d5d` ajoutent la chaîne warp et la chronologie
 des dessins. La branche NVIDIA CUDA Graph `f4fcd17` reste isolée.
 
-Lire [l'état consolidé courant](ETAT-PROJET.md) et
-[le chantier 3.8.0.24–29 / 165 Hz](CHANTIER-RIFE-165HZ.md). Les sections datées
+Lire [l'état consolidé courant](archive/2026-10-17/chantiers/ETAT-PROJET.md) et
+[le chantier 3.8.0.24–29 / 165 Hz](archive/2026-10-17/chantiers/CHANTIER-RIFE-165HZ.md). Les sections datées
 3.8.0.23 ci-dessous restent un historique des preuves de cette session, pas
 l'état global actuel. La chaîne warp est livrée dans le moteur partagé ;
 **elle ne l'est pas dans NCNN/Vulkan ni dans les binaires Windows amont**.
@@ -24,7 +24,7 @@ GNOME et Wayland, sur processeur Intel avec RX 6500 ou RTX 4050 mobile.
 La release inclut les optimisations exactes NCNN/Vulkan et la préparation CPU du
 moteur partagé. La suite RIFE `30a3e83` a passé sa CI, mais n'est pas dans ces
 binaires ; la branche NVIDIA `f4fcd17` reste à intégrer. Voir
-[l'état courant](ETAT-PROJET.md) et [le relais performances](CHANTIER-PERFORMANCE-RELAIS.md).
+[l'état courant](archive/2026-10-17/chantiers/ETAT-PROJET.md) et [le relais performances](archive/2026-10-17/chantiers/CHANTIER-PERFORMANCE-RELAIS.md).
 Aucun nouveau benchmark local après la consigne d'arrêt de l'utilisateur.
 
 L'extension AnimeJaNai/RIFE AMD et NVIDIA est suivie dans

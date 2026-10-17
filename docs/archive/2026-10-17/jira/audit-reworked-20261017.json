@@ -1,0 +1,1549 @@
+{
+  "audit": "AH-334",
+  "snapshot_issues": 333,
+  "rewritten": 171,
+  "unchanged_relevant": 162,
+  "result": "coverage_PASS",
+  "issues": [
+    {
+      "key": "AH-1",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-2",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-3",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-4",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-5",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-6",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-7",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-8",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-9",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-10",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-12",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-13",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-14",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-17",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-18",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-20",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-24",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-25",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-26",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-27",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-34",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-36",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-38",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-44",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-46",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-47",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-48",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-51",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-52",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-56",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-60",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-61",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-67",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-69",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-72",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-74",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-75",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-78",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-80",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-81",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-84",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-85",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-87",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-91",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-92",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-93",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-97",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-99",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-100",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-102",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-103",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-105",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-108",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-1-110.json",
+      "receipt_sha256": "3591d16646744648a4db29db332590bf133548be0ebabc4c223fc07cc8b750e8",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-112",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-113",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-114",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-115",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-117",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-118",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-120",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-123",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-124",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-127",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-130",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-132",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-133",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-134",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-135",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-136",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-137",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-138",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-140",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-141",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-142",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-143",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-144",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-146",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-148",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-149",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-150",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-152",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-153",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-154",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-155",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-156",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-159",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-160",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-162",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-164",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-165",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-166",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-167",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-168",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-169",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-170",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-171",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-172",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-173",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-176",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-177",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-179",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-181",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-183",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-185",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-186",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-188",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-189",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-191",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-193",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-194",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-195",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-196",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-197",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-198",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-199",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-200",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-203",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-205",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-206",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-207",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-208",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-209",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-210",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-211",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-212",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-214",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-215",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-216",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-218",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-219",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-111-220.json",
+      "receipt_sha256": "9c22ec2522f073865ff96dc55861b1ff7b695b150959952dfc4646d6be085181",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-222",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-223",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-224",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-228",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-229",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-230",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-231",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-232",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-237",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-240",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-241",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-244",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-246",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-248",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-254",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-263",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-265",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-267",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-269",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-271",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-273",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-275",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-277",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-282",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-283",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-286",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-289",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-291",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-292",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-293",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-297",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-299",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-305",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-307",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-308",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-309",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-310",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-311",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-312",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-324",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    },
+    {
+      "key": "AH-333",
+      "operation": "description_reworked",
+      "receipt": "artifacts/audit-20261017/jira-reworked-221-333.json",
+      "receipt_sha256": "00af784c75786261f0ba963520ef9dd8f1605eb88de708d2a37c8b9d1ad83ee6",
+      "status_changed": false,
+      "priority_field_changed": false,
+      "prior_description_preserved": true
+    }
+  ],
+  "trace_note": "Detailed request/response receipts remain local artifacts. AH-60 immediate GET backup recovery is documented in its receipt; historical equivalence checked. Markdown whitespace normalization is recorded."
+}

@@ -1,0 +1,10 @@
+{
+  "key": "AH-22",
+  "result": {
+    "message": "Comment added to AH-22 successfully",
+    "commentId": "10032",
+    "body": "\\[lot-07-stats-configure-20261015\\]\n\nSuite OBS-04, release 3.8.0.38 poussée (source 212c286). Sous Linux, le log CUDA au configure utilise le helper mpv existant mp_save_to_file : fichier exclusif unique, écriture/fermeture contrôlées, remplacement atomique ; échec préservant l’ancien état et diagnostic. Correction du helper : suppression du temporaire après rename échoué.\n\nEssais courts : vrais objets C avant/après, ancien fopen(w) expose un fichier vide entre ouverture/écriture ; publication atomique préserve le lecteur de l’ancien état et rend le nouveau complet. Échec de rename injecté : ancien état conservé, temporaire résiduel 1 -> 0. Baseline mpv locale reconstruite avec exactement les mêmes autres patchs que le candidat. Lecteur réel NVDEC/SPAN Quality, même clip/config/poids/plan TensorRT, builder désactivé : 3 sorties/hashes/PTS et texte complet de log identiques ; inode conservé avant, remplacé après. Processus 0,51450/0,51442 s, aucun gain FPS. Build/link C, assembleur .NET et bash -n réussis. Comparaisons concluantes non répétées.\n\nConserver pour cohérence et nettoyage d’échec. Windows utilise encore le mpv précompilé sans ce patch : AH-22 reste In Progress pour livraison/qualification Windows. Assets 3.8.0.38 à suivre ; lots 06 et 07 ne sont pas une qualification matérielle Apple/AMD/Intel. Rapport docs/qualification/lot-07-stats-configure-20261015.md, artefacts lots-20261015/lot-07.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

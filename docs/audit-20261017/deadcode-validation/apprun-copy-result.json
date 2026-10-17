@@ -1,0 +1,11 @@
+{
+  "result": "PASS",
+  "trees_equal_content_modes_symlinks": true,
+  "preserves_existing_user_only_files": true,
+  "copy_invocations": {
+    "before": 7,
+    "after": 5
+  },
+  "entries_compared": 31,
+  "scope": "extracted managed-directory copy block; no full AppImage launch, GPU or FPS measurement"
+}

@@ -1,0 +1,16 @@
+{
+  "issue": "AH-274",
+  "status": "Done",
+  "base": "76e92c21b49b773880f8aee88f9049d531d51723",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-27-colour-20261016",
+  "scope": "Audit contrat couleur/profondeur et transport effectif ; découpage explicite avant implémentation",
+  "parent": "AH-15",
+  "remaining": "AH-275",
+  "source": "d8c908804c019f9e66ddf6be7dc3b5bbb78cc05e",
+  "version": "3.8.0.59",
+  "push": "confirmed",
+  "qualification_comment_id": "10095",
+  "qualification": "complete source-backed contract and Linux diagnostic before/after; no video setting/engine changes; no new inference",
+  "release_receipt": "release-20261016-3.8.0.59.json",
+  "close_comment_id": "10098"
+}

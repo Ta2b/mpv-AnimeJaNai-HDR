@@ -1,0 +1,17 @@
+{
+  "issue": "AH-285",
+  "parent": "AH-37",
+  "native_followup": "AH-286",
+  "status": "Done",
+  "base": "ac407bca07771db0bf9da0b4e37ce245fea895cd",
+  "worktree": "/home/ta2b/.animejanai-tools/work/lot-35-playback-state-20261016",
+  "implementation": "Implemented and qualified Linux: pure state contract + stats/error contract PASS; real old monitor reproduces pause loss, new controller retains pause and handles ownership/stale generations/error. Source/release67 pushed.",
+  "remaining": [],
+  "parent_comment": "10120",
+  "player_source": "3f09cd036a218d600fd285c74924d9e8a069d530",
+  "qualification_source": "8d57e4f91eb787fdaad26e720d2a90586b340be8",
+  "qualification_comment": "10121",
+  "release": "3.8.0.67",
+  "close_comment": "10124",
+  "release_receipt": "docs/jira/release-20261016-3.8.0.67.json"
+}

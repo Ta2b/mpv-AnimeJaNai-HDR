@@ -1,0 +1,15 @@
+{
+  "parent": "AH-33",
+  "marker": "split-20261015-ids-temporal-window",
+  "summary": "Inclure la fenêtre temporelle rank-5 dans l’identité et les resets",
+  "target_status": "To Do",
+  "criterion": "L’identité de calcul doit couvrir toute la fenêtre et son ordre, modèle/vue/couleur et génération ; un seek ou reset ne réutilise pas une ancienne fenêtre. Test ciblé sur cache/réinitialisation quand le chemin supporte réellement rank-5.",
+  "evidence": "Les preuves .39 portent sur paires RIFE et sources RGB24 ABI1, pas sur toutes les fenêtres temporelles ABI9.",
+  "status": "created",
+  "issue_key": "AH-261",
+  "create_result": {
+    "id": "10263",
+    "key": "AH-261"
+  },
+  "actual_status": "To Do"
+}

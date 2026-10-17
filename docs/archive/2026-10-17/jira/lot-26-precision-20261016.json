@@ -1,0 +1,14 @@
+{
+  "issue": "AH-14",
+  "status": "Done",
+  "base": "10b15a18018c5ed88e1dfa42fa48536541ec003d",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-26-precision-20261016",
+  "scope": "Contrat précision par opérateur et inventaire effectif options/providers ; préserver tous les comportements et modèles",
+  "source": "76e92c21b49b773880f8aee88f9049d531d51723",
+  "version": "3.8.0.58",
+  "push": "confirmed",
+  "qualification_comment_id": "10092",
+  "qualification": "complete precision contract and provider/options inventory; read-only CLI exercised on original SPAN/RIFE and existing compiled RIFE; unknowns explicit; no engine/video change, no new inference",
+  "release_receipt": "release-20261016-3.8.0.58.json",
+  "close_comment_id": "10096"
+}

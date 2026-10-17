@@ -1,0 +1,26 @@
+{
+  "issue": "AH-281",
+  "parent": "AH-50",
+  "remaining": "AH-283",
+  "status": "Done",
+  "base": "ec3b0753347594058097fd1838cdcc9024e096b5",
+  "backend_base": "df7e02e7bd3f4d274986946d2e5a04e905d7a454",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-32-cuda-submit-20261016",
+  "backend_worktree": "/home/ta2b/.animejanai-tools/work/backend-cuda-submit-20261016",
+  "implementation": "Complete Linux CUDA queue/native fences, controlled contracts and two exact neural outputs; release64 fully verified15assets3workflowsuccess.",
+  "design": [
+    "Fixed1..64 slots/events/results, persistent owner worker; copied descriptors and3 dependencies, ownersonce. Submit validates native allocation/context but no inference/capacity wait; completedunconsumed slots remain bounded; tickets counter Context lifetime.",
+    "Worker cudaStreamWaitEvent (already-recorded input events), async internal Surface execution (no extra successful stream sync), outputcudaEventRecord then publishes borrowedfence metadata. Only nativeeventquerySuccess followed by ownerrelease publishesDone; Complete read-onlypoll. WorkerCVtimedpoll onlywhileinflight, idlewaitotherwise.",
+    "Outputfence borrowed untilConsume/Drop/Disable; enqueue consumerwait before retire and keep consumerresources alive. CPUmayomitnewfunction. Externalexecutionqueue refused.",
+    "Failure latchespoisoned and drainsCUDA context before refsrelease; newrequests reject. Cancelqueued only; running/submittedGPUwork finishes; explicitdrain/seek/reset/shutdown beforeContextdestroy. OldmutatingABIguardedwhileasyncworkerowns, internaltemporalReset factored to avoid guardblockinglifecycleinvalidate.",
+    "Next: reviewconcurrency, implementnativeconsumer control with recordedproducerEvent behind hostcallbackbarrier on pureRIFE endpointcopy (no neuralcalc), nativefencechain/complete/ownership/capacity/cancel/error; realshortQuality/Fast workeroutputs against lot31savedrefs, no oldsuccessfulrepeats. Nativeactualdevice-loss not to simulate with GPUreset.",
+    "Then commit source/client/qualification, stageLinuxbinaries keepingWindowsunchanged652, release3.8.0.64, startnextlotwithoutwait; AH281Doneonlyafterpublicationverified."
+  ],
+  "backend_source": "3fcb6e4de075907388e44d6e46096290082770ec",
+  "player_qualification_source": "60e480bfdf07f2e2c022e079be3ea8c716dd4c0a",
+  "binary_pin": "cabec957531fa0c812f40c2e420e11f9d6e9c07c",
+  "release": "3.8.0.64",
+  "release_source": "122fa569a82dfc10c21be69e673ad758742fa780",
+  "qualification_comment": "10112",
+  "closure_comment": "10114"
+}

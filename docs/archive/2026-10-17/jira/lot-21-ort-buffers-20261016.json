@@ -1,0 +1,17 @@
+{
+  "issue": "AH-264",
+  "status": "Done",
+  "parent": "AH-63",
+  "native_qualification": "AH-265",
+  "base": "94161dfce0348ceb20fdd5ef0b58f2e7edf2dfe4",
+  "player_worktree": "/home/ta2b/.animejanai-tools/work/lot-21-ort-buffers-20261016",
+  "qualification": "24 exact neural outputs; FP32 oracle/size/error passed; application descriptor creation eliminated; timing nonconclusive",
+  "source": "c153b17657d0d9416607a170ed579c928f27992e",
+  "engine_source": "3534b1eadb252d4a6bb7e85d12be325f1ab4ecce",
+  "qualification_comment_id": "10078",
+  "version": "3.8.0.53",
+  "push": "confirmed",
+  "binary_sha256": "ac6d9c5a297b28b33b0cf5137d6d3f524874663f6795948f0d756de566fd697a",
+  "release_receipt": "release-20261016-3.8.0.53.json",
+  "close_comment_id": "10080"
+}

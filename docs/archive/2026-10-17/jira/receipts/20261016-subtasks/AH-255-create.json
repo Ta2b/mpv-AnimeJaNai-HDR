@@ -1,0 +1,15 @@
+{
+  "parent": "AH-22",
+  "marker": "split-20261015-stats-native-linux",
+  "summary": "Snapshots natifs bornés et lecteurs Lua/mémoire, qualifiés Linux",
+  "target_status": "Done",
+  "criterion": "Compteurs complets en mémoire, publications <=4 Hz avec états immédiats, remplacement atomique préservant ancien fichier sur erreur ; Lua ne prend pas absence pour fin de build, outil ORT lit les compteurs courants.",
+  "evidence": "3.8.0.37 a0622c7094211483346a3ac0c865d2c99c7a4b2e ; rapport lot 06. Écritures 302 -> 5, 0 snapshot incomplet après, 9 sorties par chemin ORT/CPU et NCNN/Vulkan exactes, révisions 9 -> 3, compteurs/erreurs/final exacts. Autres matériels non qualifiés, aucun gain FPS.",
+  "status": "created",
+  "issue_key": "AH-255",
+  "create_result": {
+    "id": "10257",
+    "key": "AH-255"
+  },
+  "actual_status": "To Do"
+}

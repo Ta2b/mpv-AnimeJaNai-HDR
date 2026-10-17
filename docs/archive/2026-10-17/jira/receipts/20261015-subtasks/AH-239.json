@@ -1,0 +1,15 @@
+{
+  "parent": "AH-28",
+  "marker": "split-20261015-cac-key-contract",
+  "summary": "Formaliser le contrat commun complet des clés de programmes compilés",
+  "target_status": "To Do",
+  "criterion": "Définir et mutualiser champs graphe/poids, convertisseur/version, options, formes/types, runtime/device selon format et migration de version ; un changement pertinent doit changer la clé.",
+  "evidence": "SHA encadré déjà disponible ; moteur TRT ordinaire et export flow intégrés. Contrat global tous formats encore incomplet.",
+  "status": "planned",
+  "issue_key": "AH-239",
+  "create_result": {
+    "id": "10241",
+    "key": "AH-239"
+  },
+  "actual_status": "To Do"
+}

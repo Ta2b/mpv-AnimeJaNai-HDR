@@ -1,0 +1,12 @@
+{
+  "key": "AH-30",
+  "marker": "[sync-lots-01-05-20261015]",
+  "source": "lots-01-05",
+  "result": {
+    "message": "Comment added to AH-30 successfully",
+    "commentId": "10026",
+    "body": "\\[sync-lots-01-05-20261015\\]\n\nLot 04 / 3.8.0.35 : cache exports flow RIFE partagé identifié par octets graphe, tous poids externes déclarés et transformation v2 ; cache compilé provider isolé sous identité. Lecture checksum, copies poids relatives, écritures contrôlées + rename atomique, cache invalide conservé/réparé, anciens flow ignorés/préservés. Essais ciblés sources/poids remplacés même nom/taille/mtime, graphes imbriqués/sparse/fonctions, inputs invalides, cache corrompu, hit et deux builders : succès. Inférence réelle CPU RIFE4.26/SPAN Fast x4 même paire/3 instants : 0 octet changé, graphe flow identique. Configuration unique 217,8029 -> 363,0445 ms, surcoût fidélité, aucun gain FPS. Scope moteur partagé Linux/macOS, engines Windows distincts inchangés. Qualification GPU non disponible, aucune vitesse ou fidélité GPU revendiquée. Release 3.8.0.35 publiée : Windows 38798216421, Linux 38798216398, macOS 38798216458 success, 16 assets uploaded. Critère local CAC-03 couvert. Le ticket reste In Progress : les prérequis globaux CAC-01/AH-28 et CAC-05/AH-32 sont encore partiels ; leurs liens bloquants sont conservés. Pas de clôture anticipée. Détails docs/qualification/lot-04-rife-flow-20261015.md.",
+    "appliedContentFormat": "markdown",
+    "jsmCommentType": "publicComment"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "entries": [
+    {
+      "parent": "AH-59",
+      "issue_key": "AH-262",
+      "summary": "Workers persistants du moteur partagé, intégration et qualification Linux CPU",
+      "marker": "split-20261016-shr1-linux-workers",
+      "actual_status": "Done",
+      "release": "3.8.0.52"
+    },
+    {
+      "parent": "AH-59",
+      "issue_key": "AH-263",
+      "summary": "Intégrer et qualifier les workers persistants sur accélérateurs et autres OS",
+      "marker": "split-20261016-shr1-native-workers",
+      "actual_status": "To Do"
+    }
+  ],
+  "parent_comment_id": "10073"
+}
