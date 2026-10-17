@@ -43,6 +43,13 @@ Table read_table(const std::filesystem::path &path)
     }
     require(header && t.template_h > 0 && t.template_w > 0 && !t.model_path.empty() && t.model_size > 0
             && !t.offsets["h"].empty() && !t.offsets["w"].empty(), "Incomplete Core ML size table: " + path.string());
+    // Tables are external inputs. They may select only a file inside the owned
+    // package, never a host path or a sibling of the transaction staging.
+    const std::filesystem::path relative(t.model_path);
+    require(!relative.is_absolute() && !relative.has_root_name() && !relative.has_root_directory(),
+            "Absolute Core ML model path in size table: " + path.string());
+    for(const auto &part:relative)
+        require(part != ".." && part != "." && !part.empty(), "Unsafe Core ML model path in size table: " + path.string());
     return t;
 }
 

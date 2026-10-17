@@ -13,6 +13,7 @@
 #include "mlpatch.h"
 #include "../common/placement_diagnostic.h"
 #include "coreml_program_key.h"
+#include "coreml_cache_transaction.h"
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -114,25 +115,38 @@ public:
             const std::string program=coreml::program_key(content,w_,h_,environment);
             std::fprintf(stderr,"[aji] Core ML cache identity: p3-%s template %s compiler %s runtime %s host %s\n",
                 program.c_str(),content.c_str(),environment.framework_version.c_str(),environment.os_build.c_str(),environment.host_architecture.c_str());
-            const fs::path folder = fs::path(r.cache_dir) / "native"
-                / (r.model + "-" + std::to_string(w_) + "x" + std::to_string(h_) + "-p3-" + program);
-            const fs::path compiled = folder / "model.mlmodelc";
-            NSError *error = nil;
-            NSFileManager *files = [NSFileManager defaultManager];
-            if (!fs::is_directory(compiled)) {
-                std::fprintf(stderr, "[aji] Core ML compiled cache miss: %s content %s; rebuilding\n", r.model.c_str(), content.c_str());
-                const fs::path package = folder / "model.mlpackage";
-                write_coreml_package(r.models_dir, r.model, w_, h_, package.string());
-                NSURL *made = [MLModel compileModelAtURL:[NSURL fileURLWithPath:@(package.string().c_str())] error:&error];
-                require(made != nil, "Core ML could not compile the model: " + text(error));
-                // Core ML compiles into a temporary folder: kept under the cache instead.
-                NSURL *kept = [NSURL fileURLWithPath:@(compiled.string().c_str())];
-                [files removeItemAtURL:kept error:nil];
-                require([files moveItemAtURL:made toURL:kept error:&error], "Core ML: could not keep the compiled model: " + text(error));
-                std::error_code ignored;
-                fs::remove_all(package, ignored);
-            } else std::fprintf(stderr,"[aji] Core ML compiled cache hit: %s program p3-%s\n",r.model.c_str(),program.c_str());
-            NSURL *url = [NSURL fileURLWithPath:@(compiled.string().c_str())];
+            coreml::cache::Store store(r.cache_dir,program);
+            const auto entry=store.acquire([&](const fs::path &stage) {
+                std::fprintf(stderr,"[aji] Core ML compiled cache miss: %s content %s; rebuilding\n",r.model.c_str(),content.c_str());
+                // Freeze the exact source whose identity we are about to use.
+                // The neutral outer name is not part of template identity.
+                const auto snapshot=stage/"source";
+                fs::create_directory(snapshot);
+                const auto source=fs::path(r.models_dir);
+                fs::copy(source/(r.model+".mlpackage"),snapshot/"template.mlpackage",fs::copy_options::recursive);
+                fs::copy_file(source/(r.model+".mlpatch"),snapshot/"template.mlpatch");
+                require(coreml_template_tag(snapshot.string(),"template")==content,
+                    "Core ML template changed during snapshot; reopen the video to retry");
+                const auto package=stage/"model.mlpackage";
+                write_coreml_package(snapshot.string(),"template",w_,h_,package.string());
+                @autoreleasepool {
+                    NSError *error=nil;
+                    NSURL *made=[MLModel compileModelAtURL:[NSURL fileURLWithPath:@(package.string().c_str())] error:&error];
+                    require(made!=nil,"Core ML could not compile the model: "+text(error));
+                    NSURL *kept=[NSURL fileURLWithPath:@((stage/"model.mlmodelc").string().c_str())];
+                    require([[NSFileManager defaultManager] moveItemAtURL:made toURL:kept error:&error],
+                        "Core ML: could not stage the compiled model: "+text(error));
+                    MLModelConfiguration *validation=[[MLModelConfiguration alloc] init];
+                    validation.computeUnits=MLComputeUnitsCPUOnly;
+                    MLModel *validated=[MLModel modelWithContentsOfURL:kept configuration:validation error:&error];
+                    require(validated!=nil,"Core ML compiled artifact failed native validation: "+text(error));
+                }
+                fs::remove_all(snapshot);
+                fs::remove_all(package);
+            });
+            std::fprintf(stderr,"[aji] Core ML committed cache: %s generation %s\n",program.c_str(),entry.generation.c_str());
+            NSURL *url=[NSURL fileURLWithPath:@(entry.compiled().string().c_str())];
+            NSError *error=nil;
             MLModelConfiguration *configuration = [[MLModelConfiguration alloc] init];
             configuration.computeUnits = units;
             // Permit lower-precision GPU accumulation by default; FP16 weights
@@ -154,10 +168,18 @@ public:
             }
             model_ = [MLModel modelWithContentsOfURL:url configuration:configuration error:&error];
             if (model_ == nil) {
-                // A compiled model left by an interrupted run: once more from the template.
-                std::error_code ignored;
-                fs::remove_all(folder, ignored);
-                throw std::runtime_error("Core ML could not load the model (cache cleared, try again): " + text(error));
+                const auto failure=text(error);
+                // Device/hint failures do not prove artifact corruption. Only
+                // retire the commit if independent CPU loading fails too.
+                MLModelConfiguration *validation=[[MLModelConfiguration alloc] init];
+                validation.computeUnits=MLComputeUnitsCPUOnly;
+                NSError *validation_error=nil;
+                MLModel *validated=[MLModel modelWithContentsOfURL:url configuration:validation error:&validation_error];
+                if(validated==nil) {
+                    store.retire(entry);
+                    throw std::runtime_error("Core ML could not load the model (invalid commit retired, data preserved; reopen to rebuild): "+failure);
+                }
+                throw std::runtime_error("Core ML could not load the requested configuration (CPU artifact valid, cache preserved): "+failure);
             }
             NSDictionary *attributes = @{(id)kCVPixelBufferIOSurfacePropertiesKey: @{}, (id)kCVPixelBufferMetalCompatibilityKey: @YES};
             require(CVPixelBufferCreate(kCFAllocatorDefault, (size_t)w_, (size_t)h_, kCVPixelFormatType_32BGRA,
