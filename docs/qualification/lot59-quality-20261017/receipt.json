@@ -1,0 +1,350 @@
+{
+  "schema": "animejanai.targeted-qualification.v1",
+  "tickets": [
+    "AH-347",
+    "AH-354",
+    "AH-355"
+  ],
+  "machine": "Linux RTX4070Ti, CUDA13.4 / TensorRT11.3",
+  "source_qualified": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
+  "source_final_pipeline": "8c67670d87527b8704645fe8dd4d8f0f5c184689",
+  "source_final_delta": "only experimental burst default switches from enabled to opt-in; qualified off/on branches unchanged",
+  "model_rife": "rife_v4.26.onnx",
+  "rife_model_sha256": "fd6b06538898c9a94d20f0fe55febceadbcde5ad64952240733b7275ef4c9d59",
+  "chain": [
+    "Area1080to720",
+    "RIFE Quality4.26 x4 + SPAN2x fused",
+    "TrueHDR1440"
+  ],
+  "inputs": 4,
+  "outputs": 13,
+  "comparison": {
+    "hashes": [
+      "f27a92f92b8ef3f41c5d0c0bf9d14e1c8ee00ea97379162ff5c00378c4f87d75",
+      "055a2dfc172bfd23096325a953fcb69d16402f2728cec36ff8d08e2e30d27c8f",
+      "458bbba58eddbf805e6350d7bc4c37ac0bcc4f05a5def8dffd7f24c72c15ec79",
+      "bfa0a26b6160eca7becb476345f6679bfe8e13200c30df799d79f537ac39b3db",
+      "fa6616685898023ae685c74a2560475493c79e6f03f0608c3ef64abb0544e80e",
+      "c71e878358ce0313980371b8351f8df2bb5e28c80d4ee2fd57f748383ccf3d9e",
+      "f289522d574d123953a915dae4ed07a87a3c171f77308714a088431644c98df9",
+      "35b8c10fbe5102ed185c0057cadcdd2279f2c18f76dd617472f48a7ec6655f91",
+      "3c47fc1a42f18449a2dffcf7d366ef05ae8aca77f267bc5de601cdb685495d8e",
+      "5ae5b88b8f7e3b55a422de3cc6227e3f241ac2026e8f349e6d0f95b2fe3fe274",
+      "4db8ef3d3d67a5cf10c0c05935a8729cf7fcb27dff7ae4f82487e3e773af861b",
+      "fe656ec3e21c16157b27ca5b9eed308505333248031ee646fc65ecc769766ef4",
+      "565b679ff00639cabd51514dfdc2d044dff00b29ca35d965c12dd500720e7534"
+    ],
+    "timeline": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        3,
+        1
+      ],
+      [
+        4,
+        1
+      ],
+      [
+        5,
+        1
+      ],
+      [
+        6,
+        1
+      ],
+      [
+        7,
+        1
+      ],
+      [
+        8,
+        1
+      ],
+      [
+        9,
+        1
+      ],
+      [
+        10,
+        1
+      ],
+      [
+        11,
+        1
+      ],
+      [
+        12,
+        4
+      ]
+    ],
+    "flags": [
+      113,
+      82,
+      82,
+      82,
+      113,
+      82,
+      82,
+      82,
+      113,
+      82,
+      82,
+      82,
+      113
+    ],
+    "dimensions": [
+      2560,
+      1440
+    ],
+    "factor": 4,
+    "color": [
+      4,
+      2,
+      5,
+      2,
+      1,
+      16,
+      3,
+      1
+    ]
+  },
+  "ablation": [
+    {
+      "name": "all-off",
+      "gpu_before": "225 MHz, 10501 MHz, 28.38 W, 39, 15 %",
+      "gpu_after": "2850 MHz, 10501 MHz, 64.76 W, 42, 6 %",
+      "calls": [
+        {
+          "pair": 0,
+          "eof": false,
+          "complete_wall_ms": 255.24859599863703,
+          "outputs": 4
+        },
+        {
+          "pair": 1,
+          "eof": false,
+          "complete_wall_ms": 47.193734000757104,
+          "outputs": 4
+        },
+        {
+          "pair": 2,
+          "eof": false,
+          "complete_wall_ms": 47.264564000215614,
+          "outputs": 4
+        },
+        {
+          "pair": 3,
+          "eof": true,
+          "complete_wall_ms": 0.18530800116423052,
+          "outputs": 1
+        }
+      ],
+      "exact_to_all_off": true,
+      "reset_exact": null
+    },
+    {
+      "name": "copy-on",
+      "gpu_before": "2850 MHz, 10501 MHz, 64.76 W, 42, 6 %",
+      "gpu_after": "2730 MHz, 10501 MHz, 51.79 W, 41, 6 %",
+      "calls": [
+        {
+          "pair": 0,
+          "eof": false,
+          "complete_wall_ms": 149.6441439994669,
+          "outputs": 4
+        },
+        {
+          "pair": 1,
+          "eof": false,
+          "complete_wall_ms": 65.98500200016133,
+          "outputs": 4
+        },
+        {
+          "pair": 2,
+          "eof": false,
+          "complete_wall_ms": 66.65413599876047,
+          "outputs": 4
+        },
+        {
+          "pair": 3,
+          "eof": true,
+          "complete_wall_ms": 0.1765830002113944,
+          "outputs": 1
+        }
+      ],
+      "exact_to_all_off": true,
+      "reset_exact": null
+    },
+    {
+      "name": "burst-copy-on",
+      "gpu_before": "2730 MHz, 10501 MHz, 51.79 W, 41, 6 %",
+      "gpu_after": "2730 MHz, 10501 MHz, 50.35 W, 41, 5 %",
+      "calls": [
+        {
+          "pair": 0,
+          "eof": false,
+          "complete_wall_ms": 147.80575199984014,
+          "outputs": 4
+        },
+        {
+          "pair": 1,
+          "eof": false,
+          "complete_wall_ms": 74.61544499892625,
+          "outputs": 4
+        },
+        {
+          "pair": 2,
+          "eof": false,
+          "complete_wall_ms": 59.51850699966599,
+          "outputs": 4
+        },
+        {
+          "pair": 3,
+          "eof": true,
+          "complete_wall_ms": 0.20724000023619737,
+          "outputs": 1
+        }
+      ],
+      "exact_to_all_off": true,
+      "reset_exact": true
+    }
+  ],
+  "controlled": [
+    {
+      "name": "off-controlled",
+      "calls": [
+        {
+          "pair": 0,
+          "eof": false,
+          "complete_wall_ms": 216.01861599992844,
+          "outputs": 4
+        },
+        {
+          "pair": 1,
+          "eof": false,
+          "complete_wall_ms": 49.576371000512154,
+          "outputs": 4
+        },
+        {
+          "pair": 2,
+          "eof": false,
+          "complete_wall_ms": 46.647402001326554,
+          "outputs": 4
+        },
+        {
+          "pair": 3,
+          "eof": true,
+          "complete_wall_ms": 0.16940400018938817,
+          "outputs": 1
+        }
+      ],
+      "exact_to_reference": true,
+      "warm_clocks": {
+        "graphics_min": 2730,
+        "graphics_max": 2730,
+        "memory_min": 10501,
+        "memory_max": 10501
+      }
+    },
+    {
+      "name": "copy-controlled",
+      "calls": [
+        {
+          "pair": 0,
+          "eof": false,
+          "complete_wall_ms": 141.77326299977722,
+          "outputs": 4
+        },
+        {
+          "pair": 1,
+          "eof": false,
+          "complete_wall_ms": 63.02397000035853,
+          "outputs": 4
+        },
+        {
+          "pair": 2,
+          "eof": false,
+          "complete_wall_ms": 52.13004399956844,
+          "outputs": 4
+        },
+        {
+          "pair": 3,
+          "eof": true,
+          "complete_wall_ms": 0.1757769987307256,
+          "outputs": 1
+        }
+      ],
+      "exact_to_reference": true,
+      "warm_clocks": {
+        "graphics_min": 1200,
+        "graphics_max": 1200,
+        "memory_min": 10501,
+        "memory_max": 10501
+      }
+    },
+    {
+      "name": "burst-controlled",
+      "calls": [
+        {
+          "pair": 0,
+          "eof": false,
+          "complete_wall_ms": 116.13167799987423,
+          "outputs": 4
+        },
+        {
+          "pair": 1,
+          "eof": false,
+          "complete_wall_ms": 51.11327799932042,
+          "outputs": 4
+        },
+        {
+          "pair": 2,
+          "eof": false,
+          "complete_wall_ms": 50.918560998979956,
+          "outputs": 4
+        },
+        {
+          "pair": 3,
+          "eof": true,
+          "complete_wall_ms": 0.16443599997728597,
+          "outputs": 1
+        }
+      ],
+      "exact_to_reference": true,
+      "warm_clocks": {
+        "graphics_min": 2385,
+        "graphics_max": 2385,
+        "memory_min": 10501,
+        "memory_max": 10501
+      }
+    }
+  ],
+  "reset_exact": true,
+  "decision": {
+    "AH-347": "11.25MiB fallback YUV input pads avoided until first actual fallback, no FPS claim",
+    "AH-355": "3 plane copies / 5529600bytes per720p synthesis eliminated; Quality quantization preserved; no measured FPS claim",
+    "AH-354": "pixel/timeline/reset exact; throughput nonconclusive due changing GPU clocks; opt-in only, ticket remains open"
+  },
+  "final_artifacts_sha256": {
+    "libaji_pipeline.so": "5a440b3661b29d355d5491dc9eee8119d2dd0448c5b116f41c21318446ea676b",
+    "libaji_trt.so": "cae89d88e7eeea7feeecc03353e4ed21739ed94e9f400365388ba8c10224472d",
+    "aji_trt.dll": "04e898494b30d7a3abfefa66a6c9c1961ce54ae99be876a9d4611d0c0aba8d96"
+  },
+  "windows_compile_run": 39007945723,
+  "limitations": [
+    "Short native chain test, not physical display FPS or universal speedup",
+    "Windows compile/link only; no GPU runtime qualification on other hardware",
+    "No raw media, user profile or private media path included"
+  ]
+}
