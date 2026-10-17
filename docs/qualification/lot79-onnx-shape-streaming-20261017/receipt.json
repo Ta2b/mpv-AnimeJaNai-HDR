@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "checks": [
+    "4D temporal channels",
+    "5D temporal frames",
+    "symbolic dimensions",
+    "input also initializer excluded regardless of order",
+    "no graph",
+    "no shaped input",
+    "sparse payload skipped, initializer name after weights honored",
+    "allocation no longer scales with 128MiB weights",
+    "truncated varint terminates with controlled refusal",
+    "varint overflow terminates with controlled refusal",
+    "length beyond segment terminates with controlled refusal",
+    "unsupported wire group terminates with controlled refusal",
+    "truncated nested fixed64 terminates with controlled refusal",
+    "TemporalFrames wired to stream",
+    "same-length cache invalidation retained",
+    "unreadable model keeps fallback1",
+    "real model 2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16.onnx"
+  ],
+  "weightBytes": 134217728,
+  "referenceAllocatedBytes": 134219232,
+  "streamAllocatedBytes": 5840,
+  "logicalStreamBytesRead": 90,
+  "largestSeekSkipped": 134217728,
+  "realModels": [
+    {
+      "model": "2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16.onnx",
+      "dimensions": [
+        1,
+        3,
+        -1,
+        -1
+      ]
+    }
+  ],
+  "scope": "CPU ONNX metadata only; sparse file/reference byte[] vs streaming, logical reader IO not OS page IO, no video/FPS change claimed"
+}
