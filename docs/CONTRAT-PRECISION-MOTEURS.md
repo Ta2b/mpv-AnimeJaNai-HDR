@@ -70,6 +70,18 @@ Depuis le 17 octobre 2026, « exact » ne signifie plus identique bit à bit à 
 
 Ce critère conserve tout ce que Quality promet : prédictions RIFE complètes à chaque instant, modèles de référence, aucun raccourci temporel, aucune baisse de résolution, aucune quantification supplémentaire. Il ne tolère pas une perte : il cesse d'interdire ce que le compilateur fait déjà. Les variantes Fast restent explicites et hors de ce critère.
 
+### Programmes dérivés admis sous ce critère (lot B, 18 octobre 2026)
+
+Trois programmes TensorRT dérivés des mêmes poids s'ajoutent au plan de référence ; chacun est un fichier d'engine distinct (identité de contenu propre, recette dans `.aji-*-v1/`), désactivable par variable d'environnement, et jugé par la règle ci-dessus sur le jeu fixe :
+
+| Programme | Ce qui change | Ce qui ne change pas | Bascule |
+|---|---|---|---|
+| SPAN à lot dynamique (1 à 5 images, `AH-376`) | l'ONNX déclare une dimension de lot symbolique ; le plan compile pour un lot de 4 ; une inférence par rafale au lieu d'une par image | nœuds, poids, pré/post-conversions, résolution | `AJI_SPAN_BATCH=0` |
+| Remise directe RIFE → SPAN (`AH-74`) | l'image RIFE est recadrée en RGB FP16 dans le créneau du lot, sans passer par YUV444P16 | modèles, padding, matrice | `AJI_RIFE_DIRECT_HANDOFF=0` |
+| Encodeur RIFE 4.26 partagé (`AH-357`/`AH-376`) | les caractéristiques indépendantes de l'instant sont calculées une fois par paire ; la tête tourne par instant | nœuds, poids, sortie RGB complète | `AJI_RIFE_ENCODER_CACHE=1` (opt-in) |
+
+Les sorties ne sont plus identiques bit à bit au plan précédent ; les reçus d'équivalence et les mesures sont dans les tickets et dans `GPU-SOURCE.json`.
+
 ## Qualification et fin du ticket
 
 AH-14 livre le contrat, l'inventaire des routes/options et l'outil d'inspection, sans changement de moteur/flux vidéo. Vérifications simples : exécution de l'outil sur les deux modèles livrés et une capture compilée existante, confrontation des Cast/attributs/poids aux protobufs, syntaxePython, liens locaux et diff. Pas de nouveau test vidéo ni de mesure deFPS : utilité = rendre contrôlables les décisions de précision et empêcher les justifications incorrectes. Les commentaires CoreML/NCNN/MIGraphX ambigus sont corrigés, les branches et valeurs exécutées restent identiques.
