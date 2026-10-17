@@ -1,0 +1,81 @@
+{
+  "release": "3.8.0.94",
+  "source": "856f2c17e2276f46546a2d85519844d87acc80a6",
+  "publication_verified": true,
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.94",
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39020290953,
+      "headSha": "856f2c17e2276f46546a2d85519844d87acc80a6",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39020290945,
+      "headSha": "856f2c17e2276f46546a2d85519844d87acc80a6",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39020290973,
+      "headSha": "856f2c17e2276f46546a2d85519844d87acc80a6",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    }
+  ],
+  "downloaded_digests_verified": 3,
+  "assets_uploaded": 15,
+  "linux_payload": {
+    "runs": [
+      {
+        "conclusion": "success",
+        "databaseId": 39020290953,
+        "headSha": "856f2c17e2276f46546a2d85519844d87acc80a6",
+        "status": "completed",
+        "workflowName": "Release macOS"
+      },
+      {
+        "conclusion": "success",
+        "databaseId": 39020290945,
+        "headSha": "856f2c17e2276f46546a2d85519844d87acc80a6",
+        "status": "completed",
+        "workflowName": "Release Windows"
+      },
+      {
+        "conclusion": "success",
+        "databaseId": 39020290973,
+        "headSha": "856f2c17e2276f46546a2d85519844d87acc80a6",
+        "status": "completed",
+        "workflowName": "Release Linux"
+      }
+    ],
+    "modules": {
+      "libaji.so": "592a828989d3fa40228577bd103374568ef05277df89eb6f467ab965175764c3",
+      "libaji_trt.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+      "libaji_trt_rtx.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+      "libaji_pipeline.so": "834ca0a740b92e632b5ea63b07f5da28326d6bd2cc72f67b08ed6a8f6b9b39bc",
+      "aji_pipeline.fatbin": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
+      "PIPELINE-README.md": "b22600caedee5387a50a5c8ec2b79d793162534b9b2f0998363fd9b1dfa169c1"
+    },
+    "managed_programs": 32,
+    "vulkan_sha256": "031dc1f8befc57cecc1d6f976ffc64e984219e8ec8fb38a2a657020c435f9857",
+    "build_info": "vulkan_bridge_abi=1\nncnn=d8227bbe4f0357640319a69660fe399664d8acc0\nrife=a7532fc3f9f8f008cd6eecd6f2ffe2a9698e0cf7\nrife_model=4.6\nrife_input_cache=aji-v1\nsource_ids=aji-v1\naji_conf=v0.11.1\nspan_converter=span-direct-v1\nspan_resident=aji-v1\nspan_boundary=f32-denorm-norm-v1\n"
+  },
+  "delivered_native_vulkan": {
+    "passed": true,
+    "binary_sha256": "031dc1f8befc57cecc1d6f976ffc64e984219e8ec8fb38a2a657020c435f9857",
+    "output_sha256": "2a83161af4b3b29bc77adf0d7e99c5dae823abe28af2784e24534a3e7f0e2f9d",
+    "stats": "Stats state: running\nBackend: NCNN/Vulkan\nGPU: NVIDIA GeForce RTX 4070 Ti\nAnimeJaNai models: 2\nRIFE: off\nOutput: 512x512\nFrames: 1\nInference ms: 16.0389\nAverage inference ms: 16.0389\nSource cache: off\nHeld RIFE outputs reused: 0\nSource preparations: 0\nSource cache hits: 0\nSPAN inferences: 2\nRIFE inferences: 0\nPair preparations: 0\nRIFE GPU input cache: off\nRIFE cached uploads: 0\nRIFE GPU input hits: 0\nRIFE cached tensor bytes: 0\nSPAN resident segments: 1\nSPAN explicit resident uploads: 1\nSPAN explicit resident downloads: 1\nSPAN host adapters: 0\nSPAN resident fallbacks: 0\nSPAN resident route: resident\nRIFE RGB preparations: 0\nRIFE direct RGB outputs: 0\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n",
+    "scope": "one delivered Ubuntu native Vulkan output compared with the established source/ablation reference; no timing/error/domain replay"
+  },
+  "qualification_reuse": {
+    "unchanged_native_player": "3.8.0.93",
+    "unchanged_CUDA": "3.8.0.93/.92",
+    "unchanged_Mac": "3.8.0.91",
+    "unchanged_Windows": "3.8.0.87"
+  },
+  "scope": "AH351 complete; Linux RTX4070Ti only, no timing/error/domain replay, parentAH131 remains open"
+}

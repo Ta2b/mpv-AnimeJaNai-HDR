@@ -1,0 +1,60 @@
+{
+  "release": "3.8.0.95",
+  "source": "c7efddcab20054922ce5a31dea1939adbd51d7e8",
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.95",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39020785159,
+      "headSha": "c7efddcab20054922ce5a31dea1939adbd51d7e8",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39020785160,
+      "headSha": "c7efddcab20054922ce5a31dea1939adbd51d7e8",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39020785162,
+      "headSha": "c7efddcab20054922ce5a31dea1939adbd51d7e8",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    }
+  ],
+  "assets_uploaded": 15,
+  "downloaded_asset_digests_verified": 3,
+  "native_bundle_identity": "linux-mpv-bundle-v1-sha256-cd055eef2e4e07d2e4dc718021af8f6b18fda19cd9734bd67fc14514b1701cdf",
+  "identity_recomputed_on_delivered_tar": true,
+  "native_build_info": "mpv=19c0fcf895\naji_abi=9\nstats_atomic=1\nprefetch_prototype=1\nprefetch_budget=1\nsurface_worker=1\nordered_pipeline=1\nhdr_stage=1\nhdr_color_query=1\nlegacy_rife_contract=1\nsource_ids=aji-v1\nvulkan_bridge_abi=1\nwayland_queue_api=unnamed-compatible\nlibass=896614fa263f9f64944f7b8650ff6806d5328c4d\nwayland=1.23.1\nprotocols=1.45\nffmpeg=n9.0.2\nlibplacebo=v7.360.1\n",
+  "readers": {
+    "mpv": "159fdff25ad054c1bba209584f81ace3114dc6ee974272f7cc03ede978e44299",
+    "libmpv.so.2": "fa1eff54dda766a6a68616da5dea6ea09c08e3f1c1b7827b21fb3c18c685a7f0"
+  },
+  "GPU_modules": {
+    "libaji.so": "592a828989d3fa40228577bd103374568ef05277df89eb6f467ab965175764c3",
+    "libaji_trt.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+    "libaji_trt_rtx.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+    "libaji_pipeline.so": "834ca0a740b92e632b5ea63b07f5da28326d6bd2cc72f67b08ed6a8f6b9b39bc",
+    "aji_pipeline.fatbin": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
+    "PIPELINE-README.md": "b22600caedee5387a50a5c8ec2b79d793162534b9b2f0998363fd9b1dfa169c1"
+  },
+  "managed_programs": 32,
+  "vulkan_sha256": "031dc1f8befc57cecc1d6f976ffc64e984219e8ec8fb38a2a657020c435f9857",
+  "qualification_reuse": {
+    "GPU_quality": "lot71/.93 same dispatcher/TRT/pipeline bytes; no activation/FPS replay",
+    "Vulkan": "3.8.0.94 identical delivered module",
+    "unchanged_Mac": "3.8.0.91",
+    "unchanged_Windows": "3.8.0.87"
+  },
+  "completed_scope": "AH363 content identity/build-info and AH362 coupled Linux historical launch; parentAH330 remains open",
+  "limits": [
+    "Identity is of the assembled native folder before AppImage RPATH transformations, not mapped-page hash",
+    "AH335 invalid local manifest separate",
+    "DML Windows reader producer still pending; no universal FPS claim"
+  ]
+}
