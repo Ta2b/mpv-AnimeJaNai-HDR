@@ -1,0 +1,77 @@
+{
+  "source_dimensions": [
+    1920,
+    1080
+  ],
+  "output_dimensions": [
+    1280,
+    720
+  ],
+  "input_sha256": "322f13b6a3846c07ffc64bbb649be0c440d1de0cd88cb6b1c2cfc323dc3d3e91",
+  "binaries": {
+    "library": "9432437367c4a94488940e9c305d9a31782b7ccabe8287c6dda73dc76bee7bf0",
+    "trt": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
+    "kernel": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d"
+  },
+  "methods": {
+    "area": {
+      "sha256": "8b45e3b9c396f65ed8ef3a70e231d5752d46d4dae492fd9612caa6d07c06ad9c",
+      "edge_min_code16": 13107,
+      "edge_max_code16": 52428,
+      "undershoot_code16": 0,
+      "overshoot_code16": 0,
+      "checker_rms_code16": 2184.5,
+      "checker_mean_code16": 32767.5,
+      "edge_samples_code16": [
+        13107,
+        13107,
+        13107,
+        13107,
+        13107,
+        13107,
+        13107,
+        13107,
+        52428,
+        52428,
+        52428,
+        52428,
+        52428,
+        52428,
+        52428,
+        52428
+      ],
+      "model_predictions": 0
+    },
+    "spline36": {
+      "sha256": "c5497cfa7ccbfd6b0fac12e96b1b63fe2edd3f2081c8481c7f40c76554be8237",
+      "edge_min_code16": 12560,
+      "edge_max_code16": 52959,
+      "undershoot_code16": 547,
+      "overshoot_code16": 531,
+      "checker_rms_code16": 10.965856099730654,
+      "checker_mean_code16": 32760.0,
+      "edge_samples_code16": [
+        13104,
+        13104,
+        13104,
+        13104,
+        13104,
+        13280,
+        12560,
+        14944,
+        50559,
+        52959,
+        52223,
+        52415,
+        52415,
+        52415,
+        52415,
+        52415
+      ],
+      "model_predictions": 0
+    }
+  },
+  "passed": true,
+  "fps_measured": false,
+  "scope": "one synthetic canonical YUV444P16 BT709 full-range image, Linux CUDA only"
+}
