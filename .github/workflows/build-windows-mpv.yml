@@ -1,0 +1,84 @@
+name: Build paired Windows mpv
+# Independent producer: complete this once, then pin its PLAYER commit in
+# windows-mpv-source-ref.txt. A new release consumes only the verified bundle.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: windows-mpv-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  windows-mpv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container:
+      image: ghcr.io/archlinux/archlinux:base-devel
+    steps:
+      - name: Install build tools
+        run: |
+          printf '[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
+          pacman-key --init
+          pacman-key --populate archlinux
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm --needed git ninja cmake meson clang lld libc++ unzip ragel yasm nasm gperf rst2pdf lib32-gcc-libs lib32-glib2 python-cairo curl wget mimalloc ccache python-pip 7zip shaderc github-cli
+          python -m pip install --break-system-packages roman
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: the-database/mpv-winbuild
+          ref: 597bab33931cbd2ec29abe9d44a29e6363da7499
+          path: winbuild
+      - uses: actions/checkout@v4
+        with:
+          repository: shinchiro/mpv-winbuild-cmake
+          ref: 1f8d2e76255abc48f0456d9be99b4cab9c6566e6
+          path: mpv-winbuild-cmake
+      - name: Restore static toolchain and dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            mpv-winbuild-cmake/build64
+            mpv-winbuild-cmake/clang_root
+            mpv-winbuild-cmake/install_rustup
+            mpv-winbuild-cmake/src_packages
+          key: windows-mpv-static-1f8d2e7-${{ github.sha }}-${{ github.run_attempt }}
+          restore-keys: windows-mpv-static-1f8d2e7-
+      - name: Prepare exact sources and preserve Windows fixes
+        run: python native/windows-dml/prepare-winbuild.py mpv-winbuild-cmake winbuild
+      - name: Build both static entry points
+        working-directory: mpv-winbuild-cmake
+        run: bash ../winbuild/build.sh -t 64 -c clang -s true
+      - name: Verify source provenance and pair the binaries
+        run: |
+          python native/windows-dml/collect-bundle.py mpv-winbuild-cmake/release bundle
+          cd bundle
+          7z a -t7z -mx=5 ../mpv-windows-x64.7z mpv.exe mpv.com libmpv-2.dll aji-dml-pair-provenance.json
+      - name: Keep build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-mpv-build-logs
+          path: mpv-winbuild-cmake/build64/**/*.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-mpv-pair
+          path: |
+            mpv-windows-x64.7z
+            bundle/aji-dml-pair-provenance.json
+      - name: Publish immutable producer tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="windows-mpv-$GITHUB_SHA"
+          # Do not overwrite an existing producer asset on a retry.
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'Producer release already exists; use its original artifact.'
+          else
+            gh release create "$tag" mpv-windows-x64.7z bundle/aji-dml-pair-provenance.json \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
+              --title 'Windows mpv — exact DML source pairs' \
+              --notes 'Paired mpv.exe/libmpv-2.dll, pinned source and patch provenance. No Windows GPU performance measurement is claimed.'
+          fi

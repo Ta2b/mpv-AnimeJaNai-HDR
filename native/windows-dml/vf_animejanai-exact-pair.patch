@@ -1,0 +1,95 @@
+--- a/video/filter/vf_animejanai.c
++++ b/video/filter/vf_animejanai.c
+@@ -170,6 +170,7 @@
+                   void *cu_stream);          // optional; pre-RIFE downscale
+     int (*infer_rife)(aji_ctx *c, const aji_frame *a, const aji_frame *b,
+                       double t, const aji_frame *out, void *cu_stream);
++    void (*rife_begin_pair)(aji_ctx *c, uint64_t left_id, uint64_t right_id);
+     int (*poll)(aji_ctx *c);
+     int (*temporal_radius)(aji_ctx *c);
+     int (*ingest)(aji_ctx *c, const aji_frame *in, uint64_t seq,
+@@ -263,6 +264,8 @@
+     int rife_acc;               // next grid point's offset into the
+                                 // current pair, in 1/num units (0, num]
+     struct mp_image *rife_prev; // last upscaled frame (left endpoint)
++    // Immutable retained endpoints, never recycled on seek or pool reuse.
++    uint64_t rife_next_id, rife_serial, rife_prev_serial;
+     struct mp_image *outq[8];
+     int outq_n, outq_pos;
+     // Temporal (multi-frame) chains: the engine keeps the frame history and
+@@ -410,7 +413,7 @@
+     // seek/reset so old work cannot contend with the post-seek chain.
+     drain_backend(vf);
+     mp_refqueue_flush(p->queue);
+-    if (p->aji && p->temporal_r)
++    if (p->aji && (p->temporal_r || p->is_d3d11))
+         p->api.temporal_reset(p->aji);
+     p->seq0 = p->seq_next = 0;
+     mp_image_unrefp(&p->rife_prev);
+@@ -1344,6 +1347,14 @@
+         return NULL;
+     }
+     return work;
++}
++
++// Each pair owns its mp_image endpoints throughout the synchronous DML
++// loop. IDs identify those pixels, not pooled texture addresses. Exhaustion
++// fails closed (zero IDs); seek never recycles the sequence.
++static uint64_t rife_next_identity(struct priv *p)
++{
++    return p->rife_next_id == UINT64_MAX ? 0 : ++p->rife_next_id;
+ }
+ 
+ // RIFE-first: interpolate two work-resolution frames at time t into a fresh
+@@ -1671,6 +1682,9 @@
+     if (!mp_refqueue_can_output(p->queue))
+         return;
+ 
++    if (p->rife_on && p->is_d3d11)
++        p->rife_serial = rife_next_identity(p);
++
+     if (p->rife_first) {
+         // RIFE-first: interpolate the source pair, then upscale each emitted
+         // frame. Same output-grid cadence as the default path below, but
+@@ -1704,6 +1718,8 @@
+         bool failed = false;
+         if (p->rife_prev && p->rife_prev->pts != MP_NOPTS_VALUE &&
+             src->pts != MP_NOPTS_VALUE && src->pts > p->rife_prev->pts) {
++            if (p->is_d3d11 && p->api.rife_begin_pair)
++                p->api.rife_begin_pair(p->aji, p->rife_prev_serial, p->rife_serial);
+             while (p->rife_acc <= p->rife_num && n < 8) {
+                 struct mp_image *frame;
+                 double pts;
+@@ -1756,6 +1772,7 @@
+         }
+         mp_image_unrefp(&p->rife_prev);
+         p->rife_prev = cur_src;  // previous *source* endpoint (owns the ref)
++        p->rife_prev_serial = p->rife_serial;
+         for (int i = 1; i < n; i++)
+             p->outq[p->outq_n++] = list[i];
+         p->outq_pos = 0;
+@@ -1808,6 +1825,8 @@
+             int n = 0;
+             bool failed = false;
+             emitted_cur = false;
++            if (p->is_d3d11 && p->api.rife_begin_pair)
++                p->api.rife_begin_pair(p->aji, p->rife_prev_serial, p->rife_serial);
+             while (p->rife_acc <= p->rife_num && n < 8) {
+                 if (p->rife_acc == p->rife_num) {
+                     list[n++] = out;
+@@ -1855,6 +1874,7 @@
+         }
+         mp_image_unrefp(&p->rife_prev);
+         p->rife_prev = mp_image_new_ref(out);
++        p->rife_prev_serial = p->rife_serial;
+         if (!emitted_cur)
+             mp_image_unrefp(&out);  // endpoint only; rife_prev keeps it
+         p->seq0++;
+@@ -2028,6 +2048,7 @@
+         p->api.pre_resize = aji_lib_sym(p->api.handle, "aji_pre_resize");
+         p->api.resize = aji_lib_sym(p->api.handle, "aji_resize");
+         p->api.infer_rife = aji_lib_sym(p->api.handle, "aji_infer_rife");
++        p->api.rife_begin_pair = aji_lib_sym(p->api.handle, "aji_rife_begin_pair");
+         p->api.poll = aji_lib_sym(p->api.handle, "aji_poll");
+         p->api.temporal_radius =
+             aji_lib_sym(p->api.handle, "aji_temporal_radius");

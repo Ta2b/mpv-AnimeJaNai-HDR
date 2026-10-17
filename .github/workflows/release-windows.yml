@@ -59,6 +59,10 @@ jobs:
         shell: bash
         run: bash .github/scripts/previous-packs.sh "$VERSION" packs.json
 
+      - name: Stage the pinned Windows player and libmpv
+        shell: bash
+        run: bash .github/scripts/stage-windows-mpv.sh "$RUNNER_TEMP/windows-mpv"
+
       - name: Stage the matching specialized GPU engines
         shell: bash
         run: bash .github/scripts/stage-specialized-engines.sh "$RUNNER_TEMP/specialized-gpu" win-x64

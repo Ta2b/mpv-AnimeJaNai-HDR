@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="../windows-mpv-source-ref.txt" Condition="Exists('../windows-mpv-source-ref.txt')" Link="windows-mpv-source-ref.txt" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     <Content Include="../manager-source-ref.txt" Link="manager-source-ref.txt" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
   </ItemGroup>
 </Project>

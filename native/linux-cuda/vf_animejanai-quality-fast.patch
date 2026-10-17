@@ -66,7 +66,7 @@
 +    p->burst_ticket = 0;
 +    const char *burst = getenv("AJI_RIFE_BURST");
 +    p->cuda_burst = !p->is_d3d11 && p->rife_first && p->aji_active && !(burst && *burst == '0');
-+    if (!p->is_d3d11 && p->api.rife_begin_pair)
++    if (p->api.rife_begin_pair)
 +        p->api.rife_begin_pair(p->aji, p->drawings ? rife_work_identity(p, left) : p->rife_prev_serial,
 +                               p->drawings ? rife_work_identity(p, right) : p->rife_serial);
 +}
@@ -207,7 +207,7 @@
              int n = 0;
              bool failed = false;
              emitted_cur = false;
-+            if (!p->is_d3d11 && p->api.rife_begin_pair)
++            if (p->api.rife_begin_pair)
 +                p->api.rife_begin_pair(p->aji, p->rife_prev_serial, p->rife_serial);
              while (p->rife_acc <= p->rife_num && n < 8) {
                  if (p->rife_acc == p->rife_num) {

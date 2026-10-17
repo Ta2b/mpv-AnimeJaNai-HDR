@@ -127,6 +127,7 @@ if (args.Length < 1 || args[0].StartsWith("--"))
 
 var assemblyDirectory = AppContext.BaseDirectory;
 var animejanaiDirectory = Path.Combine(assemblyDirectory, "mpv-upscale-2x_animejanai");
+var windowsMpv = plat.IsWindows && Array.IndexOf(args, "--packs-only") < 0 ? WindowsMpvBundle.Load(AppContext.BaseDirectory) : null;
 var installDirectory = Path.Combine(assemblyDirectory, $"mpv-upscale-2x_animejanai-v{args[0]}");
 
 // --packs-only [dir]: emit component packs from an already-built install tree
@@ -580,6 +581,7 @@ async Task InstallMpvnet()
 
 async Task InstallCustomLibmpv()
 {
+    if (windowsMpv != null) { windowsMpv.Install(installDirectory, "libmpv-2.dll"); return; }
     Console.WriteLine("Downloading custom libmpv fork...");
     var downloadUrl = $"https://github.com/the-database/mpv-winbuild/releases/download/{MpvForkVersion}/mpv-dev-x86_64-{MpvForkBuildDate}-git-{MpvForkGitHash}.7z";
     var targetPath = Path.GetFullPath("mpv-dev.7z");
@@ -616,6 +618,7 @@ async Task InstallCustomLibmpv()
 // instead of it (mpvnet.exe stays the default launcher in manifest.json).
 async Task InstallCustomMpvExe()
 {
+    if (windowsMpv != null) { windowsMpv.Install(installDirectory, "mpv.exe", "mpv.com"); return; }
     Console.WriteLine("Downloading custom mpv.exe fork...");
     var downloadUrl = $"https://github.com/the-database/mpv-winbuild/releases/download/{MpvForkVersion}/mpv-x86_64-{MpvForkBuildDate}-git-{MpvForkGitHash}.7z";
     var targetPath = Path.GetFullPath("mpv-player.7z");
@@ -1076,6 +1079,7 @@ void WriteVersionAndManifest()
         overlayPaths.Add("docs/LINUX.md");
         overlayPaths.Add("docs/LINUX-INFERENCE.md");
     }
+    if (windowsMpv != null) overlayPaths.Add("aji-dml-pair-provenance.json");
     overlayPaths.Add("docs/SETTINGS.md");
     overlayPaths.Add("docs/INTERPOLATION-STAGES.md");
     overlayPaths.AddRange(Directory.GetFiles(installDirectory, "*.so").Select(Path.GetFileName)!);
@@ -1103,7 +1107,7 @@ void WriteVersionAndManifest()
             mpvnet = plat.IsWindows ? MpvNetVersion : (string?)null,
             platform_helper = "1",
             manager_hdr = ManagerHdrRelease,
-            mpvfork = plat.IsWindows ? $"{MpvForkVersion}-{MpvForkGitHash}"
+            mpvfork = plat.IsWindows ? windowsMpv?.Identity ?? $"{MpvForkVersion}-{MpvForkGitHash}"
                                      : $"{MpvForkLinuxVersion}-wayland-vulkan-bridge1-wlqueue-compat-quality-fast1-stats-atomic1-source-ids1-prefetch-prototype1-prefetch-budget1-surface-worker1-ordered-pipeline1-hdr-stage1-fruc-retired1",
             inference_runtime = $"trt-{TrtVersion}",
             ort_dml = plat.IsWindows ? $"{OrtDmlVersion}+{DirectMLVersion}" : (string?)null,
