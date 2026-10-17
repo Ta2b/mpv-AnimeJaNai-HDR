@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "checks": [
+    "unrelated ONNX cannot satisfy exact CoreML model",
+    "table without matching package refused",
+    "native CoreML does not require unrelated ONNX",
+    "Metal CPU actually resolves CoreML template files",
+    "Metal graph without exact weights refused",
+    "Metal GPU and NPU needs both native representations",
+    "linked runtime absence visible before playback",
+    "mpv HDR alone needs no inference runtime or SDK",
+    "disabled imported stage has no runtime dependency",
+    "exact alternate RIFE directory and stage Quality despite global Fast"
+  ],
+  "scope": "Actual CLI with simulated macOS files/platform; no hardware execution or model validity claim"
+}

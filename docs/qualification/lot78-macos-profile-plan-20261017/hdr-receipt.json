@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "checks": [
+    "No matching rule requests no inactive inference model",
+    "Profile mpv HDR remains available without runtime",
+    "Profile TrueHDR unavailable on macOS even without matching inference rule",
+    "Future HDR pipeline version refused"
+  ],
+  "scope": "Actual CLI CPU routing, no GPU/video"
+}
