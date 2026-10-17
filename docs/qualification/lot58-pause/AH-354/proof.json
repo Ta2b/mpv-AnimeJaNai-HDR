@@ -1,0 +1,65 @@
+{
+  "ticket": "AH-354",
+  "status": "implemented_compiled_cpu_checked_pending_GPU_ablation_and_delivery",
+  "base": "61ba62753d0bbaa85734b19e7992be946ba92434",
+  "commit": "b367479977202e971c3bdf803f24294967b2787e",
+  "branch": "perf-quality-pipeline-burst-20261017",
+  "checkout": "/tmp/quality-pipeline-burst-20261017",
+  "worktree_clean": true,
+  "pushed": false,
+  "files_sha256": {
+    "src/aji_pipeline.cpp": "cba0318ac8b3d10f9de0c8738a46f11175c57c5fabb43a1695f62aad5c201f71",
+    "src/pipeline_surface_burst.h": "654fab0e508cf51b457a850d2966796f3fde9640262076f3f326bbed91ebd4b8",
+    "tests/pipeline_surface_burst_check.cpp": "10b9e6f8efaf288b6f7f9310111edc6d4b5dc5895fc7e190c7bf9936461806fc",
+    "src/pipeline_hdr.c": "be0dfb65d5b19c42b297959168eaa87388583d7b97a882b4414644436e7f539f",
+    "src/pipeline_config.cpp": "09357476d6c06cf90e22b30f7def18bff189063597559bf41e3cea22b5e1f5ef",
+    "src/aji_conf.cpp": "98bc4d59361bea052b19e1d17532c75f74f65da7e8a426803ac9232451f01b66",
+    "CMakeLists.txt": "2050717615428a67c980d2615165335894e83936a6757695dba6320aaac3b5f7"
+  },
+  "patch_sha256": "f853513ec7a013540665cfec3233a5a0998d694cc5ab779b97cb4a3d3190a29b",
+  "artifacts": {
+    "libaji_pipeline.so": {
+      "path": "/tmp/quality-pipeline-burst-build-20261017/libaji_pipeline.so",
+      "sha256": "2d0d107261f172cd34a8ab3b3adc2676e389b127ecd24f48c79b6a76bdef8d4d",
+      "bytes": 489720
+    },
+    "aji_pipeline.fatbin": {
+      "path": "/tmp/quality-pipeline-burst-build-20261017/aji_pipeline.fatbin",
+      "sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "bytes": 407928
+    }
+  },
+  "checks": {
+    "diff_check": "passed",
+    "compile": "passed target aji_pipeline, TrueHDR enabled, exit 0",
+    "cpu_helper": "15 checks passed once; actual PipelineSurfaceBurst helper",
+    "gpu": "not run",
+    "quality_equivalence": "source invariants reviewed; GPU byte comparison pending",
+    "performance": "no measured gain claimed"
+  },
+  "invariants": [
+    "Quality fused blocks only; Fast untouched",
+    "Queue capacity 17 covers cumulative factor <=16 plus right endpoint",
+    "Current/source/output Point allocations owned until Complete terminal or error drain/disable",
+    "Provider worker enqueues later queued calls while earlier CUDA events remain pending",
+    "One persistent queue per block; normal finish does not Drain or reset exact pair cache",
+    "Normal Complete FINISHED for every ticket establishes completion before next stage/HDR/copies",
+    "Reset disables and joins async owner before legacy temporal reset, then recreates queue",
+    "Abort cancels/drains and disables poisoned queue before Point lifetime ends",
+    "Optional API/wakeup absent or capacity insufficient falls back to existing sync path",
+    "Trace marks cache_status=-4 while cache stats are inaccessible under async ownership"
+  ],
+  "limits": [
+    "Root requested pause; off/on GPU ablation is intentionally pending",
+    "Provider event reaper uses up to 1ms polling when no queued work remains: burst benefit must be measured, not assumed",
+    "No backend push, bundle update, release or Jira Done performed",
+    "Other concurrent lot59 changes not integrated into this isolated commit"
+  ],
+  "remaining": [
+    "Root preserve checkout/patch/binary/receipt before pause",
+    "On resume integrate with other pipeline changes without replaying old full source",
+    "One short off/on comparison using this same candidate, exact same Quality profile/input/frames and model engines; verify identical outputs and cadence plus timing",
+    "If gain absent or regression, do not activate by default; investigate only ambiguity/failure",
+    "After accepted comparison commit/push final combined source, update bundle provenance/pin, verify delivered archive, then mark AH-354 Done"
+  ]
+}

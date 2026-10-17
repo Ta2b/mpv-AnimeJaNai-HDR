@@ -2,9 +2,15 @@
 
 Mis à jour le **17 octobre 2026**. Lire ce fichier et `../AGENTS.md`, puis uniquement le ticket et les contrats nécessaires. Les demandes actuelles de l’utilisateur et Jira réel priment sur les archives. Ne pas réimporter le backlog AH.
 
-## Mission actuelle : reprise guidée pour une autre IA
+## Mission actuelle : pause utilisateur après fin des agents
 
-L’utilisateur demande de **consigner précisément dans Jira ce qui reste à faire et comment le faire pas à pas**, pour déléguer à une IA moins puissante. **28 tickets ont un guide détaillé**, dont six nouveaux sous-tickets bornés. [Index de reprise et patches](reprise/20261017/README.md) ; [reçu des écritures Jira](jira/handoff-20261017.json). Chaque guide décrit sources, étapes, commandes/prérequis, résultats attendus, invariants, échecs, preuves acquises, limites et critères Done. Les anciens périmètres restent conservés en dessous dans Jira. Ne pas recommencer les travaux déjà livrés.
+**Pause demandée le17octobre2026 ; tous les agents ont terminé leur travail en cours.** Reprendre seulement sur demande utilisateur. Dernière release vérifiée3.8.0.84. Les compilations déjà lancées continuent seules.
+
+La reprise d’implémentation a intégré AH344/345/346 : backendLinux61ba627, correctifWindowsfac3b8a, bundlepréparé5433c70. ProducteurWindowsmpv3ff8782/run39006425781 encore en cours au checkpoint ; nouvelleCIbackend39006960500, jobNVIDIA réussi. Aucun pin/release85 publié. Sources isolées `/home/ta2b/.animejanai-tools/work/lot-58-engines-20261017` et `lot-58-backend-20261017`. **Lire le [checkpoint détaillé](qualification/lot58-pause/README.md)** avant les anciens états ci-dessous.
+
+Le manque de débitQuality4 est reproduit sur le profil réel :56–59ms/pair face au budget41,7ms. Fusionactive, RIFE1280×720 ; modules.84réellement chargés, pasanciennebibliothèque. CandidatsAH354burstQuality etAH355copieYUV compilés mais **pas encore comparés surGPU ni livrés**. AH347pads paresseux compilé ; AH73encodeuraudité sansmodèlemuté. Ces tickets restentouverts. Les patches, sourcesGit et binaires sont sauvegardés hors/tmp ; chemins/SHAs/ablation/étapesrestantes dans lecheckpoint.
+
+Les28guidesJira et sixsous-tickets du relais restent disponibles dans [l’index de reprise](reprise/20261017/README.md), complétés parAH354/355. Ne pas recommencer les travaux déjà livrés ; ne pas assimiler candidatscompilés et gainsqualifiés.
 
 - Préserver profils, médias, SDK, modèles, modifications utilisateur et backend d’origine. Sources isolées, chemins explicites dans git add ; jamais git add -A, reset/clean global ou push vers un origin local du backend utilisateur.
 - In Progress au début du travail effectif ; Done après périmètre entier et livraison vérifiée. Les parents partiels restent ouverts ; les reliquats ont leurs propres tickets.

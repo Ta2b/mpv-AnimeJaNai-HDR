@@ -35,8 +35,8 @@ def main():
   setup_ms=(time.perf_counter()-start)*1000
   frames=np.fromfile(s['input'],np.uint8).reshape(-1,s['height'],s['width'],3)
   sources=[]
-  for i in s.get('source_indices',[2,3,4,5]):
-   v=f.surface(rgb_to_yuv444(frames[i].astype(np.float32)/255),7,i+1,(i-2)*4)
+  for position,i in enumerate(s.get('source_indices',[2,3,4,5])):
+   v=f.surface(rgb_to_yuv444(frames[i].astype(np.float32)/255),7,i+1,position*4)
    v[0].timebase_num=1001;v[0].timebase_den=96000;v[0].duration=4;sources.append(v)
   color=type(sources[0][0].color)();peak=C.c_double()
   assert lib.aji_pipeline_output_color_v1(ctx,C.byref(sources[0][0].color),C.byref(color),C.sizeof(color),C.byref(peak))==0

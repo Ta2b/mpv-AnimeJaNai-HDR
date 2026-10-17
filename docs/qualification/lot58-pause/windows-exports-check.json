@@ -1,0 +1,129 @@
+{
+  "base": "61ba62753d0bbaa85734b19e7992be946ba92434",
+  "result": "pass",
+  "checks": [
+    {
+      "name": "before",
+      "exit_code": 1,
+      "reused_log": "before.log",
+      "errors": 12
+    },
+    {
+      "name": "fixture-crt-marker",
+      "command": [
+        "clang-cl",
+        "/c",
+        "/Fo/tmp/lot58-windows-exports-check-20261017/fltused.obj",
+        "/tmp/lot58-windows-exports-check-20261017/fltused.c"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "provider-compile",
+      "exit_code": 0,
+      "reused_log": "provider-compile.log"
+    },
+    {
+      "name": "provider-link",
+      "command": [
+        "lld-link",
+        "/dll",
+        "/noentry",
+        "/nodefaultlib",
+        "/out:/tmp/lot58-windows-exports-check-20261017/provider.dll",
+        "/tmp/lot58-windows-exports-check-20261017/provider.obj",
+        "/tmp/lot58-windows-exports-check-20261017/fltused.obj"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "provider-exports",
+      "command": [
+        "llvm-readobj",
+        "--coff-exports",
+        "/tmp/lot58-windows-exports-check-20261017/provider.dll"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "consumer-compile",
+      "command": [
+        "clang-cl",
+        "/c",
+        "/WX",
+        "/I/tmp/lot58-windows-exports-fix-20261017/include",
+        "/Fo/tmp/lot58-windows-exports-check-20261017/consumer.obj",
+        "/tmp/lot58-windows-exports-check-20261017/consumer.cpp"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "consumer-link",
+      "command": [
+        "lld-link",
+        "/dll",
+        "/noentry",
+        "/nodefaultlib",
+        "/out:/tmp/lot58-windows-exports-check-20261017/consumer.dll",
+        "/tmp/lot58-windows-exports-check-20261017/consumer.obj",
+        "/tmp/lot58-windows-exports-check-20261017/fltused.obj"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "consumer-exports",
+      "command": [
+        "llvm-readobj",
+        "--coff-exports",
+        "/tmp/lot58-windows-exports-check-20261017/consumer.dll"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "consumer-directives",
+      "command": [
+        "llvm-readobj",
+        "--coff-directives",
+        "/tmp/lot58-windows-exports-check-20261017/consumer.obj"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "linux-dispatch-syntax",
+      "command": [
+        "clang++",
+        "-std=c++17",
+        "-DAJI_BUILD_OPTIONAL_API=1",
+        "-I/tmp/lot58-windows-exports-fix-20261017/include",
+        "-fsyntax-only",
+        "/tmp/lot58-windows-exports-fix-20261017/src/aji_dispatch.cpp"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "consumer-c-syntax",
+      "command": [
+        "clang",
+        "--target=x86_64-pc-windows-msvc",
+        "-x",
+        "c",
+        "-fsyntax-only",
+        "-Werror",
+        "-I/tmp/lot58-windows-exports-fix-20261017/include",
+        "-include",
+        "surface_async.h",
+        "-include",
+        "build_status.h",
+        "/dev/null"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "provider_exports": 12,
+  "consumer_exports": 0,
+  "before_errors": 12,
+  "limits": [
+    "COFF clang-cl/lld-link header contract fixture only; not the full MSVC/CUDA build.",
+    "No pixel execution or GPU benchmark. Linux delivered binaries retain their original per-module source attribution."
+  ]
+}

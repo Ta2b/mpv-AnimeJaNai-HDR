@@ -1,0 +1,106 @@
+diff --git a/src/aji_trt.cpp b/src/aji_trt.cpp
+index c70b4fb..d7204b6 100644
+--- a/src/aji_trt.cpp
++++ b/src/aji_trt.cpp
+@@ -369,7 +369,8 @@ struct aji_ctx {
+         int format = 0;              // staging/plans built for this format
+         aji_plan *pre = nullptr;     // padded YUV -> RGB, bilinear, 709
+         aji_plan *post = nullptr;    // RGB -> padded YUV, bilinear, 709
+-        void *pad_a = nullptr, *pad_b = nullptr, *pad_o = nullptr;
++        void *pad_a = nullptr, *pad_b = nullptr; // input staging, only after fallback use
++        void *pad_o = nullptr;       // full prediction's post-conversion output
+         void *in_tensor = nullptr;   // 11 * pw*ph fp16
+         void *out_tensor = nullptr;  // 3 * pw*ph fp16
+         float *scd = nullptr;        // device diff accumulator
+@@ -3624,6 +3625,12 @@ static int prepare_rife_pair(aji_ctx *c, const aji_frame *a, const aji_frame *b,
+     const size_t prow = (size_t)R.pw * bpp;
+     const size_t py = prow * R.ph;
+     const size_t plane = (size_t)R.pw * R.ph;          // fp16 elements
++    const char *fused_setting = std::getenv("AJI_RIFE_FUSED_PRE");
++    const bool allow_fused = !(fused_setting && *fused_setting == '0');
++    const bool fused444 = f444 && allow_fused;
++    const bool fused420 = !f444 && allow_fused && !(R.pad_l & 1) && !(R.pad_t & 1) && !(R.w & 1) && !(R.h & 1);
++    // 4:2:0: Y plane + interleaved CbCr; 4:4:4 16-bit: three planes.
++    const size_t pad_bytes = f444 ? 3 * py : py + py / 2;
+ 
+     // format-dependent staging + plans, built on first use
+     if (R.format != fmt) {
+@@ -3642,34 +3649,51 @@ static int prepare_rife_pair(aji_ctx *c, const aji_frame *a, const aji_frame *b,
+         cudaFree(R.pad_b);
+         cudaFree(R.pad_o);
+         R.pad_a = R.pad_b = R.pad_o = nullptr;
+-        // 4:2:0: Y plane + interleaved CbCr; 4:4:4 16-bit: three planes
+-        // (no resampling plans needed - conversions are planless)
+-        const size_t pad_bytes = f444 ? 3 * py : py + py / 2;
+         if ((!f444 && (!R.pre || !R.post)) ||
+-            cudaMalloc(&R.pad_a, pad_bytes) != cudaSuccess ||
+-            cudaMalloc(&R.pad_b, pad_bytes) != cudaSuccess ||
+             cudaMalloc(&R.pad_o, pad_bytes) != cudaSuccess) {
+             c->set_error("rife staging allocation failed");
+             R.format = 0;
+             return AJI_ERR_CUDA;
+         }
++        R.format = fmt;
++    }
++
++    // Fused preparation reads the source frames directly. Allocate input pads
++    // only when the fallback actually needs them, including an environment
++    // switch at the same format. Keep them until the next format/teardown.
++    if (!fused444 && !fused420 && (!R.pad_a || !R.pad_b)) {
++        if (cudaMalloc(&R.pad_a, pad_bytes) != cudaSuccess ||
++            cudaMalloc(&R.pad_b, pad_bytes) != cudaSuccess) {
++            cudaFree(R.pad_a); cudaFree(R.pad_b);
++            R.pad_a = R.pad_b = nullptr;
++            c->set_error("rife input staging allocation failed");
++            return AJI_ERR_CUDA;
++        }
+         // pad borders are studio black like std.AddBorders; interiors get
+         // overwritten per frame, so fill whole planes once
+         const unsigned yblack = fmt == AJI_FMT_NV12 ? 16 : 16 * 256;
+         const unsigned cblack = fmt == AJI_FMT_NV12 ? 128 : 128 * 256;
++        int fill_error = 0;
+         for (void *p : {R.pad_a, R.pad_b}) {
+-            aji_fill_plane(fmt, p, prow, R.pw, R.ph, yblack, stream);
+-            if (f444) {
+-                aji_fill_plane(fmt, (char *)p + py, prow, R.pw, R.ph,
+-                               cblack, stream);
+-                aji_fill_plane(fmt, (char *)p + 2 * py, prow, R.pw, R.ph,
+-                               cblack, stream);
+-            } else {
+-                aji_fill_plane(fmt, (char *)p + py, prow, R.pw, R.ph / 2,
+-                               cblack, stream);
+-            }
++            fill_error = aji_fill_plane(fmt, p, prow, R.pw, R.ph, yblack, stream);
++            if (!fill_error)
++                fill_error = aji_fill_plane(fmt, (char *)p + py, prow, R.pw,
++                                            f444 ? R.ph : R.ph / 2, cblack, stream);
++            if (!fill_error && f444)
++                fill_error = aji_fill_plane(fmt, (char *)p + 2 * py, prow,
++                                            R.pw, R.ph, cblack, stream);
++            if (fill_error) break;
++        }
++        if (fill_error) {
++            // Earlier fill launches may still reference either allocation.
++            // A failed initialization never leaves a seemingly ready pair.
++            cudaStreamSynchronize(stream);
++            cudaFree(R.pad_a); cudaFree(R.pad_b);
++            R.pad_a = R.pad_b = nullptr;
++            c->set_error("rife input staging fill failed: %s",
++                         cudaGetErrorString((cudaError_t)fill_error));
++            return AJI_ERR_CUDA;
+         }
+-        R.format = fmt;
+     }
+ 
+     // scene detection on the unpadded luma (misc.SCDetect's metric)
+@@ -3700,10 +3724,6 @@ static int prepare_rife_pair(aji_ctx *c, const aji_frame *a, const aji_frame *b,
+     // may execute while the host waits for this event. The model stays ordered
+     // after those kernels on the caller's stream.
+ 
+-    const char *fused_setting = std::getenv("AJI_RIFE_FUSED_PRE");
+-    const bool allow_fused = !(fused_setting && *fused_setting == '0');
+-    const bool fused444 = f444 && allow_fused;
+-    const bool fused420 = !f444 && allow_fused && !(R.pad_l & 1) && !(R.pad_t & 1) && !(R.w & 1) && !(R.h & 1);
+     // stage both frames into the padded buffers (interior only)
+     const size_t doff_y = (size_t)R.pad_t * prow + (size_t)R.pad_l * bpp;
+     const size_t doff_uv = py + (size_t)(R.pad_t / 2) * prow +

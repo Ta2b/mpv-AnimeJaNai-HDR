@@ -1,0 +1,555 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-10-17T05:27:48.804684+00:00",
+  "scope": "Backend source integration and exact reuse of existing Linux candidates; no release or GPU validation",
+  "checkout": "/tmp/lot-58-backend-20261017",
+  "branch": "perf-specialized-lot58-engines-20261017",
+  "origin": "git@github.com:Ta2b/animejanai-inference-rtx.git",
+  "base": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
+  "head": "61ba62753d0bbaa85734b19e7992be946ba92434",
+  "worktree_clean": true,
+  "pushed_by_this_agent": false,
+  "commits": {
+    "AH-344": "bec866b6b2c1a091fdaf9ea27e21d6894a3c257d",
+    "AH-345": "4d0884ffa7b16ff2979ba3fbc0759b91b6fa4a3b",
+    "AH-346": "61ba62753d0bbaa85734b19e7992be946ba92434"
+  },
+  "patches": {
+    "AH-344-backend": {
+      "path": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/docs/reprise/20261017/patches/AH-344-backend.patch",
+      "sha256": "20a3d0007db8fdce5a3022aa7ef0c7c50ebcbb90935b7f49b270ba8a6439a749",
+      "application": "git apply --check + apply exactly once; separate explicit-path commit"
+    },
+    "AH-345": {
+      "path": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/docs/reprise/20261017/patches/AH-345.patch",
+      "sha256": "83ad995fad2e17fe17d4701c115ce13b212b5627c7b9cc3831b831b1cefeaf75",
+      "application": "git apply --check + apply exactly once; separate explicit-path commit"
+    },
+    "AH-346": {
+      "path": "/home/ta2b/Documents/mpv-AnimeJaNai-HDR/docs/reprise/20261017/patches/AH-346.patch",
+      "sha256": "9b38b614074c1741c922e2f0e92896bc3eae9c3be19051c0651fc8904bd36dd1",
+      "application": "git apply --check + apply exactly once; separate explicit-path commit"
+    }
+  },
+  "candidates": [
+    {
+      "ticket": "AH-345",
+      "source": "/tmp/backend-fast-flow-score-20261017",
+      "candidate_base": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
+      "build": "/tmp/backend-fast-flow-score-build-20261017",
+      "target": "aji_trt",
+      "dependency_method": "Ninja actual target-object dependency database, plus CMakeLists.txt and explicit fatbin source",
+      "objects": {
+        "CMakeFiles/aji_trt.dir/src/onnx_shape.cpp.o": [
+          "src/onnx_shape.cpp",
+          "src/onnx_shape.h"
+        ],
+        "CMakeFiles/aji_trt.dir/src/onnx_flow.cpp.o": [
+          "src/onnx_flow.cpp",
+          "src/onnx_flow.h"
+        ],
+        "CMakeFiles/aji_trt.dir/src/aji_conf.cpp.o": [
+          "src/aji_conf.cpp",
+          "src/aji_conf.h"
+        ],
+        "CMakeFiles/aji_trt.dir/src/model_identity.cpp.o": [
+          "src/model_identity.cpp",
+          "src/model_identity.h",
+          "src/content_identity.h",
+          "src/program_identity.h",
+          "src/cache_key_lock.h",
+          "src/cache_io.h",
+          "src/cache_stage_owner.h",
+          "src/onnx_flow.h"
+        ],
+        "CMakeFiles/aji_trt.dir/src/aji_trt.cpp.o": [
+          "src/aji_trt.cpp",
+          "include/aji.h",
+          "include/build_status.h",
+          "include/aji_probe.h",
+          "include/surface_validation.h",
+          "include/surface.h",
+          "include/surface_async.h",
+          "include/surface_cuda_state.h",
+          "src/frame_identity.h",
+          "src/cache_key_lock.h",
+          "src/cache_io.h",
+          "src/cache_stage_owner.h",
+          "src/content_identity.h",
+          "src/aji_conf.h",
+          "src/kernels.h",
+          "src/onnx_flow.h",
+          "src/model_identity.h",
+          "src/onnx_shape.h",
+          "src/surface_cuda_impl.h",
+          "src/surface_cuda_async.h"
+        ],
+        "CMakeFiles/aji_trt.dir/src/kernels.cu.o": [
+          "src/kernels.cu",
+          "include/aji.h",
+          "src/kernels.h",
+          "src/resample.h"
+        ]
+      },
+      "project_input_count": 28,
+      "project_inputs": [
+        {
+          "path": "CMakeLists.txt",
+          "candidate_sha256": "2050717615428a67c980d2615165335894e83936a6757695dba6320aaac3b5f7",
+          "integrated_sha256": "2050717615428a67c980d2615165335894e83936a6757695dba6320aaac3b5f7",
+          "equal": true
+        },
+        {
+          "path": "include/aji.h",
+          "candidate_sha256": "63a89d5d5d7d633dce7378bcc5472edd4ed6e73822d724f7877b1ec196fa6d61",
+          "integrated_sha256": "63a89d5d5d7d633dce7378bcc5472edd4ed6e73822d724f7877b1ec196fa6d61",
+          "equal": true
+        },
+        {
+          "path": "include/aji_probe.h",
+          "candidate_sha256": "6c7c0809a7ac8e34a62d543208530b8d6d72df24b66862364db8fd64a26069cf",
+          "integrated_sha256": "6c7c0809a7ac8e34a62d543208530b8d6d72df24b66862364db8fd64a26069cf",
+          "equal": true
+        },
+        {
+          "path": "include/build_status.h",
+          "candidate_sha256": "cbdbbe33054e207b96f0994a01f991eee544313ca5e98d061dff7c89e1cd7def",
+          "integrated_sha256": "cbdbbe33054e207b96f0994a01f991eee544313ca5e98d061dff7c89e1cd7def",
+          "equal": true
+        },
+        {
+          "path": "include/surface.h",
+          "candidate_sha256": "4cc22545ca0491a96164021caa83df555bba34fb419bbc6eb89042537fc821b1",
+          "integrated_sha256": "4cc22545ca0491a96164021caa83df555bba34fb419bbc6eb89042537fc821b1",
+          "equal": true
+        },
+        {
+          "path": "include/surface_async.h",
+          "candidate_sha256": "1783a4deff97eddaacac7b1ff25630f30550479da2052a63ee5e854ffada43d6",
+          "integrated_sha256": "1783a4deff97eddaacac7b1ff25630f30550479da2052a63ee5e854ffada43d6",
+          "equal": true
+        },
+        {
+          "path": "include/surface_cuda_state.h",
+          "candidate_sha256": "a97865402f425a0815cb152089b2714e0932022f807ce560a37325aca59c89be",
+          "integrated_sha256": "a97865402f425a0815cb152089b2714e0932022f807ce560a37325aca59c89be",
+          "equal": true
+        },
+        {
+          "path": "include/surface_validation.h",
+          "candidate_sha256": "464ef8cdeac091ebfe01d0a2ae34155f3a777758a24951192c7299fff8c9be2a",
+          "integrated_sha256": "464ef8cdeac091ebfe01d0a2ae34155f3a777758a24951192c7299fff8c9be2a",
+          "equal": true
+        },
+        {
+          "path": "src/aji_conf.cpp",
+          "candidate_sha256": "98bc4d59361bea052b19e1d17532c75f74f65da7e8a426803ac9232451f01b66",
+          "integrated_sha256": "98bc4d59361bea052b19e1d17532c75f74f65da7e8a426803ac9232451f01b66",
+          "equal": true
+        },
+        {
+          "path": "src/aji_conf.h",
+          "candidate_sha256": "9f9ec72fbaeedad9dec97202a916b1f2ef0d844eab734c73f6c954efe45f70d3",
+          "integrated_sha256": "9f9ec72fbaeedad9dec97202a916b1f2ef0d844eab734c73f6c954efe45f70d3",
+          "equal": true
+        },
+        {
+          "path": "src/aji_trt.cpp",
+          "candidate_sha256": "32cff0ad9a79ae753bd17b35475f75946d6381831760d569eea30e59d3f271ed",
+          "integrated_sha256": "32cff0ad9a79ae753bd17b35475f75946d6381831760d569eea30e59d3f271ed",
+          "equal": true
+        },
+        {
+          "path": "src/cache_io.h",
+          "candidate_sha256": "05e5b746bcb77a5e19d85128ee15c4162e18075c99c9a7664fa21a1bf3e9d62f",
+          "integrated_sha256": "05e5b746bcb77a5e19d85128ee15c4162e18075c99c9a7664fa21a1bf3e9d62f",
+          "equal": true
+        },
+        {
+          "path": "src/cache_key_lock.h",
+          "candidate_sha256": "744063c22314a1833bdbe21ac20baafde88256ced18f306e38ef4ee8a3cb818c",
+          "integrated_sha256": "744063c22314a1833bdbe21ac20baafde88256ced18f306e38ef4ee8a3cb818c",
+          "equal": true
+        },
+        {
+          "path": "src/cache_stage_owner.h",
+          "candidate_sha256": "aa99c1b7247f673489e7d3f960b1b964497ff676a105c0c69d5b13efacad7e83",
+          "integrated_sha256": "aa99c1b7247f673489e7d3f960b1b964497ff676a105c0c69d5b13efacad7e83",
+          "equal": true
+        },
+        {
+          "path": "src/content_identity.h",
+          "candidate_sha256": "243eb12c087d2c7dfe8bd918eb908e488e17b200df2cc86c34b30328bfe920e8",
+          "integrated_sha256": "243eb12c087d2c7dfe8bd918eb908e488e17b200df2cc86c34b30328bfe920e8",
+          "equal": true
+        },
+        {
+          "path": "src/frame_identity.h",
+          "candidate_sha256": "7d985b364a5041ac9448e94aca375646ef0d736e75e493fef48459e4d2324069",
+          "integrated_sha256": "7d985b364a5041ac9448e94aca375646ef0d736e75e493fef48459e4d2324069",
+          "equal": true
+        },
+        {
+          "path": "src/kernels.cu",
+          "candidate_sha256": "d2f850366c4a3d1fc2a50d5dc55cf72ef42c0a12871369e568bfd70d8ac50299",
+          "integrated_sha256": "d2f850366c4a3d1fc2a50d5dc55cf72ef42c0a12871369e568bfd70d8ac50299",
+          "equal": true
+        },
+        {
+          "path": "src/kernels.h",
+          "candidate_sha256": "685afbf650ea1f1fd6818d90d07bc1becea703cfc1685b46b42c6da1492ad0ea",
+          "integrated_sha256": "685afbf650ea1f1fd6818d90d07bc1becea703cfc1685b46b42c6da1492ad0ea",
+          "equal": true
+        },
+        {
+          "path": "src/model_identity.cpp",
+          "candidate_sha256": "09283adf033edf7b2ffcd5c2b89c529ca45121e3f71d3c537ddc2c059430d8ef",
+          "integrated_sha256": "09283adf033edf7b2ffcd5c2b89c529ca45121e3f71d3c537ddc2c059430d8ef",
+          "equal": true
+        },
+        {
+          "path": "src/model_identity.h",
+          "candidate_sha256": "ca32919c4719414cad8aa4342f7bae2169bfd1ab19a8ddeadb56ad89279838e3",
+          "integrated_sha256": "ca32919c4719414cad8aa4342f7bae2169bfd1ab19a8ddeadb56ad89279838e3",
+          "equal": true
+        },
+        {
+          "path": "src/onnx_flow.cpp",
+          "candidate_sha256": "fd1f82aa573f2fd3a10c6b9f9c410f53818f2c1a70942f12cb646c43b5b68f7f",
+          "integrated_sha256": "fd1f82aa573f2fd3a10c6b9f9c410f53818f2c1a70942f12cb646c43b5b68f7f",
+          "equal": true
+        },
+        {
+          "path": "src/onnx_flow.h",
+          "candidate_sha256": "cb0dd23db0bd0837d0937a3555d20e0cfebcf49eefdc8233c849032ec03afe9d",
+          "integrated_sha256": "cb0dd23db0bd0837d0937a3555d20e0cfebcf49eefdc8233c849032ec03afe9d",
+          "equal": true
+        },
+        {
+          "path": "src/onnx_shape.cpp",
+          "candidate_sha256": "fe964face464aeb014ad52d40b83a1004fd47587088e2f2981bc88b6e43ad20a",
+          "integrated_sha256": "fe964face464aeb014ad52d40b83a1004fd47587088e2f2981bc88b6e43ad20a",
+          "equal": true
+        },
+        {
+          "path": "src/onnx_shape.h",
+          "candidate_sha256": "4fcfffc3e686c65fcec77cf6f81daa68fdd0cea58e47a20b26c0a891560af4f2",
+          "integrated_sha256": "4fcfffc3e686c65fcec77cf6f81daa68fdd0cea58e47a20b26c0a891560af4f2",
+          "equal": true
+        },
+        {
+          "path": "src/program_identity.h",
+          "candidate_sha256": "2b3e38ed467516ad7cae2e283e7fb920fcfa33118010c33a00a796d5854f2031",
+          "integrated_sha256": "2b3e38ed467516ad7cae2e283e7fb920fcfa33118010c33a00a796d5854f2031",
+          "equal": true
+        },
+        {
+          "path": "src/resample.h",
+          "candidate_sha256": "839265608aa2af9547f35be747aa1cf96171d2460931017a1a6f8843367d42fe",
+          "integrated_sha256": "839265608aa2af9547f35be747aa1cf96171d2460931017a1a6f8843367d42fe",
+          "equal": true
+        },
+        {
+          "path": "src/surface_cuda_async.h",
+          "candidate_sha256": "ac469138b46c65c2e38440efdc02c5aa602912cab686818e0a985efc10209cf2",
+          "integrated_sha256": "ac469138b46c65c2e38440efdc02c5aa602912cab686818e0a985efc10209cf2",
+          "equal": true
+        },
+        {
+          "path": "src/surface_cuda_impl.h",
+          "candidate_sha256": "82317a12953871382ec6a7f81fab9517abfea4cfd99f4f5e41f9b88745d25abc",
+          "integrated_sha256": "82317a12953871382ec6a7f81fab9517abfea4cfd99f4f5e41f9b88745d25abc",
+          "equal": true
+        }
+      ],
+      "link_and_custom_target_lines": [
+        "build libaji_trt.so: CXX_SHARED_LIBRARY_LINKER__aji_trt_Release CMakeFiles/aji_trt.dir/src/aji_trt.cpp.o CMakeFiles/aji_trt.dir/src/aji_conf.cpp.o CMakeFiles/aji_trt.dir/src/onnx_shape.cpp.o CMakeFiles/aji_trt.dir/src/onnx_flow.cpp.o CMakeFiles/aji_trt.dir/src/model_identity.cpp.o CMakeFiles/aji_trt.dir/src/kernels.cu.o | /usr/local/cuda-build/targets/x86_64-linux/lib/stubs/libcuda.so /usr/local/cuda-build/lib64/libcudart.so /usr/lib/x86_64-linux-gnu/librt.a"
+      ],
+      "cmake_options": {
+        "AJI_PORTABLE_RPATH:BOOL": "ON",
+        "AJI_TRT_ROOT:PATH": "/trt/usr",
+        "AJI_VFX_ROOT:PATH": "",
+        "CMAKE_BUILD_TYPE:STRING": "Release",
+        "CMAKE_CUDA_ARCHITECTURES:UNINITIALIZED": "75-real;80-real;86-real;89-real;90-real;100-real;120-real;120-virtual",
+        "CMAKE_CUDA_COMPILER:STRING": "/usr/local/cuda-build/bin/nvcc",
+        "CMAKE_CXX_COMPILER:FILEPATH": "/usr/bin/c++",
+        "CMAKE_C_COMPILER:FILEPATH": "/usr/bin/cc"
+      },
+      "build_metadata_sha256": {
+        "CMakeCache.txt": "289310f0b695086ca6e9278ca6fd73ffc9f26e0c69e4165ae8ea79adec01860c",
+        "build.ninja": "e01e86e0c1c6ef62bc075077e636fccf936063466954c807b478b84b20eca9b2",
+        ".ninja_deps": "b9be253797d3be88ec52f9ebcfb003e395ca9b79f41562678a63a506b23a9cfe"
+      },
+      "binaries": [
+        {
+          "path": "/tmp/backend-fast-flow-score-build-20261017/libaji_trt.so",
+          "name": "libaji_trt.so",
+          "bytes": 2147808,
+          "sha256": "e5216edabcb7885233f8ca014cc0fc6eab3d1608ae57048992cce6a5c8e1a8ff",
+          "durable_path": "/home/ta2b/.animejanai-tools/work/lot-58-engine-handoff-20261017/libaji_trt.so",
+          "durable_sha256": "e5216edabcb7885233f8ca014cc0fc6eab3d1608ae57048992cce6a5c8e1a8ff",
+          "durable_equal": true,
+          "needed": [
+            "libnvinfer.so.11",
+            "libcuda.so.1",
+            "libcudart.so.13",
+            "libstdc++.so.6",
+            "libgcc_s.so.1",
+            "libc.so.6",
+            "ld-linux-x86-64.so.2"
+          ],
+          "rpath_runpath": [
+            "0x000000000000001d (RUNPATH)            Library runpath: [$ORIGIN]"
+          ],
+          "glibc_max": "2.34",
+          "glibcxx_max": "3.4.30"
+        },
+        {
+          "path": "/tmp/backend-fast-flow-score-build-20261017/libaji_trt_rtx.so",
+          "name": "libaji_trt_rtx.so",
+          "bytes": 2147808,
+          "sha256": "e5216edabcb7885233f8ca014cc0fc6eab3d1608ae57048992cce6a5c8e1a8ff",
+          "durable_path": "/home/ta2b/.animejanai-tools/work/lot-58-engine-handoff-20261017/libaji_trt_rtx.so",
+          "durable_sha256": "e5216edabcb7885233f8ca014cc0fc6eab3d1608ae57048992cce6a5c8e1a8ff",
+          "durable_equal": true,
+          "needed": [
+            "libnvinfer.so.11",
+            "libcuda.so.1",
+            "libcudart.so.13",
+            "libstdc++.so.6",
+            "libgcc_s.so.1",
+            "libc.so.6",
+            "ld-linux-x86-64.so.2"
+          ],
+          "rpath_runpath": [
+            "0x000000000000001d (RUNPATH)            Library runpath: [$ORIGIN]"
+          ],
+          "glibc_max": "2.34",
+          "glibcxx_max": "3.4.30"
+        }
+      ],
+      "reuse_safe_for_integrated_source": true,
+      "external_build_environment": "Existing candidate build and external headers/libraries are reused unchanged; this does not claim a fresh rebuild or a reproducible binary from another toolchain."
+    },
+    {
+      "ticket": "AH-346",
+      "source": "/tmp/backend-pipeline-copy-batch-20261017",
+      "candidate_base": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
+      "build": "/tmp/backend-pipeline-copy-batch-build-20261017",
+      "target": "aji_pipeline",
+      "dependency_method": "Ninja actual target-object dependency database, plus CMakeLists.txt and explicit fatbin source",
+      "objects": {
+        "CMakeFiles/aji_pipeline.dir/src/pipeline_hdr.c.o": [
+          "src/pipeline_hdr.c",
+          "src/pipeline_hdr.h"
+        ],
+        "CMakeFiles/aji_pipeline.dir/src/aji_conf.cpp.o": [
+          "src/aji_conf.cpp",
+          "src/aji_conf.h"
+        ],
+        "CMakeFiles/aji_pipeline.dir/src/aji_pipeline.cpp.o": [
+          "src/aji_pipeline.cpp",
+          "include/pipeline.h",
+          "include/interpolator.h",
+          "include/surface_async.h",
+          "include/surface.h",
+          "src/pipeline_config.h",
+          "src/aji_conf.h",
+          "include/aji.h",
+          "include/build_status.h",
+          "src/pipeline_hdr.h"
+        ],
+        "CMakeFiles/aji_pipeline.dir/src/pipeline_config.cpp.o": [
+          "src/pipeline_config.cpp",
+          "src/pipeline_config.h",
+          "src/aji_conf.h"
+        ]
+      },
+      "project_input_count": 15,
+      "project_inputs": [
+        {
+          "path": "CMakeLists.txt",
+          "candidate_sha256": "2050717615428a67c980d2615165335894e83936a6757695dba6320aaac3b5f7",
+          "integrated_sha256": "2050717615428a67c980d2615165335894e83936a6757695dba6320aaac3b5f7",
+          "equal": true
+        },
+        {
+          "path": "include/aji.h",
+          "candidate_sha256": "63a89d5d5d7d633dce7378bcc5472edd4ed6e73822d724f7877b1ec196fa6d61",
+          "integrated_sha256": "63a89d5d5d7d633dce7378bcc5472edd4ed6e73822d724f7877b1ec196fa6d61",
+          "equal": true
+        },
+        {
+          "path": "include/build_status.h",
+          "candidate_sha256": "cbdbbe33054e207b96f0994a01f991eee544313ca5e98d061dff7c89e1cd7def",
+          "integrated_sha256": "cbdbbe33054e207b96f0994a01f991eee544313ca5e98d061dff7c89e1cd7def",
+          "equal": true
+        },
+        {
+          "path": "include/interpolator.h",
+          "candidate_sha256": "96e8628176898a9f96efd89bc8551127ea177417c5bd9faca08a3d239c736efa",
+          "integrated_sha256": "96e8628176898a9f96efd89bc8551127ea177417c5bd9faca08a3d239c736efa",
+          "equal": true
+        },
+        {
+          "path": "include/pipeline.h",
+          "candidate_sha256": "4ac741e3039d88f924547990b023e71eb121690183de4e9aa8ef26fafb655234",
+          "integrated_sha256": "4ac741e3039d88f924547990b023e71eb121690183de4e9aa8ef26fafb655234",
+          "equal": true
+        },
+        {
+          "path": "include/surface.h",
+          "candidate_sha256": "4cc22545ca0491a96164021caa83df555bba34fb419bbc6eb89042537fc821b1",
+          "integrated_sha256": "4cc22545ca0491a96164021caa83df555bba34fb419bbc6eb89042537fc821b1",
+          "equal": true
+        },
+        {
+          "path": "include/surface_async.h",
+          "candidate_sha256": "1783a4deff97eddaacac7b1ff25630f30550479da2052a63ee5e854ffada43d6",
+          "integrated_sha256": "1783a4deff97eddaacac7b1ff25630f30550479da2052a63ee5e854ffada43d6",
+          "equal": true
+        },
+        {
+          "path": "src/aji_conf.cpp",
+          "candidate_sha256": "98bc4d59361bea052b19e1d17532c75f74f65da7e8a426803ac9232451f01b66",
+          "integrated_sha256": "98bc4d59361bea052b19e1d17532c75f74f65da7e8a426803ac9232451f01b66",
+          "equal": true
+        },
+        {
+          "path": "src/aji_conf.h",
+          "candidate_sha256": "9f9ec72fbaeedad9dec97202a916b1f2ef0d844eab734c73f6c954efe45f70d3",
+          "integrated_sha256": "9f9ec72fbaeedad9dec97202a916b1f2ef0d844eab734c73f6c954efe45f70d3",
+          "equal": true
+        },
+        {
+          "path": "src/aji_pipeline.cpp",
+          "candidate_sha256": "4ca5d872bb47aead8e3fd0e6492046deb0427a7d6c028a07aae9eb3b97938afa",
+          "integrated_sha256": "4ca5d872bb47aead8e3fd0e6492046deb0427a7d6c028a07aae9eb3b97938afa",
+          "equal": true
+        },
+        {
+          "path": "src/pipeline_config.cpp",
+          "candidate_sha256": "09357476d6c06cf90e22b30f7def18bff189063597559bf41e3cea22b5e1f5ef",
+          "integrated_sha256": "09357476d6c06cf90e22b30f7def18bff189063597559bf41e3cea22b5e1f5ef",
+          "equal": true
+        },
+        {
+          "path": "src/pipeline_config.h",
+          "candidate_sha256": "24a391fa3cfd5f8293442fbb3f0732e37ce0edb6ffeecabc717544c4c7bf37a4",
+          "integrated_sha256": "24a391fa3cfd5f8293442fbb3f0732e37ce0edb6ffeecabc717544c4c7bf37a4",
+          "equal": true
+        },
+        {
+          "path": "src/pipeline_hdr.c",
+          "candidate_sha256": "be0dfb65d5b19c42b297959168eaa87388583d7b97a882b4414644436e7f539f",
+          "integrated_sha256": "be0dfb65d5b19c42b297959168eaa87388583d7b97a882b4414644436e7f539f",
+          "equal": true
+        },
+        {
+          "path": "src/pipeline_hdr.h",
+          "candidate_sha256": "113fa8e8f404ac04110cdbfdf17d039f522ec7dcd60a4a160a5c9d84374e51ef",
+          "integrated_sha256": "113fa8e8f404ac04110cdbfdf17d039f522ec7dcd60a4a160a5c9d84374e51ef",
+          "equal": true
+        },
+        {
+          "path": "src/pipeline_kernels.cu",
+          "candidate_sha256": "97a5ba15fc88ab3492cbad454aec756f8b01e887990285a2e0833e2d24c20db6",
+          "integrated_sha256": "97a5ba15fc88ab3492cbad454aec756f8b01e887990285a2e0833e2d24c20db6",
+          "equal": true
+        }
+      ],
+      "link_and_custom_target_lines": [
+        "build libaji_pipeline.so: CXX_SHARED_LIBRARY_LINKER__aji_pipeline_Release CMakeFiles/aji_pipeline.dir/src/aji_pipeline.cpp.o CMakeFiles/aji_pipeline.dir/src/pipeline_config.cpp.o CMakeFiles/aji_pipeline.dir/src/aji_conf.cpp.o CMakeFiles/aji_pipeline.dir/src/pipeline_hdr.c.o | /opt/cuda/targets/x86_64-linux/lib/stubs/libcuda.so /usr/lib/librt.a || aji_pipeline_kernels",
+        "build aji_pipeline.fatbin | ${cmake_ninja_workdir}aji_pipeline.fatbin: CUSTOM_COMMAND /tmp/backend-pipeline-copy-batch-20261017/src/pipeline_kernels.cu"
+      ],
+      "cmake_options": {
+        "AJI_PORTABLE_RPATH:BOOL": "OFF",
+        "AJI_TRT_ROOT:PATH": "/home/ta2b/sdk/tensorrt/usr",
+        "AJI_VFX_ROOT:PATH": "/usr/local/VideoFX",
+        "CMAKE_BUILD_TYPE:STRING": "Release",
+        "CMAKE_CUDA_ARCHITECTURES:UNINITIALIZED": "75;80;86;89;90;100;120",
+        "CMAKE_CUDA_COMPILER:STRING": "/opt/cuda/bin/nvcc",
+        "CMAKE_CXX_COMPILER:FILEPATH": "/usr/bin/c++",
+        "CMAKE_C_COMPILER:FILEPATH": "/usr/bin/cc"
+      },
+      "build_metadata_sha256": {
+        "CMakeCache.txt": "368648e42a88f20c2e7995937f58e4b440cf24c4bb5569205584608786f796ad",
+        "build.ninja": "0fc72b5237c6bfccb8c5ea2d727b6c638c193e00ac82f7042fe7605c263c5a2a",
+        ".ninja_deps": "025afa9ba67cd1b74df58a471a035f1c6cfd5bf47e6fed797131d6f49ace2b96"
+      },
+      "binaries": [
+        {
+          "path": "/tmp/backend-pipeline-copy-batch-build-20261017/libaji_pipeline.so",
+          "name": "libaji_pipeline.so",
+          "bytes": 488600,
+          "sha256": "4e6574d52363db63cb11d75ae3ed6b560145ccf739939a0b2a8cd1b15bbb2bfc",
+          "durable_path": "/home/ta2b/.animejanai-tools/work/lot-58-engine-handoff-20261017/libaji_pipeline.so",
+          "durable_sha256": "4e6574d52363db63cb11d75ae3ed6b560145ccf739939a0b2a8cd1b15bbb2bfc",
+          "durable_equal": true,
+          "needed": [
+            "libcuda.so.1",
+            "libgcc_s.so.1",
+            "libstdc++.so.6",
+            "libm.so.6",
+            "libc.so.6"
+          ],
+          "rpath_runpath": [],
+          "glibc_max": "2.38",
+          "glibcxx_max": "3.4.30"
+        },
+        {
+          "path": "/tmp/backend-pipeline-copy-batch-build-20261017/aji_pipeline.fatbin",
+          "name": "aji_pipeline.fatbin",
+          "bytes": 407928,
+          "sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d"
+        }
+      ],
+      "reuse_safe_for_integrated_source": true,
+      "external_build_environment": "Existing candidate build and external headers/libraries are reused unchanged; this does not claim a fresh rebuild or a reproducible binary from another toolchain."
+    }
+  ],
+  "review": {
+    "AH-344": {
+      "proof": "Exact pair IDs and complete source view; begin/reset/configuration/error invalidation; alias-safe array slice; final per-timestep network and waits preserved; MIGraphX begin_pair no-op",
+      "source_lines": [
+        "src/rife_pair_cache.h:6",
+        "src/rife_pair_cache.h:16",
+        "src/aji_dml.cpp:2678",
+        "src/aji_dml.cpp:3149",
+        "src/aji_dml.cpp:3207",
+        "src/aji_dml.cpp:3403",
+        "src/aji_dml.cpp:3515"
+      ],
+      "remaining": "Windows backend build and actual mpv.exe/libmpv-2.dll pair-announcement producer required before active delivery"
+    },
+    "AH-345_AH-346": {
+      "independent_review_agent": "/root/rife_fusion_audit",
+      "blocker_found": false,
+      "proof": "motion_done record/wait precedes synchronous surface-process return; source points and pool survive ordered final copies; worker drains errors before owner release and publishes Done only afterwards",
+      "source_lines": [
+        "src/aji_trt.cpp:4024",
+        "src/aji_trt.cpp:4066",
+        "src/aji_trt.cpp:4080",
+        "src/surface_cuda_impl.h:247",
+        "src/surface_cuda_impl.h:261",
+        "src/aji_pipeline.cpp:318",
+        "src/aji_pipeline.cpp:329",
+        "src/aji_pipeline.cpp:421",
+        "src/aji_pipeline.cpp:490",
+        "src/aji_pipeline.cpp:493"
+      ]
+    }
+  },
+  "checks_not_repeated": [
+    "Existing exact-cache CPU fixture and alias-slice check",
+    "Existing successful Linux target builds",
+    "Existing lot57 GPU trials (not evidence for lot58 execution)"
+  ],
+  "limits": [
+    "No GPU workload or before/after FPS measurement executed for this integration",
+    "Windows CI compile and paired mpv producer belong to parent and remain required",
+    "Source/binary equivalence is established for listed linked project inputs only, not an all-platform behavioral test",
+    "Release archives, source pins and delivered hashes must be verified after parent publication",
+    "Pipeline ABI target remains Ubuntu 24.04 or compatible GLIBC >=2.38; no Ubuntu 22.04 claim"
+  ]
+}

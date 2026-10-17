@@ -1,0 +1,83 @@
+{
+  "ticket": "AH-355",
+  "state": "implemented_linux_built_not_delivered",
+  "base": "fc6b1f6e62840061481ca0f28cfaba882f522af7",
+  "commit": "e523a5c77486441c8fb50975f83c935fda787a1d",
+  "branch": "perf-specialized-quality-rife-yuv-copy-20261017",
+  "checkout": "/tmp/quality-rife-yuv-copy-20261017",
+  "scope": [
+    "src/aji_trt.cpp"
+  ],
+  "ablation": "AJI_RIFE_YUV_STAGING=0",
+  "build": {
+    "initial_exit": 0,
+    "final_exit": 0,
+    "target": "aji_trt",
+    "gpu": false,
+    "runpath": "$ORIGIN",
+    "alias_cmp": "identical",
+    "architectures": [
+      "75-real",
+      "80-real",
+      "86-real",
+      "89-real",
+      "90-real",
+      "100-real",
+      "120-real",
+      "120-virtual"
+    ]
+  },
+  "static_copy_savings_quality4_1280x720_44416": {
+    "cudaMemcpy2DAsync_calls": 9,
+    "logical_payload_bytes": 16588800
+  },
+  "fps_measured": false,
+  "remaining": [
+    "Independent review requested from review_fusion",
+    "Root GPU comparison ablation0 vs1",
+    "Keep current MSVC fix fac3b8a during integration",
+    "Windows build and bundle pin release verification"
+  ],
+  "files": [
+    {
+      "path": "/tmp/quality-rife-yuv-copy-20261017/src/aji_trt.cpp",
+      "size": 179736,
+      "sha256": "0ecd93614de8ffa6d5fb76349a706e3eddfcdb2785f287ccf831c4003b86b08c"
+    },
+    {
+      "path": "/tmp/AH-355-quality-rife-yuv-copy-20261017.patch",
+      "size": 6516,
+      "sha256": "417a1a906b0543a1ac383735d7273d7864317b5d996cfaf18c8718a7be38d848"
+    },
+    {
+      "path": "/tmp/AH-355-handoff-20261017.md",
+      "size": 10153,
+      "sha256": "e29a82162d9f3c364493c8958bcbf6534150b09173df485ab5ed25e75cab06d4"
+    },
+    {
+      "path": "/tmp/quality-rife-yuv-copy-build-20261017/libaji_trt.so",
+      "size": 2147808,
+      "sha256": "cae89d88e7eeea7feeecc03353e4ed21739ed94e9f400365388ba8c10224472d"
+    },
+    {
+      "path": "/tmp/quality-rife-yuv-copy-build-20261017/libaji_trt_rtx.so",
+      "size": 2147808,
+      "sha256": "cae89d88e7eeea7feeecc03353e4ed21739ed94e9f400365388ba8c10224472d"
+    },
+    {
+      "path": "/tmp/quality-rife-yuv-copy-build-20261017/configure.log",
+      "size": 1238,
+      "sha256": "b0412f5448ca8cee4771a579a5d56fdc3fc5e3f4f2e1024a4f1dace48a04c57d"
+    },
+    {
+      "path": "/tmp/quality-rife-yuv-copy-build-20261017/build.log",
+      "size": 19071,
+      "sha256": "7e1f5d64c4982a1e96b1017f36e080e2f23f1226deb5a06c469240cee3bd37fa"
+    },
+    {
+      "path": "/tmp/quality-rife-yuv-copy-build-20261017/build-final.log",
+      "size": 18723,
+      "sha256": "01cb37993bee4ccafe3378d9ee2ed5bd985b47281e73b2593ef06df16b17e172"
+    }
+  ]
+}

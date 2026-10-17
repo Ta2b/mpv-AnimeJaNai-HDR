@@ -1,0 +1,82 @@
+{
+  "ticket": "AH-347",
+  "state": "implemented_linux_built_not_delivered",
+  "base": "61ba62753d0bbaa85734b19e7992be946ba92434",
+  "commit": "fc6b1f6e62840061481ca0f28cfaba882f522af7",
+  "branch": "perf-specialized-lazy-rife-pads-20261017",
+  "checkout": "/tmp/lot-59-rife-lazy-pads-20261017",
+  "modified_source_files": [
+    "src/aji_trt.cpp"
+  ],
+  "linux_build": {
+    "exit_code": 0,
+    "target": "aji_trt",
+    "steps": 7,
+    "portable_rpath": true,
+    "runpath": "$ORIGIN",
+    "cuda_architectures": [
+      "75-real",
+      "80-real",
+      "86-real",
+      "89-real",
+      "90-real",
+      "100-real",
+      "120-real",
+      "120-virtual"
+    ],
+    "docker_image_id": "sha256:e521ee93af6d77fc6af2390050d35c747e8a57b0520e486488b7cdd238205a5a",
+    "alias_cmp": "identical",
+    "warnings": "TensorRT header deprecations only"
+  },
+  "gpu_executed": false,
+  "fps_claim": null,
+  "memory_claim_type": "raw_allocation_bytes_removed_by_code_only_before_first_fallback_for_current_format",
+  "memory_bytes_formulas": {
+    "YUV444_16bit_container": "12*pw*ph",
+    "NV12": "3*pw*ph",
+    "P010": "6*pw*ph"
+  },
+  "remaining": [
+    "Independent source review requested from review_fusion; not a GPU qualification",
+    "Parent push and Windows specialized build",
+    "Current GPU bundle update with per-module provenance",
+    "PLAYER pin, new release and final extracted hashes"
+  ],
+  "files": [
+    {
+      "path": "/tmp/lot-59-rife-lazy-pads-20261017/src/aji_trt.cpp",
+      "size_bytes": 178149,
+      "sha256": "c1abfebc762844db03827fda01d4839c219efd64114606c698a1a0638f3a16c2"
+    },
+    {
+      "path": "/tmp/AH-347-lazy-rife-pads-20261017.patch",
+      "size_bytes": 5744,
+      "sha256": "66fc85500ffb7176624cd3f81e031ae54a748ee2a212c052c7afffae3902c28b"
+    },
+    {
+      "path": "/tmp/AH-347-proof-20261017.md",
+      "size_bytes": 8244,
+      "sha256": "a5b617515a39fbeed27dab8c5e66fb33d2f9d51fae0b46cdf4abc2905ba322a9"
+    },
+    {
+      "path": "/tmp/lot-59-rife-lazy-pads-build-20261017/libaji_trt.so",
+      "size_bytes": 2147808,
+      "sha256": "40d77d695de03df29ad79d2071eb3d5b640d34092c133b766e0b26912e3d9fdc"
+    },
+    {
+      "path": "/tmp/lot-59-rife-lazy-pads-build-20261017/libaji_trt_rtx.so",
+      "size_bytes": 2147808,
+      "sha256": "40d77d695de03df29ad79d2071eb3d5b640d34092c133b766e0b26912e3d9fdc"
+    },
+    {
+      "path": "/tmp/lot-59-rife-lazy-pads-build-20261017/configure.log",
+      "size_bytes": 1238,
+      "sha256": "f3f017e7dd93fd0d01266418fe5067dd9f1444b8f6d064af7493d987d0ec4084"
+    },
+    {
+      "path": "/tmp/lot-59-rife-lazy-pads-build-20261017/build.log",
+      "size_bytes": 19071,
+      "sha256": "7e1f5d64c4982a1e96b1017f36e080e2f23f1226deb5a06c469240cee3bd37fa"
+    }
+  ]
+}

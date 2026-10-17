@@ -1,0 +1,327 @@
+diff --git a/src/aji_pipeline.cpp b/src/aji_pipeline.cpp
+index fcb93a8..3428083 100644
+--- a/src/aji_pipeline.cpp
++++ b/src/aji_pipeline.cpp
+@@ -3,6 +3,7 @@
+ #include "aji.h"
+ #include "build_status.h"
+ #include "pipeline_hdr.h"
++#include "pipeline_surface_burst.h"
+ #include <cuda.h>
+ #include <algorithm>
+ #include <array>
+@@ -70,6 +71,7 @@ struct Trt {
+     decltype(&aji_poll) poll;decltype(&aji_build_status_v1) build_status=nullptr;
+     decltype(&aji_surface_query_v1) query;decltype(&aji_surface_process_v1) process;
+     decltype(&aji_surface_cache_stats_v1) cache_stats=nullptr;
++    PipelineSurfaceAsyncApi async;
+     void load(const std::string &path) {
+         library=dlopen(path.c_str(),RTLD_NOW|RTLD_LOCAL);if(!library)throw Error(-2,dlerror());
+         create=symbol<decltype(create)>(library,"aji_create");configure=symbol<decltype(configure)>(library,"aji_configure");
+@@ -78,6 +80,13 @@ struct Trt {
+         poll=symbol<decltype(poll)>(library,"aji_poll");build_status=(decltype(build_status))dlsym(library,"aji_build_status_v1");
+         query=symbol<decltype(query)>(library,"aji_surface_query_v1");process=symbol<decltype(process)>(library,"aji_surface_process_v1");
+         cache_stats=(decltype(cache_stats))dlsym(library,"aji_surface_cache_stats_v1");
++        async.query=(decltype(async.query))dlsym(library,"aji_surface_async_query_v1");
++        async.enable=(decltype(async.enable))dlsym(library,"aji_surface_async_enable_v1");
++        async.submit=(decltype(async.submit))dlsym(library,"aji_surface_submit_v1");
++        async.complete=(decltype(async.complete))dlsym(library,"aji_surface_complete_v1");
++        async.drain=(decltype(async.drain))dlsym(library,"aji_surface_drain_v1");
++        async.disable=(decltype(async.disable))dlsym(library,"aji_surface_async_disable_v1");
++        async.wakeup=(decltype(async.wakeup))dlsym(library,"aji_surface_set_wakeup_v1");
+     }
+     ~Trt(){if(library)dlclose(library);}
+ };
+@@ -86,6 +95,7 @@ struct Stage {
+     void *hdr=nullptr;CUdeviceptr hdr_input=0,hdr_output=0;uint64_t hdr_bytes=0;
+     int width=0,height=0;Point cached;aji_surface_v1 key{};
+     bool fused_upscale=false;
++    std::unique_ptr<PipelineSurfaceBurst> burst;
+ };
+ struct Job {
+     enum State {Free,Queued,Running,Done}state=Free;
+@@ -114,7 +124,7 @@ struct Context {
+     void clear_stages() {
+         // TensorRT reuses the first live runtime's logger. Destroy later stage
+         // runtimes first, keeping the first logger alive until all are gone.
+-        for(auto it=stages.rbegin();it!=stages.rend();++it){auto &s=*it;s.cached={};if(s.trt)trt.destroy(&s.trt);
++        for(auto it=stages.rbegin();it!=stages.rend();++it){auto &s=*it;s.burst.reset();s.cached={};if(s.trt)trt.destroy(&s.trt);
+ #ifdef AJI_PIPELINE_TRUEHDR
+             if(s.hdr)pipeline_hdr_destroy(s.hdr);
+ #endif
+@@ -287,6 +297,12 @@ struct Context {
+                 supported(!trt.temporal(s.trt),"Temporal upscaler needs a wider native pipeline window");
+                 need(ow>0&&oh>0,"Invalid configured stage geometry");width=ow;height=oh;s.width=ow;s.height=oh;
+             }
++            const char *burst=std::getenv("AJI_PIPELINE_QUALITY_BURST");
++            if(s.fused_upscale&&s.config.policy=="quality"&&!(burst&&*burst=='0')) {
++                auto queue=std::make_unique<PipelineSurfaceBurst>(trt.async,s.trt,AJI_PIPELINE_MAX_OUTPUTS+1);
++                if(queue->start())s.burst=std::move(queue);
++                fprintf(stderr,"aji_pipeline: Quality surface burst %s for %s\n",s.burst?"enabled":"unavailable; synchronous fallback",s.config.id.c_str());
++            }
+             if(s.config.kind=="interpolate")fps*=s.config.numerator;
+             fprintf(stderr,"aji_pipeline: execution block %zu..%zu %s%s -> %dx%d\n",i+1,end,s.config.method.c_str(),s.fused_upscale?" + upscale (fused)":"",width,height);
+             i=end;
+@@ -312,27 +328,44 @@ struct Context {
+     std::vector<Point> apply(Stage &s,std::vector<Point> points) {
+         std::vector<Point> out;
+         if(s.fused_upscale) {
++            // All source Points and output allocations remain owned by this
++            // call (or pool) until terminal completion, including exceptions.
++            // Earlier stages have already completed their pipeline-stream work.
++            // Completion below also orders consumers on that other stream.
++            struct BurstScope {
++                PipelineSurfaceBurst *queue;
++                ~BurstScope(){if(queue)queue->abort();}
++                void finish(){if(queue){queue->finish();queue=nullptr;}}
++            } burst{s.burst.get()};
++            auto process=[&](const Point *a,const Point &b,double phase,const Point &next) {
++                if(s.burst)s.burst->submit(a?&a->surface:nullptr,b.surface,phase,next.surface);
++                else {
++                    int code=trt.process(s.trt,a?&a->surface:nullptr,&b.surface,phase,&next.surface);
++                    if(code)throw Error(code,s.config.id+": "+trt.error(s.trt));
++                }
++            };
+             auto endpoint=[&](const Point &p,const Point *a,const Point &b,double phase) {
+                 if(s.cached.pixels&&same(p.surface,s.key))return s.cached;
+                 auto next=frame(s.width,s.height,p.surface,p.time);next.flags=p.flags|AJI_PIPELINE_UPSCALED;
+-                int code=trt.process(s.trt,a?&a->surface:nullptr,&b.surface,phase,&next.surface);
+-                if(code)throw Error(code,s.config.id+": "+trt.error(s.trt));
++                process(a,b,phase,next);
+                 ++spatial_calls;s.key=p.surface;s.key.owner=nullptr;s.key.retain=nullptr;s.key.release=nullptr;s.cached=next;
+                 return next;
+             };
+-            if(points.size()==1)return {endpoint(points[0],nullptr,points[0],1)};
++            if(points.size()==1) {
++                out.push_back(endpoint(points[0],nullptr,points[0],1));burst.finish();return out;
++            }
+             Point right;
+             for(size_t i=0;i+1<points.size();i++) {
+                 auto &a=points[i],&b=points[i+1];out.push_back(endpoint(a,&a,b,0));
+                 for(int j=1;j<s.config.numerator;j++) {
+                     auto next=frame(s.width,s.height,a.surface,a.time+(b.time-a.time)*j/s.config.numerator);
+-                    int code=trt.process(s.trt,&a.surface,&b.surface,(double)j/s.config.numerator,&next.surface);
+-                    if(code)throw Error(code,s.config.id+": "+trt.error(s.trt));
++                    process(&a,b,(double)j/s.config.numerator,next);
+                     ++rife_calls;++spatial_calls;next.flags=AJI_PIPELINE_RIFE|AJI_PIPELINE_UPSCALED;out.push_back(std::move(next));
+                 }
+                 right=endpoint(b,&a,b,1);
+             }
+             out.push_back(std::move(right));
++            burst.finish();
+         }else if(s.config.kind=="hdr") {
+             for(auto &p:points) {
+                 if(p.surface.color.transfer==AJI_SURFACE_TRC_PQ||p.surface.color.transfer==AJI_SURFACE_TRC_HLG) {
+@@ -405,8 +438,8 @@ struct Context {
+             if(tracing) {
+                 double ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-started).count();
+                 aji_surface_cache_stats_v1_result cache{};
+-                if(stage.trt&&trt.cache_stats)trt.cache_stats(stage.trt,1,&cache,sizeof(cache));
+-                fprintf(stderr,"aji_pipeline_trace: %s fused=%d ms=%.3f fast_upscaled=%llu fast_warped=%llu preparations=%llu promoted=%llu\n",stage.config.id.c_str(),stage.fused_upscale,ms,(unsigned long long)cache.fast_upscaled,(unsigned long long)cache.fast_warped,(unsigned long long)cache.rife_preparations,(unsigned long long)cache.promoted_inputs);
++                int cache_status=stage.trt&&trt.cache_stats?trt.cache_stats(stage.trt,1,&cache,sizeof(cache)):AJI_SURFACE_UNSUPPORTED;
++                fprintf(stderr,"aji_pipeline_trace: %s fused=%d ms=%.3f fast_upscaled=%llu fast_warped=%llu preparations=%llu promoted=%llu cache_status=%d quality_burst=%d burst_submitted=%llu burst_finished=%llu\n",stage.config.id.c_str(),stage.fused_upscale,ms,(unsigned long long)cache.fast_upscaled,(unsigned long long)cache.fast_warped,(unsigned long long)cache.rife_preparations,(unsigned long long)cache.promoted_inputs,cache_status,stage.burst?1:0,(unsigned long long)(stage.burst?stage.burst->submitted():0),(unsigned long long)(stage.burst?stage.burst->finished():0));
+             }
+         }
+         need(points.size()==job.output_count+(job.eof?0:1),"Native pipeline output count mismatch");
+@@ -567,7 +600,12 @@ API int aji_pipeline_reset_v1(void *ptr,uint64_t generation) {
+     return protect([&]{need(ptr&&generation,"Null pipeline/generation");auto &c=*(Context*)ptr;need(generation!=c.generation,"New pipeline generation required");c.drain(3);
+         {std::lock_guard<std::mutex> lock(c.mutex);need(c.ready==1,"Cannot reset an uninitialized/failed pipeline");}c.poisoned=true;
+         Guard guard(c.context);cuda(cuCtxSynchronize());c.cached_source={};c.cached_key={};
+-        for(auto &s:c.stages){s.cached={};s.key={};if(s.trt)c.trt.reset(s.trt);
++        for(auto &s:c.stages){s.cached={};s.key={};
++            // Legacy reset is forbidden while the surface worker owns the TRT
++            // context. Disable/join first, reset, then recreate the queue.
++            if(s.burst)s.burst->stop();
++            if(s.trt)c.trt.reset(s.trt);
++            if(s.burst&&!s.burst->start())s.burst.reset();
+ #ifdef AJI_PIPELINE_TRUEHDR
+             if(s.hdr){pipeline_hdr_destroy(s.hdr);s.hdr=nullptr;c.open_hdr(s);}
+ #endif
+diff --git a/src/pipeline_surface_burst.h b/src/pipeline_surface_burst.h
+new file mode 100644
+index 0000000..b76ba7c
+--- /dev/null
++++ b/src/pipeline_surface_burst.h
+@@ -0,0 +1,101 @@
++#pragma once
++#include "surface_async.h"
++#include <condition_variable>
++#include <cstdint>
++#include <mutex>
++#include <stdexcept>
++#include <string>
++#include <vector>
++
++// Optional ABI, deliberately separate from synchronous Surfacev1. One persistent
++// provider queue owns this context; a pipeline block retains all Point storage
++// until finish() or abort() returns. A normal finish never drains/resets the
++// provider, so exact pair caches and right-endpoint promotion survive batches.
++struct PipelineSurfaceAsyncApi {
++    decltype(&aji_surface_async_query_v1) query=nullptr;
++    decltype(&aji_surface_async_enable_v1) enable=nullptr;
++    decltype(&aji_surface_submit_v1) submit=nullptr;
++    decltype(&aji_surface_complete_v1) complete=nullptr;
++    decltype(&aji_surface_drain_v1) drain=nullptr;
++    decltype(&aji_surface_async_disable_v1) disable=nullptr;
++    decltype(&aji_surface_set_wakeup_v1) wakeup=nullptr;
++    bool available() const {return query&&enable&&submit&&complete&&drain&&disable&&wakeup;}
++};
++class PipelineSurfaceBurst {
++    PipelineSurfaceAsyncApi api;
++    void *context;
++    uint32_t capacity;
++    bool active=false,notified=false;
++    std::mutex mutex;
++    std::condition_variable changed;
++    std::vector<uint64_t> tickets;
++    uint64_t submitted_count=0,finished_count=0;
++    static void wake(void *opaque) noexcept {
++        auto &self=*static_cast<PipelineSurfaceBurst *>(opaque);
++        {std::lock_guard<std::mutex> lock(self.mutex);self.notified=true;}
++        self.changed.notify_one();
++    }
++public:
++    PipelineSurfaceBurst(PipelineSurfaceAsyncApi functions,void *owner,uint32_t limit)
++        :api(functions),context(owner),capacity(limit){tickets.reserve(limit);}
++    PipelineSurfaceBurst(const PipelineSurfaceBurst &)=delete;
++    PipelineSurfaceBurst &operator=(const PipelineSurfaceBurst &)=delete;
++    ~PipelineSurfaceBurst(){stop();}
++    bool start() {
++        if(active)return true;
++        if(!api.available())return false;
++        aji_surface_async_caps_v1 caps{};
++        if(api.query(context,1,&caps,sizeof(caps)) || caps.max_capacity<capacity ||
++           caps.device_kind!=AJI_RESOURCE_CUDA)return false;
++        if(api.wakeup(context,wake,this))return false;
++        if(api.enable(context,capacity)){api.wakeup(context,nullptr,nullptr);return false;}
++        active=true;return true;
++    }
++    // Called only from the pipeline owner thread, never the provider callback.
++    // The actual CUDA disable joins/drains its worker before returning, including
++    // a poisoned queue, so callbacks cannot outlive this object's mutex/CV.
++    void stop() noexcept {
++        if(!active)return;
++        api.disable(context);active=false;tickets.clear();
++        api.wakeup(context,nullptr,nullptr);
++    }
++    void abort() noexcept {
++        if(!active)return;
++        api.drain(context,AJI_SURFACE_CANCEL_QUEUED|AJI_SURFACE_DROP_RESULTS);
++        stop(); // also recovers a poisoned provider queue on the next reset
++    }
++    void submit(const aji_surface_v1 *a,const aji_surface_v1 &b,double phase,
++                const aji_surface_v1 &out) {
++        if(!active || tickets.size()>=capacity)throw std::runtime_error("Quality burst capacity unavailable");
++        aji_surface_submit_v1_request request{};
++        request.struct_size=sizeof(request);request.version=1;
++        request.flags=AJI_SURFACE_BORROW_UNTIL_COMPLETE;
++        request.previous=a;request.current=&b;request.output=&out;request.timestep=phase;
++        uint64_t ticket=0;const int status=api.submit(context,&request,&ticket);
++        if(status || !ticket)throw std::runtime_error("Quality burst submission failed ("+std::to_string(status)+")");
++        // reserve(capacity) makes this non-allocating after a successful submit.
++        tickets.push_back(ticket);++submitted_count;
++    }
++    void finish() {
++        if(tickets.empty())return;
++        size_t remaining=tickets.size();
++        for(;;) {
++            // Clear before polling: completion between poll and wait still
++            // observes the same flag under the mutex, so no wakeup is lost.
++            {std::lock_guard<std::mutex> lock(mutex);notified=false;}
++            for(auto &ticket:tickets)if(ticket) {
++                aji_surface_completion_v1 result{};
++                const int code=api.complete(context,ticket,AJI_SURFACE_CONSUME_RESULT,&result,sizeof(result));
++                if(code)throw std::runtime_error("Quality burst completion failed ("+std::to_string(code)+")");
++                if(result.state==AJI_SURFACE_PENDING)continue;
++                if(result.state!=AJI_SURFACE_FINISHED || result.status)
++                    throw std::runtime_error(std::string("Quality burst failed: ")+result.message);
++                ticket=0;--remaining;++finished_count;
++            }
++            if(!remaining){tickets.clear();return;}
++            std::unique_lock<std::mutex> lock(mutex);changed.wait(lock,[&]{return notified;});
++        }
++    }
++    uint64_t submitted() const{return submitted_count;}
++    uint64_t finished() const{return finished_count;}
++};
+diff --git a/tests/pipeline_surface_burst_check.cpp b/tests/pipeline_surface_burst_check.cpp
+new file mode 100644
+index 0000000..62b9514
+--- /dev/null
++++ b/tests/pipeline_surface_burst_check.cpp
+@@ -0,0 +1,75 @@
++#include "pipeline_surface_burst.h"
++#include <atomic>
++#include <cassert>
++#include <chrono>
++#include <future>
++#include <thread>
++#include <vector>
++
++// Real helper, fake optional provider ABI: no CUDA/GPU. Control terminal
++// publication independently of Submit to exercise the ownership boundary.
++struct Provider {
++    struct Job {uint64_t ticket;bool done=false;};
++    std::mutex mutex;std::vector<Job> jobs;
++    aji_surface_wakeup_fn callback=nullptr;void *opaque=nullptr;
++    uint64_t next=1;unsigned enables=0,disables=0,drains=0,submits=0;
++    bool active=false,unsupported=false,fail_submit=false,fail_complete=false;
++    uint32_t cap=17;
++    static Provider &at(void *p){return *static_cast<Provider *>(p);}
++    static int query(void *p,uint32_t,aji_surface_async_caps_v1 *out,size_t) {
++        auto &s=at(p);if(s.unsupported)return AJI_SURFACE_UNSUPPORTED;
++        *out={};out->max_capacity=s.cap;out->device_kind=AJI_RESOURCE_CUDA;return 0;
++    }
++    static int enable(void *p,uint32_t n){auto &s=at(p);assert(!s.active&&n<=s.cap);s.active=true;++s.enables;return 0;}
++    static int submit(void *p,const aji_surface_submit_v1_request *r,uint64_t *ticket) {
++        auto &s=at(p);std::lock_guard<std::mutex> lock(s.mutex);
++        assert(s.active&&r->flags==AJI_SURFACE_BORROW_UNTIL_COMPLETE&&r->current&&r->output);
++        if(s.fail_submit)return AJI_SURFACE_ASYNC_BUSY;
++        assert(s.jobs.size()<s.cap);*ticket=s.next++;s.jobs.push_back({*ticket});++s.submits;return 0;
++    }
++    static int complete(void *p,uint64_t ticket,uint32_t flags,aji_surface_completion_v1 *out,size_t) {
++        auto &s=at(p);std::lock_guard<std::mutex> lock(s.mutex);
++        for(auto &j:s.jobs)if(j.ticket==ticket) {
++            *out={};out->state=j.done?(s.fail_complete?AJI_SURFACE_FAILED:AJI_SURFACE_FINISHED):AJI_SURFACE_PENDING;
++            out->status=s.fail_complete?-3:0;
++            if(j.done&&(flags&AJI_SURFACE_CONSUME_RESULT))j.ticket=0;
++            return 0;
++        }
++        return AJI_SURFACE_INVALID;
++    }
++    static int drain(void *p,uint32_t flags) {auto &s=at(p);assert(flags==3);++s.drains;s.jobs.clear();return 0;}
++    static int disable(void *p){auto &s=at(p);s.active=false;++s.disables;s.jobs.clear();return 0;}
++    static int wakeup(void *p,aji_surface_wakeup_fn fn,void *data){auto &s=at(p);assert(!s.active);s.callback=fn;s.opaque=data;return 0;}
++    PipelineSurfaceAsyncApi api(){return {query,enable,submit,complete,drain,disable,wakeup};}
++    void publish(bool notify=true) {
++        {std::lock_guard<std::mutex> lock(mutex);for(auto &j:jobs)j.done=true;}
++        if(notify&&callback)callback(opaque);
++    }
++    void retire(){std::lock_guard<std::mutex> lock(mutex);jobs.clear();}
++};
++int main() {
++    aji_surface_v1 source{},dest{};unsigned checks=0;
++    Provider p;PipelineSurfaceBurst burst(p.api(),&p,17);assert(burst.start());++checks;
++    for(int i=0;i<5;++i)burst.submit(&source,source,i/4.,dest);
++    assert(p.submits==5&&p.drains==0&&p.disables==0);++checks;
++    auto waiting=std::async(std::launch::async,[&]{burst.finish();});
++    assert(waiting.wait_for(std::chrono::milliseconds(10))==std::future_status::timeout);++checks;
++    p.publish();assert(waiting.wait_for(std::chrono::seconds(1))==std::future_status::ready);waiting.get();++checks;
++    assert(burst.submitted()==5&&burst.finished()==5&&p.drains==0&&p.disables==0);++checks;
++    p.retire();burst.submit(&source,source,.5,dest);p.publish(false);
++    burst.finish();assert(burst.finished()==6&&p.enables==1);++checks; // completed before poll, no wake needed
++    p.retire();for(int i=0;i<17;++i)burst.submit(&source,source,.5,dest);
++    bool full=false;try{burst.submit(&source,source,.5,dest);}catch(const std::runtime_error &){full=true;}
++    assert(full&&p.submits==23);++checks;p.publish();burst.finish();p.retire();
++    p.fail_submit=true;bool rejected=false;try{burst.submit(&source,source,.5,dest);}catch(const std::runtime_error &){rejected=true;}
++    assert(rejected);++checks;burst.abort();assert(!p.active&&!p.callback&&p.drains==1&&p.disables==1);++checks;
++    p.fail_submit=false;assert(burst.start());burst.submit(nullptr,source,1,dest);p.fail_complete=true;p.publish();
++    bool failed=false;try{burst.finish();}catch(const std::runtime_error &){failed=true;}
++    assert(failed);++checks;burst.abort();assert(p.drains==2&&p.disables==2&&!p.callback);++checks;
++    p.fail_complete=false;assert(burst.start());burst.stop();assert(!p.callback&&p.disables==3);++checks;
++    Provider old;auto missing=old.api();missing.wakeup=nullptr;
++    PipelineSurfaceBurst absent(missing,&old,17);assert(!absent.start()&&!old.active);++checks;
++    old.cap=16;PipelineSurfaceBurst small(old.api(),&old,17);assert(!small.start()&&!old.callback);++checks;
++    old.cap=17;old.unsupported=true;PipelineSurfaceBurst wrong(old.api(),&old,17);assert(!wrong.start()&&!old.callback);++checks;
++    printf("pipeline_surface_burst_check: %u checks passed\n",checks);
++}

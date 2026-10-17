@@ -1,0 +1,137 @@
+diff --git a/src/aji_trt.cpp b/src/aji_trt.cpp
+index d7204b6..ea4114b 100644
+--- a/src/aji_trt.cpp
++++ b/src/aji_trt.cpp
+@@ -56,6 +56,9 @@
+ class CudaSurfaceQueue;
+ static bool cuda_surface_async_owned(aji_ctx *);
+ static void cuda_surface_legacy_entry(aji_ctx *);
++namespace {
++static aji_frame cuda_surface_temporary(aji_ctx *, int, const aji_frame &, int, int);
++}
+ #include "frame_identity.h"
+ #include "cache_key_lock.h"
+ #include "cache_stage_owner.h"
+@@ -452,6 +455,7 @@ struct aji_ctx {
+     bool building_frame_graph = false;
+     cudaGraphExec_t graph_exec = nullptr;
+     int graph_key[9] = {0};
++    aji_frame graph_input = {};      // captured input addresses/strides, including Surface staging
+     void *stage_in = nullptr, *stage_out = nullptr;
+     size_t stage_in_bytes = 0, stage_out_bytes = 0;
+ 
+@@ -2450,6 +2454,22 @@ static bool copy_plane(void *dst, size_t dpitch, const void *src,
+                              cudaMemcpyDeviceToDevice, s) == cudaSuccess;
+ }
+ 
++// The internal Surface RIFE-first Quality route already crops its quantized
++// YUV prediction into temporary 0. Use that stable allocation for the spatial
++// graph too: endpoints are copied there, intermediate pictures are already
++// there. The Surface caller owns its lifetime and drains allocation errors.
++static bool rife_quality_graph_input(aji_ctx *c, const aji_frame *in, aji_frame *staged)
++{
++    const char *setting = std::getenv("AJI_RIFE_YUV_STAGING");
++    if (!c->surface.dispatch || !c->rife.enabled || !c->rife.before_upscale ||
++        c->conf.rife_warp || c->temporal.enabled || c->has_pre_resize || c->rtx.active ||
++        in->width != c->rife.w || in->height != c->rife.h ||
++        (setting && *setting == '0'))
++        return false;
++    *staged = cuda_surface_temporary(c, 0, *in, in->width, in->height);
++    return true;
++}
++
+ // Run the chain via a captured CUDA graph. Returns true if the frame was
+ // handled (*ret holds the status); false means fall back to the plain path.
+ static bool infer_via_graph(aji_ctx *c, const aji_frame *in,
+@@ -2467,8 +2487,11 @@ static bool infer_via_graph(aji_ctx *c, const aji_frame *in,
+     const size_t in_y = in_row * in->height;
+     const size_t out_y = out_row * out->height;
+ 
+-    if (!ensure_stage(&c->stage_in, &c->stage_in_bytes,
+-                      in444 ? in_y * 3 : in_y * 3 / 2) ||
++    aji_frame sin = *in, sout = *out;
++    const bool middle_staging = rife_quality_graph_input(c, in, &sin);
++    if ((!middle_staging &&
++         !ensure_stage(&c->stage_in, &c->stage_in_bytes,
++                       in444 ? in_y * 3 : in_y * 3 / 2)) ||
+         !ensure_stage(&c->stage_out, &c->stage_out_bytes,
+                       out444 ? out_y * 3 : out_y * 3 / 2)) {
+         c->graph_ok = false;
+@@ -2476,13 +2499,14 @@ static bool infer_via_graph(aji_ctx *c, const aji_frame *in,
+     }
+ 
+     // staging descriptors: same colorimetry tags, packed strides
+-    aji_frame sin = *in, sout = *out;
+-    sin.plane[0] = c->stage_in;
+-    sin.plane[1] = (char *)c->stage_in + in_y;
+-    sin.stride[0] = sin.stride[1] = (ptrdiff_t)in_row;
+-    if (in444) {
+-        sin.plane[2] = (char *)c->stage_in + 2 * in_y;
+-        sin.stride[2] = (ptrdiff_t)in_row;
++    if (!middle_staging) {
++        sin.plane[0] = c->stage_in;
++        sin.plane[1] = (char *)c->stage_in + in_y;
++        sin.stride[0] = sin.stride[1] = (ptrdiff_t)in_row;
++        if (in444) {
++            sin.plane[2] = (char *)c->stage_in + 2 * in_y;
++            sin.stride[2] = (ptrdiff_t)in_row;
++        }
+     }
+     sout.plane[0] = c->stage_out;
+     sout.plane[1] = (char *)c->stage_out + out_y;
+@@ -2494,13 +2518,16 @@ static bool infer_via_graph(aji_ctx *c, const aji_frame *in,
+ 
+     // 4:2:0 chroma is half-height (one interleaved CbCr plane); 4:4:4 is three
+     // full-height planes.
+-    if (!copy_plane(sin.plane[0], in_row, in->plane[0], in->stride[0],
++    // Only the exact internal middle view may skip staging. Public/legacy
++    // callers and all other routes keep their original copy contract.
++    if (!(middle_staging && same_frame_view(sin, *in)) &&
++        (!copy_plane(sin.plane[0], in_row, in->plane[0], in->stride[0],
+                     in_row, in->height, stream) ||
+         !copy_plane(sin.plane[1], in_row, in->plane[1], in->stride[1],
+                     in_row, in444 ? in->height : in->height / 2, stream) ||
+         (in444 &&
+          !copy_plane(sin.plane[2], in_row, in->plane[2], in->stride[2],
+-                     in_row, in->height, stream))) {
++                     in_row, in->height, stream)))) {
+         c->graph_ok = false;
+         return false;
+     }
+@@ -2508,7 +2535,8 @@ static bool infer_via_graph(aji_ctx *c, const aji_frame *in,
+     const int key[9] = {in->format, in->width, in->height, in->siting,
+                         in->matrix, in->range, out->width, out->height,
+                         out->format};
+-    if (!c->graph_exec || memcmp(key, c->graph_key, sizeof(key)) != 0) {
++    if (!c->graph_exec || memcmp(key, c->graph_key, sizeof(key)) != 0 ||
++        !same_frame_view(sin, c->graph_input)) {
+         struct FrameGraphScope {
+             bool &active;
+             explicit FrameGraphScope(bool &value) : active(value) { active = true; }
+@@ -2541,6 +2569,7 @@ static bool infer_via_graph(aji_ctx *c, const aji_frame *in,
+             cudaGraphDestroy(graph);
+         if (ok) {
+             memcpy(c->graph_key, key, sizeof(key));
++            c->graph_input = sin;
+             c->verbose("chain captured as CUDA graph");
+         } else {
+             cudaGetLastError();  // clear sticky capture errors
+@@ -4180,6 +4209,9 @@ extern "C" AJI_EXPORT void aji_destroy(aji_ctx **pc)
+     {
+         CtxGuard guard(c->cu_ctx);
+         cudaDeviceSynchronize();    // in-flight ticketed work
++        // The spatial graph may now read a Surface-owned temporary.
++        if (c->graph_exec) cudaGraphExecDestroy(c->graph_exec);
++        c->graph_exec = nullptr;
+         if(c->surface.stream)cudaStreamDestroy(c->surface.stream);
+         for(auto &frame:c->surface.memory)for(auto p:frame)if(p)cudaFree(p);
+         for (cudaEvent_t &ev : c->tick_ev) {
+@@ -4206,8 +4238,6 @@ extern "C" AJI_EXPORT void aji_destroy(aji_ctx **pc)
+         aji_plan_destroy(c->pr_post_plan);
+         rife_teardown(c);
+         temporal_teardown(c);
+-        if (c->graph_exec)
+-            cudaGraphExecDestroy(c->graph_exec);
+         cudaFree(c->stage_in);
+         cudaFree(c->stage_out);
+         c->engines.clear();
