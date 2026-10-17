@@ -1,0 +1,118 @@
+{
+  "schema": "animejanai.targeted-qualification.v1",
+  "ticket": "AH-354",
+  "source": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
+  "machine": "Linux RTX4070Ti, CUDA13.4 / TensorRT11.3",
+  "cases": [
+    {
+      "name": "native-batch",
+      "exact_to_85_reference": true,
+      "reset_exact": true,
+      "calls": [
+        {
+          "pair": 0,
+          "eof": false,
+          "complete_wall_ms": 259.371080001074,
+          "outputs": 4
+        },
+        {
+          "pair": 1,
+          "eof": false,
+          "complete_wall_ms": 46.45080199952645,
+          "outputs": 4
+        },
+        {
+          "pair": 2,
+          "eof": false,
+          "complete_wall_ms": 46.4264069996716,
+          "outputs": 4
+        },
+        {
+          "pair": 3,
+          "eof": true,
+          "complete_wall_ms": 0.1769620012055384,
+          "outputs": 1
+        }
+      ],
+      "owners_balanced": true,
+      "descriptors_unchanged": true
+    },
+    {
+      "name": "older-provider-fallback",
+      "exact_to_85_reference": true,
+      "reset_exact": null,
+      "calls": [
+        {
+          "pair": 0,
+          "eof": false,
+          "complete_wall_ms": 132.6402840004448,
+          "outputs": 4
+        },
+        {
+          "pair": 1,
+          "eof": false,
+          "complete_wall_ms": 64.98514800114208,
+          "outputs": 4
+        },
+        {
+          "pair": 2,
+          "eof": false,
+          "complete_wall_ms": 59.156741999686346,
+          "outputs": 4
+        },
+        {
+          "pair": 3,
+          "eof": true,
+          "complete_wall_ms": 0.22974199964664876,
+          "outputs": 1
+        }
+      ],
+      "owners_balanced": true,
+      "descriptors_unchanged": true
+    }
+  ],
+  "native_error": {
+    "passed": true,
+    "caps_short_and_version_untouched": true,
+    "bounds_and_job_headers": true,
+    "later_job_error_drained": true,
+    "owner_callbacks_balanced": true,
+    "callbacks_on_failed_batch": 18,
+    "descriptors_unchanged": true,
+    "normal_call_after_error_exact": true,
+    "fps_claimed": false
+  },
+  "cpu": [
+    "no partial submissions during collection",
+    "descriptor copies survive caller descriptor changes",
+    "capacity17 enforced",
+    "empty EOF/cache hit no provider call",
+    "success/error/missing provider"
+  ],
+  "source_invariants": [
+    "single final stream completion after queued jobs,4to1 in steady Quality4",
+    "owners array per job (three slots each), held until return",
+    "error drain destructed before outer owner holders",
+    "same original per-job Surface operations, no pixel kernel or precision change",
+    "old experimental second worker/reaper retired"
+  ],
+  "trace": {
+    "first_jobs": 5,
+    "steady_jobs": 4,
+    "preparations_per_pair": 1,
+    "adjacent_promotions": true,
+    "reset_exact": true
+  },
+  "benefit": "output completion calls4to1, no second worker/reaper polling; no measured FPS gain asserted",
+  "limits": [
+    "short native chain, no physical display FPS",
+    "still exceeds41.7ms input-pair budget for fullQuality4/HDR on this configuration",
+    "Windows compile/link only, native Surface capabilities remain Linux-specific",
+    "old module fallback qualified; ordinary Surfacev1/ABI9 untouched"
+  ],
+  "artifacts_sha256": {
+    "libaji_trt.so": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
+    "libaji_pipeline.so": "9432437367c4a94488940e9c305d9a31782b7ccabe8287c6dda73dc76bee7bf0",
+    "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d"
+  }
+}
