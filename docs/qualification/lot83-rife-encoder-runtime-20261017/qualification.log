@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/ta2b/.animejanai-tools/work/lot-83-rife-shared-encoder-player-20261017/tests/inference/rife_encoder_runtime_check.py", line 74, in <module>
+    assert np.array_equal(expected[i],actual),(label,t,int(np.count_nonzero(expected[i]!=actual)),int(np.max(np.abs(expected[i].astype(np.int32)-actual.astype(np.int32)))))
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('candidate-on', 0.25, 1053807, 88)

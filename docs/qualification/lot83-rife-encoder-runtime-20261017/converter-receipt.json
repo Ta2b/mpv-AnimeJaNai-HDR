@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "scope": "New native wire converter versus already audited Python extraction; no GPU rerun",
+  "programs": {
+    "encoder.onnx": {
+      "sha256": "b0a5c0ba524d1a1a96a837758b6fe488e8f5be36bc60dfbe358b0070ae89627d",
+      "nodes": 11,
+      "initializers": 8,
+      "inputs": [
+        "input"
+      ],
+      "operators_weights_io_exact": true
+    },
+    "head.onnx": {
+      "sha256": "386035aa6e1b465e8028c0128f444b01e0b3745e08ebc409ddf517e27fd3c04d",
+      "nodes": 315,
+      "initializers": 150,
+      "inputs": [
+        "input",
+        "/encode/cnn3/ConvTranspose_output_0"
+      ],
+      "operators_weights_io_exact": true
+    }
+  }
+}

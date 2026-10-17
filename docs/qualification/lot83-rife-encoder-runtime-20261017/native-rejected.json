@@ -1,0 +1,50 @@
+{
+  "decision": "rejected_for_Quality",
+  "passed": false,
+  "candidate_backend_source": "82c82959b187288432d3b84b70b8c6a44e7ea0cc",
+  "binary_sha256": {
+    "before": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+    "candidate": "aea0ff16655320dcc70e01c980fbfb2825f9fa231ca7279d103f01f2421e0cc2"
+  },
+  "source_input_sha256": "b7313e290c32d62ec96337f92bd8bba81c618e148b0639bfe7b366c3305604af",
+  "source_model_sha256": "fd6b06538898c9a94d20f0fe55febceadbcde5ad64952240733b7275ef4c9d59",
+  "native_format": "ABI9 planar YUV444P16,1280x720,BT709 full range; RIFE padded1280x768",
+  "reference_vs_candidate_off": {
+    "exact": true,
+    "phases": [
+      0.25,
+      0.5,
+      0.75
+    ]
+  },
+  "first_candidate_on_failure": {
+    "phase": 0.25,
+    "different_u16_values": 1053807,
+    "total_u16_values": 2764800,
+    "max_absolute_u16_difference": 88
+  },
+  "performance_measured": false,
+  "stopped_before_timing": true,
+  "later_cases_not_executed": [
+    "remaining on phases .5/.75",
+    "new pair",
+    "legacy caller without IDs",
+    "reconfigure",
+    "alternating burst timing"
+  ],
+  "feature_bytes_allocated": 15728640,
+  "encoder_executions_observed": 1,
+  "feature_reuses_observed": 0,
+  "machine": {
+    "gpu": "NVIDIA GeForce RTX4070Ti",
+    "driver": "615.78.08",
+    "tensorrt": "11.3.0.99",
+    "cuda": "13"
+  },
+  "limits": [
+    "No visible quality assessment or FPS measurement.",
+    "Exact cause of numerical difference not established; separate compilation/tactics is a hypothesis, not a verified diagnosis.",
+    "Earlier network-only input/case in AH356 is retained; it does not validate this native integration."
+  ],
+  "production_activation": false
+}

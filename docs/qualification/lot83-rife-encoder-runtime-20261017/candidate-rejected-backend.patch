@@ -1,0 +1,485 @@
+diff --git a/src/aji_trt.cpp b/src/aji_trt.cpp
+index 6895ea5..f4a40e5 100644
+--- a/src/aji_trt.cpp
++++ b/src/aji_trt.cpp
+@@ -247,6 +247,7 @@ struct ModelEngine {
+     std::unique_ptr<nvinfer1::IExecutionContext> exec;
+     const char *in_name = nullptr;
+     const char *out_name = nullptr;
++    const char *feature_name = nullptr; // only the audited two-input RIFE head
+     int in_w = 0, in_h = 0, out_w = 0, out_h = 0;
+     // Declared last: release the graph before its execution context and engine.
+     std::unique_ptr<ModelGraph> graph;
+@@ -366,6 +367,12 @@ struct aji_ctx {
+         int num = 1, den = 1;
+         double scd_threshold = 0.150;
+         ModelEngine engine;
++        struct {
++            ModelEngine encoder, head;
++            void *buffer = nullptr;
++            bool available = false, ready = false, use = false;
++            uint64_t encoded = 0, reused = 0;
++        } features;
+         int w = 0, h = 0;            // unpadded; chain output dims, or the
+                                      // source dims when before_upscale
+         int pw = 0, ph = 0;          // padded to mod-64
+@@ -922,7 +929,7 @@ bool build_engine(aji_ctx *c, const std::string &onnx_name,
+ // rank5_t > 0: the input is [1, rank5_t, 3, H, W] (in_ch is then ignored).
+ bool load_engine(aji_ctx *c, const std::string &engine_path, ModelEngine *me,
+                  int in_w, int in_h, int in_ch = 3, int rank5_t = 0,
+-                 std::string *digest = nullptr, bool *read_failure = nullptr)
++                 std::string *digest = nullptr, bool *read_failure = nullptr, bool rife_head = false)
+ {
+     if (read_failure) *read_failure = false;
+     std::vector<char> blob;
+@@ -938,7 +945,7 @@ bool load_engine(aji_ctx *c, const std::string &engine_path, ModelEngine *me,
+     }
+     me->graph.reset();
+     me->exec.reset();
+-    me->in_name = me->out_name = nullptr;
++    me->in_name = me->out_name = me->feature_name = nullptr;
+     me->engine.reset(c->runtime->deserializeCudaEngine(blob.data(), blob.size()));
+     if (!me->engine) {
+         c->set_error("engine deserialization failed: %s", engine_path.c_str());
+@@ -946,10 +953,19 @@ bool load_engine(aji_ctx *c, const std::string &engine_path, ModelEngine *me,
+     }
+     for (int i = 0; i < me->engine->getNbIOTensors(); i++) {
+         const char *name = me->engine->getIOTensorName(i);
+-        if (me->engine->getTensorIOMode(name) == nvinfer1::TensorIOMode::kINPUT)
++        if (rife_head) {
++            if (me->engine->getTensorDataType(name) != nvinfer1::DataType::kHALF ||
++                me->engine->getTensorFormat(name) != nvinfer1::TensorFormat::kLINEAR) {
++                c->set_error("shared RIFE head requires scalar FP16 tensors");return false;
++            }
++            if (me->engine->getTensorIOMode(name) == nvinfer1::TensorIOMode::kINPUT) {
++                if (!strcmp(name,"input")) me->in_name = name;
++                else if (!strcmp(name,"/encode/cnn3/ConvTranspose_output_0")) me->feature_name = name;
++                else {c->set_error("unexpected shared RIFE head input");return false;}
++            } else me->out_name = name;
++        } else if (me->engine->getTensorIOMode(name) == nvinfer1::TensorIOMode::kINPUT)
+             me->in_name = name;
+-        else
+-            me->out_name = name;
++        else me->out_name = name;
+     }
+     if (!me->in_name || !me->out_name) {
+         c->set_error("engine I/O tensors not found");
+@@ -974,7 +990,14 @@ bool load_engine(aji_ctx *c, const std::string &engine_path, ModelEngine *me,
+                      engine_path.c_str());
+         return false;
+     }
++    if (rife_head && (!me->feature_name || me->engine->getNbIOTensors()!=3 ||
++        !me->exec->setInputShape(me->feature_name,nvinfer1::Dims4{2,4,in_h,in_w}))) {
++        c->set_error("shared RIFE head rejects its feature binding");return false;
++    }
+     nvinfer1::Dims od = me->exec->getTensorShape(me->out_name);
++    if (rife_head && (od.nbDims!=4 || od.d[0]!=1 || od.d[1]!=3 || od.d[2]!=in_h || od.d[3]!=in_w)) {
++        c->set_error("shared RIFE head output shape mismatch");return false;
++    }
+     if (od.nbDims != 4) {
+         c->set_error("unexpected output rank from %s", engine_path.c_str());
+         return false;
+@@ -1098,7 +1121,7 @@ void start_async_build(aji_ctx *c, const BuildSpec &spec)
+ int ensure_engine(aji_ctx *c, const std::string &name,
+                   const std::string &settings, const std::string &epath,
+                   ModelEngine *me, int w, int h, int ch,
+-                  const aji::cache::FrozenModel *source, int rank5_t = 0)
++                  const aji::cache::FrozenModel *source, int rank5_t = 0, bool rife_head = false)
+ {
+     if (epath.empty() || !source || source->content.empty()) {
+         c->set_error("cannot identify model %s: %s", name.c_str(), engine_identity_error.c_str());
+@@ -1115,7 +1138,7 @@ int ensure_engine(aji_ctx *c, const std::string &name,
+         if (!file_exists(path))
+             return 0;
+         bool read_failure = false;
+-        if (load_engine(c, path, me, w, h, ch, rank5_t, &rejected_digest, &read_failure))
++        if (load_engine(c, path, me, w, h, ch, rank5_t, &rejected_digest, &read_failure, rife_head))
+             return 1;
+         if (read_failure) return -2;
+         // An incompatible cached plan may already own an execution context.
+@@ -1161,7 +1184,7 @@ int ensure_engine(aji_ctx *c, const std::string &name,
+     }
+     if (!build_engine(c, source->name, settings, build_epath, dir, rejected_digest))
+         return -1;
+-    return load_engine(c, build_epath, me, w, h, ch, rank5_t) ? 1 : -1;
++    return load_engine(c, build_epath, me, w, h, ch, rank5_t, nullptr, nullptr, rife_head) ? 1 : -1;
+ }
+ 
+ // rife model code -> file basename: 414 -> rife_v4.14, 4141 -> _lite,
+@@ -1202,6 +1225,12 @@ void rife_teardown(aji_ctx *c)
+         cudaStreamDestroy(R.capture_stream);
+     if (R.picture_graph) cudaGraphExecDestroy(R.picture_graph);
+     if (R.picture_capture) cudaStreamDestroy(R.picture_capture);
++    if (R.features.available) c->verbose("RIFE shared encoder: %llu encoded, %llu reused; %zu feature bytes",
++        (unsigned long long)R.features.encoded,(unsigned long long)R.features.reused,(size_t)R.pw*R.ph*16);
++    R.features.encoder.graph.reset();R.features.head.graph.reset();
++    R.features.head.exec.reset();R.features.head.engine.reset();
++    R.features.encoder.exec.reset();R.features.encoder.engine.reset();
++    cudaFree(R.features.buffer);R.features.buffer=nullptr;
+     aji_plan_destroy(R.pre);
+     aji_plan_destroy(R.post);
+     cudaFree(R.pad_a);
+@@ -1288,6 +1317,39 @@ void setup_warp(aji_ctx *c, const std::string &model, const std::string &setting
+     W.on = true;
+ }
+ 
++// Optional audited Quality path. Model snapshots/plans have independent
++// content identities; a miss or incompatible binding retains the full model.
++static void setup_rife_features(aji_ctx *c,const AjiChainConf *chain,
++                                const aji::cache::FrozenModel &source)
++{
++    const char *setting=getenv("AJI_RIFE_ENCODER_CACHE");
++    if(!setting||strcmp(setting,"1") || chain->rife_model!=426 || chain->rife_ensemble ||
++        c->conf.rife_warp || int64_t(chain->rife_factor_num)<int64_t(chain->rife_factor_den)*3)return;
++    auto &R=c->rife;auto &F=R.features;
++    try {
++        auto programs=aji::cache::freeze_rife_encoder_models(source,fs::u8path(c->rife_model_dir)/".aji-rife-encoder-v1");
++        char dims[96];snprintf(dims,sizeof dims,"1x11x%dx%d",R.ph,R.pw);
++        const std::string common=" --outputIOFormats=fp16:chw --tacticSources=-CUDNN,-CUBLAS,-CUBLAS_LT --skipInference";
++        const std::string encoder_settings=std::string("--stronglyTyped --optShapes=input:")+dims+" --inputIOFormats=fp16:chw"+common;
++        aji::cache::FrozenModel identity;
++        auto path=engine_path_for(c->rife_model_dir,"rife426.encoder-wire-v1",encoder_settings,&identity,c->trtexec_env,&programs.encoder);
++        if(ensure_engine(c,"rife426.encoder-wire-v1",encoder_settings,path,&F.encoder,R.pw,R.ph,11,&programs.encoder)!=1)return;
++        const auto shape=F.encoder.exec->getTensorShape(F.encoder.out_name);
++        if(F.encoder.engine->getNbIOTensors()!=2 || shape.nbDims!=4 || shape.d[0]!=2 || shape.d[1]!=4 || shape.d[2]!=R.ph || shape.d[3]!=R.pw ||
++            F.encoder.engine->getTensorDataType(F.encoder.in_name)!=nvinfer1::DataType::kHALF ||
++            F.encoder.engine->getTensorFormat(F.encoder.in_name)!=nvinfer1::TensorFormat::kLINEAR ||
++            F.encoder.engine->getTensorDataType(F.encoder.out_name)!=nvinfer1::DataType::kHALF ||
++            F.encoder.engine->getTensorFormat(F.encoder.out_name)!=nvinfer1::TensorFormat::kLINEAR)
++            throw std::runtime_error("shared RIFE encoder output contract mismatch");
++        char features[96];snprintf(features,sizeof features,",/encode/cnn3/ConvTranspose_output_0:2x4x%dx%d",R.ph,R.pw);
++        const std::string head_settings=std::string("--stronglyTyped --optShapes=input:")+dims+features+" --inputIOFormats=fp16:chw,fp16:chw"+common;
++        path=engine_path_for(c->rife_model_dir,"rife426.head-wire-v1",head_settings,&identity,c->trtexec_env,&programs.head);
++        if(ensure_engine(c,"rife426.head-wire-v1",head_settings,path,&F.head,R.pw,R.ph,11,&programs.head,0,true)!=1)return;
++        if(cudaMalloc(&F.buffer,(size_t)R.pw*R.ph*16)!=cudaSuccess){cudaGetLastError();throw std::runtime_error("shared RIFE feature allocation unavailable");}
++        F.available=true;c->verbose("RIFE4.26 shared encoder ready (explicit opt-in, full RGB head)");
++    }catch(const std::exception &e){c->verbose("shared RIFE encoder unavailable, monolithic fallback: %s",e.what());}
++}
++
+ // Configure-time RIFE setup: geometry, engine (build on first play), the
+ // constant input planes. Format-dependent staging builds lazily in
+ // aji_infer_rife. Requires the CUDA context to be current.
+@@ -1353,6 +1415,7 @@ bool setup_rife(aji_ctx *c, const AjiChainConf *chain, int w, int h,
+     if (before_upscale && !chain->rife_ensemble)
+         setup_warp(c, model, settings, frozen);
+ 
++    setup_rife_features(c,chain,frozen);
+     char buf[320];
+     const double factor = (double)R.num / R.den;
+     if (R.pw != w || R.ph != h) {
+@@ -3549,7 +3612,7 @@ static bool enqueue_rife_model(aji_ctx *c, cudaStream_t stream, bool motion = fa
+ {
+     auto &R = c->rife;
+     auto &W = c->warp;
+-    auto &me = motion ? W.engine : R.engine;
++    auto &me = motion ? W.engine : (R.features.use ? R.features.head : R.engine);
+     auto &graph_ok = motion ? W.graph_ok : R.graph_ok;
+     auto &graph_exec = motion ? W.graph_exec : R.graph_exec;
+     auto &capture_stream = motion ? W.capture_stream : R.capture_stream;
+@@ -3574,6 +3637,7 @@ static bool enqueue_rife_model(aji_ctx *c, cudaStream_t stream, bool motion = fa
+     // Do not modify the execution context after successful capture, even by
+     // rebinding the same addresses. This is only the initial/plain path.
+     if (!me.exec->setTensorAddress(me.in_name, R.in_tensor) ||
++        (!motion && R.features.use && !me.exec->setTensorAddress(me.feature_name,R.features.buffer)) ||
+         !(motion ? ((!W.pic_name || me.exec->setTensorAddress(W.pic_name, R.out_tensor)) &&
+                     me.exec->setTensorAddress(W.flow_name, W.flow) &&
+                     me.exec->setTensorAddress(W.mask_name, W.mask))
+@@ -3631,7 +3695,9 @@ extern "C" AJI_EXPORT void aji_rife_begin_pair(aji_ctx *c, uint64_t left_id, uin
+     const char *setting = std::getenv("AJI_RIFE_PAIR_CACHE");
+     c->rife.pair_cache = left_id && right_id && !(setting && *setting == '0');
+     const bool same_pair = left_id && right_id && c->rife.left_id == left_id && c->rife.right_id == right_id;
+-    if (!same_pair || !c->rife.pair_cache) c->rife.pair_ready = false;
++    if (!same_pair || !c->rife.pair_cache) {
++        c->rife.pair_ready = false;c->rife.features.ready = false;
++    }
+     c->rife.left_id = left_id; c->rife.right_id = right_id;
+     if (!c->rife.pair_cache) c->rife.prepared_right = 0;
+     // The same explicit lifetime also protects Fast's endpoint/motion cache.
+@@ -3647,6 +3713,7 @@ extern "C" AJI_EXPORT void aji_rife_begin_pair(aji_ctx *c, uint64_t left_id, uin
+ static int prepare_rife_pair(aji_ctx *c, const aji_frame *a, const aji_frame *b, cudaStream_t stream)
+ {
+     auto &R = c->rife;
++    R.features.ready = false; // any newly prepared view invalidates derived features
+     const int fmt = a->format;
+     const bool promote = R.pair_cache && R.prepared_right && R.prepared_right == R.left_id &&
+                          R.pair_stream == stream && same_frame_view(R.pair[1], *a);
+@@ -3863,7 +3930,24 @@ static int rife_post_picture(aji_ctx *c, const aji_frame *a, cudaStream_t stream
+ // current caller's pointers. No flow-only graph or approximate reconstruction.
+ static int enqueue_rife_picture(aji_ctx *c, const aji_frame *a, cudaStream_t stream)
+ {
+-    auto &R = c->rife;
++    auto &R = c->rife;auto &F=R.features;
++    const bool use=F.available&&R.pair_cache&&R.pair_ready;
++    if(use) {
++        if(!F.ready) {
++            if(!enqueue_model(c,F.encoder,R.in_tensor,F.buffer,stream))return AJI_ERR_ENGINE;
++            F.ready=true;++F.encoded;
++        }else ++F.reused;
++    }
++    if(F.use!=use) {
++        // Captures bind a particular execution context, never reuse one from
++        // another route (including legacy callers without explicit pair IDs).
++        if(R.picture_graph)cudaGraphExecDestroy(R.picture_graph);
++        R.picture_graph=nullptr;
++        if(R.graph_exec)cudaGraphExecDestroy(R.graph_exec);
++        R.graph_exec=nullptr;
++        F.use=use;
++    }
++    auto &picture_engine=F.use?F.head:R.engine;
+     const char *capture = std::getenv("AJI_RIFE_PICTURE_GRAPH");
+     const char *net_capture = std::getenv("AJI_RIFE_CUDA_GRAPH");
+     const bool enabled = !(capture && *capture == '0') && !(net_capture && *net_capture == '0') &&
+@@ -3897,7 +3981,7 @@ static int enqueue_rife_picture(aji_ctx *c, const aji_frame *a, cudaStream_t str
+     if (ok) {
+         ok = cudaStreamBeginCapture(R.picture_capture, cudaStreamCaptureModeThreadLocal) == cudaSuccess;
+         if (ok) {
+-            const bool queued = R.engine.exec->enqueueV3(R.picture_capture) &&
++            const bool queued = picture_engine.exec->enqueueV3(R.picture_capture) &&
+                                 rife_post_picture(c, a, R.picture_capture) == AJI_OK;
+             const cudaError_t ended = cudaStreamEndCapture(R.picture_capture, &graph);
+             ok = queued && ended == cudaSuccess && graph;
+@@ -3926,6 +4010,7 @@ extern "C" AJI_EXPORT int aji_infer_rife(aji_ctx *c, const aji_frame *a,
+     if (!c || !a || !b || !out)
+         return AJI_ERR;
+     auto &R = c->rife;
++    struct FeatureFailure {bool &ready;bool complete=false;~FeatureFailure(){if(!complete)ready=false;}} feature_failure{R.features.ready};
+     if (!R.enabled) {
+         c->set_error("aji_infer_rife without an active RIFE configuration");
+         return AJI_ERR;
+@@ -3967,7 +4052,7 @@ extern "C" AJI_EXPORT int aji_infer_rife(aji_ctx *c, const aji_frame *a,
+             }
+             W.pending = {true, *out, stream};
+             W.pending_t = (float)t;
+-            return AJI_OK;
++            {feature_failure.complete=true;return AJI_OK;}
+         }
+     }
+     c->warp.open = false;
+@@ -3982,7 +4067,7 @@ extern "C" AJI_EXPORT int aji_infer_rife(aji_ctx *c, const aji_frame *a,
+             void *const src[3] = {a->plane[0], a->plane[1], a->plane[2]};
+             const ptrdiff_t sstride[3] = {a->stride[0], a->stride[1], a->stride[2]};
+             if (held_copy(fmt, a->width, a->height, dst, dstride, src, sstride, stream))
+-                return AJI_OK;
++                {feature_failure.complete=true;return AJI_OK;}
+         }
+     }
+     const bool cached = R.pair_cache && R.pair_ready && R.pair_stream == stream &&
+@@ -4148,7 +4233,7 @@ extern "C" AJI_EXPORT int aji_infer_rife(aji_ctx *c, const aji_frame *a,
+         W.open = true;
+         W.pending = {true, *out, stream};
+         W.pending_t = (float)t;
+-        return AJI_OK;
++        {feature_failure.complete=true;return AJI_OK;}
+     }
+ 
+     const int picture_status = enqueue_rife_picture(c, a, stream);
+@@ -4172,7 +4257,7 @@ extern "C" AJI_EXPORT int aji_infer_rife(aji_ctx *c, const aji_frame *a,
+         c->set_error("rife crop copy failed");
+         return AJI_ERR_CUDA;
+     }
+-    return AJI_OK;
++    {feature_failure.complete=true;return AJI_OK;}
+ }
+ 
+ extern "C" AJI_EXPORT const char *aji_last_error(aji_ctx *c)
+diff --git a/src/model_identity.cpp b/src/model_identity.cpp
+index b16650c..55344e4 100644
+--- a/src/model_identity.cpp
++++ b/src/model_identity.cpp
+@@ -136,6 +136,46 @@ FrozenModel freeze_motion_model(const FrozenModel &source,const fs::path &cache)
+     return {content,destination.u8string(),"model",scheme};
+ }
+ 
++RifeEncoderModels freeze_rife_encoder_models(const FrozenModel &source,const fs::path &cache)
++{
++    const auto folder=fs::u8path(source.directory);
++    const auto graph=read(folder/fs::u8path(source.name+".onnx"));
++    std::vector<std::string> locations;std::string why;
++    if(!aji_onnx_external_locations(graph,&locations,&why))throw std::runtime_error(why);
++    if(!locations.empty()||key(graph,folder,locations)!=source.content)
++        throw std::runtime_error("Shared encoder source snapshot changed or has external weights");
++    std::vector<char> encoder,head;
++    if(!aji_onnx_rife_encoder_split(graph,&encoder,&head,&why))throw std::runtime_error(why);
++    identity::Program p;p.source_scheme=source.scheme;p.source_digest=source.content;
++    p.converter="rife426-encoder-cut-wire";p.converter_version=1;
++    const auto recipe=identity::program_key(std::move(p));
++    const auto encoder_content=key(encoder,folder,{}),head_content=key(head,folder,{});
++    const auto destination=cache/recipe;const auto owner="rife-encoder:"+recipe;
++    auto complete=[&]{return valid(destination/"encoder",encoder_content,{})&&valid(destination/"head",head_content,{});};
++    auto result=[&]{return RifeEncoderModels{{encoder_content,(destination/"encoder").u8string(),"model"},
++                                           {head_content,(destination/"head").u8string(),"model"}};};
++    if(complete()&&!has_owned_stages(cache,".part-",owner))return result();
++    fs::create_directories(cache);KeyLock lock(cache/(recipe+".key-lock"));
++    recover_owned_stages(cache,".part-",owner);if(complete())return result();
++    Temporary stage{reserve(cache,".part-")};mark_stage(stage.path,owner);
++    const auto data=stage.path/"data";fs::create_directories(data/"encoder");fs::create_directory(data/"head");
++    for(const auto &part:{std::make_pair("encoder",&encoder),std::make_pair("head",&head)}) {
++        const auto path=data/part.first/"model.onnx";std::ofstream output(path,std::ios::binary);
++        output.write(part.second->data(),(std::streamsize)part.second->size());output.close();
++        if(!output)throw io_error("write shared RIFE encoder program",path);
++    }
++    if(!valid(data/"encoder",encoder_content,{})||!valid(data/"head",head_content,{}))
++        throw std::runtime_error("Shared RIFE programs incomplete");
++    if(fs::exists(destination)) {
++        auto quarantine=reserve(cache,".invalid-");std::error_code error;
++        fs::rename(destination,quarantine/"preserved",error);
++        if(error)throw io_error("preserve invalid shared RIFE programs",destination,error);
++    }
++    std::error_code error;fs::rename(data,destination,error);
++    if(error)throw io_error("publish shared RIFE programs",destination,error);
++    return result();
++}
++
+ std::string engine_name(const std::string &content,const std::string &settings,
+                         const std::string &runtime,const std::string &device,
+                         const std::string &build_environment,const std::string &source_scheme)
+diff --git a/src/model_identity.h b/src/model_identity.h
+index 3a5471c..3dbe563 100644
+--- a/src/model_identity.h
++++ b/src/model_identity.h
+@@ -15,6 +15,10 @@ FrozenModel freeze_model(const std::filesystem::path &source,
+                          const std::filesystem::path &cache);
+ FrozenModel freeze_motion_model(const FrozenModel &source,
+                                const std::filesystem::path &cache);
++struct RifeEncoderModels {FrozenModel encoder, head;};
++// Two immutable, atomically published derivatives of the audited RIFE source.
++RifeEncoderModels freeze_rife_encoder_models(const FrozenModel &source,
++                                           const std::filesystem::path &cache);
+ std::string engine_name(const std::string &content, const std::string &settings,
+                         const std::string &runtime, const std::string &device,
+                         const std::string &build_environment = "",
+diff --git a/src/onnx_flow.cpp b/src/onnx_flow.cpp
+index 849880c..fdb516a 100644
+--- a/src/onnx_flow.cpp
++++ b/src/onnx_flow.cpp
+@@ -5,6 +5,7 @@
+  * graph's outputs. Every other byte, the weights included, is copied as it is.
+  */
+ #include "onnx_flow.h"
++#include "content_identity.h"
+ 
+ #include <cstdint>
+ #include <map>
+@@ -340,3 +341,95 @@ bool aji_onnx_motion_outputs(const std::vector<char> &model, std::vector<char> *
+     out->insert(out->end(), reinterpret_cast<const char *>(after), static_cast<const char *>(expanded.data()) + expanded.size());
+     return true;
+ }
++
++// This converter deliberately supports one immutable source, not arbitrary ONNX.
++// Every retained node/initializer field is copied verbatim; only graph IO and
++// unreachable operations change. The five refinement warps stay in the head.
++bool aji_onnx_rife_encoder_split(const std::vector<char> &model,
++    std::vector<char> *encoder, std::vector<char> *head, std::string *why)
++{
++    constexpr const char *cut="/encode/cnn3/ConvTranspose_output_0";
++    aji::identity::Sha256 hash;hash.update(model.data(),model.size());
++    if(hash.hex()!="fd6b06538898c9a94d20f0fe55febceadbcde5ad64952240733b7275ef4c9d59") {
++        *why="shared RIFE encoder supports only the audited FP16 non-ensemble4.26 source";return false;
++    }
++    struct Field {uint32_t number;const uint8_t *start,*data,*end;size_t size;};
++    auto fields=[](const uint8_t *p,size_t size) {
++        std::vector<Field> result;Reader r{p,p+size};
++        while(r.p<r.end&&r.ok) {
++            const auto *start=r.p;uint32_t number;const uint8_t *data;size_t length;
++            if(!r.next(&number,&data,&length))break;
++            result.push_back({number,start,data,r.p,length});
++        }
++        if(!r.ok)throw std::runtime_error("malformed audited RIFE protobuf");return result;
++    };
++    auto text=[](const Field &f){return f.data?std::string((const char *)f.data,f.size):std::string();};
++    auto append=[](std::string &out,const Field &f){out.append((const char *)f.start,(const char *)f.end);};
++    auto entry=[](uint32_t number,const std::string &body){std::string out;put_varint(out,(uint64_t(number)<<3)|2);put_varint(out,body.size());return out+body;};
++    try {
++        const auto top=fields((const uint8_t *)model.data(),model.size());
++        const Field *graph=nullptr;for(const auto &f:top)if(f.number==7)graph=&f;
++        if(!graph||!graph->data)throw std::runtime_error("audited RIFE graph missing");
++        const auto body=fields(graph->data,graph->size);
++        std::vector<Node> nodes;std::vector<const Field *> node_fields;
++        std::map<std::string,size_t> producers;std::map<std::string,const Field *> weights;
++        const Field *input=nullptr,*output=nullptr;std::string input_name,output_name;
++        for(const auto &f:body) {
++            if(f.number==1) {
++                Node n;for(const auto &v:fields(f.data,f.size)) {
++                    if(v.number==1)n.in.push_back(text(v));
++                    if(v.number==2)n.out.push_back(text(v));
++                    if(v.number==4)n.op=text(v);
++                }
++                for(const auto &name:n.out)if(!producers.emplace(name,nodes.size()).second)
++                    throw std::runtime_error("duplicate RIFE tensor producer");
++                nodes.push_back(std::move(n));node_fields.push_back(&f);
++            } else if(f.number==5) {
++                for(const auto &v:fields(f.data,f.size))if(v.number==8)weights.emplace(text(v),&f);
++            } else if(f.number==11||f.number==12) {
++                if(f.number==11){if(input)throw std::runtime_error("multiple RIFE inputs");input=&f;}
++                else {if(output)throw std::runtime_error("multiple RIFE outputs");output=&f;}
++                for(const auto &v:fields(f.data,f.size))if(v.number==1)(f.number==11?input_name:output_name)=text(v);
++            }
++        }
++        if(!input||!output||input_name!="input"||output_name!="output"||!producers.count(cut))
++            throw std::runtime_error("audited RIFE IO changed");
++        std::vector<std::string> dimensions;
++        for(const auto &a:fields(input->data,input->size))if(a.number==2)
++            for(const auto &b:fields(a.data,a.size))if(b.number==1)
++                for(const auto &c:fields(b.data,b.size))if(c.number==2)
++                    for(const auto &d:fields(c.data,c.size))if(d.number==1)dimensions.push_back(std::string((const char *)d.start,(const char *)d.end));
++        if(dimensions.size()!=4)throw std::runtime_error("audited RIFE input is not rank4");
++        std::string shape=entry(1,std::string("\x08\x02",2))+entry(1,std::string("\x08\x04",2))+dimensions[2]+dimensions[3];
++        const std::string feature_info=entry(1,cut)+entry(2,entry(1,std::string("\x08\x0a",2)+entry(2,shape)));
++        auto extract=[&](bool encoding) {
++            std::set<size_t> selected;std::set<std::string> used_weights;
++            std::vector<std::string> pending{encoding?cut:output_name};
++            while(!pending.empty()) {
++                std::string name=std::move(pending.back());pending.pop_back();
++                if(name.empty()||name==input_name||(!encoding&&name==cut))continue;
++                const auto made=producers.find(name);
++                if(made==producers.end()) {
++                    if(!weights.count(name))throw std::runtime_error("RIFE tensor has no producer: "+name);
++                    used_weights.insert(name);continue;
++                }
++                if(selected.insert(made->second).second)
++                    for(const auto &source:nodes[made->second].in)pending.push_back(source);
++            }
++            int warps=0;for(auto i:selected)if(nodes[i].op=="GridSample")++warps;
++            if((encoding&&selected.size()!=11)||(!encoding&&warps!=5))throw std::runtime_error("RIFE encoder/refinement cut changed");
++            std::set<const Field *> selected_weights;for(const auto &name:used_weights)selected_weights.insert(weights.at(name));
++            std::string new_graph;size_t index=0;
++            for(const auto &f:body) {
++                if(f.number==1){if(selected.count(index))append(new_graph,f);++index;}
++                else if(f.number==5){if(selected_weights.count(&f))append(new_graph,f);}
++                else if(f.number==12){if(encoding)new_graph+=entry(12,feature_info);else append(new_graph,f);}
++                else append(new_graph,f);
++            }
++            if(!encoding)new_graph+=entry(11,feature_info);
++            std::string result;for(const auto &f:top)if(&f==graph)result+=entry(7,new_graph);else append(result,f);
++            return std::vector<char>(result.begin(),result.end());
++        };
++        auto a=extract(true),b=extract(false);*encoder=std::move(a);*head=std::move(b);return true;
++    }catch(const std::exception &e){*why=e.what();return false;}
++}
+diff --git a/src/onnx_flow.h b/src/onnx_flow.h
+index 56206d9..6cbb058 100644
+--- a/src/onnx_flow.h
++++ b/src/onnx_flow.h
+@@ -20,3 +20,8 @@ bool aji_onnx_motion_outputs(const std::vector<char> &model, std::vector<char> *
+ // local functions), deduplicated. Malformed metadata is rejected.
+ bool aji_onnx_external_locations(const std::vector<char> &model, std::vector<std::string> *locations,
+                                   std::string *why);
++
++// Audited RIFE4.26 only: exact nodes/weights, encoder and two-input full RGB head.
++// Refuses every other source digest. No Python/runtime ONNX dependency.
++bool aji_onnx_rife_encoder_split(const std::vector<char> &model,
++    std::vector<char> *encoder, std::vector<char> *head, std::string *why);
+diff --git a/tests/rife_encoder_model_cli.cpp b/tests/rife_encoder_model_cli.cpp
+new file mode 100644
+index 0000000..91d6e49
+--- /dev/null
++++ b/tests/rife_encoder_model_cli.cpp
+@@ -0,0 +1,8 @@
++#include "onnx_flow.h"
++#include <fstream>
++#include <iterator>
++#include <iostream>
++int main(int argc,char **argv){if(argc!=4)return 2;
++std::ifstream f(argv[1],std::ios::binary);std::vector<char> source((std::istreambuf_iterator<char>(f)),{}),encoder,head;std::string why;
++if(!aji_onnx_rife_encoder_split(source,&encoder,&head,&why)){std::cerr<<why<<"\n";return 1;}
++std::ofstream(argv[2],std::ios::binary).write(encoder.data(),encoder.size());std::ofstream(argv[3],std::ios::binary).write(head.data(),head.size());return 0;}

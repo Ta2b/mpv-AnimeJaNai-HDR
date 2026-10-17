@@ -1,0 +1,56 @@
+TensorRT v3 content keys active; legacy engines preserved for rollback
+Loaded engine size: 57 MiB
+Deserialization required 26237 microseconds.
+Total per-runner device persistent memory is 5260800
+Total per-runner host persistent memory is 341408
+Allocated device scratch memory of size 304742400
+- Runner scratch: 304742400 bytes
+[MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +0, GPU +296, now: CPU 0, GPU 356 (MiB)
+CUDA lazy loading is enabled.
+WARNING The logger passed into createInferRuntime differs from one already registered for an existing builder, runtime, or refitter. So the current new logger is ignored, and TensorRT will use the existing one which is returned by nvinfer1::getLogger() instead.
+TensorRT v3 content keys active; legacy engines preserved for rollback
+Loaded engine size: 57 MiB
+Deserialization required 22278 microseconds.
+Total per-runner device persistent memory is 5260800
+Total per-runner host persistent memory is 341408
+Allocated device scratch memory of size 304742400
+- Runner scratch: 304742400 bytes
+[MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +1, GPU +296, now: CPU 1, GPU 713 (MiB)
+CUDA lazy loading is enabled.
+WARNING The logger passed into createInferRuntime differs from one already registered for an existing builder, runtime, or refitter. So the current new logger is ignored, and TensorRT will use the existing one which is returned by nvinfer1::getLogger() instead.
+TensorRT v3 content keys active; legacy engines preserved for rollback
+Loaded engine size: 57 MiB
+Deserialization required 20823 microseconds.
+Total per-runner device persistent memory is 5260800
+Total per-runner host persistent memory is 341408
+Allocated device scratch memory of size 304742400
+- Runner scratch: 304742400 bytes
+[MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +0, GPU +295, now: CPU 1, GPU 1069 (MiB)
+CUDA lazy loading is enabled.
+Loaded engine size: 45 MiB
+Deserialization required 11235 microseconds.
+Total per-runner device persistent memory is 3940864
+Total per-runner host persistent memory is 21392
+Allocated device scratch memory of size 47185920
+- Runner scratch: 47185920 bytes
+[MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +0, GPU +49, now: CPU 1, GPU 1167 (MiB)
+CUDA lazy loading is enabled.
+Loaded engine size: 12 MiB
+Deserialization required 8349 microseconds.
+Total per-runner device persistent memory is 1319936
+Total per-runner host persistent memory is 320176
+Allocated device scratch memory of size 300810240
+- Runner scratch: 300810240 bytes
+[MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +1, GPU +288, now: CPU 2, GPU 1467 (MiB)
+CUDA lazy loading is enabled.
+RIFE4.26 shared encoder ready (explicit opt-in, full RGB head)
+RIFE full RGB prediction and post-conversion captured as CUDA graph
+RIFE full RGB prediction and post-conversion captured as CUDA graph
+RIFE full RGB prediction and post-conversion captured as CUDA graph
+RIFE: 0 CUDA graph replays, 1 timestep updates, 0 timestep hits
+RIFE exact pair preparation: 1 prepared, 0 reused; 0 picture graph replays; 0 inputs promoted
+RIFE shared encoder: 1 encoded, 0 reused; 15728640 feature bytes
+RIFE: 0 CUDA graph replays, 3 timestep updates, 0 timestep hits
+RIFE exact pair preparation: 1 prepared, 2 reused; 2 picture graph replays; 0 inputs promoted
+RIFE: 0 CUDA graph replays, 3 timestep updates, 0 timestep hits
+RIFE exact pair preparation: 1 prepared, 2 reused; 2 picture graph replays; 0 inputs promoted
