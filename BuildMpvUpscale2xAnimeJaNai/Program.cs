@@ -661,6 +661,8 @@ async Task InstallLinuxMpv()
         if (!File.Exists(mpvBin))
             throw new FileNotFoundException($"mpv binary not found at {mpvBin}");
         File.Copy(mpvBin, Path.Combine(mpvRoot, "mpv"), true);
+        string buildInfo = Path.Combine(localBuild, "build-info.txt");
+        if (File.Exists(buildInfo)) File.Copy(buildInfo, Path.Combine(mpvRoot, "build-info.txt"), true);
         // A flat portable local bundle carries all its non-driver dependencies.
         foreach (var so in Directory.GetFiles(localBuild, "*.so*"))
             CopyOrLink(so, Path.Combine(mpvRoot, Path.GetFileName(so)));
@@ -1110,7 +1112,7 @@ void WriteVersionAndManifest()
             platform_helper = "1",
             manager_hdr = ManagerHdrRelease,
             mpvfork = plat.IsWindows ? windowsMpv?.Identity ?? $"{MpvForkVersion}-{MpvForkGitHash}"
-                                     : $"{MpvForkLinuxVersion}-wayland-vulkan-bridge1-wlqueue-compat-quality-fast1-stats-atomic1-source-ids1-prefetch-prototype1-prefetch-budget1-surface-worker1-ordered-pipeline1-hdr-stage1-fruc-retired1",
+                                     : LinuxMpvIdentity.Capture(Path.Combine(installDirectory, "mpv")),
             inference_runtime = $"trt-{TrtVersion}",
             ort_dml = plat.IsWindows ? $"{OrtDmlVersion}+{DirectMLVersion}" : (string?)null,
             sevenzip = SevenZipVersion,
@@ -1141,7 +1143,7 @@ void WriteVersionAndManifest()
     if (!plat.IsWindows)
     {
         node["deps"]!["onnxruntime"] = ContentVersion(OnnxRuntimeFiles());
-        node["deps"]!["vulkan_inference"] = args.Contains("--sdr-only") ? "none" : "ncnn-d8227bbe-rife-4.6-bridge1-span1";
+        node["deps"]!["vulkan_inference"] = args.Contains("--sdr-only") ? "none" : "ncnn-d8227bbe-rife-4.6-bridge1-span1-resident-span1";
         if (args.Contains("--vulkan-only") || args.Contains("--sdr-only"))
         {
             node["deps"]!["inference_runtime"] = "none";

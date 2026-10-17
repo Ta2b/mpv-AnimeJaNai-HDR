@@ -6,7 +6,7 @@ Mis à jour le **17 octobre 2026**. Lire `../AGENTS.md`, puis seulement le ticke
 
 L'utilisateur demande de poursuivre les tickets par lots complets, sans attendre les builds/releases. Aucune pause active. Pas de nouveaux sous-agents ; les précédents ont terminé.
 
-Dernière release vérifiée **3.8.0.92**, source `3bb4bcde605ba78836ac1919ad25aecec7da77db`, [reçu](jira/release-20261017-3.8.0.92.json). Trois CI réussies au SHA exact, tag et15assetsuploaded vérifiés. Overlay Linux modifié téléchargé/digest vérifié :6hashes et32programmes conformes ; pipeline/TRT/alias identiques aux qualifiés. Mac/Windows inchangés réutilisent les qualifications .91/.87 ; pas de vidéo/benchmark ou configurations concluantes répétés.
+Dernière référence entièrement close **3.8.0.92**, source `3bb4bcde605ba78836ac1919ad25aecec7da77db`, [reçu](jira/release-20261017-3.8.0.92.json). Trois CI réussies au SHA exact, tag et15assetsuploaded vérifiés. Overlay Linux modifié téléchargé/digest vérifié :6hashes et32programmes conformes ; pipeline/TRT/alias identiques aux qualifiés. Mac/Windows inchangés réutilisent les qualifications .91/.87 ; pas de vidéo/benchmark ou configurations concluantes répétés.
 
 Manager toujours `f1f85962f8e86e5f37d84501f37f72b6d1780828`. Bundle .92 `71f271a6c94f2693e8a1a8b550e2f72fd1137f9e` : TRT/alias et pipeline source9d2c717, fatbin Area3:2 source3447cd8. Sources exactes par module dans GPU-SOURCE.json ; son ancien champ backend_source global est historique.
 
@@ -33,6 +33,14 @@ Contrôle natif conclu : dispatcher actuel Quality verified/flags1 et vrai chemi
 ## Travail actif : AH-351, SPAN Vulkan résident
 
 Checkout `lot-72-vulkan-resident-span-20261017`, branche tickets/vulkan-resident-span-20261017. Base .93 source04b3cb524a85fc54f6c05abc4441fef79682e98d. Deux vrais SPAN128→256→512 sans download/upload intermédiaire ; frontière F32×255 puis×1/255 et stockage NCNN conservés. GPU RTX4070Ti : pixels exacts à base/off/on, domaineFP16 fini exact aux deux stockages, resize/repli et erreur/reconfigure passés ; médiane courte3,214→2,337ms, pas de FPS720p/autresGPU revendiqués. [Guide AH351](reprise/20261017/AH-351.md), [preuves lot72](qualification/lot72-vulkan-resident-span-20261017/README.md). Compiler/livrer .94, contrôler module/build-info et sortie contre hash acquis avant Done. Parent AH131 In Progress reste ouvert.
+
+## Livraison en correction : AH-363, identité native Linux
+
+Checkout `lot-74-native-bundle-identity-20261017`, branche fix/linux-native-bundle-identity-20261017. .93 : trois CI réussies,15assets, AppImage/overlay/manifeste téléchargés et digests vérifiés ;6modules/32programmes dans chacun, quatre binaires/libmpv portent la garde, interface rife-policy du vrai lecteur livrée vérifiée. [Reçu .93](jira/release-20261017-3.8.0.93.json). AH362 reste In Progress car le deps.mpvfork manuel inchangé permettait un overlay de dossier sans le lecteur neuf. AppImage fraîche/complète correcte.
+
+AH363 calcule maintenant l’identité du bundle mpv assemblé depuis ses fichiers, copie son build-info et force le package complet si le natif change. Fixture CPU du vrai calcul/décision d’overlay passée ; assembleur .NET10 compilé sans erreur/avertissement. [Guide](reprise/20261017/AH-363.md), [preuve lot74](qualification/lot74-native-bundle-identity-20261017/README.md). Livrer .95 puis vérifier identité sur tar/build-info avant Done AH363/AH362. Pas de changement vidéo. AH335 reste distinct.
+
+AH349 / parent AH119 In Progress : checkout `lot-73-metal-resident-span-20261017`, pas encore de code modifié. Revue Metal commencée, mise en priorité du défaut réel d’upgrade AH363. Documentation Apple officielle confirme runWithMTLCommandQueue synchrone et TensorData consommable en feed ; qualifications Metal restent à faire, aucune performance prétendue. Reprendre après push .95, sans attendre sa release.
 
 ## Autre livraison en cours : AH-344 Windows DirectML
 

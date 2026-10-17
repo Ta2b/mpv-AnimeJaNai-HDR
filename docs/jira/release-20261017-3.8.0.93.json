@@ -1,0 +1,91 @@
+{
+  "release": "3.8.0.93",
+  "source": "04b3cb524a85fc54f6c05abc4441fef79682e98d",
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.93",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39019535194,
+      "headSha": "04b3cb524a85fc54f6c05abc4441fef79682e98d",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39019535179,
+      "headSha": "04b3cb524a85fc54f6c05abc4441fef79682e98d",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39019535185,
+      "headSha": "04b3cb524a85fc54f6c05abc4441fef79682e98d",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    }
+  ],
+  "payload": {
+    "overlay": {
+      "modules": {
+        "libaji.so": "592a828989d3fa40228577bd103374568ef05277df89eb6f467ab965175764c3",
+        "libaji_trt.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+        "libaji_trt_rtx.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+        "libaji_pipeline.so": "834ca0a740b92e632b5ea63b07f5da28326d6bd2cc72f67b08ed6a8f6b9b39bc",
+        "aji_pipeline.fatbin": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
+        "PIPELINE-README.md": "b22600caedee5387a50a5c8ec2b79d793162534b9b2f0998363fd9b1dfa169c1"
+      },
+      "managed_programs": 32,
+      "modified_lua_exact": true
+    },
+    "appimage": {
+      "modules": {
+        "libaji.so": "592a828989d3fa40228577bd103374568ef05277df89eb6f467ab965175764c3",
+        "libaji_trt.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+        "libaji_trt_rtx.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+        "libaji_pipeline.so": "834ca0a740b92e632b5ea63b07f5da28326d6bd2cc72f67b08ed6a8f6b9b39bc",
+        "aji_pipeline.fatbin": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
+        "PIPELINE-README.md": "b22600caedee5387a50a5c8ec2b79d793162534b9b2f0998363fd9b1dfa169c1"
+      },
+      "managed_programs": 32,
+      "modified_lua_exact": true
+    },
+    "readers": {
+      "mpv/mpv": {
+        "sha256": "159fdff25ad054c1bba209584f81ace3114dc6ee974272f7cc03ede978e44299",
+        "quality_guard_strings": true
+      },
+      "mpv/libmpv.so.2": {
+        "sha256": "fa1eff54dda766a6a68616da5dea6ea09c08e3f1c1b7827b21fb3c18c685a7f0",
+        "quality_guard_strings": true
+      },
+      "usr/bin/mpv": {
+        "sha256": "12e8d5ea34901403c1d9df6481041dce1e2045096beca4d4412720e20082e79d",
+        "quality_guard_strings": true
+      },
+      "usr/lib/libmpv.so.2": {
+        "sha256": "7fc94a9711acfc37e813492ae609660fb7729066573bb032ac20af3edcfda37b",
+        "quality_guard_strings": true
+      }
+    }
+  },
+  "native_option_interface_verified": true,
+  "asset_digests_verified": [
+    "manifest-linux-x64.json",
+    "packs-linux-x64.json",
+    "mpv-upscale-2x_animejanai-overlay-3.8.0.93-linux-x64.7z",
+    "mpv-AnimeJaNai-HDR-v3.8.0.93-linux-x64.AppImage"
+  ],
+  "qualification_reuse": {
+    "GPU_native": "lot71 provider and dispatcher bytes identical; guard source and delivered option interface checked, no activation or FPS replay",
+    "unchanged_Mac": "3.8.0.91",
+    "unchanged_Windows": "3.8.0.87"
+  },
+  "ticket_completion": "AH362 remains In Progress: AH363 corrects unchanged native dependency identity for Linux folder overlay updates; fresh/full AppImage payload verified",
+  "limits": [
+    "No native build-info copied by this assembler yet; AH363 adds it",
+    "No universal hardware or FPS claim",
+    "DML paired Windows producer still pending"
+  ]
+}

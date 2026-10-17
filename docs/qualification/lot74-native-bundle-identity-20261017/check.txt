@@ -1,0 +1,1 @@
+PASS: content identity stable across paths/order/mtime; every native/build input invalidates; missing reader refused; actual overlay decision requires a full package for older/changed native readers and retains overlay for unchanged/script/pack-only updates
