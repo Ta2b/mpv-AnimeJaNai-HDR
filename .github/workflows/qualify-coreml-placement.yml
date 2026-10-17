@@ -19,10 +19,30 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Prepare one unchanged SPAN model
+      - name: Reuse the already converted model from the verified release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          pip install -q onnx==1.19.1 numpy==2.2.6 coremltools==9.0
-          python native/apple/convert_models.py BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/animejanai/onnx models --only Sharp1_Performance
+          mkdir source-model
+          gh release download 3.8.0.86 --repo "$GITHUB_REPOSITORY" --dir source-model \
+            --pattern mpv-AnimeJaNai-HDR-v3.8.0.86-macos-arm64.zip \
+            --pattern mpv-AnimeJaNai-HDR-v3.8.0.86-macos-arm64.zip.sha256
+          python - <<'PYMODEL'
+          from pathlib import Path
+          import hashlib,zipfile
+          source=Path('source-model/mpv-AnimeJaNai-HDR-v3.8.0.86-macos-arm64.zip')
+          expected=Path(str(source)+'.sha256').read_text().split()[0]
+          assert hashlib.sha256(source.read_bytes()).hexdigest()==expected
+          prefix='mpv AnimeJaNai.app/Contents/Resources/animejanai/onnx/'
+          with zipfile.ZipFile(source) as archive:
+              for member in archive.infolist():
+                  if member.is_dir() or not member.filename.startswith(prefix):continue
+                  relative=member.filename[len(prefix):]
+                  if 'Sharp1_Performance' not in relative or not (relative.endswith('.mlpatch') or '.mlpackage/' in relative):continue
+                  assert '..' not in Path(relative).parts and not Path(relative).is_absolute()
+                  target=Path('models')/relative;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(archive.read(member))
+          assert len(list(Path('models').glob('*Sharp1_Performance*.mlpatch')))==1
+          PYMODEL
       - name: Compile the portable state fixture and both native probes
         env:
           BASELINE_REF: ${{ inputs.baseline_ref }}
