@@ -1,0 +1,31 @@
+{
+  "release": "3.8.0.82",
+  "status": "qualified-awaiting-publication",
+  "backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+  "gpu_bundle": "5217111b754412338fe94d236d80f39dcd42b957",
+  "manager_source": "2847c79961c0d14241234d2ef8799b399e4b6a9d",
+  "issues": [
+    "AH-331",
+    "AH-332"
+  ],
+  "hdr_followup": "AH-333",
+  "receipts": {
+    "after-fast/summary.json": "5a47b0fb77ab79a2204c0ef261cd8da24d6d222de313cb9b0cef13f061424927",
+    "after-fast-hdr/summary.json": "0d3c71e627d4d3c4de9d42f6632437cbcdbc48d598ffb371d27748b5c2d3e3a9",
+    "after-four-links/summary.json": "af3a4a4793eec04958ef64d4049b437eb73e5528ade13d9af3649e8dad0a8b24",
+    "after-hybrid/summary.json": "02034dc07c37df4449b59d555da637cb8937bcf42c1d4325943c17de9dd5f40c",
+    "after-hybrid-burst/summary.json": "5bd4ebd944ca4f8766359566d07ac1decfb9b18f5602a032d8df8cac099c0d2d",
+    "after-hybrid-final/summary.json": "ef66ce664108ddabf0ce2def555782c7eea86b2734ecd49118d650ecedb7ccbf",
+    "after-hybrid-full2/summary.json": "1946ef04ad0c8a46db2b7901bfe4e6680b762a77bdeb21b7917f5c87fc277214",
+    "after-quality/summary.json": "dd28f73fe8547a16867929de3418ff16563e2e78a3202f0913fc7ce8bc1434f0",
+    "before-fast/summary.json": "304ba8003e46d425e54651428719376160cfd044be3c98c66b2414cc90896bcf",
+    "before-fast-hdr/summary.json": "af2fcb5bf3df52d9e28425764f3ccbd5cd037186783541bbbfa1754fe1e369e5",
+    "before-four-links/summary.json": "676ccd92f4b32206a792554073238bbb65e1f385cf45fb0df0d22d0a138e618b",
+    "before-hybrid/summary.json": "e4845733ed35311f37544006ce49ef21192015e9bb89b5658c26c0d0389b50ff",
+    "before-hybrid-burst/summary.json": "3a96cc268fd7e79e992aea8956c47ce2e7da6a9a8e4705c34a748d28d4b19cd9",
+    "before-quality/summary.json": "36398e514e370bf2d8657d0b62bf306f0eb0db0c86bf6e8ede28e4e414500de5",
+    "four-links-reset/summary.json": "1855009c2e4b768fc40aaad1bea02fd3c1e03618dc5b820f8cbfcf591dc28fa7",
+    "fusion-off-fast-hdr/summary.json": "b62658c65876809591fd40345023e71bfedccbc5f3cd593d5beda443591a9453",
+    "player-fast-hdr/summary.json": "8428f920a1919beda3315f2684323b78bac3dd6de68ba1851d3f859071de9e1c"
+  }
+}

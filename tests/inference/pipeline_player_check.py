@@ -18,29 +18,35 @@ def digest(path):
     return h.hexdigest()
 def main():
     s=json.loads(Path(sys.argv[1]).read_text());out=Path(s['output']);out.mkdir(parents=True,exist_ok=True);receipt=out/'summary.json'
-    identity={k:digest(s[k]) for k in ['mpv','input_video','conf','trt','library','kernel','fruc']}
+    identity={k:digest(s[k]) for k in ['mpv','input_video','conf','trt','library','kernel'] + (['fruc'] if 'fruc' in s else [])}
     if receipt.exists():
         old=json.loads(receipt.read_text());assert old['passed'] and old['identity']==identity;print('Conclusive matching receipt, no replay.');return
     video=out/'sequence.nut';log=out/'mpv.log'
     params={'conf':s['conf'],'model-dir':s['models'],'rife-model-dir':s['rife'],'lib':s['trt'],
-        'pipeline-lib':s['library'],'pipeline-kernels':s['kernel'],'fruc-lib':s['fruc'],
+        'pipeline-lib':s['library'],'pipeline-kernels':s['kernel'],
         'trtexec':'/bin/false','slot':'1','passthrough':'no','output-444':'yes'}
+    if 'fruc' in s: params['fruc-lib']=s['fruc']
     # mpv's native suboption length quoting handles literal paths safely.
     vf='@aji:animejanai='+':'.join(k+'=%'+str(len(v.encode()))+'%'+v for k,v in params.items())
     args=[s['mpv'],'--no-config','--load-scripts=no','--audio=no','--ao=null','--hwdec=nvdec','--hwdec-codecs=all',
         '--stop-screensaver=no','--msg-level=all=v,ffmpeg=warn,vf=debug',f'--log-file={log}',f'--vf={vf}',
         f'--o={video}','--of=nut','--ovc=rawvideo',s['input_video']]
     start=time.monotonic()
-    with (out/'stdout.log').open('wb') as f:run=subprocess.run(args,stdout=f,stderr=subprocess.STDOUT,timeout=30)
-    assert run.returncode==0,run.returncode
+    verify_existing=s.get('verify_existing',False)
+    if verify_existing:
+        assert 'finished playback, success' in (out/'stdout.log').read_text()
+        assert video.is_file() and log.is_file()
+    else:
+        with (out/'stdout.log').open('wb') as f:run=subprocess.run(args,stdout=f,stderr=subprocess.STDOUT,timeout=30)
+        assert run.returncode==0,run.returncode
     probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0','-show_streams','-show_frames','-of','json',str(video)]))
     source=json.loads(subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0','-show_streams','-show_frames','-of','json',s['input_video']]))
     frames=probe['frames'];stream=probe['streams'][0];text=log.read_text();assert len(frames)==9,(len(frames),text[-2000:])
     assert (stream['width'],stream['height'],stream['pix_fmt'])==(2560,1440,'yuv444p16le')
-    assert 'cuda[nv12]' in text and 'Ordered GPU pipeline active: 3 stages, x4' in text
+    assert 'cuda[nv12]' in text and f"Ordered GPU pipeline active: {s.get('stage_count',3)} stages, x4" in text
     native=[(float(a),float(b),int(c)) for a,b,c in re.findall(r'Ordered output pts=([0-9.-]+) duration=([0-9.-]+) provenance=([0-9]+)',text)]
-    assert len(native)==9 and [v[2] for v in native]==[17,20,18,20,17,20,18,20,17],native
-    source_tb=Fraction(source['streams'][0]['time_base']);first=Fraction(source['frames'][0]['pts'])*source_tb
+    assert len(native)==9 and [v[2] for v in native]==s.get('expected_flags',[17,20,18,20,17,20,18,20,17]),native
+    source_tb=Fraction(source['streams'][0]['time_base']);first=Fraction(source['frames'][0]['pts']-int(source['streams'][0].get('start_pts',0)))*source_tb
     period=Fraction(1001,24000);tb=Fraction(stream['time_base']);encoded=[Fraction(f['pts'])*tb for f in frames]
     # Native rational phase planning rounds once to nanoseconds; encoding has
     # a separate muxer timebase. Neither permits cumulative timestamp drift.
@@ -50,9 +56,9 @@ def main():
         assert abs(duration-float(period if i==8 else period/4))<=1e-9,(i,duration)
         assert abs(float(encoded[i]-expected))<=float(tb),('encoder PTS',i,encoded[i],expected)
     assert abs(sum(v[1] for v in native)-float(period*3))<=9e-9
-    result=dict(passed=True,identity=identity,args=args,output_frames=9,source_frames=3,native_nvdec=True,stages=3,factor=4,
+    result=dict(passed=True,identity=identity,args=args,output_frames=9,source_frames=3,native_nvdec=True,stages=s.get('stage_count',3),factor=4,
         output_dimensions=[2560,1440],output_format=stream['pix_fmt'],native_pts_durations=native,encoder_timebase=stream['time_base'],
         encoded_pts=[str(x) for x in encoded],native_duration_matches_source=True,scope='Actual headless mpv pipeline/encoding, not physical display/HDR/FPS qualification',
-        execution_wall_seconds=time.monotonic()-start,returncode=run.returncode)
+        execution_wall_seconds=None if verify_existing else time.monotonic()-start,verified_existing_execution=verify_existing,returncode=0)
     receipt.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result),flush=True)
 if __name__=='__main__':main()
