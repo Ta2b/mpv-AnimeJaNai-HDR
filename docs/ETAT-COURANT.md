@@ -4,11 +4,11 @@ Mis à jour le **17 octobre 2026**. Lire ce fichier et `../AGENTS.md`, puis uniq
 
 ## Mission actuelle : reprise continue des tickets et débit Quality
 
-**Reprise demandée par l’utilisateur après la pause.** Finir les tickets engagés et livrer les lots complets ; poursuivre les tâches indépendantes pendant les compilations. Dernière release vérifiée3.8.0.84.
+**Reprise demandée par l’utilisateur après la pause.** Finir les tickets engagés et livrer les lots complets ; poursuivre les tâches indépendantes pendant les compilations. Dernière release vérifiée3.8.0.85.
 
-**Release3.8.0.85 préparée, livraison à vérifier après les CI.** BundleGPU `0f43e8e7a3cf6781ff649969c0f9608bc3cb3dfe` : TRT Linux/Windows source `8ff36e8`, pipeline `8c67670` avec rafale expérimentale désactivée par défaut ; dispatcher Linux/AMD Windows inchangés et provenance conservée. AH345/346/347/355 qualifiés selon leur portée (code/build et essai court Quality exact), pas encore Done. AH338 : inventaire partagé des programmes, AppRun/updater/launcher macOS,19cas ciblés+32AppRun+9shellmac simulés, sources `c226388`. Aucun benchmark vidéo pour ce changement d'installation.
+**Release3.8.0.85 livrée et vérifiée** : [reçu](jira/release-20261017-3.8.0.85.json), trois CI réussies sur `3a017f71d4a373bf328021673717cdd624ec2bce`, quatre assets extraits/digests vérifiés, modules/manifeste conformes. Helper Linux extrait réellement exécuté (32programmes synchronisés), archive macOS17programmes conformes ; Windows installateur complet/GPU et macOSmatériel non exercés. BundleGPU `0f43e8e7a3cf6781ff649969c0f9608bc3cb3dfe` : TRT Linux/Windows source `8ff36e8`, pipeline `8c67670` avec rafale expérimentale désactivée par défaut ; dispatcher Linux/AMD Windows inchangés et provenance conservée. **AH345/346/347/355 et AH338 Done** après périmètre et livraison vérifiés. AH338 : inventaire partagé des programmes, AppRun/updater/launcher macOS,19cas ciblés+32AppRun+9shellmac simulés, sources `c226388`. Aucun benchmark vidéo pour ce changement d'installation.
 
-AH354 :13images/PTS/couleur exactes off/on, reset exact. Débit non concluant (fréquencesGPU1200/2385/2730MHz selon les passages), arrêt des essais. Reste ouvert ; `AJI_PIPELINE_QUALITY_BURST=1` pour étude seulement. [Reçu du lot Quality](qualification/lot59-quality-20261017/README.md), [qualification installation](qualification/lot60-managed-files-20261017/README.md).
+AH354 : l'ancienne queue expérimentale.85 reste désactivée par défaut (débit non concluant). Candidat suivant backend `d5b3446`, checkout `lot-62-quality-batch-20261017` : extension synchrone bornée directe, une attente finale par bloc sans deuxième worker/reaper ; ancien helper retiré.13images/PTS/couleur exactes, reset exact, fallback ancien module exact ; contrôle erreur/owners et livraison restent à finir. Ablation `AJI_PIPELINE_QUALITY_BATCH=0`, défaut actif si extension compatible. [Reçu du lot Quality](qualification/lot59-quality-20261017/README.md), [qualification installation](qualification/lot60-managed-files-20261017/README.md).
 
 AH344 : backendDML compile/link Windows39007945723 réussi ; lecteur apparié source `3ff8782d70f70dc0292c4365e0bf59535192b9bf`, run39006425781 en cours (compilation statique). **Aucun pin lecteur ni cacheDML actif annoncé dans .85.** Poursuivre une tâche indépendante, vérifier ce producteur en fin de tâche ; terminer son intégration/livraison dans le lot suivant.
 
@@ -22,7 +22,7 @@ Les28guidesJira du relais restent disponibles dans [l’index](reprise/20261017/
 - Quality conserve les prédictions complètes et les frontières numériques de référence. Toute approximation reste Fast explicite. Ne pas forcer la convergence des backends quand leurs besoins diffèrent. Matériel absent : qualification partielle, jamais inventée.
 - Lancer builds/releases puis avancer une tâche indépendante ; consulter leur résultat en fin de tâche. Pas d’attente active ni gh run watch. Strata facultatif, aucun concurrent GPU pendant une mesure.
 
-## Dernière livraison vérifiée : 3.8.0.84
+## Référence précédente : 3.8.0.84
 
 [Release publique](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.84), [reçu principal](jira/release-20261017-3.8.0.84.json), [Linux](jira/release-20261017-3.8.0.84-linux.json), [Windows/macOS](jira/release-20261017-3.8.0.84-windows-macos.json), [qualification Manager](qualification/lot-57-manager-20261017.md), [qualification native](qualification/lot-57-native-fruc-removal-spline36-20261017.md).
 
@@ -44,15 +44,15 @@ Livré : navigation Profils/Préparer/Moteurs et composants/Paramètres ; profil
 
 Les sources livrées sont dans `/home/ta2b/.animejanai-tools/work/lot-57-manager-ux-20261017` et `manager-ux-20261017`. La copie documentaire racine peut être ancienne et modifiée par l’utilisateur : vérifier pins/status ; ne pas publier son ancien code.
 
-## Prochain lot : code préparé, pas livré
+## Tickets restants et livraisons
 
 | Ticket | État exact et prochaine action |
 |---|---|
 | [AH-344](reprise/20261017/AH-344.md) | In Progress. DLL DML compilée ; producteur mpvWindows39006425781 en cours. Finaliser son pin et sa livraison appariée après succès ; cache non activé par .85 seule. |
-| [AH-345](reprise/20261017/AH-345.md) | In Progress. Score Fast>3 inutile retiré, dépendance CUDA conservée, builds portables Linux/Windows intégrés au pin .85 ; vérifier livraison avant Done. Aucun nouveau FPS mesuré. |
-| [AH-346](reprise/20261017/AH-346.md) | In Progress. Même3F copies finales, F attentes→1 ; compilation et chaîne complète13sorties exactes, TrueHDR conservé. Vérifier livraison .85 avant Done. |
+| [AH-345](reprise/20261017/AH-345.md) | Done, livré .85. Score Fast>3 inutile retiré, dépendance CUDA conservée ; Aucun nouveau FPS mesuré. |
+| [AH-346](reprise/20261017/AH-346.md) | Done, livré .85. Même3F copies finales, F attentes→1 ; chaîne complète13sorties exactes, TrueHDR conservé. |
 | [AH-330](reprise/20261017/AH-330.md) | In Progress. Garantir Quality avec les bibliothèques réellement chargées, préserver overrides/fichiers utilisateur. Inventaire sur disque ≠ module déjà chargé. |
-| [AH-347](reprise/20261017/AH-347.md) | In Progress. Pads a/b paresseux intégrés avec345/355, pad_o conservé ;11,25Mio évités à720p, pixels Quality exacts. Vérifier livraison .85 avant Done. |
+| [AH-347](reprise/20261017/AH-347.md) | Done, livré .85. Pads a/b paresseux, pad_o conservé ;11,25Mio évités à720p, pixels Quality exacts. |
 | [AH-208](reprise/20261017/AH-208.md), [AH-329](reprise/20261017/AH-329.md) | In Progress. Parents fusion/Quality ; gardes, diagnostic, références effectives et optimisations exactes. Ne pas refaire les mesures lot55 concluantes. |
 
 Patches et preuves portables : `docs/reprise/20261017/{patches,preuves}` avec manifest SHA. Les candidats temporaires peuvent disparaître ; les patches sont sauvegardés/versionnés. Binaires candidats Linux hors Git dans `/home/ta2b/.animejanai-tools/work/lot-58-engine-handoff-20261017/` avec SHA256.json. **Aucun candidat AH-344/345/346 n’est inclus dans .84.**
