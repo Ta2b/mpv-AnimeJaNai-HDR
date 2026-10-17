@@ -260,10 +260,14 @@ export ANIMEJANAI_INFERENCE_DIR="$INFDATA"
 # "<name>.override" marker. Old copies are renamed with a receipt, never deleted,
 # so the engine actually loaded is the one the release declares.
 migrations="$DATA/animejanai/managed-migrations.log"
+# Only the modules the release declares (GPU-SOURCE.json digests) are migrated: files a
+# component pack or a local test build installs under other names are left alone.
+managed_names="$(grep -oE '"(lib[A-Za-z0-9_]+\.so|aji_pipeline\.fatbin)"' "$HERE/animejanai/inference/GPU-SOURCE.json" 2>/dev/null | tr -d '"' | sort -u | tr '\n' ' ')"
 for lib in "$HERE/animejanai/inference/"*; do
     [ -e "$lib" ] || continue
     dest="$INFDATA/$(basename "$lib")"
-    if [ -e "$dest" ] && [ ! -L "$dest" ] && [ -f "$lib" ] && [ ! -e "$dest.override" ]; then
+    case " $managed_names " in *" $(basename "$lib") "*) managed=1;; *) managed=0;; esac
+    if [ "$managed" = 1 ] && [ -e "$dest" ] && [ ! -L "$dest" ] && [ -f "$lib" ] && [ ! -e "$dest.override" ]; then
         if ! cmp -s "$lib" "$dest"; then
             stamp="$(date +%Y%m%d-%H%M%S)"
             if mv "$dest" "$dest.stale-$stamp.bak"; then

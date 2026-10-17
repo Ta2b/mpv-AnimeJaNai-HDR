@@ -103,22 +103,53 @@ local function run_capture(args)
     if ok and type(r)=='table' and r.status==0 then return (r.stdout or ''):gsub('%s+$','') end
     return nil
 end
+local digests={} -- resolved path -> {size,mtime,sha256}: one hash per module, not one per profile change
 local function provenance(path)
     if not path then return nil end
     local info=utils.file_info(path)
     if not info then return {path=path,present=false} end
     local resolved=run_capture({'readlink','-f',path}) or path
-    local digest=run_capture({'sha256sum',resolved});digest=digest and digest:match('^(%x+)')
+    local stat=utils.file_info(resolved) or info
+    local cached=digests[resolved]
+    local digest
+    if cached and cached.size==stat.size and cached.mtime==stat.mtime then digest=cached.sha256
+    else
+        digest=run_capture({'sha256sum',resolved});digest=digest and digest:match('^(%x+)')
+        if digest then digests[resolved]={size=stat.size,mtime=stat.mtime,sha256=digest} end
+    end
     local declared
     local source=read(hw.inference_dir..'/GPU-SOURCE.json')
     if source then
         local ok,parsed=pcall(utils.parse_json,source)
-        if ok and type(parsed)=='table' and type(parsed.sha256)=='table' then declared=parsed.sha256[path:match('([^/]+)$')] end
+        local name=path:match('([^/]+)$')
+        if ok and type(parsed)=='table' then
+            if type(parsed.sha256)=='table' then declared=parsed.sha256[name] end
+            -- the ordered pipeline declares its own modules under ordered_pipeline.sha256
+            if declared==nil and type(parsed.ordered_pipeline)=='table' and type(parsed.ordered_pipeline.sha256)=='table' then declared=parsed.ordered_pipeline.sha256[name] end
+        end
     end
-    return {path=path,present=true,resolved=resolved,managed_link=resolved~=path,sha256=digest,declared_sha256=declared,
-        declared_match=(declared==nil) and 'unknown' or (declared==digest)}
+    local match='unknown'
+    if declared~=nil and digest~=nil then match=(declared==digest) end
+    return {path=path,present=true,resolved=resolved,managed_link=resolved~=path,sha256=digest,declared_sha256=declared,declared_match=match}
+end
+-- AH-330: the launcher renames an old local copy of a managed module at startup and only
+-- writes to stderr; tell the player once per launch when the log gained a fresh line.
+local migration_notice_done=false
+local function migration_notice()
+    if migration_notice_done then return end
+    migration_notice_done=true
+    local log=hw.inference_dir..'/../managed-migrations.log'
+    local info=utils.file_info(log)
+    if not info or os.time()-info.mtime>180 then return end
+    local text=read(log) or ''
+    local last=text:match('([^\n]+)\n?$') or ''
+    local name=last:match('^[^\t]+\t([^\t]+)\t')
+    if not name then return end
+    mp.msg.warn('AnimeJaNai: '..last)
+    mp.osd_message(string.format('Ancienne copie locale de %s renommee (.stale-*.bak) : le moteur de la release est charge. Creer %s.override pour garder une version personnelle.',name,name),10)
 end
 local function publish_provenance(params)
+    migration_notice()
     local report={engine=provenance(params.lib),pipeline=params['pipeline-lib'] and provenance(params['pipeline-lib']) or nil}
     if params.lib and params.lib:match('libaji%.so$') then report.backend=provenance(hw.inference_dir..'/libaji_trt.so') end
     mp.set_property_native('user-data/animejanai-engine-provenance',report)

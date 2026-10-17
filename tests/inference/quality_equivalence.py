@@ -40,10 +40,13 @@ def main():
     p.add_argument('--max-slack', type=int, default=16, help='allowed extra max error in 16-bit units (1/16 of a 12-bit step)')
     p.add_argument('--output', type=Path, required=True)
     a = p.parse_args()
-    count = a.count or len(sorted(a.fp32.glob('[0-9][0-9][0-9].npy')))
+    counts = {k: len(sorted(getattr(a, k).glob('[0-9][0-9][0-9].npy'))) for k in ('fp32', 'delivered', 'candidate')}
+    count = a.count or counts['fp32']
     frames, failures = [], []
+    if not a.count and len(set(counts.values())) != 1:
+        failures.append(f'output count differs: {counts}')
     agg = {'delivered': {'mse': np.zeros(3), 'max': [0, 0, 0]}, 'candidate': {'mse': np.zeros(3), 'max': [0, 0, 0]}}
-    for n in range(count):
+    for n in range(count if not failures else 0):
         ref, dlv, cnd = load(a.fp32, n), load(a.delivered, n), load(a.candidate, n)
         if ref is None or dlv is None or cnd is None:
             failures.append(f'output {n} missing in one directory')
@@ -71,12 +74,12 @@ def main():
                                 f'vs delivered mse {agg["delivered"]["mse"][ch]:.4g} max {agg["delivered"]["max"][ch]}')
     equivalent = bool(frames) and not failures
 
-    def psnr(mse):
-        return [float(10 * np.log10(65535.0 ** 2 / m)) if m > 0 else float('inf') for m in mse]
+    def psnr(mse):  # None (JSON null) for an identical channel: Infinity is not valid JSON
+        return [float(10 * np.log10(65535.0 ** 2 / m)) if m > 0 else None for m in mse]
     receipt = {
         'schema': 'animejanai.quality-equivalence.v1', 'ticket': 'AH-370',
         'fp32': str(a.fp32), 'delivered': str(a.delivered), 'candidate': str(a.candidate),
-        'outputs_compared': len(frames), 'rule': {'mse_ratio': a.mse_ratio, 'max_slack_16bit': a.max_slack},
+        'outputs_compared': len(frames), 'output_counts': counts, 'rule': {'mse_ratio': a.mse_ratio, 'max_slack_16bit': a.max_slack},
         'aggregate': {k: {'mse': v['mse'], 'max': v['max'], 'psnr_db': psnr(v['mse'])} for k, v in agg.items()},
         'verdict': verdict, 'failures': failures, 'equivalent': equivalent, 'frames': frames,
         'scope': 'numerical equivalence against FP32 on the given inputs only; no temporal, visual or performance claim',

@@ -43,7 +43,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--width', type=int, default=1280)
     p.add_argument('--height', type=int, default=720)
-    p.add_argument('--frames', type=int, default=4)
+    p.add_argument('--frames', type=int, default=6, help='fp32_reference.py and the probes read indices 2..5 by default')
     p.add_argument('--output', type=Path, required=True)
     a = p.parse_args()
     data = b''.join(frame(a.width, a.height, i).tobytes() for i in range(a.frames))

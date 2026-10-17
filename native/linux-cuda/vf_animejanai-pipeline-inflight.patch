@@ -85,7 +85,7 @@
  }
  static void pipeline_process(struct mp_filter *vf)
  {
-@@ -688,66 +697,84 @@
+@@ -688,66 +697,87 @@
          MP_VERBOSE(vf, "Ordered GPU pipeline active: %u stages, x%u, %ux%u, %s\n", caps.stage_count, caps.factor,
              caps.width, caps.height, caps.flags&AJI_INTERPOLATOR_FAST ? "Fast" : "Quality");
      }
@@ -130,6 +130,9 @@
 +                MP_ERR(vf, "Ordered pipeline execution failed: %s (%d)\n", status ? "completion rejected" : done.result.message, status); goto fail;
 +            }
 +            if (done.result.state == AJI_SURFACE_FINISHED) {
++                // The out pin may be full while a second pair runs: publish only on request,
++                // otherwise mp_pin_in_write() would drop the first output of the pair.
++                if (!mp_pin_in_needs_data(vf->ppins[1])) return;
 +                for (int i = 0; i < job->n; i++)
 +                    MP_DBG(vf, "Ordered output pts=%.12f duration=%.12f provenance=%u\n", job->images[i]->pts,
 +                           job->images[i]->pkt_duration, done.output_flags[i]);
@@ -228,7 +231,7 @@
  fail:
      pipeline_stop(vf); p->worker_fatal = true; mp_filter_internal_mark_failed(vf);
  }
-@@ -2816,7 +2843,9 @@
+@@ -2816,7 +2846,9 @@
          mp_tags_set_str(tags, "pipeline-active", p->pipeline ? p->pipeline_ready ? "yes" : "initializing" : "no");
          snprintf(text, sizeof(text), "%u", p->pipeline ? p->pipeline_caps.factor : 1);
          mp_tags_set_str(tags, "pipeline-factor", text);

@@ -458,6 +458,10 @@ principe.
   Super Resolution.
 - **Moteur** `libaji_trt_rtx.so` : le moteur TensorRT avec l'étage final, compilé pour Linux
   (TensorRT 11.3.0.99, CUDA 13.4, Ubuntu 22.04). Il charge `libaji_rtx.so` placé à côté de lui.
+  Depuis le lot A (AH-330), le lanceur `AppRun` renomme au démarrage un fichier régulier portant le nom
+  d'un module déclaré par la release (`libaji_trt_rtx.so` compris) en `<nom>.stale-<date>.bak` et le
+  note dans `managed-migrations.log` ; pour conserver un moteur compilé localement, créer le marqueur
+  `<nom>.override` à côté du fichier (le lecteur affiche l'avis une fois après un renommage).
 - **Sources et binaire** : dépôt privé `Ta2b/animejanai-inference-rtx`, branche `rtx-video-cuda`
   (dossier `aji-rtx-linux`, mode d'emploi dans son `README.md`), release `linux-truehdr-1`.
 - **Lecteur** : quand les deux bibliothèques sont dans `animejanai/inference`, avec un GPU NVIDIA, le

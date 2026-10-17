@@ -96,7 +96,10 @@ def promote(source, work):
     """FP16 -> FP32 copy of an ONNX model, as tests/inference/ort_fp32_fixture.py does."""
     import onnx
     from onnx import TensorProto, AttributeProto, numpy_helper
-    destination = work / (source.stem + '.fp32.onnx')
+    # Keyed by the source digest so a re-exported model of the same name is promoted again;
+    # written atomically so an interrupted run never leaves a truncated copy behind.
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()[:16]
+    destination = work / f'{source.stem}.{digest}.fp32.onnx'
     if destination.exists():
         return destination
     model = onnx.load(str(source))
@@ -126,7 +129,10 @@ def promote(source, work):
                     for graph in a.graphs:
                         promote_graph(graph)
     promote_graph(model.graph)
-    onnx.save(model, str(destination))
+    onnx.checker.check_model(model)
+    partial = destination.with_suffix('.tmp')
+    onnx.save(model, str(partial))
+    partial.replace(destination)
     return destination
 
 
@@ -142,9 +148,16 @@ class Session:
     def open(self, provider):
         opts = self.ort.SessionOptions()
         opts.log_severity_level = 3
-        providers = ['CPUExecutionProvider'] if provider == 'cpu' else ['CUDAExecutionProvider', 'CPUExecutionProvider']
-        self.used = provider
-        return self.ort.InferenceSession(self.path, opts, providers=providers)
+        # TF32 is on by default in the CUDA provider: Conv/MatMul inputs would be rounded to a
+        # 10-bit mantissa on Ampere/Ada tensor cores, so the reference would not be float32.
+        providers = ['CPUExecutionProvider'] if provider == 'cpu' else [('CUDAExecutionProvider', {'use_tf32': 0}), 'CPUExecutionProvider']
+        sess = self.ort.InferenceSession(self.path, opts, providers=providers)
+        active = sess.get_providers()[0]
+        self.used = 'cuda' if active == 'CUDAExecutionProvider' else 'cpu'
+        if provider == 'cuda' and self.used != 'cuda':
+            print(f'CUDA provider unavailable for {self.path}; using CPU', file=sys.stderr)
+        self.tf32 = False
+        return sess
 
     def run(self, x):
         name = self.sess.get_inputs()[0].name
@@ -163,7 +176,10 @@ def session(path, provider):
 
 
 def run(sess, x):
-    return sess.run(x)
+    y = sess.run(x)
+    if not np.isfinite(y).all():  # quant() would silently clamp NaN/inf to 0/65535
+        raise RuntimeError(f'{sess.path}: {int((~np.isfinite(y)).sum())} non-finite output values; no reference written')
+    return y
 
 
 def main():
@@ -243,7 +259,7 @@ def main():
         'input': str(a.input), 'input_sha256': hashlib.sha256(raw.tobytes()).hexdigest(),
         'frames': indices, 'width': w, 'height': h, 'factor': a.factor, 'pad': a.pad,
         'padded': [pw, ph], 'pad_offset': [pad_l, pad_t], 'matrix': a.matrix, 'range': a.rng,
-        'intermediate': a.intermediate, 'provider': a.provider, 'provider_used': {'rife': rife.used, 'span': span.used}, 'scene': notes,
+        'intermediate': a.intermediate, 'provider': a.provider, 'provider_used': {'rife': rife.used, 'span': span.used}, 'tf32': False, 'promoted': {'rife': str(rife.path), 'span': str(span.path)}, 'scene': notes,
         'outputs': len(outputs), 'hashes': hashes, 'seconds': time.perf_counter() - started,
         'scope': 'FP32 ideal of the same algorithm (networks FP32, conversions float32, same quantizations); not a performance measure',
     }
