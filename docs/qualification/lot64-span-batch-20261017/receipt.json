@@ -1,0 +1,60 @@
+{
+  "schema": "animejanai.span-batch-evaluation.v1",
+  "ticket": "AH-358",
+  "parent": "AH-76",
+  "machine": "Linux RTX4070Ti, CUDA13.4 / TensorRT11.3",
+  "recipe": {
+    "schema": "animejanai.span-batch-program.v1",
+    "recipe": "span-sharp1-performance-dynamic-batch-v1",
+    "source_sha256": "72246eded3aab52f8d1a71613c0a1d900734b358d1820b62eb36f1ed376e1cf4",
+    "program_sha256": "f41ab99b28125ae47e5b3b4eeb0c087cd001ab516daf0cb1ddf4017dfef67d84",
+    "nodes": 93,
+    "operators_weights_and_attributes_unchanged": true,
+    "numerical_equivalence": "not established until plan comparison",
+    "runtime_enabled": false
+  },
+  "shape": {
+    "input": [
+      4,
+      3,
+      720,
+      1280
+    ],
+    "output": [
+      4,
+      3,
+      1440,
+      2560
+    ]
+  },
+  "inputs_distinct": 4,
+  "comparison": [
+    {
+      "frame": 0,
+      "elements": 11059200,
+      "different_fp16": 8063623,
+      "nonfinite": 0,
+      "max_abs": 0.0107422,
+      "mse": 1.43062e-07
+    }
+  ],
+  "probe_exit_code": 2,
+  "timing_executed": false,
+  "decision": "not enabled in Quality: first compared image is not bit-identical; no quality loss direction or speed gain established; stop after decisive strict-parity failure",
+  "runtime_enabled": false,
+  "guards": {
+    "unknown_source_rejected": true,
+    "existing_output_preserved": true
+  },
+  "plans_sha256": {
+    "reference": "26954bf560c26cbfe1959e4b04aa2d7b1bae2a82eb19283fd2b90cd32bebfe8f",
+    "batch": "a09252e5a47cdf732c08c354f49d894bd0a9e05dc76c5f9744f4ae1673899a7a"
+  },
+  "input_sha256": "d80e7b9ba779eef34b2f22af77a066185e62d03a3d518deb0bd744513c9f7b7d",
+  "limits": [
+    "actual neural B4 evaluated, not a sequence of B1 submissions",
+    "same mathematical nodes/weights; internal compiler/tactic effect not isolated",
+    "only first image compared because exactness guard failed; remaining images and timing deliberately not repeated",
+    "no runtime integration, Windows GPU or end-to-end FPS claim"
+  ]
+}
