@@ -7,4 +7,4 @@ Le contrôle unique du vrai producteur vérifie troisPE x64, leurs SHA256, sourc
 
 Le nouveau bundle `dc53e6c…` ne change que la provenance Windows : aucune DLL ni fichier Linux modifié. Backend DML `d5b34469a3aa1cc30f107ba3122699d713de1dca`, CI spécialisée39009958899. Les référencesCOM, IDs et fences restent présentes ; même réseau RGB complet à chaque instant. Préparations/SCD3→1 à×4 est un comptage du code, pas un gainFPS mesuré.
 
-Release .103 : vérifier encore le paquet Windows réellement publié, son manifeste et sa provenance avant Done de l’implémentation AH344. **Qualification GPU Windows non faite**, portée explicitement par AH367 ; AH93 reste ouvert. Aucun résultat matériel extrapolé de la compilation. [Contrôle du producteur](producer-check.json).
+Release .103 vérifiée : troisCI/tag15assets, paquet et manifeste exacts, troisPE/provenance conformes, cinqDLLGPU inchangées vérifiées dans le core. **Qualification GPU Windows non faite**, portée explicitement par AH367 ; AH93 reste ouvert. Aucun résultat matériel extrapolé de la compilation. [Contrôle du producteur](producer-check.json).

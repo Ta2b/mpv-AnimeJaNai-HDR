@@ -1,0 +1,52 @@
+{
+  "release": "3.8.0.103",
+  "source": "8e636b80473512ff907274adb2b324a5effab24c",
+  "publication_verified": true,
+  "assets_uploaded": 15,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39029537118,
+      "headSha": "8e636b80473512ff907274adb2b324a5effab24c",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39029537158,
+      "headSha": "8e636b80473512ff907274adb2b324a5effab24c",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39029537134,
+      "headSha": "8e636b80473512ff907274adb2b324a5effab24c",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    }
+  ],
+  "scope": "AH344 implementation, compile and paired Windows delivery; native GPU qualification explicitly tracked by AH367",
+  "payload_check": {
+    "passed": true,
+    "managed_programs": 36,
+    "reader_identity": "windows-32464bc13260918381537dbb73a5a2e7523c2477-exact-dml-pair1",
+    "producer_files": {
+      "libmpv-2.dll": "adba3568849d9becdb506ce028d4848979908c667034afe051f7faa8aa47b196",
+      "mpv.com": "3e781712c2183b949bb43ea7e2fa8ffccae54240ab4c069e8c55fb27688a4a49",
+      "mpv.exe": "858089c7113c0988e1b9e398e3f8b74dc97c5a9ae9f683a8700c03705d291320"
+    },
+    "dml_sha256": "2af638b23d22907247015e5814c65eaa3081051b3d0ad0be23f4ff2f1226bf30",
+    "dispatcher_sha256": "9d7f4973b21987c07598030d347c57230e174f9bbbdae0941214124367e2e757",
+    "windows_gpu_module_hashes_verified": 5,
+    "engines_unchanged": true,
+    "dml_location": "included directly in the full core package; no additional DML engine pack",
+    "native_gpu_executed": false,
+    "native_qualification_ticket": "AH-367"
+  },
+  "limits": [
+    "No Windows GPU inference or FPS measured.",
+    "Parent AH93 remains open for native qualification and distinct Fast/retiming scope.",
+    "No engine DLL or Linux binary changed in metadata-only bundle dc53e6c."
+  ]
+}
