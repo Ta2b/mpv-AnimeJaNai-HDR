@@ -1,0 +1,14 @@
+{
+  "source": "199133fd6568e07c0e5399a40bf8068c32bd656d",
+  "passed": true,
+  "native_hit": true,
+  "old_namespace_preserved": true,
+  "program_key": "73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23",
+  "template_tag": "v2-694905b1555494bdf5ff59e357b54bb05ce53d7800d8ac44ebff0b43965f63b7",
+  "compiler": "3405.2.1",
+  "runtime": "Version 15.7.9 (Build 24G830)",
+  "host_architecture": "arm64",
+  "pixels_exact": true,
+  "output_sha256": "18dfcc6c44d5a6abeeeb97c2c9e393c9126762ddc34e9da1e72fd806f8843f63",
+  "scope": "CoreML CPU256x256, new compile identity/cold load/hit only; AH244 weights/corruption proof reused, no FPS/GPU/ANE claim"
+}

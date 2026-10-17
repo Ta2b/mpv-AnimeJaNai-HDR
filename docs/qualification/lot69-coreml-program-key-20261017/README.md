@@ -1,0 +1,15 @@
+# AH-240 — identité du programme Core ML compilé
+
+Le tag V2 d'AH-243/359 couvre tous les programmes, poids, manifestes et tables. La clé `.mlmodelc` utilise désormais le contrat commun `native/common/program_identity.h` : format CoreML, source V2 complète, recette de patch AJP1 versionnée, types imageRGB8 et dimensions spécialisées, version du framework compilateur observée, buildmacOS et architecture du compilateur hôte. Pas de hash basé sur le numéro de release ou le chemin du modèle. Le namespace `p3` conserve les anciennes entrées sur disque tout en évitant leur réutilisation sans ces garanties.
+
+Les formes et la précision du programme sont dans la source et les bindings. Dans ce consommateur, `compileModelAtURL` reçoit le package, sans `MLModelConfiguration`. CPU/GPU/ANE, accumulation GPU et hints sont choisis au chargement suivant ; ils restent dans l'identité du diagnostic de placement. Ils ne multiplient donc pas les compilations d'un même package. Cette séparation suit les appels effectifs du code, sans promesse sur les caches internes du fournisseur. Aucun changement de prédiction, de précision ou de sélection du processeur.
+
+Fixture portable C++17 passée une fois : contenu, largeur, hauteur, framework, buildOS et architecture font changer la clé ; source ancienne ou invalide, dimensions et métadonnées incomplètes sont refusées. Cette fixture ne simule pas un compilateur Apple.
+
+[Run natif39015096423](https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39015096423), source `199133fd6568e07c0e5399a40bf8068c32bd656d`, macOS15.7.9 / 24G830 arm64, Apple M1 virtualisé. Framework CoreML observé `3405.2.1`. Modèle normalisé déjà livré .88, SPANSharp1Performance, même entrée synthétique256×256/CPU pour baseline37fd12c et candidat. [Reçu](native-receipt.json), [machine](machine.txt).
+
+Baseline froide puis nouvelle clé froide : RGB exact. Second chargement candidat : message de hit, aucune branche de reconstruction, mêmes répertoires compilés ; l'ancien namespace est conservé. SHA256 RGB commun `18dfcc6c44d5a6abeeeb97c2c9e393c9126762ddc34e9da1e72fd806f8843f63`. Nouvelle clé `73d559a2b64b845a019bec84de439e13710784eefd36bb14e3459a955bfc1c23`. Arrêt après cette conclusion : le cycle poids/corruption d'AH-244 déjà concluant est réutilisé, sans le répéter. Son probe sait maintenant localiser les deux namespaces pour une future régression réelle.
+
+Utilité : invalidation explicite quand le compilateur/runtime ou la spécialisation pertinente change, sans effacer les modèles ou les anciennes entrées. Première migration nécessaire versp3. Aucun gainFPS, ni GPU/ANE/ORT-CoreML ou autre version d'OS qualifiés ici. La publication/coordinations multi-provider d'AH-254 reste un travail distinct ; ce lot ne prétend pas résoudre sa concurrence ou ses interruptions.
+
+Reprise : `tests/cache/coreml_program_key_check.cpp` et `.github/workflows/qualify-coreml-program-key.yml`. Lire [le guide précis AH-240](../../reprise/20261017/AH-240.md), puis constater la livraison du dylib avant Done. Aucun modèle ni cache utilisateur n'a été utilisé en écriture.
