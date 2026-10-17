@@ -6,11 +6,11 @@ Mis à jour le **17 octobre 2026**. Lire `../AGENTS.md`, puis seulement le ticke
 
 L'utilisateur demande de poursuivre les tickets par lots complets, sans attendre les builds/releases. Aucune pause active. Pas de nouveaux sous-agents ; les précédents ont terminé.
 
-Dernière release vérifiée **3.8.0.91**, source `df180cb60961498f593af392644130e8684fd6f1`, [reçu](jira/release-20261017-3.8.0.91.json). Trois CI réussies au SHA exact, tag et15assetsuploaded vérifiés. Paquet macOS modifié téléchargé/digest vérifié :10sections__TEXT du dylib identiques au producteur,32ressources modèles et17programmes conformes. Les payloads Linux/Windows inchangés réutilisent les qualifications .90/.87 ; pas de téléchargement/test répété.
+Dernière release vérifiée **3.8.0.92**, source `3bb4bcde605ba78836ac1919ad25aecec7da77db`, [reçu](jira/release-20261017-3.8.0.92.json). Trois CI réussies au SHA exact, tag et15assetsuploaded vérifiés. Overlay Linux modifié téléchargé/digest vérifié :6hashes et32programmes conformes ; pipeline/TRT/alias identiques aux qualifiés. Mac/Windows inchangés réutilisent les qualifications .91/.87 ; pas de vidéo/benchmark ou configurations concluantes répétés.
 
 Manager toujours `f1f85962f8e86e5f37d84501f37f72b6d1780828`. Bundle .91 `9167816cc47c18ad5a29fd3aab66c065b3735f60` : TRT/alias Linuxd5b3446, pipeline identique94324373, fatbin Area3:2 source3447cd8/hash3b8bd671. Sources exactes par module dans GPU-SOURCE.json ; son ancien champ backend_source global est historique.
 
-## Travail actif : AH-361, publication .92
+## Lot vérifié : AH-361, release .92
 
 Tranche explicite sous **AH330** : garantir Quality dans le pipeline CUDA ordonné et exposer le module réellement chargé. Le parent conserve routes ABI9 historiques, alias TrueHDR, dispatcher/résolveur et autresOS ; ne pas le fermer avec cette tranche.
 
@@ -22,7 +22,11 @@ Tranche explicite sous **AH330** : garantir Quality dans le pipeline CUDA ordonn
 
 Qualification complète : fixtureCPU avec vrais DSOs passée ; native RTX4070Ti : ancienQuality seul refusé, actuelQuality fusionné/flags1, actuelFast/flags2, ancienFast accepté/inconnu ; erreurs CABI sans écriture du buffer. Zéro image vidéo traitée, aucun calculpixel changé ; section deviceTRT byte-identique à .86 et fatbin pipeline identique à .90. Réutiliser les preuves numériques acquises, pas de replay13images/FPS. Build portable sans RPATH local ; pas de nouvelle qualification Windows/AMD/Intel/macOS.
 
-**Prochaine action :** pousser le lot .92, continuer une tâche indépendante, puis contrôler les CI et extraire le payload Linux modifié pour vérifier les mêmes hashes. Done AH361 seulement après cette livraison. Ne pas répéter les configurations concluantes si les binaires sont identiques. AH330 reste ouvert.
+**Livraison .92 vérifiée : AH361 peut être clos.** Ne pas répéter les configurations concluantes sur ces mêmes hashes. AH330 reste ouvert.
+
+## Travail actif : AH-362, route historique et snapshot Linux
+
+PLAYER `lot-71-legacy-quality-player-20261017`, backend `lot-71-legacy-quality-backend-20261017`, MPV `lot-71-mpv-legacy-quality-20261017`. Dispatcher sourcee2e82f1 : transfert de sémantique surinnerhandle, fixtureDSOAPIprésente/absente passée. Patch lecteur final ajouté (rife-policy auto/quality/fast, garde aprèsconfigure/avantpixels, GET_META), validateurC passé et vraie sourceMPV syntax-check passée. SnapshotLinux en cours : résolveur et contexte lisent même copie immuable ; fixture de lancement initiale mal placée avant la géométrie demux, correction vers on_preloaded en vérification. Aucun pixel/benchmark nouveau. Pas encore de bundle/livraison AH362. Le rechargement Manager viareload-options recrée déjà le filtre ; ne pas prétendre un défaut généralUI.
 
 ## Autre livraison en cours : AH-344 Windows DirectML
 

@@ -1,0 +1,74 @@
+{
+  "release": "3.8.0.92",
+  "source": "3bb4bcde605ba78836ac1919ad25aecec7da77db",
+  "publication_verified": true,
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.92",
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39017363223,
+      "headSha": "3bb4bcde605ba78836ac1919ad25aecec7da77db",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39017363223",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39017363167,
+      "headSha": "3bb4bcde605ba78836ac1919ad25aecec7da77db",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39017363167",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39017363097,
+      "headSha": "3bb4bcde605ba78836ac1919ad25aecec7da77db",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39017363097",
+      "workflowName": "Release macOS"
+    }
+  ],
+  "downloaded_assets": [
+    {
+      "name": "manifest-linux-x64.json",
+      "sha256": "812f42e2a59da85c50dca03ba6f403b5546246a50fd2fc37681a1015a4e52743",
+      "bytes": 2705
+    },
+    {
+      "name": "packs-linux-x64.json",
+      "sha256": "eaf22bbbda0d1b65160e053c88c295e515f3b318161bc8ede5811762405e562c",
+      "bytes": 10819
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.92-linux-x64.7z",
+      "sha256": "f237c6b89e40352fe522d60821944b74578254506486dd49c127af4ef3eb4d04",
+      "bytes": 51881392
+    }
+  ],
+  "gpu_binaries_source": "71f271a6c94f2693e8a1a8b550e2f72fd1137f9e",
+  "linux_overlay": {
+    "modules_verified": {
+      "libaji.so": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+      "libaji_trt.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+      "libaji_trt_rtx.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
+      "libaji_pipeline.so": "834ca0a740b92e632b5ea63b07f5da28326d6bd2cc72f67b08ed6a8f6b9b39bc",
+      "aji_pipeline.fatbin": "3b8bd6716b3ccbc8b79d7a2de7d283f480b2ae914717c5af4ff6c50d212622d9",
+      "PIPELINE-README.md": "b22600caedee5387a50a5c8ec2b79d793162534b9b2f0998363fd9b1dfa169c1"
+    },
+    "managed_programs_verified": 32,
+    "coupled_pipeline_trt_alias_match_qualified": true
+  },
+  "qualification_reuse": {
+    "numeric_GPU_section": "lot70 byte-identical device section; lot62 numeric proof",
+    "Area": "lot68/.90",
+    "Mac": "3.8.0.91",
+    "Windows": "3.8.0.87",
+    "helper_sync": "3.8.0.85"
+  },
+  "limits": [
+    "No video/FPS benchmark repeated; configured-semantics cases not repeated on identical delivered hashes",
+    "Protected route is ordered CUDA only; AH330 historical/dispatcher/other OS remain open",
+    "DML paired Windows reader still pending"
+  ]
+}
