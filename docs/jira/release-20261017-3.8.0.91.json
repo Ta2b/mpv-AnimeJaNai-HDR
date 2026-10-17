@@ -1,0 +1,99 @@
+{
+  "release": "3.8.0.91",
+  "source": "df180cb60961498f593af392644130e8684fd6f1",
+  "publication_verified": true,
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.91",
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39015287214,
+      "headSha": "df180cb60961498f593af392644130e8684fd6f1",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39015287214",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39015287192,
+      "headSha": "df180cb60961498f593af392644130e8684fd6f1",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39015287192",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39015287201,
+      "headSha": "df180cb60961498f593af392644130e8684fd6f1",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39015287201",
+      "workflowName": "Release macOS"
+    }
+  ],
+  "downloaded_assets": [
+    {
+      "name": "packs-linux-x64.json",
+      "sha256": "608941a12cab9b8439f7e354ddefd2958c87e3b945e4e384cfcec21291a07da6",
+      "bytes": 10819
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.91-macos-arm64.zip.sha256",
+      "sha256": "c552fc11ace8e6ad825a82a2502b924d9adb9dd94a003dc11b8eddca268229b6",
+      "bytes": 111
+    },
+    {
+      "name": "manifest.json",
+      "sha256": "ec324b79fa6e1f328b75d021cc6b9be23654f70b52c185715df85e2afb5108d1",
+      "bytes": 2058
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.91-macos-arm64.zip",
+      "sha256": "5add857c27b01bd09da62797bab9bf9cf7259c603cf84173caf864adbba72aeb",
+      "bytes": 177969463
+    },
+    {
+      "name": "manifest-linux-x64.json",
+      "sha256": "02b34e5b9cc39b59deab7e40f478044cc56b5236e2ffdc3dbec98ffa59342392",
+      "bytes": 2705
+    },
+    {
+      "name": "packs.json",
+      "sha256": "0f9d91c56bf08668019f64ce80503248384b5ae0e7995a381082f488d6230420",
+      "bytes": 863701
+    }
+  ],
+  "gpu_binaries_source": "9167816cc47c18ad5a29fd3aab66c065b3735f60",
+  "macos": {
+    "model_resources_verified": 32,
+    "managed_programs_verified": 17,
+    "models_match_normalized_88_resources": true,
+    "producer_run": 39015287201,
+    "producer_sha256": "29f495bd67265182a7b55132bb18c5dfed066e47b54a8efb5853cb0c6dd518f8",
+    "delivered_dylib_sha256": "ab9e12814fa3ffb175e6b7d0b30151516835befc06844c41aea024c372acb807",
+    "all_text_sections_match_producer": {
+      "__TEXT,__text": "5406da4c9e48e79b9ed9c1e21c16745a4169a40eceed85858f77df76f177a267",
+      "__TEXT,__stubs": "d985df8cb3ec2574951c8ee8358206eee527dc11a164f81126be7755d043f2dd",
+      "__TEXT,__objc_stubs": "8f59609e5a2eb9ba2b0f8ef862b53e4cc7ca67e3403b1a0780aeb8740a33b7f4",
+      "__TEXT,__gcc_except_tab": "c4703f5113826c5a11587c42e9df8c5676d14d74ba4e3055878a737c0ecfb7f3",
+      "__TEXT,__const": "99aba83c29807d15f5751a57664014efdbaa2d13452f53b639cbae585ffe566b",
+      "__TEXT,__cstring": "b5ae9a1b3ef950138e410eb6487c56be5701051983f3462e95ea1b44fbd7138e",
+      "__TEXT,__objc_classname": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+      "__TEXT,__objc_methname": "74a6a179bc4b1885d2b0af0b1921baed6bd6b4e43626345993bbb5d2e0e760f5",
+      "__TEXT,__unwind_info": "d584ccae1431c513ba01d80df87e7f13b2fe00d3941894f49893397395b28479",
+      "__TEXT,__eh_frame": "c161e8ac645829a2c98a6361becf07596bde799bb230acaa09e04ad2958d9cf2"
+    },
+    "new_p3_implementation_present": true,
+    "native_qualification_run": 39015096423,
+    "native_qualification_source": "199133fd6568e07c0e5399a40bf8068c32bd656d"
+  },
+  "qualification_reuse": {
+    "unchanged_Linux_Area_module": "3.8.0.90",
+    "unchanged_Windows_payloads": "3.8.0.87",
+    "managed_files_sync": "3.8.0.85",
+    "CoreML_weights_corruption_cycle": "AH244/.88"
+  },
+  "limits": [
+    "Changed Mac payload verified; unchanged Windows/Linux payload qualification reused, no redownload",
+    "Native qualification CoreML CPU, not GPU/ANE/ORT; no FPS extrapolation",
+    "DML paired reader pending"
+  ]
+}
