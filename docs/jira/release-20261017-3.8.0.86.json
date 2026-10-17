@@ -1,0 +1,105 @@
+{
+  "release": "3.8.0.86",
+  "source": "9f810aaaa0890657a73d1e427301b61899a90ac2",
+  "gpu_binaries_source": "ff27fba988b75e00c1348195266455ce0992428a",
+  "publication_verified": true,
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.86",
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39010535424,
+      "headSha": "9f810aaaa0890657a73d1e427301b61899a90ac2",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39010535424",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39010535432,
+      "headSha": "9f810aaaa0890657a73d1e427301b61899a90ac2",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39010535432",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39010535421,
+      "headSha": "9f810aaaa0890657a73d1e427301b61899a90ac2",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39010535421",
+      "workflowName": "Release macOS"
+    }
+  ],
+  "downloaded_assets": [
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.86-macos-arm64.zip",
+      "sha256": "8c0e8b791217c9a7e583ec6aa97128095ae11257d0ca1c98d29cd8516a162511",
+      "bytes": 177959900
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.86-linux-x64.AppImage",
+      "sha256": "db87a8699f42748091e21238d46f45833275e73d1ec723f0f7159a8099fead14",
+      "bytes": 207034872
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.86-linux-x64.7z",
+      "sha256": "c29ac6e63b0081036d8c878ff204bfa4928a0581dcae04c40bc19792a7f6a11b",
+      "bytes": 51878274
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.86.7z",
+      "sha256": "194ee453f06f913faa38d464b60094c1dafc02a51068f53c54eeb57a311ba2a6",
+      "bytes": 28979423
+    }
+  ],
+  "modules": {
+    "linux-overlay": {
+      "module_hashes_match": {
+        "libaji.so": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+        "libaji_trt.so": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
+        "libaji_trt_rtx.so": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
+        "libaji_pipeline.so": "9432437367c4a94488940e9c305d9a31782b7ccabe8287c6dda73dc76bee7bf0",
+        "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+        "PIPELINE-README.md": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc"
+      },
+      "managed_programs_verified": 32
+    },
+    "appimage": {
+      "module_hashes_match": {
+        "libaji.so": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+        "libaji_trt.so": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
+        "libaji_trt_rtx.so": "45fb2cce1dce484fc0bf6e2173f89582d618ad9e30b04775d4c95dbeccbf6dcd",
+        "libaji_pipeline.so": "9432437367c4a94488940e9c305d9a31782b7ccabe8287c6dda73dc76bee7bf0",
+        "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+        "PIPELINE-README.md": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc"
+      },
+      "managed_programs_verified": 32
+    },
+    "windows-overlay": {
+      "module_hashes_match": {
+        "aji.dll": "9d7f4973b21987c07598030d347c57230e174f9bbbdae0941214124367e2e757",
+        "aji_dml.dll": "2af638b23d22907247015e5814c65eaa3081051b3d0ad0be23f4ff2f1226bf30",
+        "aji_migraphx.dll": "f3128836650a77761b2a5fa6570dc428f8d7bc51980b95f28cd81cef3f391549",
+        "aji_trt.dll": "cd78b8e6cf3543b247ae53555b3234bb8e91618861171873acfb372f81839c08",
+        "aji_trt_rtx.dll": "cd78b8e6cf3543b247ae53555b3234bb8e91618861171873acfb372f81839c08"
+      },
+      "managed_programs_verified": 36
+    }
+  },
+  "macos": {
+    "managed_programs_verified": 17,
+    "launcher_preserves_custom_files": true,
+    "helper_present": true
+  },
+  "linux_helper_sync_qualification": {
+    "reused_from": "3.8.0.85",
+    "same_source_inputs": true,
+    "programs_copied_in_reference": 32
+  },
+  "limitations": [
+    "No video qualification repeated",
+    "Windows full installer not executed; native overlay verified",
+    "macOS complete archive verified, no macOS hardware execution",
+    "DML exact-pair reader producer remains pending"
+  ]
+}
