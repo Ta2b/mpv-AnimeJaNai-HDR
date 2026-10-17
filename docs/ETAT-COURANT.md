@@ -6,7 +6,7 @@ Mis à jour le **17 octobre 2026**. Lire `../AGENTS.md`, puis seulement le ticke
 
 L'utilisateur demande de poursuivre les tickets par lots complets, sans attendre les builds/releases. Aucune pause active. Pas de nouveaux sous-agents ; les précédents ont terminé.
 
-Dernière référence entièrement close **3.8.0.92**, source `3bb4bcde605ba78836ac1919ad25aecec7da77db`, [reçu](jira/release-20261017-3.8.0.92.json). Trois CI réussies au SHA exact, tag et15assetsuploaded vérifiés. Overlay Linux modifié téléchargé/digest vérifié :6hashes et32programmes conformes ; pipeline/TRT/alias identiques aux qualifiés. Mac/Windows inchangés réutilisent les qualifications .91/.87 ; pas de vidéo/benchmark ou configurations concluantes répétés.
+Dernière release vérifiée **3.8.0.94**, source `856f2c17e2276f46546a2d85519844d87acc80a6`, [reçu](jira/release-20261017-3.8.0.94.json). Trois CI réussies,15assets et tag vérifiés ; overlay Linux/digests/6modules/32programmes conformes, marqueur Vulkan résident. Une sortie du vrai module Ubuntu livré (hash031dc1f8) identique à la référence2a83161a,2inférences/1upload/1download. AH351 Done, commentaire10290. Pas de timing/erreur/domaineFP16 rejoué ; autres payloads inchangés réutilisés (.93lecteur, .91Mac, .87Windows). .95 packaging en publication ; AH362/AH363 attendent ce couplage d’upgrade, pas de fauxDone.
 
 Manager toujours `f1f85962f8e86e5f37d84501f37f72b6d1780828`. Bundle .92 `71f271a6c94f2693e8a1a8b550e2f72fd1137f9e` : TRT/alias et pipeline source9d2c717, fatbin Area3:2 source3447cd8. Sources exactes par module dans GPU-SOURCE.json ; son ancien champ backend_source global est historique.
 
@@ -32,7 +32,7 @@ Contrôle natif conclu : dispatcher actuel Quality verified/flags1 et vrai chemi
 
 ## Travail actif : AH-351, SPAN Vulkan résident
 
-Checkout `lot-72-vulkan-resident-span-20261017`, branche tickets/vulkan-resident-span-20261017. Base .93 source04b3cb524a85fc54f6c05abc4441fef79682e98d. Deux vrais SPAN128→256→512 sans download/upload intermédiaire ; frontière F32×255 puis×1/255 et stockage NCNN conservés. GPU RTX4070Ti : pixels exacts à base/off/on, domaineFP16 fini exact aux deux stockages, resize/repli et erreur/reconfigure passés ; médiane courte3,214→2,337ms, pas de FPS720p/autresGPU revendiqués. [Guide AH351](reprise/20261017/AH-351.md), [preuves lot72](qualification/lot72-vulkan-resident-span-20261017/README.md). Compiler/livrer .94, contrôler module/build-info et sortie contre hash acquis avant Done. Parent AH131 In Progress reste ouvert.
+Checkout `lot-72-vulkan-resident-span-20261017`, branche tickets/vulkan-resident-span-20261017. Base .93 source04b3cb524a85fc54f6c05abc4441fef79682e98d. Deux vrais SPAN128→256→512 sans download/upload intermédiaire ; frontière F32×255 puis×1/255 et stockage NCNN conservés. GPU RTX4070Ti : pixels exacts à base/off/on, domaineFP16 fini exact aux deux stockages, resize/repli et erreur/reconfigure passés ; médiane courte3,214→2,337ms, pas de FPS720p/autresGPU revendiqués. [Guide AH351](reprise/20261017/AH-351.md), [preuves lot72](qualification/lot72-vulkan-resident-span-20261017/README.md). Livraison .94 vérifiée, AH351 Done ; réutiliser ses preuves, aucun replay. Parent AH131 In Progress reste ouvert.
 
 ## Livraison en correction : AH-363, identité native Linux
 
@@ -40,7 +40,7 @@ Checkout `lot-74-native-bundle-identity-20261017`, branche fix/linux-native-bund
 
 AH363 calcule maintenant l’identité du bundle mpv assemblé depuis ses fichiers, copie son build-info et force le package complet si le natif change. Fixture CPU du vrai calcul/décision d’overlay passée ; assembleur .NET10 compilé sans erreur/avertissement. [Guide](reprise/20261017/AH-363.md), [preuve lot74](qualification/lot74-native-bundle-identity-20261017/README.md). Livrer .95 puis vérifier identité sur tar/build-info avant Done AH363/AH362. Pas de changement vidéo. AH335 reste distinct.
 
-AH349 / parent AH119 In Progress : checkout `lot-73-metal-resident-span-20261017`, pas encore de code modifié. Revue Metal commencée, mise en priorité du défaut réel d’upgrade AH363. Documentation Apple officielle confirme runWithMTLCommandQueue synchrone et TensorData consommable en feed ; qualifications Metal restent à faire, aucune performance prétendue. Reprendre après push .95, sans attendre sa release.
+AH349 / parent AH119 In Progress : checkout `lot-73-metal-resident-span-20261017`, candidat1b2d967 sur sa branche seulement, **hors release/main**. Interface ResidentImage interne typée RGB8NHWC/MetalGraph/device/owner, exécutions synchrones ; deux SPAN GPU reliés à frontière UInt8 conservée, repli géométrie/reuse/boost/tiles/RIFE. Syntaxe du core C++ passée ; ObjC++/pixels/utilité attendent le workflow qualify-metal-resident-span.yml, source de workflowf0d971a enregistrée sur hdr-3.8. Modèles réutilisés .91, aucun nouveau modèle converti. Documentation Apple officielle confirme run synchrone ; options graphes par défaut conservées, ne pas prétendre suppression des copies internes du driver. Reprendre qualifications, pas de performance/Metal opérationnel annoncé sans preuve native.
 
 ## Autre livraison en cours : AH-344 Windows DirectML
 
