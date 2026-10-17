@@ -1,0 +1,112 @@
+{
+  "schema": "animejanai.rife-encoder-evaluation.v1",
+  "ticket": "AH-356",
+  "machine": "Linux RTX4070Ti, CUDA13.4 / TensorRT11.3",
+  "recipe": {
+    "schema": "animejanai.rife-encoder-cut.v1",
+    "recipe": "rife426-encoder-cut-v1",
+    "source_sha256": "fd6b06538898c9a94d20f0fe55febceadbcde5ad64952240733b7275ef4c9d59",
+    "input": "input",
+    "output": "output",
+    "features": "/encode/cnn3/ConvTranspose_output_0",
+    "feature_shape": [
+      2,
+      4,
+      "same H",
+      "same W"
+    ],
+    "feature_dtype": "FP16",
+    "programs": {
+      "encoder.onnx": {
+        "sha256": "7424ce361f820509d7fb97735998a2cb0530798cb8f37539d8ac48c6c516813d",
+        "bytes": 14468
+      },
+      "head.onnx": {
+        "sha256": "0c9e8f4e8750ec729c2959e6f99ba86df96e93d4192fca1f29b277a135f39bb5",
+        "bytes": 11378267
+      }
+    },
+    "nodes": {
+      "source": 322,
+      "encoder": 11,
+      "head": 315
+    },
+    "weights_and_operators": "byte-identical retained protobuf records",
+    "runtime_enabled": false,
+    "numerical_equivalence": "not yet established; separate TensorRT plans can change tactics/rounding"
+  },
+  "input": {
+    "shape": [
+      1,
+      11,
+      768,
+      1280
+    ],
+    "dtype": "FP16",
+    "rgb": "same two private source images, CPU Area to720p, padded24top/bottom",
+    "grid": "backend v1 mesh and multipliers, float32 then FP16",
+    "qualification_scope": "network composition only, no player frontend conversion claim",
+    "sha256": "1e03866b2cd7d16054fb18b8a6c7574a1ad5a3d2ba74e7c0ff3739c44c3ddbea"
+  },
+  "comparison": [
+    {
+      "phase": 0.25,
+      "elements": 2949120,
+      "different_fp16": 0,
+      "nonfinite": 0,
+      "max_abs": 0,
+      "mse": 0
+    },
+    {
+      "phase": 0.5,
+      "elements": 2949120,
+      "different_fp16": 0,
+      "nonfinite": 0,
+      "max_abs": 0,
+      "mse": 0
+    },
+    {
+      "phase": 0.75,
+      "elements": 2949120,
+      "different_fp16": 0,
+      "nonfinite": 0,
+      "max_abs": 0,
+      "mse": 0
+    }
+  ],
+  "timing": [
+    {
+      "step": 0,
+      "program": "monolithic3",
+      "cuda_ms": 20.8044
+    },
+    {
+      "step": 1,
+      "program": "encoder1-head3",
+      "cuda_ms": 20.3735
+    },
+    {
+      "step": 2,
+      "program": "encoder1-head3",
+      "cuda_ms": 19.9974
+    },
+    {
+      "step": 3,
+      "program": "monolithic3",
+      "cuda_ms": 20.8788
+    }
+  ],
+  "timing_scope": "one short CUDA-graph ABBA observation, network only; no color/frontend/upscale/HDR/presentation claim",
+  "graph_final_phase_exact": true,
+  "plan_sha256": {
+    "reference": "b5059dfb36e2ada497614fcb76acb1fcbfb436f113c42dd3beedddb48e4c3d3f",
+    "encoder": "e5d1d1b7a9bde3067e404764da4731320e918e17e8bdb8cdba2f6729be7ffbf4",
+    "head": "221482c53545e9e6b3e6c424e96b2726560dcf81d629739df1b888753f83b1bb"
+  },
+  "decision": "cut is viable on this one qualified model/shape/device; local network gain modest, not a full-chain framerate fix; runtime integration remains separate and lower priority than removing host waits",
+  "runtime_enabled": false,
+  "guards": {
+    "unsupported_model_rejected": true,
+    "existing_output_preserved": true
+  }
+}
