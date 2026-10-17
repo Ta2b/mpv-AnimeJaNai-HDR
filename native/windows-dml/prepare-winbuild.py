@@ -33,6 +33,21 @@ def edit(name, old, new):
     p=root/name;s=p.read_text()
     if s.count(old) != 1: raise SystemExit(f'Expected one anchor in {name}: {old}')
     p.write_text(s.replace(old,new))
+# The recipe's reset helper assumes @{u} even after GIT_TAG selected a
+# detached commit. Keep pinned sources pinned during post-install cleanup;
+# preserve the original tracking-branch behavior for the other dependencies.
+edit('cmake/custom_steps.cmake', '''    if("${git_remote_name}" STREQUAL "" AND NOT "${git_tag}" STREQUAL "")
+        # GIT_REMOTE_NAME is not set when commit hash is specified
+        set(reset "")''', '''    set(compare_ref "@{u}")
+    string(LENGTH "${git_tag}" tag_length)
+    if(tag_length EQUAL 40 AND "${git_tag}" MATCHES "^[0-9a-fA-F]+$")
+        set(reset "${git_tag}")
+        set(compare_ref "${git_tag}")
+    elseif("${git_remote_name}" STREQUAL "" AND NOT "${git_tag}" STREQUAL "")
+        # GIT_REMOTE_NAME is not set when commit hash is specified
+        set(reset "")''')
+edit('cmake/custom_steps.cmake', '$(git -C ${source_dir} rev-parse @{u})',
+     '$(git -C ${source_dir} rev-parse ${compare_ref})')
 edit('packages/mpv.cmake','GIT_REPOSITORY https://github.com/mpv-player/mpv.git',
      f'GIT_REPOSITORY https://github.com/the-database/mpv.git\n    GIT_TAG {MPV}')
 edit('packages/libass.cmake','GIT_REPOSITORY https://github.com/libass/libass.git',

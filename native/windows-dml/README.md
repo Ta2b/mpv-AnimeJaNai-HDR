@@ -38,6 +38,18 @@ recette ; l’ancien rebase du patch Vulkan n’est plus utilisé par sa cible.
 Les autres dépendances et l’image de compilation suivent cette recette : ceci
 n’est pas une affirmation de reproductibilité binaire bit pour bit.
 
+Le nettoyage de cette recette est corrigé pour les `GIT_TAG` SHA40 : il compare
+et restaure le commit épinglé, sans supposer une branche avec `@{u}`. Les autres
+dépendances gardent le comportement de suivi initial. Le run39006425781 avait
+compilé libass puis échoué dans ce nettoyage sur HEAD détachée ; ce défaut de
+recette ne valide ni n'invalide le cache GPU DirectML. Le workflow sauvegarde
+explicitement les dépendances terminées même si une étape ultérieure échoue.
+La préparation invalide toujours les préfixes/sources des trois composants
+épinglés avant une nouvelle construction, afin de réappliquer versions et hooks.
+`tests/build/windows_pinned_cleanup_check.py RECETTE_PRÉPARÉE` contrôle la vraie
+fonction CMake avec petits dépôts temporaires : commit détaché préservé et
+branche suivie restaurée depuis son amont, sans compilation vidéo.
+
 1. Introduire le workflow et ses sources dans PLAYER sans changer la release
    active ni créer de pin prématuré. Déclencher **Build paired Windows mpv** sur
    le commit producteur choisi (`gh workflow run build-windows-mpv.yml --ref …`).
