@@ -1,0 +1,55 @@
+{
+  "format_description": "<CMVideoFormatDescription 0x60000329c060 [0x202103f78]> {\n\tmediaType:'vide' \n\tmediaSubType:'hvc1' \n\tmediaSpecific: {\n\t\tcodecType: 'hvc1'\t\tdimensions: 256 x 144 \n\t} \n\textensions: {{\n    BitsPerComponent = 8;\n    CVFieldCount = 1;\n    CVImageBufferChromaLocationBottomField = Left;\n    CVImageBufferChromaLocationTopField = Left;\n    CVImageBufferColorPrimaries = \"ITU_R_709_2\";\n    CVImageBufferTransferFunction = \"ITU_R_709_2\";\n    CVImageBufferYCbCrMatrix = \"ITU_R_709_2\";\n    CVPixelAspectRatio =     {\n        HorizontalSpacing = 1;\n        VerticalSpacing = 1;\n    };\n    Depth = 24;\n    FormatName = \"Lavc63.1.101 libx265\";\n    FullRangeVideo = 0;\n    RevisionLevel = 0;\n    SampleDescriptionExtensionAtoms =     {\n        btrt = {length = 12, bytes = 0x000000000003b18000000000};\n        hvcC = {length = 2434, bytes = 0x01016000 00009000 00000000 3cf000fc ... 72616d65 2d726380 };\n    };\n    SpatialQuality = 0;\n    TemporalQuality = 0;\n    VerbatimISOSampleEntry = {length = 2574, bytes = 0x00000a0e 68766331 00000000 00000001 ... 0003b180 00000000 };\n    Version = 0;\n}}\n}",
+  "passed": true,
+  "hardware_decoder": true,
+  "scope": "Native VideoToolbox decoded NV12 -> Metal plane import only; no inference/renderer/FPS claim",
+  "hardware_hevc_advertised": 1,
+  "os": "Version 15.7.9 (Build 24G830)",
+  "sample_inspection": {
+    "format_present": true,
+    "samples": 1,
+    "valid": 1,
+    "bytes": 865,
+    "skipped": 0,
+    "data_buffer_present": true,
+    "ready": 1
+  },
+  "metal_device": "Apple Paravirtual device",
+  "metal_registry_id": 4294967706,
+  "cases": {
+    "reset_and_sample_consumer": {
+      "live_images": 0,
+      "resets": 1,
+      "sampled_bytes": 3,
+      "peak_images": 1,
+      "imports": 2
+    },
+    "native_decoded_planes": {
+      "height": 144,
+      "live_images": 0,
+      "width": 256,
+      "validation_bytes": 55296,
+      "metadata_unchanged": true,
+      "exact": true,
+      "pts_unchanged": true
+    },
+    "refusal_and_error": {
+      "output_untouched": true,
+      "live_images": 0,
+      "invalid_bounds_refused": true,
+      "p010_refused": true,
+      "non_sdr709_fallback": true
+    }
+  },
+  "metal_unified": true,
+  "session_create_attempts": [
+    {
+      "status": 0,
+      "requirements": "NV12 IOSurface Metal-compatible; hardware optional"
+    }
+  ],
+  "hardware_h264_advertised": 1,
+  "source": "91632df517c185caafc9ff663be71aea1c4b0d85",
+  "module_sha256": "f13aafd1fa090d0ed0f2998569f60c9e30893894e762f0914edd0a8a1e566298",
+  "header_sha256": "7fb530a52c7e84b65d7c59b1a42df45f5bebedb7902a32cd522881dcd3306719"
+}
