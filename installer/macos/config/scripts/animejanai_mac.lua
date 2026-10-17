@@ -111,7 +111,11 @@ local function rife_dir()
 end
 
 local resolver_generation,pending_resolver,resolver_timer=0,nil,nil
-local applied_name,applied_device,applied_engine,deferred_slot
+local applied_name,applied_device,applied_engine,deferred_slot,preload_hook
+local function finish_preload()
+    local hook=preload_hook;preload_hook=nil
+    if hook then pcall(hook.cont,hook) end
+end
 local function cancel_resolver()
     resolver_generation=resolver_generation+1
     if resolver_timer then resolver_timer:kill();resolver_timer=nil end
@@ -121,6 +125,7 @@ end
 local function resolver_error(message)
     mp.msg.error('AnimeJaNai profile: '..tostring(message))
     mp.osd_message('AnimeJaNai : '..tostring(message),7)
+    finish_preload()
 end
 local function apply_selection(wanted,route,bank_path,text,quiet,name,paths)
     if wanted>0 and route and not route.inference_empty then
@@ -145,10 +150,11 @@ local function apply_selection(wanted,route,bank_path,text,quiet,name,paths)
     mp.set_property_native('user-data/animejanai-active-slot',slot)
     mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and route or nil)
     if not quiet then mp.osd_message(slot==0 and 'AnimeJaNai : désactivé' or 'AnimeJaNai '..slot..' : '..tostring(name),4) end
+    finish_preload()
 end
 local function select(value,quiet)
     local wanted=tonumber(value)
-    if not wanted or wanted<0 or wanted>9 or wanted~=math.floor(wanted) then return end
+    if not wanted or wanted<0 or wanted>9 or wanted~=math.floor(wanted) then return false end
     cancel_resolver()
     if wanted==0 then deferred_slot=nil;apply_selection(0,nil,nil,nil,quiet);return end
     local source=bank_for(wanted)
@@ -157,7 +163,7 @@ local function select(value,quiet)
     if not text or not name then resolver_error('Profil '..wanted..' vide.');return end
     local w,h,fps=stages.source(mp)
     local route=stages.resolve(text,wanted,w,h,fps,'macos')
-    if route.unknown then deferred_slot=wanted;return end
+    if route.unknown then deferred_slot=wanted;finish_preload();return end
     deferred_slot=nil
     local snapshot,error=runtime.store(text,'source-config')
     if not snapshot then resolver_error('Configuration temporaire indisponible : '..tostring(error));return end
@@ -204,7 +210,7 @@ local function select(value,quiet)
         cancel_resolver();resolver_error('Le résolveur de profil a dépassé le délai de cinq secondes.')
     end)
 end
-mp.register_event('shutdown',cancel_resolver)
+mp.register_event('shutdown',function() cancel_resolver();finish_preload() end)
 
 local function configured_slot()
     return tonumber(global('default_slot')) or tonumber(o.default_slot) or 1
@@ -222,9 +228,11 @@ local function start_slot()
     return wanted
 end
 
-mp.add_hook('on_preloaded', -50, function()
+mp.add_hook('on_preloaded', -50, function(hook)
+    finish_preload()
+    if hook then hook:defer();preload_hook=hook end
     local current = mp.get_property_native('user-data/animejanai-active-slot')
-    select(deferred_slot or current or start_slot(), true)
+    if select(deferred_slot or current or start_slot(),true)==false then finish_preload() end
 end)
 
 -- The filter disables itself on error (unsupported source, engine failure): say so once and
