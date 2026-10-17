@@ -1,0 +1,259 @@
+{
+  "date": "2026-10-17",
+  "project": "AH",
+  "existing_tickets_updated": 22,
+  "new_subtasks": [
+    "AH-348",
+    "AH-349",
+    "AH-350",
+    "AH-351",
+    "AH-352",
+    "AH-353"
+  ],
+  "guides": 28,
+  "readback": [
+    {
+      "key": "AH-224",
+      "status": "In Progress",
+      "parent": "AH-10",
+      "description_length": 10083,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:16:54.056+0200"
+    },
+    {
+      "key": "AH-313",
+      "status": "Done",
+      "parent": "AH-141",
+      "description_length": 7357,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:18:25.766+0200"
+    },
+    {
+      "key": "AH-321",
+      "status": "In Progress",
+      "parent": "AH-297",
+      "description_length": 6831,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:16:57.478+0200"
+    },
+    {
+      "key": "AH-325",
+      "status": "Done",
+      "parent": "AH-297",
+      "description_length": 6797,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:18:19.896+0200"
+    },
+    {
+      "key": "AH-326",
+      "status": "Done",
+      "parent": "AH-297",
+      "description_length": 6249,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:18:21.664+0200"
+    },
+    {
+      "key": "AH-328",
+      "status": "Done",
+      "parent": "AH-8",
+      "description_length": 6777,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:18:23.621+0200"
+    },
+    {
+      "key": "AH-339",
+      "status": "In Progress",
+      "parent": "AH-224",
+      "description_length": 7888,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:04.520+0200"
+    },
+    {
+      "key": "AH-341",
+      "status": "Done",
+      "parent": "AH-224",
+      "description_length": 6096,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:18:13.867+0200"
+    },
+    {
+      "key": "AH-342",
+      "status": "Done",
+      "parent": "AH-224",
+      "description_length": 6617,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:18:15.939+0200"
+    },
+    {
+      "key": "AH-343",
+      "status": "Done",
+      "parent": "AH-224",
+      "description_length": 6250,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:18:18.056+0200"
+    },
+    {
+      "key": "AH-344",
+      "status": "In Progress",
+      "parent": "AH-93",
+      "description_length": 15432,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:10.971+0200"
+    },
+    {
+      "key": "AH-345",
+      "status": "In Progress",
+      "parent": "AH-208",
+      "description_length": 20616,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:12.786+0200"
+    },
+    {
+      "key": "AH-346",
+      "status": "In Progress",
+      "parent": "AH-208",
+      "description_length": 13401,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:14.739+0200"
+    },
+    {
+      "key": "AH-93",
+      "status": "In Progress",
+      "parent": "AH-4",
+      "description_length": 6722,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:16.543+0200"
+    },
+    {
+      "key": "AH-348",
+      "status": "To Do",
+      "parent": "AH-121",
+      "description_length": 9858,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:18.226+0200"
+    },
+    {
+      "key": "AH-349",
+      "status": "To Do",
+      "parent": "AH-119",
+      "description_length": 10556,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:19.787+0200"
+    },
+    {
+      "key": "AH-350",
+      "status": "To Do",
+      "parent": "AH-120",
+      "description_length": 10395,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:21.561+0200"
+    },
+    {
+      "key": "AH-351",
+      "status": "To Do",
+      "parent": "AH-131",
+      "description_length": 12026,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:23.287+0200"
+    },
+    {
+      "key": "AH-121",
+      "status": "To Do",
+      "parent": "AH-6",
+      "description_length": 12157,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:24.948+0200"
+    },
+    {
+      "key": "AH-119",
+      "status": "To Do",
+      "parent": "AH-6",
+      "description_length": 12809,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:26.603+0200"
+    },
+    {
+      "key": "AH-120",
+      "status": "To Do",
+      "parent": "AH-6",
+      "description_length": 13809,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:28.297+0200"
+    },
+    {
+      "key": "AH-131",
+      "status": "To Do",
+      "parent": "AH-7",
+      "description_length": 14339,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:30.004+0200"
+    },
+    {
+      "key": "AH-347",
+      "status": "To Do",
+      "parent": "AH-329",
+      "description_length": 10858,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:31.759+0200"
+    },
+    {
+      "key": "AH-329",
+      "status": "In Progress",
+      "parent": "AH-3",
+      "description_length": 12598,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:33.363+0200"
+    },
+    {
+      "key": "AH-208",
+      "status": "In Progress",
+      "parent": "AH-9",
+      "description_length": 14986,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:35.089+0200"
+    },
+    {
+      "key": "AH-330",
+      "status": "To Do",
+      "parent": "AH-3",
+      "description_length": 14668,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:37.204+0200"
+    },
+    {
+      "key": "AH-352",
+      "status": "To Do",
+      "parent": "AH-297",
+      "description_length": 7026,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:38.824+0200"
+    },
+    {
+      "key": "AH-353",
+      "status": "To Do",
+      "parent": "AH-224",
+      "description_length": 3527,
+      "guide_readback_verified": true,
+      "updated": "2026-10-17T07:17:40.662+0200"
+    }
+  ],
+  "completed_release": "3.8.0.84",
+  "completed_tickets": [
+    "AH-313",
+    "AH-325",
+    "AH-326",
+    "AH-328",
+    "AH-341",
+    "AH-342",
+    "AH-343"
+  ],
+  "comments": {
+    "AH-313": "10230",
+    "AH-325": "10227",
+    "AH-326": "10228",
+    "AH-328": "10229",
+    "AH-341": "10224",
+    "AH-342": "10225",
+    "AH-343": "10226"
+  }
+}

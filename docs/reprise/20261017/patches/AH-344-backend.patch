@@ -1,0 +1,466 @@
+--- a/src/aji_dml.cpp
++++ b/src/aji_dml.cpp
+@@ -40,6 +40,7 @@
+ #include <algorithm>
+ #include <cstdarg>
+ #include <cstdint>
++#include <cstdlib>
+ #include <cstdio>
+ #include <cstring>
+ #include <map>
+@@ -59,6 +60,7 @@
+ #include "dml_shaders.h"
+ #include "onnx_shape.h"
+ #include "resample.h"
++#include "rife_pair_cache.h"
+ 
+ using Microsoft::WRL::ComPtr;
+ 
+@@ -348,6 +350,10 @@
+         void *in_alloc = nullptr, *out_alloc = nullptr;
+         ComPtr<ID3D12Resource> scd_part, scd_sum, scd_read;
+         int scd_groups = 0;
++        RifePairCache pair;
++        // Keep the source owners alive for this burst; a recycled texture
++        // address is never sufficient to identify its contents.
++        ComPtr<ID3D11Texture2D> pair_owners[2];
+     } rife;
+ 
+     // Temporal (multi-frame) model step, mirroring aji_trt: frames enter a
+@@ -2671,6 +2677,10 @@
+ 
+ extern "C" AJI_EXPORT void aji_temporal_reset(aji_ctx *c)
+ {
++    if (c) {
++        c->rife.pair.clear();
++        for (auto &owner : c->rife.pair_owners) owner.Reset();
++    }
+ #ifdef AJI_MIGRAPHX_INTEROP
+     if(c && c->amd_warp) {
+         auto &W=*c->amd_warp;W.open=false;W.last={};W.pending={};W.have[0]=W.have[1]=false;
+@@ -3136,7 +3146,19 @@
+     return 0;   // no background builds on DirectML
+ }
+ 
+-extern "C" AJI_EXPORT void aji_rife_begin_pair(aji_ctx *, uint64_t, uint64_t) {}
++extern "C" AJI_EXPORT void aji_rife_begin_pair(aji_ctx *c, uint64_t left_id, uint64_t right_id)
++{
++#ifndef AJI_MIGRAPHX_INTEROP
++    if (!c) return;
++    const char *setting = std::getenv("AJI_RIFE_PAIR_CACHE");
++    c->rife.pair.begin(left_id, right_id, !(setting && *setting == '0'));
++    for (auto &owner : c->rife.pair_owners) owner.Reset();
++#else
++    // Native AMD owns a separate motion/endpoints lifetime. Do not alter it
++    // while enabling exact RGB input reuse in the ordinary DirectML reader.
++    (void)c; (void)left_id; (void)right_id;
++#endif
++}
+ extern "C" AJI_EXPORT int aji_rife_drawings(aji_ctx *) { return 0; }
+ extern "C" AJI_EXPORT int aji_same_drawing(aji_ctx *, const aji_frame *, const aji_frame *, void *) { return 0; }
+ 
+@@ -3183,9 +3205,16 @@
+                                          const aji_frame *out, void *cu_stream)
+ {
+     (void)cu_stream;
+-    if (!c || !a || !b || !out)
++    if (!c)
+         return AJI_ERR;
+     auto &R = c->rife;
++    RifePairFailureGuard pair_guard{R.pair};
++    if (!a || !b || !out)
++        return AJI_ERR;
++    // A caller writing into either source slice breaks immutability. Keep
++    // the existing execution path, but never retain that pair for reuse.
++    if (dml_same_texture_slice(*out, *a) || dml_same_texture_slice(*out, *b))
++        R.pair.clear();
+     if (!R.enabled) {
+         c->set_error("aji_infer_rife without an active RIFE configuration");
+         return AJI_ERR;
+@@ -3202,8 +3231,8 @@
+         return AJI_ERR_SHAPE;
+     }
+ 
+-    // Synchronous by contract (scene-change readback): recordings still
+-    // retire through the marker the guard queues on every exit.
++    // RIFE remains synchronous by contract, including when preparation is
++    // reused. Recordings retire through the marker queued on every exit.
+     DoneGuard done_guard{c};
+ #ifdef AJI_MIGRAPHX_INTEROP
+     if(c->amd_warp) {
+@@ -3271,121 +3300,140 @@
+         R.format = fmt;
+     }
+ 
+-    ID3D12Resource *a_tex = open_shared(c, a->plane[0]);
+-    ID3D12Resource *b_tex = open_shared(c, b->plane[0]);
++    const bool reuse_pair = R.pair.matches(*a, *b);
++    ID3D12Resource *a_tex = reuse_pair ? nullptr : open_shared(c, a->plane[0]);
++    ID3D12Resource *b_tex = reuse_pair ? nullptr : open_shared(c, b->plane[0]);
+     ID3D12Resource *o_tex = open_shared(c, out->plane[0]);
+-    if (!a_tex || !b_tex || !o_tex)
+-        return AJI_ERR;
++    if ((!reuse_pair && (!a_tex || !b_tex)) || !o_tex)
++        return AJI_ERR;
++    if (reuse_pair && R.pair.scene) {
++        pair_guard.complete = true;
++        return AJI_SCENE;
++    }
+     const UINT a_sub = (UINT)(intptr_t)a->plane[1];
+     const UINT b_sub = (UINT)(intptr_t)b->plane[1];
+     const UINT o_sub = (UINT)(intptr_t)out->plane[1];
+ 
+-    // input-ready handoff (no-op when a/b were written by our own queue)
+-    c->fence_val++;
+-    c->ctx11_4->Signal(c->fence11.Get(), c->fence_val);
+-    c->ctx11->Flush();
+-    c->queue->Wait(c->fence.Get(), c->fence_val);
+-
+-    // stage both frames + scene-detect on the unpadded luma
+     Recorder r{c};
+-    if (!r.begin())
+-        return AJI_ERR;
+-    ID3D12Resource *tex[2] = {a_tex, b_tex};
+-    const UINT sub[2] = {a_sub, b_sub};
+-    for (int i = 0; i < 2; i++) {
+-        transition_planes(c, tex[i], sub[i], D3D12_RESOURCE_STATE_COMMON,
+-                          D3D12_RESOURCE_STATE_COPY_SOURCE);
+-        copy_plane(c, true, tex[i], sub[i], 0, fmt, R.w, R.h,
+-                   R.st_y[i].Get(), R.st_pitch);
+-        copy_plane(c, true, tex[i], sub[i], 1, fmt, R.w, R.h,
+-                   R.st_uv[i].Get(), R.st_pitch);
+-        transition_planes(c, tex[i], sub[i],
+-                          D3D12_RESOURCE_STATE_COPY_SOURCE,
+-                          D3D12_RESOURCE_STATE_COMMON);
+-    }
+-    {
+-        D3D12_RESOURCE_BARRIER bs[4] = {};
+-        ID3D12Resource *st[4] = {R.st_y[0].Get(), R.st_uv[0].Get(),
+-                                 R.st_y[1].Get(), R.st_uv[1].Get()};
+-        for (int i = 0; i < 4; i++) {
+-            bs[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+-            bs[i].Transition.pResource = st[i];
+-            bs[i].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+-            bs[i].Transition.StateAfter =
+-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+-        }
+-        c->cl->ResourceBarrier(4, bs);
+-    }
+-    {
+-        KernArgs sa = {};
+-        sa.di[0] = R.w;
+-        sa.di[1] = R.h;
+-        sa.di[2] = (R.w + 31) / 32;
+-        sa.dj[0] = (int)R.st_pitch;
+-        sa.dj[1] = (int)R.st_pitch;
+-        sa.kr = t16 ? 1.0f / 65472.0f : 1.0f / 255.0f;
+-        if (!r.dispatch(K_SCD_PARTIAL, t16, false, sa, NULL, NULL,
+-                        R.st_y[0].Get(), R.st_y[1].Get(), R.scd_part.Get(),
+-                        R.w, R.h, 1))
+-            return AJI_ERR;
+-        r.uav_barrier();
+-        KernArgs sf = {};
+-        sf.di[0] = R.scd_groups;
+-        if (!r.dispatch(K_SCD_FINAL, false, false, sf, NULL, NULL,
+-                        R.scd_part.Get(), R.scd_sum.Get(), NULL, 32, 1, 1))
+-            return AJI_ERR;
+-        r.transition(R.scd_sum.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+-                     D3D12_RESOURCE_STATE_COPY_SOURCE, 0);
+-        c->cl->CopyBufferRegion(R.scd_read.Get(), 0, R.scd_sum.Get(), 0, 4);
+-    }
+-    if (!r.exec())
+-        return AJI_ERR;
+-    if (!wait_done_val(c, signal_done(c), 10000)) {
+-        c->set_error("GPU timeout in rife scene detect");
+-        return AJI_ERR;
+-    }
+-    float sum = 0.0f;
+-    {
+-        void *m = nullptr;
+-        D3D12_RANGE rr = {0, 4};
+-        if (FAILED(R.scd_read->Map(0, &rr, &m)))
+-            return AJI_ERR;
+-        memcpy(&sum, m, 4);
+-        D3D12_RANGE none = {0, 0};
+-        R.scd_read->Unmap(0, &none);
+-    }
+-    // The reference runs SCDetect on the padded clip; the constant borders
+-    // contribute zero difference, so its mean divides by the padded area.
+-    if (sum / ((double)R.pw * R.ph) > R.scd_threshold)
+-        return AJI_SCENE;
+-
+-    // embed the frames into the pad interiors, convert, run, convert back
+     const uint32_t doff_y = (uint32_t)R.pad_t * prow +
+                             (uint32_t)(R.pad_l * bpp);
+     const uint32_t doff_uv = (uint32_t)(R.pad_t / 2) * prow +
+                              (uint32_t)(R.pad_l * bpp);
+-    if (!r.begin())
+-        return AJI_ERR;
+-    for (int i = 0; i < 2; i++) {
+-        if (!record_window(c, r, R.st_y[i].Get(), 0, R.st_pitch,
+-                           R.pad_y[i].Get(), doff_y, prow,
+-                           (uint32_t)(R.w * bpp), R.h) ||
+-            !record_window(c, r, R.st_uv[i].Get(), 0, R.st_pitch,
+-                           R.pad_uv[i].Get(), doff_uv, prow,
+-                           (uint32_t)(R.w * bpp), R.h / 2))
+-            return AJI_ERR;
+-    }
+-    r.uav_barrier();
+-    // padded YUV -> RGB into channels 0-2 (a) and 3-5 (b), bilinear
+-    // chroma, hardcoded BT.709 like rife_cuda.py
+     const aji_csp csp =
+         aji_resample::make_csp(fmt, AJI_MATRIX_BT709, a->range);
+-    for (int i = 0; i < 2; i++) {
+-        if (!record_pre(c, r, R.pre.get(), csp, R.pad_y[i].Get(),
+-                        R.pad_uv[i].Get(), prow, R.in_tensor.Get(),
+-                        (int)(plane * 3 * i), io16))
++    // The complete RGB network still runs at every requested instant.
++    // Only immutable A/B staging, scene decision, padding and conversion
++    // are shared within an explicitly announced pair.
++    if (!reuse_pair) {
++        // input-ready handoff (no-op when a/b were written by our own queue)
++        c->fence_val++;
++        c->ctx11_4->Signal(c->fence11.Get(), c->fence_val);
++        c->ctx11->Flush();
++        c->queue->Wait(c->fence.Get(), c->fence_val);
++
++        // stage both frames + scene-detect on the unpadded luma
++        if (!r.begin())
+             return AJI_ERR;
+-    }
++        ID3D12Resource *tex[2] = {a_tex, b_tex};
++        const UINT sub[2] = {a_sub, b_sub};
++        for (int i = 0; i < 2; i++) {
++            transition_planes(c, tex[i], sub[i], D3D12_RESOURCE_STATE_COMMON,
++                              D3D12_RESOURCE_STATE_COPY_SOURCE);
++            copy_plane(c, true, tex[i], sub[i], 0, fmt, R.w, R.h,
++                       R.st_y[i].Get(), R.st_pitch);
++            copy_plane(c, true, tex[i], sub[i], 1, fmt, R.w, R.h,
++                       R.st_uv[i].Get(), R.st_pitch);
++            transition_planes(c, tex[i], sub[i],
++                              D3D12_RESOURCE_STATE_COPY_SOURCE,
++                              D3D12_RESOURCE_STATE_COMMON);
++        }
++        {
++            D3D12_RESOURCE_BARRIER bs[4] = {};
++            ID3D12Resource *st[4] = {R.st_y[0].Get(), R.st_uv[0].Get(),
++                                     R.st_y[1].Get(), R.st_uv[1].Get()};
++            for (int i = 0; i < 4; i++) {
++                bs[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
++                bs[i].Transition.pResource = st[i];
++                bs[i].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
++                bs[i].Transition.StateAfter =
++                    D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
++            }
++            c->cl->ResourceBarrier(4, bs);
++        }
++        {
++            KernArgs sa = {};
++            sa.di[0] = R.w;
++            sa.di[1] = R.h;
++            sa.di[2] = (R.w + 31) / 32;
++            sa.dj[0] = (int)R.st_pitch;
++            sa.dj[1] = (int)R.st_pitch;
++            sa.kr = t16 ? 1.0f / 65472.0f : 1.0f / 255.0f;
++            if (!r.dispatch(K_SCD_PARTIAL, t16, false, sa, NULL, NULL,
++                            R.st_y[0].Get(), R.st_y[1].Get(), R.scd_part.Get(),
++                            R.w, R.h, 1))
++                return AJI_ERR;
++            r.uav_barrier();
++            KernArgs sf = {};
++            sf.di[0] = R.scd_groups;
++            if (!r.dispatch(K_SCD_FINAL, false, false, sf, NULL, NULL,
++                            R.scd_part.Get(), R.scd_sum.Get(), NULL, 32, 1, 1))
++                return AJI_ERR;
++            r.transition(R.scd_sum.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
++                         D3D12_RESOURCE_STATE_COPY_SOURCE, 0);
++            c->cl->CopyBufferRegion(R.scd_read.Get(), 0, R.scd_sum.Get(), 0, 4);
++        }
++        if (!r.exec())
++            return AJI_ERR;
++        if (!wait_done_val(c, signal_done(c), 10000)) {
++            c->set_error("GPU timeout in rife scene detect");
++            return AJI_ERR;
++        }
++        float sum = 0.0f;
++        {
++            void *m = nullptr;
++            D3D12_RANGE rr = {0, 4};
++            if (FAILED(R.scd_read->Map(0, &rr, &m)))
++                return AJI_ERR;
++            memcpy(&sum, m, 4);
++            D3D12_RANGE none = {0, 0};
++            R.scd_read->Unmap(0, &none);
++        }
++        // The reference runs SCDetect on the padded clip; the constant borders
++        // contribute zero difference, so its mean divides by the padded area.
++        if (sum / ((double)R.pw * R.ph) > R.scd_threshold) {
++            R.pair.remember(*a, *b, true);
++            if (R.pair.ready) {
++                R.pair_owners[0] = static_cast<ID3D11Texture2D *>(a->plane[0]);
++                R.pair_owners[1] = static_cast<ID3D11Texture2D *>(b->plane[0]);
++            }
++            pair_guard.complete = true;
++            return AJI_SCENE;
++        }
++
++        // embed the frames into the pad interiors, convert, run, convert back
++        if (!r.begin())
++            return AJI_ERR;
++        for (int i = 0; i < 2; i++) {
++            if (!record_window(c, r, R.st_y[i].Get(), 0, R.st_pitch,
++                               R.pad_y[i].Get(), doff_y, prow,
++                               (uint32_t)(R.w * bpp), R.h) ||
++                !record_window(c, r, R.st_uv[i].Get(), 0, R.st_pitch,
++                               R.pad_uv[i].Get(), doff_uv, prow,
++                               (uint32_t)(R.w * bpp), R.h / 2))
++                return AJI_ERR;
++        }
++        r.uav_barrier();
++        // padded YUV -> RGB into channels 0-2 (a) and 3-5 (b), bilinear
++        // chroma, hardcoded BT.709 like rife_cuda.py
++        for (int i = 0; i < 2; i++) {
++            if (!record_pre(c, r, R.pre.get(), csp, R.pad_y[i].Get(),
++                            R.pad_uv[i].Get(), prow, R.in_tensor.Get(),
++                            (int)(plane * 3 * i), io16))
++                return AJI_ERR;
++        }
++    }
++    if (!r.begin())
++        return AJI_ERR;
+     // channel 6: the timestep plane
+     {
+         uint32_t value, dwords, start;
+@@ -3465,6 +3513,12 @@
+         diagnose_device(c, "rife fence wait");
+         return AJI_ERR;
+     }
++    R.pair.remember(*a, *b, false);
++    if (R.pair.ready) {
++        R.pair_owners[0] = static_cast<ID3D11Texture2D *>(a->plane[0]);
++        R.pair_owners[1] = static_cast<ID3D11Texture2D *>(b->plane[0]);
++    }
++    pair_guard.complete = true;
+     return AJI_OK;
+ }
+ 
+--- /dev/null
++++ b/src/rife_pair_cache.h
+@@ -0,0 +1,45 @@
++#pragma once
++
++#include "frame_identity.h"
++
++// D3D11 array textures may hold independent frame slices. Reject an output
++// writing the actual source slice, without disabling reuse for other slices.
++inline bool dml_same_texture_slice(const aji_frame &a, const aji_frame &b)
++{
++    return a.plane[0] && a.plane[0] == b.plane[0] && a.plane[1] == b.plane[1];
++}
++
++// One explicitly delimited immutable pair, not an address-keyed image cache.
++// begin() always ends the previous burst, even when the caller repeats IDs.
++// No identities / no extension call means the old uncached path.
++struct RifePairCache {
++    uint64_t left_id = 0, right_id = 0;
++    SourceView source[2];
++    bool ready = false, scene = false;
++
++    void clear() { *this = {}; }
++    void begin(uint64_t left, uint64_t right, bool enabled = true) {
++        clear();
++        if (enabled && left && right) { left_id = left; right_id = right; }
++    }
++    bool enabled() const { return left_id && right_id; }
++    bool matches(const aji_frame &a, const aji_frame &b) const {
++        return ready && source[0].matches(left_id, a, nullptr)
++            && source[1].matches(right_id, b, nullptr);
++    }
++    void remember(const aji_frame &a, const aji_frame &b, bool is_scene) {
++        ready = enabled();
++        if (ready) {
++            source[0] = {left_id, a, nullptr};
++            source[1] = {right_id, b, nullptr};
++            scene = is_scene;
++        }
++    }
++};
++
++// A failed/partial preparation or inference cannot establish a reusable pair.
++struct RifePairFailureGuard {
++    RifePairCache &cache;
++    bool complete = false;
++    ~RifePairFailureGuard() { if (!complete) cache.clear(); }
++};
+--- /dev/null
++++ b/tests/rife_pair_cache_check.cpp
+@@ -0,0 +1,69 @@
++#include "rife_pair_cache.h"
++#include <cassert>
++#include <cstdio>
++#include <utility>
++#include <initializer_list>
++
++int main()
++{
++    int storage[4] = {};
++    aji_frame a{}, b{};
++    a.width = b.width = 1280; a.height = b.height = 720;
++    a.format = b.format = AJI_FMT_P010;
++    a.matrix = b.matrix = AJI_MATRIX_BT709;
++    a.range = b.range = AJI_RANGE_LIMITED;
++    a.siting = b.siting = AJI_SITING_LEFT;
++    a.plane[0] = &storage[0]; b.plane[0] = &storage[1];
++    a.stride[0] = b.stride[0] = 2560;
++    aji_frame other_slice = a;
++    assert(dml_same_texture_slice(a, other_slice));
++    other_slice.plane[1] = reinterpret_cast<void *>(1);
++    assert(!dml_same_texture_slice(a, other_slice));
++    assert(!dml_same_texture_slice(aji_frame{}, aji_frame{}));
++    RifePairCache pair;
++    pair.remember(a, b, false);
++    assert(!pair.matches(a, b)); // unannounced / old filter
++    for (auto ids : {std::pair<uint64_t,uint64_t>{0,2}, {1,0}, {0,0}}) {
++        pair.begin(ids.first, ids.second); pair.remember(a, b, false);
++        assert(!pair.matches(a, b));
++    }
++    pair.begin(11, 12, false); pair.remember(a, b, false);
++    assert(!pair.matches(a, b)); // ablation remains uncached
++    pair.begin(11, 12);
++    assert(!pair.matches(a, b)); // partial preparation not committed
++    pair.remember(a, b, false);
++    assert(pair.matches(a, b) && !pair.scene);
++    for (int side = 0; side < 2; ++side) {
++        for (int field = 0; field < 12; ++field) {
++            aji_frame frames[2] = {a,b}; auto &changed = frames[side];
++            switch (field) {
++            case 0: ++changed.width; break;
++            case 1: ++changed.height; break;
++            case 2: ++changed.format; break;
++            case 3: ++changed.matrix; break;
++            case 4: ++changed.range; break;
++            case 5: ++changed.siting; break;
++            default:
++                if (field < 9) changed.plane[field-6] = &storage[3];
++                else ++changed.stride[field-9];
++            }
++            assert(!pair.matches(frames[0], frames[1]));
++        }
++    }
++    pair.begin(11, 12); // reused addresses/IDs in a NEW burst are not enough
++    assert(!pair.matches(a, b));
++    pair.remember(a, b, true);
++    assert(pair.matches(a, b) && pair.scene);
++    {
++        RifePairFailureGuard failed{pair};
++    }
++    assert(!pair.matches(a, b) && !pair.enabled());
++    pair.begin(21, 22); pair.remember(a, b, false);
++    {
++        RifePairFailureGuard success{pair}; success.complete = true;
++    }
++    assert(pair.matches(a, b));
++    pair.clear(); // seek/configure/model reset uses this production state
++    assert(!pair.matches(a, b) && !pair.enabled());
++    std::puts("PASS: no-ID/off, both 12-field views, burst lifetime, cut, failure and reset");
++}

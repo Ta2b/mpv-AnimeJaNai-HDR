@@ -1,0 +1,143 @@
+diff --git a/src/aji_trt.cpp b/src/aji_trt.cpp
+index f88b036..c70b4fb 100644
+--- a/src/aji_trt.cpp
++++ b/src/aji_trt.cpp
+@@ -437,6 +437,7 @@ struct aji_ctx {
+         cudaEvent_t max_ready = nullptr;
+         cudaStream_t motion_stream = nullptr;
+         cudaEvent_t motion_inputs = nullptr;
++        cudaEvent_t motion_done = nullptr;         // dependency when no host score is needed
+         bool overlap_attempted = false;
+         bool hdr_done = false;                     // up[] already went through TrueHDR
+         unsigned long long warped = 0, upscaled = 0, pairs_single = 0, pairs_split = 0;
+@@ -1215,6 +1216,7 @@ void rife_teardown(aji_ctx *c)
+                    "one RIFE run, %llu with one per instant", W.warped, W.upscaled, W.pairs_single, W.pairs_split);
+     if (W.motion_stream) cudaStreamDestroy(W.motion_stream);
+     if (W.motion_inputs) cudaEventDestroy(W.motion_inputs);
++    if (W.motion_done) cudaEventDestroy(W.motion_done);
+     if (W.max_host) cudaFreeHost(W.max_host);
+     if (W.max_ready) cudaEventDestroy(W.max_ready);
+     if (W.work_order) cudaEventDestroy(W.work_order);
+@@ -3961,7 +3963,10 @@ extern "C" AJI_EXPORT int aji_infer_rife(aji_ctx *c, const aji_frame *a,
+     // channel 6: x2 repeatedly uses .5, so its full-resolution plane is constant.
+     // Compare float bits, including signed zero, and preserve the old FP16 conversion.
+     const bool motion_ready = warp_ready(c, a);
+-    const bool middle_input = motion_ready && (!c->warp.prev_split || t == 0.5);
++    // Above x3 the existing Fast policy always reuses the middle motion,
++    // regardless of its magnitude. No reduction/readback can change that choice.
++    const bool many = (double)R.num / R.den > 3.0 + 1e-9;
++    const bool middle_input = motion_ready && (many || !c->warp.prev_split || t == 0.5);
+     err = rife_timestep(c, middle_input ? 0.5f : (float)t, stream);
+     if (err) { c->set_error("timestep fill failed"); return AJI_ERR_CUDA; }
+ 
+@@ -3972,7 +3977,7 @@ extern "C" AJI_EXPORT int aji_infer_rife(aji_ctx *c, const aji_frame *a,
+         // the middle of the pair; under single_px of motion that one run gives every instant.
+         // After a pair that moved too much the next one probably does too: RIFE then runs for
+         // the instant itself (the plane already holds t), and its motion decides for the next pair.
+-        const bool middle = !W.prev_split || t == 0.5;
++        const bool middle = many || !W.prev_split || t == 0.5;
+         // RIFE's motion tensors/context are independent of the spatial
+         // upscaler. Order input preparation on a separate non-blocking stream,
+         // then let the caller stream upscale the endpoints concurrently.
+@@ -3982,10 +3987,12 @@ extern "C" AJI_EXPORT int aji_infer_rife(aji_ctx *c, const aji_frame *a,
+             if (!(overlap && *overlap == '0')) {
+                 bool ready = cudaStreamCreateWithFlags(&W.motion_stream, cudaStreamNonBlocking) == cudaSuccess;
+                 if (ready) ready = cudaEventCreateWithFlags(&W.motion_inputs, cudaEventDisableTiming) == cudaSuccess;
++                if (ready && many) ready = cudaEventCreateWithFlags(&W.motion_done, cudaEventDisableTiming) == cudaSuccess;
+                 if (!ready) {
+                     if (W.motion_stream) cudaStreamDestroy(W.motion_stream);
+                     if (W.motion_inputs) cudaEventDestroy(W.motion_inputs);
+-                    W.motion_stream = nullptr; W.motion_inputs = nullptr;
++                    if (W.motion_done) cudaEventDestroy(W.motion_done);
++                    W.motion_stream = nullptr; W.motion_inputs = W.motion_done = nullptr;
+                     cudaGetLastError();
+                 }
+             }
+@@ -4008,24 +4015,35 @@ extern "C" AJI_EXPORT int aji_infer_rife(aji_ctx *c, const aji_frame *a,
+             c->set_error("rife motion enqueueV3 failed");
+             return AJI_ERR_ENGINE;
+         }
+-        // Read only the motion scalar before submitting independent upscales.
+-        // An event after the upscales would accidentally drain them too.
+-        if (!W.max_host && cudaHostAlloc((void **)&W.max_host, sizeof(unsigned int), cudaHostAllocDefault) != cudaSuccess) {
+-            W.max_host = nullptr;
+-            cudaGetLastError();
+-        }
+         unsigned int motion_fallback = 0;
+-        unsigned int *motion_score = W.max_host ? W.max_host : &motion_fallback;
+-        if (cudaMemsetAsync(W.maxbuf, 0, sizeof(unsigned int), motion_stream) != cudaSuccess ||
+-            aji_flow_max(W.flow, R.pw, R.ph, R.pad_l, R.pad_t, R.w, R.h, W.maxbuf, motion_stream) != 0 ||
+-            cudaMemcpyAsync(motion_score, W.maxbuf, sizeof(*motion_score), cudaMemcpyDeviceToHost, motion_stream) != cudaSuccess) {
+-            c->set_error("motion size failed");
+-            return AJI_ERR_CUDA;
+-        }
+-        const bool motion_recorded = scalar_record(W.max_ready, motion_stream) == cudaSuccess;
+-        if (!W.max_host && scalar_wait(W.max_ready, motion_recorded, motion_stream) != cudaSuccess) {
+-            c->set_error("motion pageable scalar wait failed");
+-            return AJI_ERR_CUDA;
++        unsigned int *motion_score = nullptr;
++        bool motion_recorded = false;
++        if (many) {
++            // Keep endpoint upscales concurrent; join the motion stream on the
++            // caller's GPU stream only after submitting those independent jobs.
++            if (W.motion_stream && cudaEventRecord(W.motion_done, motion_stream) != cudaSuccess) {
++                c->set_error("motion completion event failed");
++                return AJI_ERR_CUDA;
++            }
++        } else {
++            // Read only the motion scalar before submitting independent upscales.
++            // An event after the upscales would accidentally drain them too.
++            if (!W.max_host && cudaHostAlloc((void **)&W.max_host, sizeof(unsigned int), cudaHostAllocDefault) != cudaSuccess) {
++                W.max_host = nullptr;
++                cudaGetLastError();
++            }
++            motion_score = W.max_host ? W.max_host : &motion_fallback;
++            if (cudaMemsetAsync(W.maxbuf, 0, sizeof(unsigned int), motion_stream) != cudaSuccess ||
++                aji_flow_max(W.flow, R.pw, R.ph, R.pad_l, R.pad_t, R.w, R.h, W.maxbuf, motion_stream) != 0 ||
++                cudaMemcpyAsync(motion_score, W.maxbuf, sizeof(*motion_score), cudaMemcpyDeviceToHost, motion_stream) != cudaSuccess) {
++                c->set_error("motion size failed");
++                return AJI_ERR_CUDA;
++            }
++            motion_recorded = scalar_record(W.max_ready, motion_stream) == cudaSuccess;
++            if (!W.max_host && scalar_wait(W.max_ready, motion_recorded, motion_stream) != cudaSuccess) {
++                c->set_error("motion pageable scalar wait failed");
++                return AJI_ERR_CUDA;
++            }
+         }
+         // A new pair. Its first picture is the last one of the pair before, when the filter went
+         // straight from one to the other; otherwise it is upscaled here.
+@@ -4043,19 +4061,27 @@ extern "C" AJI_EXPORT int aji_infer_rife(aji_ctx *c, const aji_frame *a,
+         int e = warp_upscale(c, b, W.up[1], stream);
+         if (e != AJI_OK)
+             return e;
+-        if (scalar_wait(W.max_ready, motion_recorded, motion_stream) != cudaSuccess) {
+-            c->set_error("motion size event wait failed");
+-            return AJI_ERR_CUDA;
++        float largest = 0;
++        if (many) {
++            if (W.motion_stream && cudaStreamWaitEvent(stream, W.motion_done, 0) != cudaSuccess) {
++                c->set_error("motion output dependency failed");
++                return AJI_ERR_CUDA;
++            }
++        } else {
++            if (scalar_wait(W.max_ready, motion_recorded, motion_stream) != cudaSuccess) {
++                c->set_error("motion size event wait failed");
++                return AJI_ERR_CUDA;
++            }
++            const unsigned int bits = *motion_score;
++            memcpy(&largest, &bits, sizeof(largest));
+         }
++        // On the many path, the caller stream now owns the outstanding motion
++        // dependency; subsequent warps and tensor reuse stay ordered on it.
+         motion_lifetime.done = true;
+-        const unsigned int bits = *motion_score;
+-        float largest;
+-        memcpy(&largest, &bits, sizeof(largest));
+         // From an instant's run the largest displacement is at least the middle's: the same
+         // threshold is on the safe side.
+         // Beyond two in-between frames per pair (x3), one RIFE run per instant costs more than the
+         // frame's time on large motion: the middle run then serves every instant, whatever the motion.
+-        const bool many = (double)R.num / R.den > 3.0 + 1e-9;
+         W.single = middle && (largest <= W.single_px || many);
+         W.prev_split = !many && largest > W.single_px;
+         (W.single ? W.pairs_single : W.pairs_split)++;

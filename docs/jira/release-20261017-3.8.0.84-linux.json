@@ -1,0 +1,1295 @@
+{
+  "release": "3.8.0.84",
+  "scope": "Linux static delivery verification: overlay, AppImage, Manager component and producer archive",
+  "player_source": "f626ceb2154f1b90ff5c4e275e8bb31a969f1bc6",
+  "manager_source": "f1f85962f8e86e5f37d84501f37f72b6d1780828",
+  "bundle_source": "e48fb15b048db5ea39d3becbe9fdede6764f1941",
+  "pipeline_backend_source": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
+  "archive_digests": [
+    {
+      "name": "manifest-linux-x64.json",
+      "sha256": "71705a6235b0d8158baa0e3e68259f411318fa0d8559693f71ce77d21a6165d2",
+      "expected": "sha256:71705a6235b0d8158baa0e3e68259f411318fa0d8559693f71ce77d21a6165d2",
+      "bytes": 2630,
+      "size_match": true,
+      "match": true,
+      "tag": "3.8.0.84"
+    },
+    {
+      "name": "packs-linux-x64.json",
+      "sha256": "0ac50564a72173ae824f8120ecb449c5b5a802bf8c0019cc3214b559a13da6b0",
+      "expected": "sha256:0ac50564a72173ae824f8120ecb449c5b5a802bf8c0019cc3214b559a13da6b0",
+      "bytes": 10702,
+      "size_match": true,
+      "match": true,
+      "tag": "3.8.0.84"
+    },
+    {
+      "name": "component-manager-linux-x64.7z",
+      "sha256": "4b8ff72c465dd136045de53a196a9fc4c78932f1a62d3833195f329c791bc4bd",
+      "expected": "sha256:4b8ff72c465dd136045de53a196a9fc4c78932f1a62d3833195f329c791bc4bd",
+      "bytes": 36127327,
+      "size_match": true,
+      "match": true,
+      "tag": "3.8.0.84"
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.84-linux-x64.7z",
+      "sha256": "54511e2c7f85ae00982905433b45dcc6ff15a0989afbe3b83c3da84549202f6a",
+      "expected": "sha256:54511e2c7f85ae00982905433b45dcc6ff15a0989afbe3b83c3da84549202f6a",
+      "bytes": 51809140,
+      "size_match": true,
+      "match": true,
+      "tag": "3.8.0.84"
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.84-linux-x64.AppImage",
+      "sha256": "a3fe6e35a0b3b33e73c3e57e7ea6ebae8dcfe98368e6f0e1336e4f52d9b2d3e1",
+      "expected": "sha256:a3fe6e35a0b3b33e73c3e57e7ea6ebae8dcfe98368e6f0e1336e4f52d9b2d3e1",
+      "bytes": 206969336,
+      "size_match": true,
+      "match": true,
+      "tag": "3.8.0.84"
+    },
+    {
+      "name": "AnimeJaNaiManager-HDR-linux-x64.tar.zst",
+      "sha256": "03fb785353438105326322c3efb798a5bc05cc707e2d9677fc38ad29c562e104",
+      "expected": "sha256:03fb785353438105326322c3efb798a5bc05cc707e2d9677fc38ad29c562e104",
+      "bytes": 44324977,
+      "size_match": true,
+      "match": true,
+      "tag": "hdr-f1f85962f8e86e5f37d84501f37f72b6d1780828"
+    }
+  ],
+  "source_files": [
+    {
+      "delivered": "overlay/animejanai/preparation/contract.py",
+      "source": "tools/interpolation/contract.py",
+      "sha256": "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d",
+      "source_sha256": "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/animejanai/preparation/engine.py",
+      "source": "tools/interpolation/engine.py",
+      "sha256": "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673",
+      "source_sha256": "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/animejanai/preparation/gmfss-fortuna.json",
+      "source": "tools/interpolation/gmfss-fortuna.json",
+      "sha256": "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10",
+      "source_sha256": "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/animejanai/preparation/worker.py",
+      "source": "tools/interpolation/worker.py",
+      "sha256": "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80",
+      "source_sha256": "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/docs/INTERPOLATION-STAGES.md",
+      "source": "docs/INTERPOLATION-STAGES.md",
+      "sha256": "19ee6b0f89196002e626d2e78c7b7992d3b451e4f616b7f3766248d3156e1238",
+      "source_sha256": "19ee6b0f89196002e626d2e78c7b7992d3b451e4f616b7f3766248d3156e1238",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/mpv-animejanai",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/launch-linux.sh",
+      "sha256": "8caa051c7e3d20fd42eda28df0c73391781e3d5b67f41cedd8f34597a5120dd7",
+      "source_sha256": "8caa051c7e3d20fd42eda28df0c73391781e3d5b67f41cedd8f34597a5120dd7",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/gpu-policy.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/gpu-policy.lua",
+      "sha256": "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e",
+      "source_sha256": "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/hdr-grade.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/hdr-grade.lua",
+      "sha256": "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1",
+      "source_sha256": "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/inference-color.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/inference-color.lua",
+      "sha256": "9288f1cd4508ed6f6023657c15054eff9b73756c310f0ec2e35c90e56aa7cbb4",
+      "source_sha256": "9288f1cd4508ed6f6023657c15054eff9b73756c310f0ec2e35c90e56aa7cbb4",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/interpolation-stages.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/interpolation-stages.lua",
+      "sha256": "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0",
+      "source_sha256": "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/linux-hdr.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/linux-hdr.lua",
+      "sha256": "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829",
+      "source_sha256": "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/linux-playback.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/linux-playback.lua",
+      "sha256": "f11cf7842e3305af6e694b4ba6d70c33a4dbed6702ca3cfa69cdfa30ec5f560f",
+      "source_sha256": "f11cf7842e3305af6e694b4ba6d70c33a4dbed6702ca3cfa69cdfa30ec5f560f",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/pipeline-hdr.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/pipeline-hdr.lua",
+      "sha256": "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71",
+      "source_sha256": "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/playback-state.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/playback-state.lua",
+      "sha256": "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac",
+      "source_sha256": "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/rife-sync.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/rife-sync.lua",
+      "sha256": "698a92843f96aaed65f408815de454365577d26b35356794161c846c1105a2f5",
+      "source_sha256": "698a92843f96aaed65f408815de454365577d26b35356794161c846c1105a2f5",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/rtx-stage.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/rtx-stage.lua",
+      "sha256": "3b8ae301884c8736f8e05d9f0d303ad8d827d540178ed3fa5c7a6c01bbbbc539",
+      "source_sha256": "3b8ae301884c8736f8e05d9f0d303ad8d827d540178ed3fa5c7a6c01bbbbc539",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/sha256.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/sha256.lua",
+      "sha256": "609f9c7ef4e16af6ef9f3c9547b79b58d47f722251c4e0be713067024a4a8e1c",
+      "source_sha256": "609f9c7ef4e16af6ef9f3c9547b79b58d47f722251c4e0be713067024a4a8e1c",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/hdr-tools/user-script-loader.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/user-script-loader.lua",
+      "sha256": "afca374ca0cb420e74f2882912353a5e8ed9a250001d305bace41021d030339e",
+      "source_sha256": "afca374ca0cb420e74f2882912353a5e8ed9a250001d305bace41021d030339e",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/scripts/animejanai_backend.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_backend.lua",
+      "sha256": "cdfd498d0e3a714cfb27d39752e6dc7a40787659402fc496c24100c9ceb8ae62",
+      "source_sha256": "cdfd498d0e3a714cfb27d39752e6dc7a40787659402fc496c24100c9ceb8ae62",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/scripts/animejanai_engine_monitor.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_engine_monitor.lua",
+      "sha256": "e34541dfab046b83ab44a02df3bd9e6711cf897c5eff2f019365e82bfcf63af3",
+      "source_sha256": "e34541dfab046b83ab44a02df3bd9e6711cf897c5eff2f019365e82bfcf63af3",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/scripts/animejanai_playback.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_playback.lua",
+      "sha256": "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43",
+      "source_sha256": "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/scripts/animejanai_reference.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_reference.lua",
+      "sha256": "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d",
+      "source_sha256": "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/scripts/animejanai_slot.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_slot.lua",
+      "sha256": "22c92955b2be62be1ea32a92a56df5a6eed5e6f5b68284e79c857884cb642e36",
+      "source_sha256": "22c92955b2be62be1ea32a92a56df5a6eed5e6f5b68284e79c857884cb642e36",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/scripts/animejanai_update.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_update.lua",
+      "sha256": "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e",
+      "source_sha256": "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/scripts/animejanaistats.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanaistats.lua",
+      "sha256": "b2bc5c34d0eaf076a591f3f7c493c362c22a6ddc728ce93577b2de2db0023070",
+      "source_sha256": "b2bc5c34d0eaf076a591f3f7c493c362c22a6ddc728ce93577b2de2db0023070",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/user-scripts/animejanai_backend.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/animejanai_backend.lua",
+      "sha256": "0d545eb39908661a34905237af63e793146fd545fadf50ce56215c6ecb2f8f45",
+      "source_sha256": "0d545eb39908661a34905237af63e793146fd545fadf50ce56215c6ecb2f8f45",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/user-scripts/animejanai_hdr_auto.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/animejanai_hdr_auto.lua",
+      "sha256": "910fa8d04db1fdf518be765a60a1754991c405860b9715485ce8f39c1aed56bc",
+      "source_sha256": "910fa8d04db1fdf518be765a60a1754991c405860b9715485ce8f39c1aed56bc",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/user-scripts/animejanai_slot.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/animejanai_slot.lua",
+      "sha256": "53d6f251e88e6789a83bbfeafe94debdf02d2821c03c108f3fd755d240bd63a6",
+      "source_sha256": "53d6f251e88e6789a83bbfeafe94debdf02d2821c03c108f3fd755d240bd63a6",
+      "exact": true
+    },
+    {
+      "delivered": "overlay/portable_config/user-scripts/hardware_auto.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/hardware_auto.lua",
+      "sha256": "35fc698c0f39b57cbd1274864e788a76f107d4dd6f36764167459ae90ce96805",
+      "source_sha256": "35fc698c0f39b57cbd1274864e788a76f107d4dd6f36764167459ae90ce96805",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/AppRun",
+      "source": "installer/linux/AppRun",
+      "sha256": "fcd16de36afead56dc888719f618a903acf75625c83d80aeea016ec1c421389d",
+      "source_sha256": "fcd16de36afead56dc888719f618a903acf75625c83d80aeea016ec1c421389d",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/animejanai/preparation/contract.py",
+      "source": "tools/interpolation/contract.py",
+      "sha256": "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d",
+      "source_sha256": "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/animejanai/preparation/engine.py",
+      "source": "tools/interpolation/engine.py",
+      "sha256": "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673",
+      "source_sha256": "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/animejanai/preparation/gmfss-fortuna.json",
+      "source": "tools/interpolation/gmfss-fortuna.json",
+      "sha256": "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10",
+      "source_sha256": "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/animejanai/preparation/worker.py",
+      "source": "tools/interpolation/worker.py",
+      "sha256": "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80",
+      "source_sha256": "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/docs/INTERPOLATION-STAGES.md",
+      "source": "docs/INTERPOLATION-STAGES.md",
+      "sha256": "19ee6b0f89196002e626d2e78c7b7992d3b451e4f616b7f3766248d3156e1238",
+      "source_sha256": "19ee6b0f89196002e626d2e78c7b7992d3b451e4f616b7f3766248d3156e1238",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/mpv-animejanai",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/launch-linux.sh",
+      "sha256": "8caa051c7e3d20fd42eda28df0c73391781e3d5b67f41cedd8f34597a5120dd7",
+      "source_sha256": "8caa051c7e3d20fd42eda28df0c73391781e3d5b67f41cedd8f34597a5120dd7",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/gpu-policy.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/gpu-policy.lua",
+      "sha256": "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e",
+      "source_sha256": "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/hdr-grade.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/hdr-grade.lua",
+      "sha256": "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1",
+      "source_sha256": "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/inference-color.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/inference-color.lua",
+      "sha256": "9288f1cd4508ed6f6023657c15054eff9b73756c310f0ec2e35c90e56aa7cbb4",
+      "source_sha256": "9288f1cd4508ed6f6023657c15054eff9b73756c310f0ec2e35c90e56aa7cbb4",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/interpolation-stages.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/interpolation-stages.lua",
+      "sha256": "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0",
+      "source_sha256": "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/linux-hdr.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/linux-hdr.lua",
+      "sha256": "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829",
+      "source_sha256": "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/linux-playback.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/linux-playback.lua",
+      "sha256": "f11cf7842e3305af6e694b4ba6d70c33a4dbed6702ca3cfa69cdfa30ec5f560f",
+      "source_sha256": "f11cf7842e3305af6e694b4ba6d70c33a4dbed6702ca3cfa69cdfa30ec5f560f",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/pipeline-hdr.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/pipeline-hdr.lua",
+      "sha256": "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71",
+      "source_sha256": "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/playback-state.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/playback-state.lua",
+      "sha256": "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac",
+      "source_sha256": "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/rife-sync.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/rife-sync.lua",
+      "sha256": "698a92843f96aaed65f408815de454365577d26b35356794161c846c1105a2f5",
+      "source_sha256": "698a92843f96aaed65f408815de454365577d26b35356794161c846c1105a2f5",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/rtx-stage.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/rtx-stage.lua",
+      "sha256": "3b8ae301884c8736f8e05d9f0d303ad8d827d540178ed3fa5c7a6c01bbbbc539",
+      "source_sha256": "3b8ae301884c8736f8e05d9f0d303ad8d827d540178ed3fa5c7a6c01bbbbc539",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/sha256.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/sha256.lua",
+      "sha256": "609f9c7ef4e16af6ef9f3c9547b79b58d47f722251c4e0be713067024a4a8e1c",
+      "source_sha256": "609f9c7ef4e16af6ef9f3c9547b79b58d47f722251c4e0be713067024a4a8e1c",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/hdr-tools/user-script-loader.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/user-script-loader.lua",
+      "sha256": "afca374ca0cb420e74f2882912353a5e8ed9a250001d305bace41021d030339e",
+      "source_sha256": "afca374ca0cb420e74f2882912353a5e8ed9a250001d305bace41021d030339e",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/scripts/animejanai_backend.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_backend.lua",
+      "sha256": "cdfd498d0e3a714cfb27d39752e6dc7a40787659402fc496c24100c9ceb8ae62",
+      "source_sha256": "cdfd498d0e3a714cfb27d39752e6dc7a40787659402fc496c24100c9ceb8ae62",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/scripts/animejanai_engine_monitor.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_engine_monitor.lua",
+      "sha256": "e34541dfab046b83ab44a02df3bd9e6711cf897c5eff2f019365e82bfcf63af3",
+      "source_sha256": "e34541dfab046b83ab44a02df3bd9e6711cf897c5eff2f019365e82bfcf63af3",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/scripts/animejanai_playback.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_playback.lua",
+      "sha256": "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43",
+      "source_sha256": "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/scripts/animejanai_reference.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_reference.lua",
+      "sha256": "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d",
+      "source_sha256": "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/scripts/animejanai_slot.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_slot.lua",
+      "sha256": "22c92955b2be62be1ea32a92a56df5a6eed5e6f5b68284e79c857884cb642e36",
+      "source_sha256": "22c92955b2be62be1ea32a92a56df5a6eed5e6f5b68284e79c857884cb642e36",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/scripts/animejanai_update.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_update.lua",
+      "sha256": "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e",
+      "source_sha256": "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/scripts/animejanaistats.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanaistats.lua",
+      "sha256": "b2bc5c34d0eaf076a591f3f7c493c362c22a6ddc728ce93577b2de2db0023070",
+      "source_sha256": "b2bc5c34d0eaf076a591f3f7c493c362c22a6ddc728ce93577b2de2db0023070",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/user-scripts/animejanai_backend.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/animejanai_backend.lua",
+      "sha256": "0d545eb39908661a34905237af63e793146fd545fadf50ce56215c6ecb2f8f45",
+      "source_sha256": "0d545eb39908661a34905237af63e793146fd545fadf50ce56215c6ecb2f8f45",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/user-scripts/animejanai_hdr_auto.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/animejanai_hdr_auto.lua",
+      "sha256": "910fa8d04db1fdf518be765a60a1754991c405860b9715485ce8f39c1aed56bc",
+      "source_sha256": "910fa8d04db1fdf518be765a60a1754991c405860b9715485ce8f39c1aed56bc",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/user-scripts/animejanai_slot.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/animejanai_slot.lua",
+      "sha256": "53d6f251e88e6789a83bbfeafe94debdf02d2821c03c108f3fd755d240bd63a6",
+      "source_sha256": "53d6f251e88e6789a83bbfeafe94debdf02d2821c03c108f3fd755d240bd63a6",
+      "exact": true
+    },
+    {
+      "delivered": "appimage/portable_config/user-scripts/hardware_auto.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/hardware_auto.lua",
+      "sha256": "35fc698c0f39b57cbd1274864e788a76f107d4dd6f36764167459ae90ce96805",
+      "source_sha256": "35fc698c0f39b57cbd1274864e788a76f107d4dd6f36764167459ae90ce96805",
+      "exact": true
+    }
+  ],
+  "bundle_files": [
+    {
+      "container": "overlay",
+      "name": "libaji.so",
+      "sha256": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+      "bundle_sha256": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+      "exact": true,
+      "declared_sha256": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "overlay",
+      "name": "libaji_trt.so",
+      "sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "bundle_sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "exact": true,
+      "declared_sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "overlay",
+      "name": "libaji_trt_rtx.so",
+      "sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "bundle_sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "exact": true,
+      "declared_sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "overlay",
+      "name": "libaji_pipeline.so",
+      "sha256": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
+      "bundle_sha256": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
+      "exact": true,
+      "declared_sha256": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "overlay",
+      "name": "aji_pipeline.fatbin",
+      "sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "bundle_sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "exact": true,
+      "declared_sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "overlay",
+      "name": "GPU-SOURCE.json",
+      "sha256": "bfbc66c76452ec49f13dde0f08e196db42716bf0cfe5f061e5ce6194cac8d1a5",
+      "bundle_sha256": "bfbc66c76452ec49f13dde0f08e196db42716bf0cfe5f061e5ce6194cac8d1a5",
+      "exact": true
+    },
+    {
+      "container": "overlay",
+      "name": "PIPELINE-README.md",
+      "sha256": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc",
+      "bundle_sha256": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc",
+      "exact": true,
+      "declared_sha256": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "overlay",
+      "name": "GPU-INFERENCE-NOTICES.txt",
+      "sha256": "957bc5a064c1054b8998fe03d05045c62f67d724d71e6eb9277dad5a1700fa47",
+      "bundle_sha256": "957bc5a064c1054b8998fe03d05045c62f67d724d71e6eb9277dad5a1700fa47",
+      "exact": true
+    },
+    {
+      "container": "appimage",
+      "name": "libaji.so",
+      "sha256": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+      "bundle_sha256": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+      "exact": true,
+      "declared_sha256": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "appimage",
+      "name": "libaji_trt.so",
+      "sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "bundle_sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "exact": true,
+      "declared_sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "appimage",
+      "name": "libaji_trt_rtx.so",
+      "sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "bundle_sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "exact": true,
+      "declared_sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "appimage",
+      "name": "libaji_pipeline.so",
+      "sha256": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
+      "bundle_sha256": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
+      "exact": true,
+      "declared_sha256": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "appimage",
+      "name": "aji_pipeline.fatbin",
+      "sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "bundle_sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "exact": true,
+      "declared_sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "appimage",
+      "name": "GPU-SOURCE.json",
+      "sha256": "bfbc66c76452ec49f13dde0f08e196db42716bf0cfe5f061e5ce6194cac8d1a5",
+      "bundle_sha256": "bfbc66c76452ec49f13dde0f08e196db42716bf0cfe5f061e5ce6194cac8d1a5",
+      "exact": true
+    },
+    {
+      "container": "appimage",
+      "name": "PIPELINE-README.md",
+      "sha256": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc",
+      "bundle_sha256": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc",
+      "exact": true,
+      "declared_sha256": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc",
+      "manifest_hash_matches": true
+    },
+    {
+      "container": "appimage",
+      "name": "GPU-INFERENCE-NOTICES.txt",
+      "sha256": "957bc5a064c1054b8998fe03d05045c62f67d724d71e6eb9277dad5a1700fa47",
+      "bundle_sha256": "957bc5a064c1054b8998fe03d05045c62f67d724d71e6eb9277dad5a1700fa47",
+      "exact": true
+    }
+  ],
+  "manager_files": [
+    {
+      "container": "component",
+      "name": "AnimeJaNaiManager-HDR",
+      "sha256": "774ac31515533f5a69850432dc0410cb05dd4ae5f86a878a7814dcc1cd4a776a",
+      "producer_sha256": "bc351ab421db9b31717fd0d05755efe6a3be25feeff2fa19d5a7ab2abded6e03",
+      "exact": false,
+      "is_symlink": false
+    },
+    {
+      "container": "component",
+      "name": "AnimeJaNaiManager",
+      "sha256": "774ac31515533f5a69850432dc0410cb05dd4ae5f86a878a7814dcc1cd4a776a",
+      "producer_sha256": "bc351ab421db9b31717fd0d05755efe6a3be25feeff2fa19d5a7ab2abded6e03",
+      "exact": false,
+      "is_symlink": true,
+      "symlink_target": "AnimeJaNaiManager-HDR"
+    },
+    {
+      "container": "component",
+      "name": "libSkiaSharp.so",
+      "sha256": "66c856eaf1a47a00b23204c30c6ee407987bf5086ecc0a1a6b4fd67526b0cd02",
+      "producer_sha256": "66c856eaf1a47a00b23204c30c6ee407987bf5086ecc0a1a6b4fd67526b0cd02",
+      "exact": true,
+      "is_symlink": false
+    },
+    {
+      "container": "component",
+      "name": "libHarfBuzzSharp.so",
+      "sha256": "1d5c3afef13545bf34bf8f068b14e25ee619c3b6dee235c44e260fe61cb24018",
+      "producer_sha256": "1d5c3afef13545bf34bf8f068b14e25ee619c3b6dee235c44e260fe61cb24018",
+      "exact": true,
+      "is_symlink": false
+    },
+    {
+      "container": "appimage",
+      "name": "AnimeJaNaiManager-HDR",
+      "sha256": "774ac31515533f5a69850432dc0410cb05dd4ae5f86a878a7814dcc1cd4a776a",
+      "producer_sha256": "bc351ab421db9b31717fd0d05755efe6a3be25feeff2fa19d5a7ab2abded6e03",
+      "exact": false,
+      "is_symlink": false
+    },
+    {
+      "container": "appimage",
+      "name": "AnimeJaNaiManager",
+      "sha256": "774ac31515533f5a69850432dc0410cb05dd4ae5f86a878a7814dcc1cd4a776a",
+      "producer_sha256": "bc351ab421db9b31717fd0d05755efe6a3be25feeff2fa19d5a7ab2abded6e03",
+      "exact": false,
+      "is_symlink": true,
+      "symlink_target": "AnimeJaNaiManager-HDR"
+    },
+    {
+      "container": "appimage",
+      "name": "libSkiaSharp.so",
+      "sha256": "66c856eaf1a47a00b23204c30c6ee407987bf5086ecc0a1a6b4fd67526b0cd02",
+      "producer_sha256": "66c856eaf1a47a00b23204c30c6ee407987bf5086ecc0a1a6b4fd67526b0cd02",
+      "exact": true,
+      "is_symlink": false
+    },
+    {
+      "container": "appimage",
+      "name": "libHarfBuzzSharp.so",
+      "sha256": "1d5c3afef13545bf34bf8f068b14e25ee619c3b6dee235c44e260fe61cb24018",
+      "producer_sha256": "1d5c3afef13545bf34bf8f068b14e25ee619c3b6dee235c44e260fe61cb24018",
+      "exact": true,
+      "is_symlink": false
+    }
+  ],
+  "manifest_checks": {
+    "package_version": "3.8.0.84",
+    "platform": "linux-x64",
+    "manager_pin": "hdr-f1f85962f8e86e5f37d84501f37f72b6d1780828",
+    "mpvfork": "2026-10-09-19c0fcf-wayland-vulkan-bridge1-wlqueue-compat-quality-fast1-stats-atomic1-source-ids1-prefetch-prototype1-prefetch-budget1-surface-worker1-ordered-pipeline1-hdr-stage1-fruc-retired1",
+    "packs_version": "3.8.0.84",
+    "overlay_manifest_exact": true,
+    "overlay_version": "3.8.0.84",
+    "appimage_manifest_exact": true,
+    "appimage_version": "3.8.0.84"
+  },
+  "failures": [],
+  "limitations": [
+    "No player, Manager, video, GPU, install or desktop registration executed. AppImage invoked only with --appimage-extract after digest verification.",
+    "Linux full tar.zst and unchanged external model/runtime packs were not downloaded; AppImage, overlay and Manager component were inspected.",
+    "CI conclusions and Git tag target were not queried by this script; parent verifies publication state separately.",
+    "User-preserved installed configurations and the currently installed application were not inspected.",
+    "Exact binary delivery does not extend previous functional/pixel/performance qualification to additional hardware.",
+    "Linux Manager executable is rebuilt from the exact pinned source, with identical shared source contents, but is not byte-identical to the separately published producer executable. No independent IL equivalence proof is claimed."
+  ],
+  "bundle_pipeline_manifest": {
+    "backend_source": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
+    "api": "aji_pipeline_v1",
+    "sha256": {
+      "libaji_pipeline.so": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
+      "aji_pipeline.fatbin": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "PIPELINE-README.md": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc"
+    },
+    "host_baseline": "glibc2.38 / GLIBCXX3.4.30 / Ubuntu24",
+    "explicit_opt_in": true,
+    "sdk_external": true,
+    "qualified": "Lot57 Linux RTX4070Ti: FRUC provider/build/assets removed; native RIFE Fast4+SPAN retained 5 exact output hashes, rational PTS/durations/flags, dimensions and request counters against lot55 bundle; same TRT and fatbin. Model-free standalone Spline36 128x72->64x36 canonical YUV444P16 exactly matches established ABI9 resize with unchanged descriptors, padding, owners and cadence. Independent height preserves source aspect with native even-pixel rounding, without the legacy16:9 box; wide and smaller-source configure cases qualified separately. No NV12/P010 legacy-route equivalence, universal FPS or physical HDR claim. Previous Area/TrueHDR/fusion evidence remains historical.",
+    "cuda_architectures": [
+      75,
+      80,
+      86,
+      89,
+      90,
+      100,
+      120,
+      "PTX120"
+    ],
+    "prior_backend_source": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+    "features": [
+      "independent-area-downscale",
+      "static-reader-feature-query",
+      "one-hdr-stage-per-profile",
+      "explicit-truehdr-conversion",
+      "optional-output-color-query",
+      "native-hdr-only-passthrough",
+      "maximal-interpolation-spatial-groups",
+      "ordered-compatible-trt-fusion",
+      "fast-x2-cost-fallback",
+      "typed-endpoint-reuse",
+      "optional-execution-trace",
+      "retired-fruc-explicit-incompatibility",
+      "independent-spline36-downscale"
+    ],
+    "sdk_hdr": {
+      "externally_installed": true,
+      "sdk_version": "Maxine VideoFX1.3 + TrueHDR1.2.3",
+      "input": "RGBA8 SDR709",
+      "output": "RGB10A2 PQ2020, canonical limited YUV16",
+      "pixel_workspace_counted": true,
+      "sdk_workspace_counted": false,
+      "reader": "hdr-stage1"
+    },
+    "retired_methods": {
+      "nvidia-fruc": "Removed by user request AH-328; enabled legacy stages explicitly rejected, disabled data preserved; ABI fields reserved"
+    },
+    "targeted_timing_ms": {
+      "before": 18.851991999326856,
+      "after": 17.402252999090706
+    },
+    "timing_scope": "Two warmup intervals then three contiguous intervals; short timing observation, not display FPS or universal performance"
+  },
+  "manager_pack": {
+    "name": "manager",
+    "dep": "manager_hdr",
+    "core": true,
+    "asset": "component-manager-linux-x64.7z",
+    "bytes": 36127327,
+    "installed_bytes": 113198685,
+    "files": [
+      "AnimeJaNaiManager-HDR",
+      "AnimeJaNaiManager",
+      "libSkiaSharp.so",
+      "libHarfBuzzSharp.so"
+    ]
+  },
+  "component_manager_embedded_source": {
+    "ascii_occurrences": 1,
+    "utf16le_occurrences": 1
+  },
+  "appimage_manager_embedded_source": {
+    "ascii_occurrences": 1,
+    "utf16le_occurrences": 1
+  },
+  "manager_rebuild": {
+    "producer_executable_byte_identical": false,
+    "reason": "PLAYER release-linux.yml lines170-183 rebuilds pinned Manager source with current PLAYER PlatformSource and ReferenceExporterSource; producer build uses player-source-ref.txt",
+    "manager_pin": "f1f85962f8e86e5f37d84501f37f72b6d1780828",
+    "producer_shared_source_pin": "69aca0b866a8625bb53bc265d308743cd1314269",
+    "shared_sources": [
+      {
+        "path": "AnimeJaNaiPlatform/PlatformServices.cs",
+        "producer_sha256": "c4fa1106aa959e1ee388e13b624c0dfe9ebfe49432a28c85781471b48a40da17",
+        "player_sha256": "c4fa1106aa959e1ee388e13b624c0dfe9ebfe49432a28c85781471b48a40da17",
+        "exact": true
+      },
+      {
+        "path": "AnimeJaNaiPlatform/ReferenceExporter.cs",
+        "producer_sha256": "6a0cb4b1172a6a4b8e9bc4aaa6aff047de888f82f75d438413dc748f849b206b",
+        "player_sha256": "6a0cb4b1172a6a4b8e9bc4aaa6aff047de888f82f75d438413dc748f849b206b",
+        "exact": true
+      }
+    ],
+    "component_appimage_exact": true,
+    "known_producer_difference_bytes": 220,
+    "byte_difference_note": "Observed 220 differing bytes in equal-size executables; inspected ranges include PE/debug metadata, build PDB paths, MVID-shaped GUID and bundle ID. This observation is not claimed as an independent IL equivalence proof."
+  },
+  "ci_reported_by_parent": {
+    "linux": 39004574426,
+    "conclusion": "success",
+    "head": "f626ceb2154f1b90ff5c4e275e8bb31a969f1bc6",
+    "independently_queried": false
+  },
+  "overlay_appimage_files": [
+    {
+      "path": "AnimeJaNaiPlatform",
+      "sha256": "3d327b30c8fca0e650034257f07b0ac0b3a3600d1f338a00788e7de85a0c6a03",
+      "appimage_sha256": "3d327b30c8fca0e650034257f07b0ac0b3a3600d1f338a00788e7de85a0c6a03",
+      "exact": true
+    },
+    {
+      "path": "AnimeJaNaiUpdater",
+      "sha256": "a7ace0b5baecd2409ff22a23860b1cf382c51c088f79d477184ba5d155b73332",
+      "appimage_sha256": "a7ace0b5baecd2409ff22a23860b1cf382c51c088f79d477184ba5d155b73332",
+      "exact": true
+    },
+    {
+      "path": "README-LINUX.md",
+      "sha256": "92f261a9e040ce06b35612273e60910f54e5c92c396c10a77b55e24c04bcaed5",
+      "appimage_sha256": "92f261a9e040ce06b35612273e60910f54e5c92c396c10a77b55e24c04bcaed5",
+      "exact": true
+    },
+    {
+      "path": "animejanai/benchmarks/1280x720.mp4",
+      "sha256": "bd6ed6e896b6a9f8eae917bfeea731bda328c35f1b47a3d389f4360964d47e95",
+      "appimage_sha256": "bd6ed6e896b6a9f8eae917bfeea731bda328c35f1b47a3d389f4360964d47e95",
+      "exact": true
+    },
+    {
+      "path": "animejanai/benchmarks/1920x1080.mp4",
+      "sha256": "817a41035b6aa1edd5eb11dd4f570c3a34e7af9f148bc1b2992e115a5d1ab703",
+      "appimage_sha256": "817a41035b6aa1edd5eb11dd4f570c3a34e7af9f148bc1b2992e115a5d1ab703",
+      "exact": true
+    },
+    {
+      "path": "animejanai/benchmarks/480x360.mp4",
+      "sha256": "782717a2a73dd692d378a943acf355bcf43eae4a6edfbe81fd6cc5bc3f496d77",
+      "appimage_sha256": "782717a2a73dd692d378a943acf355bcf43eae4a6edfbe81fd6cc5bc3f496d77",
+      "exact": true
+    },
+    {
+      "path": "animejanai/benchmarks/640x480.mp4",
+      "sha256": "74f3d39e24ecd9c7fadca9b4ecc28ab61245eaf37d8ed71ae06379c0a070d920",
+      "appimage_sha256": "74f3d39e24ecd9c7fadca9b4ecc28ab61245eaf37d8ed71ae06379c0a070d920",
+      "exact": true
+    },
+    {
+      "path": "animejanai/benchmarks/768x576.mp4",
+      "sha256": "e232d855c8f7bd7e35d5c0aa984bdbeb0bf440498307704d2604cb086e17d5b2",
+      "appimage_sha256": "e232d855c8f7bd7e35d5c0aa984bdbeb0bf440498307704d2604cb086e17d5b2",
+      "exact": true
+    },
+    {
+      "path": "animejanai/benchmarks/AnimeJaNaiBenchmark",
+      "sha256": "75f0f54cbc288bd1aee0630345a18aeadf01aa0287ef3c8fe22db00c3d3f3180",
+      "appimage_sha256": "75f0f54cbc288bd1aee0630345a18aeadf01aa0287ef3c8fe22db00c3d3f3180",
+      "exact": true
+    },
+    {
+      "path": "animejanai/benchmarks/AnimeJaNaiBenchmark.pdb",
+      "sha256": "3dd65db97dc85f876bc16e135a3bc880ff17a4bf5deba24c6e6367f7c022e890",
+      "appimage_sha256": "3dd65db97dc85f876bc16e135a3bc880ff17a4bf5deba24c6e6367f7c022e890",
+      "exact": true
+    },
+    {
+      "path": "animejanai/benchmarks/animejanai_benchmark_all.bat",
+      "sha256": "8d75831587f7d3d33f7e0ec331dd0cf7b57cf290604e90bb52111c968e5482aa",
+      "appimage_sha256": "8d75831587f7d3d33f7e0ec331dd0cf7b57cf290604e90bb52111c968e5482aa",
+      "exact": true
+    },
+    {
+      "path": "animejanai/benchmarks/animejanai_benchmark_all.sh",
+      "sha256": "5f81bcbb3d79d3c54a7b8eecdd50a36188a12dcef6b919f43fc9c39a897234d6",
+      "appimage_sha256": "5f81bcbb3d79d3c54a7b8eecdd50a36188a12dcef6b919f43fc9c39a897234d6",
+      "exact": true
+    },
+    {
+      "path": "animejanai/benchmarks/benchmark.ps1",
+      "sha256": "1eaf89c3b0d666879689ff67189cfaa41d96cd8382b4e95e0a21e42843b34e41",
+      "appimage_sha256": "1eaf89c3b0d666879689ff67189cfaa41d96cd8382b4e95e0a21e42843b34e41",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/AMD-README.md",
+      "sha256": "4d2df24f7e0070b9e333f10674272cb920591f6eb75b98331034ac40deec3bb6",
+      "appimage_sha256": "4d2df24f7e0070b9e333f10674272cb920591f6eb75b98331034ac40deec3bb6",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/GPU-INFERENCE-NOTICES.txt",
+      "sha256": "957bc5a064c1054b8998fe03d05045c62f67d724d71e6eb9277dad5a1700fa47",
+      "appimage_sha256": "957bc5a064c1054b8998fe03d05045c62f67d724d71e6eb9277dad5a1700fa47",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/GPU-SOURCE.json",
+      "sha256": "bfbc66c76452ec49f13dde0f08e196db42716bf0cfe5f061e5ce6194cac8d1a5",
+      "appimage_sha256": "bfbc66c76452ec49f13dde0f08e196db42716bf0cfe5f061e5ce6194cac8d1a5",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/PIPELINE-README.md",
+      "sha256": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc",
+      "appimage_sha256": "070ba0a1bcb1036819b63da7d16be972a10bdf4cf3fb62e46d2a826afbbc82bc",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/aji_harness",
+      "sha256": "a2b3bdca4cc47f7e0e7f8abdc8bf79059727f119c5def5185de3e1bb298975b7",
+      "appimage_sha256": "a2b3bdca4cc47f7e0e7f8abdc8bf79059727f119c5def5185de3e1bb298975b7",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/aji_kernel_test",
+      "sha256": "f4bcc36501ab4ef297325a5ba372f6b800c74aad7b00324e11d2e5049b8a158a",
+      "appimage_sha256": "f4bcc36501ab4ef297325a5ba372f6b800c74aad7b00324e11d2e5049b8a158a",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/aji_pipeline.fatbin",
+      "sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "appimage_sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/animejanai-vulkan-test",
+      "sha256": "bbe6f4a7f285bc0a81e33a3ede5646f69d3b42f5ad4fba41ebf03e049cfc3473",
+      "appimage_sha256": "bbe6f4a7f285bc0a81e33a3ede5646f69d3b42f5ad4fba41ebf03e049cfc3473",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/libaji.so",
+      "sha256": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+      "appimage_sha256": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/libaji_pipeline.so",
+      "sha256": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
+      "appimage_sha256": "f3157d0589279131e6952b2f251d1e46a74d0d550db3962f5a80f4705a363801",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/libaji_trt.so",
+      "sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "appimage_sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/libaji_trt_rtx.so",
+      "sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "appimage_sha256": "c6f2fce428e2b3b931c7c4ffb7b589513ba9653fc6693ee20d1eeed5c21fa713",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/libaji_vulkan.so",
+      "sha256": "77c965b294a74e7eb9ef1d03559abf668490974255678e24c26fc9bf9da72737",
+      "appimage_sha256": "77c965b294a74e7eb9ef1d03559abf668490974255678e24c26fc9bf9da72737",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/libgomp.so.1",
+      "sha256": "135f3c8f006d2fe5e68e51281c7974cb991a03de3bfb3593d68d174dfcf854d1",
+      "appimage_sha256": "135f3c8f006d2fe5e68e51281c7974cb991a03de3bfb3593d68d174dfcf854d1",
+      "exact": true
+    },
+    {
+      "path": "animejanai/inference/vulkan-build-info.txt",
+      "sha256": "40965af5c64df911351663f6cd7fd7da00187967abe68efec6201813719ded3c",
+      "appimage_sha256": "40965af5c64df911351663f6cd7fd7da00187967abe68efec6201813719ded3c",
+      "exact": true
+    },
+    {
+      "path": "animejanai/licenses/AnimeJaNai-Inference.txt",
+      "sha256": "6b2d551803c8978e97e88154fe81deb6e4cac2e817b5a7a1c77fa6249df37393",
+      "appimage_sha256": "6b2d551803c8978e97e88154fe81deb6e4cac2e817b5a7a1c77fa6249df37393",
+      "exact": true
+    },
+    {
+      "path": "animejanai/licenses/NCNN.txt",
+      "sha256": "7c974bac98848df46be1af5bdaa3c3c9c01f6082a90f55caeb7f60c6208aa255",
+      "appimage_sha256": "7c974bac98848df46be1af5bdaa3c3c9c01f6082a90f55caeb7f60c6208aa255",
+      "exact": true
+    },
+    {
+      "path": "animejanai/licenses/RIFE-NCNN-Vulkan.txt",
+      "sha256": "a73beab18143600af0b10c6050a953ec233775ce31c2bf3373a794db535329fd",
+      "appimage_sha256": "a73beab18143600af0b10c6050a953ec233775ce31c2bf3373a794db535329fd",
+      "exact": true
+    },
+    {
+      "path": "animejanai/licenses/glslang.txt",
+      "sha256": "17e70c676e1521ff3e4686f04a2053d93a7e28a33be8de7ec37ab0ff72feb677",
+      "appimage_sha256": "17e70c676e1521ff3e4686f04a2053d93a7e28a33be8de7ec37ab0ff72feb677",
+      "exact": true
+    },
+    {
+      "path": "animejanai/preparation/contract.py",
+      "sha256": "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d",
+      "appimage_sha256": "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d",
+      "exact": true
+    },
+    {
+      "path": "animejanai/preparation/engine.py",
+      "sha256": "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673",
+      "appimage_sha256": "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673",
+      "exact": true
+    },
+    {
+      "path": "animejanai/preparation/gmfss-fortuna.json",
+      "sha256": "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10",
+      "appimage_sha256": "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10",
+      "exact": true
+    },
+    {
+      "path": "animejanai/preparation/worker.py",
+      "sha256": "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80",
+      "appimage_sha256": "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80",
+      "exact": true
+    },
+    {
+      "path": "animejanai/rife-vulkan/rife-v4.6/flownet.bin",
+      "sha256": "f334ed2260149ce0188a6dcf049844e8b0cdd912e01cbcfb63553157d2508958",
+      "appimage_sha256": "f334ed2260149ce0188a6dcf049844e8b0cdd912e01cbcfb63553157d2508958",
+      "exact": true
+    },
+    {
+      "path": "animejanai/rife-vulkan/rife-v4.6/flownet.param",
+      "sha256": "724569596bcd1e7b9fa50455c604777ebed99746d2ef40aa86e31b5725f1053c",
+      "appimage_sha256": "724569596bcd1e7b9fa50455c604777ebed99746d2ef40aa86e31b5725f1053c",
+      "exact": true
+    },
+    {
+      "path": "docs/INTERPOLATION-STAGES.md",
+      "sha256": "19ee6b0f89196002e626d2e78c7b7992d3b451e4f616b7f3766248d3156e1238",
+      "appimage_sha256": "19ee6b0f89196002e626d2e78c7b7992d3b451e4f616b7f3766248d3156e1238",
+      "exact": true
+    },
+    {
+      "path": "docs/LINUX-INFERENCE.md",
+      "sha256": "35ca948f6e89e9f07c4ebbb0db861a6d3dad4e4d9b19586f65be8bfaa4b785d7",
+      "appimage_sha256": "35ca948f6e89e9f07c4ebbb0db861a6d3dad4e4d9b19586f65be8bfaa4b785d7",
+      "exact": true
+    },
+    {
+      "path": "docs/LINUX.md",
+      "sha256": "cdebf81059f9e4345ffb676d33804be9af18869b621bf8fbb7989dcb1e9bf232",
+      "appimage_sha256": "cdebf81059f9e4345ffb676d33804be9af18869b621bf8fbb7989dcb1e9bf232",
+      "exact": true
+    },
+    {
+      "path": "docs/SETTINGS.md",
+      "sha256": "224084c3dcb78a8a8340db7239cbb0e628db4676e7984999f508d86860d1aa39",
+      "appimage_sha256": "224084c3dcb78a8a8340db7239cbb0e628db4676e7984999f508d86860d1aa39",
+      "exact": true
+    },
+    {
+      "path": "libHarfBuzzSharp.so",
+      "sha256": "1d5c3afef13545bf34bf8f068b14e25ee619c3b6dee235c44e260fe61cb24018",
+      "appimage_sha256": "1d5c3afef13545bf34bf8f068b14e25ee619c3b6dee235c44e260fe61cb24018",
+      "exact": true
+    },
+    {
+      "path": "libSkiaSharp.so",
+      "sha256": "66c856eaf1a47a00b23204c30c6ee407987bf5086ecc0a1a6b4fd67526b0cd02",
+      "appimage_sha256": "66c856eaf1a47a00b23204c30c6ee407987bf5086ecc0a1a6b4fd67526b0cd02",
+      "exact": true
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "71705a6235b0d8158baa0e3e68259f411318fa0d8559693f71ce77d21a6165d2",
+      "appimage_sha256": "71705a6235b0d8158baa0e3e68259f411318fa0d8559693f71ce77d21a6165d2",
+      "exact": true
+    },
+    {
+      "path": "mpv-animejanai",
+      "sha256": "8caa051c7e3d20fd42eda28df0c73391781e3d5b67f41cedd8f34597a5120dd7",
+      "appimage_sha256": "8caa051c7e3d20fd42eda28df0c73391781e3d5b67f41cedd8f34597a5120dd7",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/gpu-policy.lua",
+      "sha256": "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e",
+      "appimage_sha256": "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/hdr-grade.lua",
+      "sha256": "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1",
+      "appimage_sha256": "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/inference-color.lua",
+      "sha256": "9288f1cd4508ed6f6023657c15054eff9b73756c310f0ec2e35c90e56aa7cbb4",
+      "appimage_sha256": "9288f1cd4508ed6f6023657c15054eff9b73756c310f0ec2e35c90e56aa7cbb4",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/interpolation-stages.lua",
+      "sha256": "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0",
+      "appimage_sha256": "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/launch-linux.sh",
+      "sha256": "8caa051c7e3d20fd42eda28df0c73391781e3d5b67f41cedd8f34597a5120dd7",
+      "appimage_sha256": "8caa051c7e3d20fd42eda28df0c73391781e3d5b67f41cedd8f34597a5120dd7",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/linux-hdr.lua",
+      "sha256": "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829",
+      "appimage_sha256": "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/linux-playback.lua",
+      "sha256": "f11cf7842e3305af6e694b4ba6d70c33a4dbed6702ca3cfa69cdfa30ec5f560f",
+      "appimage_sha256": "f11cf7842e3305af6e694b4ba6d70c33a4dbed6702ca3cfa69cdfa30ec5f560f",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/pipeline-hdr.lua",
+      "sha256": "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71",
+      "appimage_sha256": "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/playback-state.lua",
+      "sha256": "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac",
+      "appimage_sha256": "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/rife-sync.lua",
+      "sha256": "698a92843f96aaed65f408815de454365577d26b35356794161c846c1105a2f5",
+      "appimage_sha256": "698a92843f96aaed65f408815de454365577d26b35356794161c846c1105a2f5",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/rtx-stage.lua",
+      "sha256": "3b8ae301884c8736f8e05d9f0d303ad8d827d540178ed3fa5c7a6c01bbbbc539",
+      "appimage_sha256": "3b8ae301884c8736f8e05d9f0d303ad8d827d540178ed3fa5c7a6c01bbbbc539",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/sha256.lua",
+      "sha256": "609f9c7ef4e16af6ef9f3c9547b79b58d47f722251c4e0be713067024a4a8e1c",
+      "appimage_sha256": "609f9c7ef4e16af6ef9f3c9547b79b58d47f722251c4e0be713067024a4a8e1c",
+      "exact": true
+    },
+    {
+      "path": "portable_config/hdr-tools/user-script-loader.lua",
+      "sha256": "afca374ca0cb420e74f2882912353a5e8ed9a250001d305bace41021d030339e",
+      "appimage_sha256": "afca374ca0cb420e74f2882912353a5e8ed9a250001d305bace41021d030339e",
+      "exact": true
+    },
+    {
+      "path": "portable_config/input-animejanai.conf",
+      "sha256": "276397c8db882135c338cb31e4b0d6498b9b69fa3e98f2fd55b458bb47c0e703",
+      "appimage_sha256": "276397c8db882135c338cb31e4b0d6498b9b69fa3e98f2fd55b458bb47c0e703",
+      "exact": true
+    },
+    {
+      "path": "portable_config/mpv-animejanai.conf",
+      "sha256": "e2dbd14e9b80b35f0c66a51c300486087389fb0c3f68cd9107d970c41be41341",
+      "appimage_sha256": "e2dbd14e9b80b35f0c66a51c300486087389fb0c3f68cd9107d970c41be41341",
+      "exact": true
+    },
+    {
+      "path": "portable_config/profiles/linux-amd/animejanai.conf",
+      "sha256": "22c9701066935e9a01cf91de29aa489ceabf9057cea731f762c33d094bec6fe7",
+      "appimage_sha256": "22c9701066935e9a01cf91de29aa489ceabf9057cea731f762c33d094bec6fe7",
+      "exact": true
+    },
+    {
+      "path": "portable_config/profiles/linux-nvidia/animejanai.conf",
+      "sha256": "22c9701066935e9a01cf91de29aa489ceabf9057cea731f762c33d094bec6fe7",
+      "appimage_sha256": "22c9701066935e9a01cf91de29aa489ceabf9057cea731f762c33d094bec6fe7",
+      "exact": true
+    },
+    {
+      "path": "portable_config/scripts/animejanai_backend.lua",
+      "sha256": "cdfd498d0e3a714cfb27d39752e6dc7a40787659402fc496c24100c9ceb8ae62",
+      "appimage_sha256": "cdfd498d0e3a714cfb27d39752e6dc7a40787659402fc496c24100c9ceb8ae62",
+      "exact": true
+    },
+    {
+      "path": "portable_config/scripts/animejanai_engine_monitor.lua",
+      "sha256": "e34541dfab046b83ab44a02df3bd9e6711cf897c5eff2f019365e82bfcf63af3",
+      "appimage_sha256": "e34541dfab046b83ab44a02df3bd9e6711cf897c5eff2f019365e82bfcf63af3",
+      "exact": true
+    },
+    {
+      "path": "portable_config/scripts/animejanai_playback.lua",
+      "sha256": "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43",
+      "appimage_sha256": "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43",
+      "exact": true
+    },
+    {
+      "path": "portable_config/scripts/animejanai_reference.lua",
+      "sha256": "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d",
+      "appimage_sha256": "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d",
+      "exact": true
+    },
+    {
+      "path": "portable_config/scripts/animejanai_slot.lua",
+      "sha256": "22c92955b2be62be1ea32a92a56df5a6eed5e6f5b68284e79c857884cb642e36",
+      "appimage_sha256": "22c92955b2be62be1ea32a92a56df5a6eed5e6f5b68284e79c857884cb642e36",
+      "exact": true
+    },
+    {
+      "path": "portable_config/scripts/animejanai_update.lua",
+      "sha256": "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e",
+      "appimage_sha256": "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e",
+      "exact": true
+    },
+    {
+      "path": "portable_config/scripts/animejanaistats.lua",
+      "sha256": "b2bc5c34d0eaf076a591f3f7c493c362c22a6ddc728ce93577b2de2db0023070",
+      "appimage_sha256": "b2bc5c34d0eaf076a591f3f7c493c362c22a6ddc728ce93577b2de2db0023070",
+      "exact": true
+    },
+    {
+      "path": "portable_config/shaders/noise_static_chroma.hook",
+      "sha256": "cfc9c22d38b0195de5596ad681d501cf5fe2e62e24b2ce26f75ad870d198d748",
+      "appimage_sha256": "cfc9c22d38b0195de5596ad681d501cf5fe2e62e24b2ce26f75ad870d198d748",
+      "exact": true
+    },
+    {
+      "path": "portable_config/shaders/noise_static_luma.hook",
+      "sha256": "9544d7e0ce1b31648531ee616ff028a18a6c8ca3eeef690dfdd6ea98c0a2ba31",
+      "appimage_sha256": "9544d7e0ce1b31648531ee616ff028a18a6c8ca3eeef690dfdd6ea98c0a2ba31",
+      "exact": true
+    },
+    {
+      "path": "portable_config/user-scripts/animejanai_backend.lua",
+      "sha256": "0d545eb39908661a34905237af63e793146fd545fadf50ce56215c6ecb2f8f45",
+      "appimage_sha256": "0d545eb39908661a34905237af63e793146fd545fadf50ce56215c6ecb2f8f45",
+      "exact": true
+    },
+    {
+      "path": "portable_config/user-scripts/animejanai_hdr_auto.lua",
+      "sha256": "910fa8d04db1fdf518be765a60a1754991c405860b9715485ce8f39c1aed56bc",
+      "appimage_sha256": "910fa8d04db1fdf518be765a60a1754991c405860b9715485ce8f39c1aed56bc",
+      "exact": true
+    },
+    {
+      "path": "portable_config/user-scripts/animejanai_slot.lua",
+      "sha256": "53d6f251e88e6789a83bbfeafe94debdf02d2821c03c108f3fd755d240bd63a6",
+      "appimage_sha256": "53d6f251e88e6789a83bbfeafe94debdf02d2821c03c108f3fd755d240bd63a6",
+      "exact": true
+    },
+    {
+      "path": "portable_config/user-scripts/hardware_auto.lua",
+      "sha256": "35fc698c0f39b57cbd1274864e788a76f107d4dd6f36764167459ae90ce96805",
+      "appimage_sha256": "35fc698c0f39b57cbd1274864e788a76f107d4dd6f36764167459ae90ce96805",
+      "exact": true
+    },
+    {
+      "path": "portable_config/user-shaders/anime-hdr-calibration.hook",
+      "sha256": "80d27fed7a7334c734b7d82dc5e79742e45d609bc62f7050ac62d7431db66437",
+      "appimage_sha256": "80d27fed7a7334c734b7d82dc5e79742e45d609bc62f7050ac62d7431db66437",
+      "exact": true
+    },
+    {
+      "path": "portable_config/user-shaders/anime-hdr-grade.hook",
+      "sha256": "7f7e6cb6032d24d8bc9a9559ee1062bba79d1f9b0e04e9a5b0ac57859b489c2d",
+      "appimage_sha256": "7f7e6cb6032d24d8bc9a9559ee1062bba79d1f9b0e04e9a5b0ac57859b489c2d",
+      "exact": true
+    },
+    {
+      "path": "version.txt",
+      "sha256": "a2bf0f4a6fa94cde7bd5565261e5c812951bbb6ab529fcaa39d85a8917c03f93",
+      "appimage_sha256": "a2bf0f4a6fa94cde7bd5565261e5c812951bbb6ab529fcaa39d85a8917c03f93",
+      "exact": true
+    }
+  ],
+  "retired_fruc_assets": [],
+  "retired_fruc_overlay_paths": [],
+  "release_asset_count": 17,
+  "static_delivery_verified": true,
+  "source_file_count": 59,
+  "manager_file_count": 8,
+  "bundle_file_count": 16
+}

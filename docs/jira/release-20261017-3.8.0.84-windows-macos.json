@@ -1,0 +1,644 @@
+{
+  "release": "3.8.0.84",
+  "scope": "Windows overlay/component Manager and macOS complete archive; static delivery verification only",
+  "player_source": "f626ceb2154f1b90ff5c4e275e8bb31a969f1bc6",
+  "manager_source": "f1f85962f8e86e5f37d84501f37f72b6d1780828",
+  "ci_reported_by_parent": {
+    "windows": 39004574310,
+    "macos": 39004574453,
+    "head": "f626ceb2154f1b90ff5c4e275e8bb31a969f1bc6",
+    "conclusion": "success",
+    "independently_queried": false
+  },
+  "archive_digests": [
+    {
+      "name": "component-manager.7z",
+      "size": 69670413,
+      "sha256": "fa7d8e4e0448bcafb0bb5e9a7f7407afc86e9bd43056a16acbafdb13f0aaf0f0",
+      "api_digest": "sha256:fa7d8e4e0448bcafb0bb5e9a7f7407afc86e9bd43056a16acbafdb13f0aaf0f0",
+      "match": true,
+      "release_tag": "3.8.0.84"
+    },
+    {
+      "name": "manifest.json",
+      "size": 1981,
+      "sha256": "9631bd81dd5913e7499bfa458833c53caa0e3e4ce02e5eb2bda3a8be0a24a4c2",
+      "api_digest": "sha256:9631bd81dd5913e7499bfa458833c53caa0e3e4ce02e5eb2bda3a8be0a24a4c2",
+      "match": true,
+      "release_tag": "3.8.0.84"
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.84-macos-arm64.zip",
+      "size": 177889826,
+      "sha256": "cc771ab0b374b791b5a079fbaaf6e323daaf81c89514142fc294a852492f055e",
+      "api_digest": "sha256:cc771ab0b374b791b5a079fbaaf6e323daaf81c89514142fc294a852492f055e",
+      "match": true,
+      "release_tag": "3.8.0.84"
+    },
+    {
+      "name": "mpv-upscale-2x_animejanai-overlay-3.8.0.84.7z",
+      "size": 28862625,
+      "sha256": "cb72e5cc3d508acbad12471315157926c0b8c3649052b88b523a4cecd57733a9",
+      "api_digest": "sha256:cb72e5cc3d508acbad12471315157926c0b8c3649052b88b523a4cecd57733a9",
+      "match": true,
+      "release_tag": "3.8.0.84"
+    },
+    {
+      "name": "packs.json",
+      "size": 863593,
+      "sha256": "5d069d32104679c2317b775020504dcb35902a22b044a5794869256422214dc2",
+      "api_digest": "sha256:5d069d32104679c2317b775020504dcb35902a22b044a5794869256422214dc2",
+      "match": true,
+      "release_tag": "3.8.0.84"
+    },
+    {
+      "name": "AnimeJaNaiManager-HDR-macos-arm64.zip",
+      "size": 46784943,
+      "sha256": "0680b9661182bc1a0c0e0465debc98ec4624846ceac94f90c2d07bdf8390c67b",
+      "api_digest": "sha256:0680b9661182bc1a0c0e0465debc98ec4624846ceac94f90c2d07bdf8390c67b",
+      "match": true,
+      "release_tag": "hdr-f1f85962f8e86e5f37d84501f37f72b6d1780828"
+    },
+    {
+      "name": "AnimeJaNaiManager-HDR-x64.zip",
+      "size": 49022100,
+      "sha256": "23eef9ea7639b9b5914474a2818c7362668d454942e5a7ff4fa7f05b6c64a4a5",
+      "api_digest": "sha256:23eef9ea7639b9b5914474a2818c7362668d454942e5a7ff4fa7f05b6c64a4a5",
+      "match": true,
+      "release_tag": "hdr-f1f85962f8e86e5f37d84501f37f72b6d1780828"
+    }
+  ],
+  "source_files": [
+    {
+      "delivered": "windows/animejanai/preparation/contract.py",
+      "source": "tools/interpolation/contract.py",
+      "sha256": "4dbc192c45653d39d3418574c293e05f7c3cb9cd882ab772998ed1ee355626ca",
+      "source_sha256": "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/animejanai/preparation/engine.py",
+      "source": "tools/interpolation/engine.py",
+      "sha256": "ecf02b7ac00acc7dabb2452a6b5eaef1b1a4e6a22891251da1688976c9cdf4fe",
+      "source_sha256": "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/animejanai/preparation/gmfss-fortuna.json",
+      "source": "tools/interpolation/gmfss-fortuna.json",
+      "sha256": "fa2354cdef35c363519da3d2efa39c0e218c5e6a8426033219c50e9407c6fb54",
+      "source_sha256": "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/animejanai/preparation/worker.py",
+      "source": "tools/interpolation/worker.py",
+      "sha256": "d2e8b68d7e2fdb1b092bf9dc482bdf92e8151b26947e58165300d559f47722f9",
+      "source_sha256": "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/docs/INTERPOLATION-STAGES.md",
+      "source": "docs/INTERPOLATION-STAGES.md",
+      "sha256": "82c43115389e4a18bc021930c5aadbd50130747017680e9d7e35e5edc3dfc25d",
+      "source_sha256": "19ee6b0f89196002e626d2e78c7b7992d3b451e4f616b7f3766248d3156e1238",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/gpu-policy.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/gpu-policy.lua",
+      "sha256": "a131d38bc597d4d30d126fd7ccbf9b865efffd2aa01bd4a212c787922835443a",
+      "source_sha256": "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/hdr-grade.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/hdr-grade.lua",
+      "sha256": "512cce8699cb6ff783ed53f97cd0a27443475bee4886087a089267ce45a7eb71",
+      "source_sha256": "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/inference-color.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/inference-color.lua",
+      "sha256": "3298b242d1b00d37bf9427ecef845565b3ddb8857293faecf50846b396637be1",
+      "source_sha256": "9288f1cd4508ed6f6023657c15054eff9b73756c310f0ec2e35c90e56aa7cbb4",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/interpolation-stages.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/interpolation-stages.lua",
+      "sha256": "8cafc6aca680f4994eee8d55164c518161baea409f18a8f1c4b9fc92f943f00d",
+      "source_sha256": "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/linux-hdr.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/linux-hdr.lua",
+      "sha256": "ec33d753299fafcdfd935ef45123531db0c456669a493ee0c8b9b8992897f765",
+      "source_sha256": "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/linux-playback.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/linux-playback.lua",
+      "sha256": "38bce107215764267897fe39c7cf441c680865538ec75f4d4d0a4d30bdab9475",
+      "source_sha256": "f11cf7842e3305af6e694b4ba6d70c33a4dbed6702ca3cfa69cdfa30ec5f560f",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/pipeline-hdr.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/pipeline-hdr.lua",
+      "sha256": "104aa75e53deb5a4618757fcbf6df96c867edbcb3781562dab034425cedaa828",
+      "source_sha256": "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/playback-state.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/playback-state.lua",
+      "sha256": "cef7614542b4950e0ee73068656148bc227a947b6635063dcf810aefb8031de2",
+      "source_sha256": "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/rife-sync.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/rife-sync.lua",
+      "sha256": "c8bd1687221dd941ea5a6973ea409f650221d82bfd94e50d3cf97b803fdfee15",
+      "source_sha256": "698a92843f96aaed65f408815de454365577d26b35356794161c846c1105a2f5",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/rtx-stage.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/rtx-stage.lua",
+      "sha256": "740d1b1fabe879155963a7e7e7ff8f7a829a33705a2454a2255dc3251d23f4c5",
+      "source_sha256": "3b8ae301884c8736f8e05d9f0d303ad8d827d540178ed3fa5c7a6c01bbbbc539",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/sha256.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/sha256.lua",
+      "sha256": "0b70f747ade6540f502534e6f1e76340722c22269db52713b57e47076a2606af",
+      "source_sha256": "609f9c7ef4e16af6ef9f3c9547b79b58d47f722251c4e0be713067024a4a8e1c",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/hdr-tools/user-script-loader.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/user-script-loader.lua",
+      "sha256": "fbf00fa414174cfcca824b5f00d2fb2928a54c10107388e0d5412b8dd943c3da",
+      "source_sha256": "afca374ca0cb420e74f2882912353a5e8ed9a250001d305bace41021d030339e",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/input-animejanai.conf",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/input-animejanai.conf",
+      "sha256": "d28e1f75c5775612bd3e08eaf0b63080b0a77e3dc6dff5ed397b7192e4b9f27a",
+      "source_sha256": "deb2ba43b852b47e169168f40952fc473f670373c2c50ea82a481c33b7958d3a",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/mpv-animejanai.conf",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/mpv-animejanai.conf",
+      "sha256": "a0e242db249e62abe26eb1a5de05daa55e3b30140e5c8c4b990846c613dbc5a7",
+      "source_sha256": "b9b5704c71e1eca4bf77fdce9921eb22e43c17300c1fa43ea8206bcb9e26e0b2",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/scripts/animejanai_backend.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_backend.lua",
+      "sha256": "8fa84fc5f31d202fc3ce4af5d9db1c0db657321891013d9c826d44c693173da6",
+      "source_sha256": "cdfd498d0e3a714cfb27d39752e6dc7a40787659402fc496c24100c9ceb8ae62",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/scripts/animejanai_engine_monitor.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_engine_monitor.lua",
+      "sha256": "f071ea425ff000479e7615205da8060758b38385597d31ebd2299f8606b7c991",
+      "source_sha256": "e34541dfab046b83ab44a02df3bd9e6711cf897c5eff2f019365e82bfcf63af3",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/scripts/animejanai_playback.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_playback.lua",
+      "sha256": "44b6f086e2f4b21a4766bff56d5c76acdb254c0d5af0288319a58975bdd22418",
+      "source_sha256": "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/scripts/animejanai_reference.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_reference.lua",
+      "sha256": "65793a23d130cf6b13313527ec41a21a73ba4a9daeb76778bc880b6a19709401",
+      "source_sha256": "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/scripts/animejanai_slot.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_slot.lua",
+      "sha256": "e0457533afac79552178a9d15397b6ef418ab239b9d5c44467e3496993494d59",
+      "source_sha256": "22c92955b2be62be1ea32a92a56df5a6eed5e6f5b68284e79c857884cb642e36",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/scripts/animejanai_update.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_update.lua",
+      "sha256": "bfe81295fe681f511ae04e1bfe82eca60d74a2f5631baafd10ae788ba8bd8dd2",
+      "source_sha256": "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/scripts/animejanaistats.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanaistats.lua",
+      "sha256": "99bbe779380540e412a7598b2474a02c2fefc18de65216e7698aaa597e1396ef",
+      "source_sha256": "b2bc5c34d0eaf076a591f3f7c493c362c22a6ddc728ce93577b2de2db0023070",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/user-scripts/animejanai_backend.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/animejanai_backend.lua",
+      "sha256": "cf26058753c88c8090de18953c95f78fbf1a59eb5db1b4ec2b927b8761c36779",
+      "source_sha256": "0d545eb39908661a34905237af63e793146fd545fadf50ce56215c6ecb2f8f45",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/user-scripts/animejanai_hdr_auto.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/animejanai_hdr_auto.lua",
+      "sha256": "6c6a1d5ac0332d50acf7e2ce9b4cce50fb9ccf6064d9714049b7f90776ba6bef",
+      "source_sha256": "910fa8d04db1fdf518be765a60a1754991c405860b9715485ce8f39c1aed56bc",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/user-scripts/animejanai_slot.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/animejanai_slot.lua",
+      "sha256": "74dc989da603ad51c46b53b661476566de08bc6391f541869852a6dce8a2308e",
+      "source_sha256": "53d6f251e88e6789a83bbfeafe94debdf02d2821c03c108f3fd755d240bd63a6",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "windows/portable_config/user-scripts/hardware_auto.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-scripts/hardware_auto.lua",
+      "sha256": "368cf41c2ff8be3080e79629009e0e1c08e666ccecd401524428b291341b010d",
+      "source_sha256": "35fc698c0f39b57cbd1274864e788a76f107d4dd6f36764167459ae90ce96805",
+      "exact": false,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/MacOS/mpv-animejanai",
+      "source": "installer/macos/launcher.sh",
+      "sha256": "cbf612949dbafa16254f6f8ccb0fd54a442bfa538bcd59c072b536e547dd5d00",
+      "source_sha256": "cbf612949dbafa16254f6f8ccb0fd54a442bfa538bcd59c072b536e547dd5d00",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai/animejanai.conf",
+      "source": "installer/macos/config/animejanai.conf",
+      "sha256": "987cdb027db0701feb38f3861c128940640fd40f10dbcc1d49bbcb5018fdc333",
+      "source_sha256": "987cdb027db0701feb38f3861c128940640fd40f10dbcc1d49bbcb5018fdc333",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai/preparation/worker.py",
+      "source": "tools/interpolation/worker.py",
+      "sha256": "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80",
+      "source_sha256": "8228ddf187f03a0a2d22e95b273ef645cd367d71f9eecb89dc2990cd7cb9bd80",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai/preparation/gmfss-fortuna.json",
+      "source": "tools/interpolation/gmfss-fortuna.json",
+      "sha256": "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10",
+      "source_sha256": "0e4ecf7bce267185f3a335ae284e7c2dc914442eec01e16e7e006896f23a5e10",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai/preparation/engine.py",
+      "source": "tools/interpolation/engine.py",
+      "sha256": "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673",
+      "source_sha256": "e129a75e14d7af2c31253e3e655cb28160dd54c7b516ae5b15db7f5c5f479673",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai/preparation/contract.py",
+      "source": "tools/interpolation/contract.py",
+      "sha256": "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d",
+      "source_sha256": "f4aabc0a81b871fba2473e74b98bcc458923cef5d1d69425fa4b89fba88dc03d",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/script-opts/animejanai_hdr_auto.conf",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/script-opts/animejanai_hdr_auto.conf",
+      "sha256": "a94aae6996ad3cac08b34f0bebf3859468305e7f7b4c778c6d4297d2b70a392e",
+      "source_sha256": "a94aae6996ad3cac08b34f0bebf3859468305e7f7b4c778c6d4297d2b70a392e",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/hdr-tools/linux-hdr.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/linux-hdr.lua",
+      "sha256": "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829",
+      "source_sha256": "4faa5a732c8ca0b2848f2263672d66fd33c68e1564ccc0113d98ec9aa7ab5829",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/hdr-tools/hdr-grade.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/hdr-grade.lua",
+      "sha256": "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1",
+      "source_sha256": "ab5722fb729f141ee6c6bb86cc4b8afe0155260040091833a06386cf7b70f3d1",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/hdr-tools/gpu-policy.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/gpu-policy.lua",
+      "sha256": "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e",
+      "source_sha256": "47bbc9e73072e1efa2d43d188fe80eac525f466f9e400c99b825d2173bd7710e",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/hdr-tools/pipeline-hdr.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/pipeline-hdr.lua",
+      "sha256": "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71",
+      "source_sha256": "61c5e0df66bba6293c28f3671180ef4ae177beed53ffa9cb4a65ac6808322d71",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/hdr-tools/interpolation-stages.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/interpolation-stages.lua",
+      "sha256": "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0",
+      "source_sha256": "d3a923948ad7ce4028b460c0d5a42437375384693f94962fec0d2b3ddd15a4b0",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/hdr-tools/playback-state.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/hdr-tools/playback-state.lua",
+      "sha256": "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac",
+      "source_sha256": "006b244962d4d740c17f48389791f8f05ea70d18f62a173d99ebf39f942fc8ac",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/scripts/animejanai_playback.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_playback.lua",
+      "sha256": "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43",
+      "source_sha256": "3c317e8a3ffbc0eb6210ea785c6c60c0c99a82159b0739b48b2f16152c5a1c43",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/scripts/animejanai_reference.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_reference.lua",
+      "sha256": "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d",
+      "source_sha256": "496dd1f8440d56611512743dbe7022e811e0e94eac6b685442f5fe5b33955e7d",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/scripts/animejanai_mac.lua",
+      "source": "installer/macos/config/scripts/animejanai_mac.lua",
+      "sha256": "38a48c9a7bf37e34ab0a0d10a4a9b69a4f99c3106ea6d9f61e08eddd4fefa035",
+      "source_sha256": "38a48c9a7bf37e34ab0a0d10a4a9b69a4f99c3106ea6d9f61e08eddd4fefa035",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/scripts/animejanai_update.lua",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/scripts/animejanai_update.lua",
+      "sha256": "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e",
+      "source_sha256": "3ffe8c6c21616ec2dfd4c683ae0e470317447e684b932aafe13dd3cd4439e59e",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/scripts/animejanai_hdr_mac.lua",
+      "source": "installer/macos/config/scripts/animejanai_hdr_mac.lua",
+      "sha256": "b7aa9d8f68764b893252c85d79a298e8232808586c5143fd97f64f8ac6d29e42",
+      "source_sha256": "b7aa9d8f68764b893252c85d79a298e8232808586c5143fd97f64f8ac6d29e42",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/user-shaders/anime-hdr-calibration.hook",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-shaders/anime-hdr-calibration.hook",
+      "sha256": "80d27fed7a7334c734b7d82dc5e79742e45d609bc62f7050ac62d7431db66437",
+      "source_sha256": "80d27fed7a7334c734b7d82dc5e79742e45d609bc62f7050ac62d7431db66437",
+      "exact": true,
+      "crlf_normalized_match": true
+    },
+    {
+      "delivered": "macos/mpv AnimeJaNai.app/Contents/Resources/animejanai-config/user-shaders/anime-hdr-grade.hook",
+      "source": "BuildMpvUpscale2xAnimeJaNai/mpv-upscale-2x_animejanai/portable_config/user-shaders/anime-hdr-grade.hook",
+      "sha256": "7f7e6cb6032d24d8bc9a9559ee1062bba79d1f9b0e04e9a5b0ac57859b489c2d",
+      "source_sha256": "7f7e6cb6032d24d8bc9a9559ee1062bba79d1f9b0e04e9a5b0ac57859b489c2d",
+      "exact": true,
+      "crlf_normalized_match": true
+    }
+  ],
+  "manager_files": [
+    {
+      "platform": "windows",
+      "name": "AnimeJaNaiManager-HDR.exe",
+      "delivered_sha256": "3029e3cb9c0c606855d8da609424a4b7a68a95dfc4f94717deb3eabcc3be159d",
+      "producer_sha256": "3029e3cb9c0c606855d8da609424a4b7a68a95dfc4f94717deb3eabcc3be159d",
+      "exact": true
+    },
+    {
+      "platform": "windows",
+      "name": "av_libglesv2.dll",
+      "delivered_sha256": "53191a77fe783cd757ca7767077c2a64a662e7043777a5b4ab74980d4a0b73e3",
+      "producer_sha256": "53191a77fe783cd757ca7767077c2a64a662e7043777a5b4ab74980d4a0b73e3",
+      "exact": true
+    },
+    {
+      "platform": "windows",
+      "name": "libHarfBuzzSharp.dll",
+      "delivered_sha256": "145ade963eba427027d5e1381db5d51a0ef9e98e9fef9efbfa6074ca20da246f",
+      "producer_sha256": "145ade963eba427027d5e1381db5d51a0ef9e98e9fef9efbfa6074ca20da246f",
+      "exact": true
+    },
+    {
+      "platform": "windows",
+      "name": "libSkiaSharp.dll",
+      "delivered_sha256": "7dec3ba900ab353491e6446f0083739924c6f8dd668832e2f09d38ebffdbbe1c",
+      "producer_sha256": "7dec3ba900ab353491e6446f0083739924c6f8dd668832e2f09d38ebffdbbe1c",
+      "exact": true
+    },
+    {
+      "platform": "macos",
+      "name": "AnimeJaNai Manager.app/Contents/_CodeSignature/CodeResources",
+      "delivered_sha256": "7800e421ab8ec2ed2720c4a75b7a4ac2217f62595bcd6c1bbadb44e9cca0e18a",
+      "producer_sha256": "7800e421ab8ec2ed2720c4a75b7a4ac2217f62595bcd6c1bbadb44e9cca0e18a",
+      "exact": true
+    },
+    {
+      "platform": "macos",
+      "name": "AnimeJaNai Manager.app/Contents/MacOS/libHarfBuzzSharp.dylib",
+      "delivered_sha256": "60044688019f4eb47b018a9ce38b6aee81bc18752c8acaf24a77d0bd69d8360b",
+      "producer_sha256": "60044688019f4eb47b018a9ce38b6aee81bc18752c8acaf24a77d0bd69d8360b",
+      "exact": true
+    },
+    {
+      "platform": "macos",
+      "name": "AnimeJaNai Manager.app/Contents/MacOS/libAvaloniaNative.dylib",
+      "delivered_sha256": "f95458692c1c901decb29bc170cb294095391f20f7f85f8004a75768a7351cd2",
+      "producer_sha256": "f95458692c1c901decb29bc170cb294095391f20f7f85f8004a75768a7351cd2",
+      "exact": true
+    },
+    {
+      "platform": "macos",
+      "name": "AnimeJaNai Manager.app/Contents/MacOS/libSkiaSharp.dylib",
+      "delivered_sha256": "a4759b2889eba1415329514a02da6c1808cfd9870f2e37d6c176647ac5cd83ce",
+      "producer_sha256": "a4759b2889eba1415329514a02da6c1808cfd9870f2e37d6c176647ac5cd83ce",
+      "exact": true
+    },
+    {
+      "platform": "macos",
+      "name": "AnimeJaNai Manager.app/Contents/MacOS/AnimeJaNaiManager-HDR",
+      "delivered_sha256": "7f23fccf3a6daad55ae676fd1607addd22b26668247621d603ee3cb0d5dd25c3",
+      "producer_sha256": "7f23fccf3a6daad55ae676fd1607addd22b26668247621d603ee3cb0d5dd25c3",
+      "exact": true
+    },
+    {
+      "platform": "macos",
+      "name": "AnimeJaNai Manager.app/Contents/Resources/AppIcon.icns",
+      "delivered_sha256": "0d05c7e6eca451103b5a6c24875259c50862b9ec02a5a69f6846f79bb776c3eb",
+      "producer_sha256": "0d05c7e6eca451103b5a6c24875259c50862b9ec02a5a69f6846f79bb776c3eb",
+      "exact": true
+    },
+    {
+      "platform": "macos",
+      "name": "AnimeJaNai Manager.app/Contents/Info.plist",
+      "delivered_sha256": "2e7d1b3446aa5490520a94bd9ddbab358f74d34f785965fbb8a893661a62e202",
+      "producer_sha256": "2e7d1b3446aa5490520a94bd9ddbab358f74d34f785965fbb8a893661a62e202",
+      "exact": true
+    }
+  ],
+  "failures": [],
+  "limitations": [
+    "No player, Manager or video execution performed.",
+    "Linux publication not covered.",
+    "Windows full installer/full archive not downloaded; overlay and Manager component verified.",
+    "User-preserved existing configuration is not overwritten by an overlay; installed user profiles were not inspected."
+  ],
+  "windows_manifest": {
+    "package_version": "3.8.0.84",
+    "manager_pin": "hdr-f1f85962f8e86e5f37d84501f37f72b6d1780828",
+    "mpvfork": "2026-10-09-19c0fcf895-19c0fcf895",
+    "manager_pin_matches": true,
+    "embedded_overlay_manifest_matches": true
+  },
+  "mac_manifest": {
+    "version": "3.8.0.84",
+    "platform": "osx-arm64",
+    "install": "application",
+    "player_executable": "mpv",
+    "player_launcher": "mpv-animejanai",
+    "update_asset_suffix": "-macos-arm64.zip"
+  },
+  "mac_manager_plist": {
+    "CFBundleName": "AnimeJaNai Manager",
+    "CFBundleDisplayName": "AnimeJaNai Manager",
+    "CFBundleIdentifier": "io.github.ta2b.animejanai-manager",
+    "CFBundleExecutable": "AnimeJaNaiManager-HDR",
+    "CFBundlePackageType": "APPL",
+    "CFBundleInfoDictionaryVersion": "6.0",
+    "CFBundleShortVersionString": "0.8.0",
+    "CFBundleVersion": "f1f85962f8e8",
+    "LSMinimumSystemVersion": "14.0",
+    "LSApplicationCategoryType": "public.app-category.video",
+    "NSHighResolutionCapable": true,
+    "NSPrincipalClass": "NSApplication",
+    "CFBundleIconFile": "AppIcon"
+  },
+  "windows_manager_alias_identical": true,
+  "windows_manager_exe_api_digest_matches": true,
+  "retired_fruc_asset_names": [],
+  "retired_profile_config_matches": [],
+  "mac_seed_profiles": [
+    "Performance, 1080p ramene a 720p puis x2",
+    "Performance, resolution d'origine x2",
+    "Balanced, 1080p ramene a 720p puis x2",
+    "Balanced, resolution d'origine x2",
+    "Performance leger, ramene a 540p puis x2",
+    "Performance tres leger, ramene a 360p puis x2"
+  ],
+  "old_builtin_profiles_note": "The 3 retired built-ins use slots 1001/1002/1003. macOS still ships six separate named slot_1..slot_6 seed profiles; their removal is not claimed.",
+  "source_file_count": 50,
+  "manager_file_count": 11,
+  "retired_builtin_profile_names_checked": [
+    "upscale-on-quality",
+    "upscale-on-balanced",
+    "upscale-on-performance"
+  ],
+  "manager_source_contracts": {
+    "shared_player_ref": "69aca0b866a8625bb53bc265d308743cd1314269",
+    "default_slot_clamped_0_to_9": true,
+    "retired_builtin_profile_bindings_absent": true,
+    "fruc_sdk_store_removed": true,
+    "verification": "Read pinned source plus exact Manager producer binary identity; no application execution."
+  },
+  "source_comparison_summary": {
+    "exact_bytes": 20,
+    "crlf_only": 30,
+    "mismatches": 0
+  },
+  "manager_pack_index": {
+    "core": true,
+    "asset": "component-manager.7z",
+    "declared_bytes": 69670413,
+    "actual_bytes": 69670413,
+    "declared_files": [
+      "AnimeJaNaiManager-HDR.exe",
+      "AnimeJaNaiManager.exe",
+      "av_libglesv2.dll",
+      "libHarfBuzzSharp.dll",
+      "libSkiaSharp.dll"
+    ],
+    "actual_files": [
+      "AnimeJaNaiManager-HDR.exe",
+      "AnimeJaNaiManager.exe",
+      "av_libglesv2.dll",
+      "libHarfBuzzSharp.dll",
+      "libSkiaSharp.dll"
+    ],
+    "file_set_matches": true
+  },
+  "status": "verified_for_stated_scope",
+  "retired_fruc_pack_index_entries": []
+}

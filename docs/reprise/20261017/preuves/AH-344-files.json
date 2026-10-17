@@ -1,0 +1,114 @@
+[
+  {
+    "repository": "backend",
+    "path": "src/aji_dml.cpp",
+    "source": "/tmp/backend-dml-quality-cache-20261017/src/aji_dml.cpp",
+    "before_sha256": "310524ff5b4bccc4a3444f67d6701ca60aa079f007304990726fc883d2d14681",
+    "after_sha256": "5f11d15a80cb5b36b0e2120f241c676bd5af14afaa0db04649c1bd1148e3d57e"
+  },
+  {
+    "repository": "backend",
+    "path": "src/rife_pair_cache.h",
+    "source": "/tmp/backend-dml-quality-cache-20261017/src/rife_pair_cache.h",
+    "before_sha256": null,
+    "after_sha256": "9ffecfa6b4efa5e4a2c31dbdc0ddf7fc15d440da634687f67d0cf73492cb8aeb"
+  },
+  {
+    "repository": "backend",
+    "path": "tests/rife_pair_cache_check.cpp",
+    "source": "/tmp/backend-dml-quality-cache-20261017/tests/rife_pair_cache_check.cpp",
+    "before_sha256": null,
+    "after_sha256": "99881f2815fa782e2132f709ef26cb33fa976566ca27f99385c8cbc6986f93f6"
+  },
+  {
+    "repository": "player",
+    "path": "BuildMpvUpscale2xAnimeJaNai/WindowsMpvBundle.cs",
+    "source": "/tmp/player-dml-quality-cache-20261017/BuildMpvUpscale2xAnimeJaNai/WindowsMpvBundle.cs",
+    "before_sha256": null,
+    "after_sha256": "777ccc8afb9f73c4b7e5342ec4ec8a9bfcb201ae35244c8cfa18cb6e780a4426"
+  },
+  {
+    "repository": "player",
+    "path": "BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj",
+    "source": "/tmp/player-dml-quality-cache-20261017/BuildMpvUpscale2xAnimeJaNai/BuildMpvUpscale2xAnimeJaNai.csproj",
+    "before_sha256": "36a85addde575544dedc3608995d79da796b1558d03a8fe582baa94fe6fe9609",
+    "after_sha256": "e750b7d56741f94e52449948c8b82a03c53c888b7d6c32fed2985a9c5cea69e2"
+  },
+  {
+    "repository": "player",
+    "path": "BuildMpvUpscale2xAnimeJaNai/Program.cs",
+    "source": "/tmp/player-dml-quality-cache-20261017/BuildMpvUpscale2xAnimeJaNai/Program.cs",
+    "before_sha256": "7747d1b173cd6b1723732635294b55fc26da3e292e130755ceb110f50c64b2b9",
+    "after_sha256": "9dba71d35659bb4b39ea3399149b46add676ff03018a0832181d34169fc957a3"
+  },
+  {
+    "repository": "player",
+    "path": "native/windows-dml/README.md",
+    "source": "/tmp/player-dml-quality-cache-20261017/native/windows-dml/README.md",
+    "before_sha256": null,
+    "after_sha256": "28777ffc816fc71db7354f8433b17a9a4149000cbdebd6a3ef378034f146a5bd"
+  },
+  {
+    "repository": "player",
+    "path": "native/windows-dml/collect-bundle.py",
+    "source": "/tmp/player-dml-quality-cache-20261017/native/windows-dml/collect-bundle.py",
+    "before_sha256": null,
+    "after_sha256": "300cdf94fcfa26095b8704c4836d368d3b04014ba3f41321eaa934583aabda52"
+  },
+  {
+    "repository": "player",
+    "path": "native/windows-dml/prepare-winbuild.py",
+    "source": "/tmp/player-dml-quality-cache-20261017/native/windows-dml/prepare-winbuild.py",
+    "before_sha256": null,
+    "after_sha256": "21d9ea89762825e454c4f72a36d25765ae0f1975141c0e923277a535450b79fa"
+  },
+  {
+    "repository": "player",
+    "path": "native/windows-dml/install-winbuild-hook.py",
+    "source": "/tmp/player-dml-quality-cache-20261017/native/windows-dml/install-winbuild-hook.py",
+    "before_sha256": null,
+    "after_sha256": "3354e3fc37faadc102f3f4d2b38cb386371038dec21bfa79c0ad203bf0ae3dc2"
+  },
+  {
+    "repository": "player",
+    "path": "native/windows-dml/prepare-mpv.py",
+    "source": "/tmp/player-dml-quality-cache-20261017/native/windows-dml/prepare-mpv.py",
+    "before_sha256": null,
+    "after_sha256": "1f0ab88afa7fe64617006e2767ddeedf979a11d5db2a7695970cf285c5ad3395"
+  },
+  {
+    "repository": "player",
+    "path": "native/windows-dml/vf_animejanai-exact-pair.patch",
+    "source": "/tmp/player-dml-quality-cache-20261017/native/windows-dml/vf_animejanai-exact-pair.patch",
+    "before_sha256": null,
+    "after_sha256": "526303a3a596436acc7cc339e400f3f4adc0a40c7680573d8bc7e329e9b03095"
+  },
+  {
+    "repository": "player",
+    "path": "native/linux-cuda/vf_animejanai-quality-fast.patch",
+    "source": "/tmp/player-dml-quality-cache-20261017/native/linux-cuda/vf_animejanai-quality-fast.patch",
+    "before_sha256": "b925d0bbedf44f699aaadef5148e99c5cd9497e43344e7c4a26a978068117337",
+    "after_sha256": "d7483085c500eb2db1edd7f4a87f51652d7e7ff3fafa78463010d2f1abc05fff"
+  },
+  {
+    "repository": "player",
+    "path": ".github/scripts/stage-windows-mpv.sh",
+    "source": "/tmp/player-dml-quality-cache-20261017/.github/scripts/stage-windows-mpv.sh",
+    "before_sha256": null,
+    "after_sha256": "b54f546d32295ee78693568bd285a10421e2cb0301cbb9965d0f2cc5796be992"
+  },
+  {
+    "repository": "player",
+    "path": ".github/workflows/build-windows-mpv.yml",
+    "source": "/tmp/player-dml-quality-cache-20261017/.github/workflows/build-windows-mpv.yml",
+    "before_sha256": null,
+    "after_sha256": "fe7e39c433f638df940256d996fa3097191ed8c61f0701d475199328b110976a"
+  },
+  {
+    "repository": "player",
+    "path": ".github/workflows/release-windows.yml",
+    "source": "/tmp/player-dml-quality-cache-20261017/.github/workflows/release-windows.yml",
+    "before_sha256": "c258b9bc31d0e40f1eed35833eaafaa07bd08977902c87837e0cf7638fc92ed2",
+    "after_sha256": "d933fff187490a13c7e888a66ef81bea8f43b3166bbe673811cdbf8ba24fba76"
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "backend_base": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+  "parent_new_backend_base": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
+  "cache_cpu": "passed exact cache helper and alias slices",
+  "mpv_actual_patch": "passed source postimage",
+  "cmake_hook": "passed phase ordering and both archive paths",
+  "real_recipe": "prepared pinned recipe",
+  "bundle_collect": "passed synthetic PE x64 paired archives",
+  "assembler_contract": "passed positive and negative bundle cases",
+  "assembler_build": "passed 0 warnings 0 errors",
+  "windows_backend_build": "not run locally",
+  "windows_gpu": "not run",
+  "fps_gain": "not measured",
+  "release": "not published; producer build then player/backend pins required"
+}

@@ -1,0 +1,36 @@
+diff --git a/src/aji_pipeline.cpp b/src/aji_pipeline.cpp
+index 3e3b687..fcb93a8 100644
+--- a/src/aji_pipeline.cpp
++++ b/src/aji_pipeline.cpp
+@@ -301,14 +301,13 @@ struct Context {
+         for(auto &s:config.stages)if(s.enabled&&s.kind=="interpolate"&&s.policy=="fast")caps.flags|=AJI_INTERPOLATOR_FAST;
+         if(has_hdr())caps.flags|=AJI_PIPELINE_COLOR_CHANGE;
+     }
+-    void copy(const aji_surface_v1 &src,const aji_surface_v1 &dest) {
++    void enqueue_copy(const aji_surface_v1 &src,const aji_surface_v1 &dest) {
+         auto a=view(src),b=view(dest);
+         for(int i=0;i<3;i++) {
+             CUDA_MEMCPY2D c{};c.srcMemoryType=c.dstMemoryType=CU_MEMORYTYPE_DEVICE;c.srcDevice=a.p[i]+a.y*a.pitch[i]+a.x*2;
+             c.srcPitch=a.pitch[i];c.dstDevice=b.p[i]+b.y*b.pitch[i]+b.x*2;c.dstPitch=b.pitch[i];c.WidthInBytes=b.width*2;c.Height=b.height;
+             cuda(cuMemcpy2DAsync(&c,stream));
+         }
+-        cuda(cuStreamSynchronize(stream));
+     }
+     std::vector<Point> apply(Stage &s,std::vector<Point> points) {
+         std::vector<Point> out;
+@@ -412,9 +411,14 @@ struct Context {
+         }
+         need(points.size()==job.output_count+(job.eof?0:1),"Native pipeline output count mismatch");
+         for(unsigned i=0;i<job.output_count;i++) {
+-            copy(points[i].surface,job.outputs[i]);job.result.output_flags[i]=points[i].flags;
++            enqueue_copy(points[i].surface,job.outputs[i]);job.result.output_flags[i]=points[i].flags;
+             if(points[i].flags&AJI_PIPELINE_REPEATED)job.result.result.flags|=AJI_INTERPOLATOR_REPEATED;
+         }
++        // All output copies share this stream and become visible together at
++        // job completion. Keep their sources until this single final wait.
++        // On failure, loop() drains the context before releasing job owners;
++        // pool still owns every source allocation even after points unwinds.
++        cuda(cuStreamSynchronize(stream));
+     }
+     std::array<Span,3> validate(const aji_surface_v1 *p,bool output,bool borrow) {
+         need(p&&p->struct_size>=sizeof(*p)&&p->version==1,"Invalid pipeline surface descriptor");const auto &s=*p;auto r=crop(s);

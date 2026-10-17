@@ -1,0 +1,48 @@
+{
+  "ticket": "AH-346",
+  "state": "implemented_compiled_not_committed_or_published",
+  "base_commit": "36f3d94491b51d334dc9420ce6d5192b086b0a8f",
+  "checkout": "/tmp/backend-pipeline-copy-batch-20261017",
+  "branch": "detached HEAD",
+  "changed_files": [
+    "src/aji_pipeline.cpp"
+  ],
+  "source_sha256": "4ca5d872bb47aead8e3fd0e6492046deb0427a7d6c028a07aae9eb3b97938afa",
+  "patch_sha256": "9b38b614074c1741c922e2f0e92896bc3eae9c3be19051c0651fc8904bd36dd1",
+  "library": "/tmp/backend-pipeline-copy-batch-build-20261017/libaji_pipeline.so",
+  "library_sha256": "4e6574d52363db63cb11d75ae3ed6b560145ccf739939a0b2a8cd1b15bbb2bfc",
+  "fatbin_sha256": "1d9ca93cd2cc5e4ce5e944a5179d21687e7c9ab853f360f02bbfd96d19ca5b5d",
+  "checks": {
+    "diff_check": "pass",
+    "cmake_configure": "pass",
+    "aji_pipeline_build": "pass",
+    "source_ownership_completion_error_review": "pass",
+    "rpath_runpath": "absent",
+    "glibc_max": "2.38",
+    "glibcxx_max": "3.4.30"
+  },
+  "static_benefit": {
+    "copies_before": "3F",
+    "copies_after": "3F",
+    "final_host_waits_before": "F",
+    "final_host_waits_after": 1,
+    "removed_final_waits": "F-1"
+  },
+  "invariants": [
+    "copy parameters/order/stream unchanged",
+    "points/pool own source allocations",
+    "job owners released after worker drain",
+    "completion not published before final wait",
+    "inter-context barriers unchanged"
+  ],
+  "gpu_executed": false,
+  "timing_claim": null,
+  "delivery_verified": false,
+  "remaining": [
+    "integrate with parent source changes",
+    "source commit",
+    "bundle manifest/pin update",
+    "release delivery verification",
+    "Jira qualification and Done after delivery"
+  ]
+}
