@@ -1,0 +1,87 @@
+{
+  "release": "3.8.0.88",
+  "source": "4b73312b8dddbf1902e1b8e6a8a6c2724ed71fb6",
+  "publication_verified": true,
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.88",
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39013765333,
+      "headSha": "4b73312b8dddbf1902e1b8e6a8a6c2724ed71fb6",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39013765333",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39013765368,
+      "headSha": "4b73312b8dddbf1902e1b8e6a8a6c2724ed71fb6",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39013765368",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39013765371,
+      "headSha": "4b73312b8dddbf1902e1b8e6a8a6c2724ed71fb6",
+      "status": "completed",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39013765371",
+      "workflowName": "Release macOS"
+    }
+  ],
+  "downloaded_assets": [
+    {
+      "name": "manifest.json",
+      "sha256": "1000a1207ed2d1f28abfa9e12c5664b64e811007f87486b278f966f69f54af81",
+      "bytes": 2058
+    },
+    {
+      "name": "manifest-linux-x64.json",
+      "sha256": "5106a008190e16ff45eb46afedec9fc2f57badb82888c6604534ce2ab64f487c",
+      "bytes": 2705
+    },
+    {
+      "name": "packs-linux-x64.json",
+      "sha256": "775b9a10b71f2ab9266a5c7bba0f628d4ced93e9a02533e7a6d51332d5471c5f",
+      "bytes": 10819
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.88-macos-arm64.zip.sha256",
+      "sha256": "f343963c9ee4d03b39328c8436a00b972c97eaed32ab5300f2363a5793ceab9a",
+      "bytes": 111
+    },
+    {
+      "name": "mpv-AnimeJaNai-HDR-v3.8.0.88-macos-arm64.zip",
+      "sha256": "53a8248d8bdefb1b3cdc74b18dfbbd3e39f44ea27bf4ac6884bcc51b7fdb5072",
+      "bytes": 177966147
+    },
+    {
+      "name": "packs.json",
+      "sha256": "cd1a5f8cb522a8de8b499be8ee5f2d4dcbe76f9a7850e6508e5197ea31fd038c",
+      "bytes": 863701
+    }
+  ],
+  "macos": {
+    "model_resources_verified": 32,
+    "manifest_hashes": {
+      "2x_AnimeJaNai_HD_V3.1_Balanced_SPANF3_b8f64_unshuffle_fp16.mlpackage/Manifest.json": "1b59e0217314e78e576ec5fb9f70ce49fddd8f7d91eaf61c2bf67c90a8a16677",
+      "2x_AnimeJaNai_HD_V3.1_Performance_SPANF3_b5f48_unshuffle_fp16.mlpackage/Manifest.json": "675722dc49c1814b30e622f564a33be08fc30af6fe2d7c20df5de31a2dc45957",
+      "2x_AnimeJaNai_HD_V3.1Sharp1_Performance_SPANF3_b5f48_unshuffle_fp16.mlpackage/Manifest.json": "9b0f8f3bd392a5e00080cf1015e76ff3e6737b906a16790feebdd1815435cb55",
+      "2x_AnimeJaNai_HD_V3.1Sharp1_Balanced_SPANF3_b8f64_unshuffle_fp16.mlpackage/Manifest.json": "1ecdedbccc0111c9cb868c172df716fc647fe6865c8812f751892d05df1948c9"
+    },
+    "all_resources_match_normalized_verified_86_87": true,
+    "managed_programs_verified": 17
+  },
+  "gpu_binaries_source": "ff27fba988b75e00c1348195266455ce0992428a",
+  "manager_source": "f1f85962f8e86e5f37d84501f37f72b6d1780828",
+  "reused_qualification": {
+    "unmodified_native_modules_and_programs": "3.8.0.87",
+    "helper_sync": "3.8.0.85",
+    "apple_native_cache_cycle": 39013648864
+  },
+  "limits": [
+    "Only changed macOS payload downloaded; Windows/Linux metadata and CI checked, unchanged payload qualification reused from .87",
+    "No video benchmark repeated; no GPU/ANE/ORT-CoreML qualification",
+    "DML paired Windows reader remains unpublished"
+  ]
+}
