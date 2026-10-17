@@ -1,16 +1,16 @@
 {
   "api_version": 9,
   "tensorrt_version": "11.3.0.99",
-  "backend_source": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
+  "backend_source": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
   "player_source": "f05cf41c1448597a1929f7a8be318572a29c5ded",
   "windows_build": {
     "NVIDIA_RESULT": "success",
     "AMD_RESULT": "not-reused-in-this-bundle",
-    "GITHUB_SHA": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
-    "GITHUB_RUN_ID": "39007945723",
-    "validation": "NVIDIA dispatcher/TRT/DML compile/link only; no Windows GPU execution. Original AMD module preserved."
+    "GITHUB_SHA": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
+    "GITHUB_RUN_ID": "39009958899",
+    "validation": "NVIDIA+AMD workflow completed success; only NVIDIA dispatcher/TRT/DML reused. Old AMD module preserved with original source. Compile/link only, no Windows GPU inference."
   },
-  "validation": "Lot59 Windows compile/link success39007945723: AH-345 unused Fast>3 score elision, AH-347 lazy fallback YUV pads, AH-355 Surface Quality staging copy elision. Full predictions and numerical boundaries preserved by code; Linux-only GPU parity receipt, no Windows GPU/FPS claim. DML exact-pair cache prepared; paired reader producer required for activation.",
+  "validation": "Lot62 Windows compile/link success39009958899. Optional batch symbols compiled in TRT, supported Surface route remains Linux-specific and query rejects Windows; no new Windows GPU/API runtime support claimed. Existing AH345/347/355 code retained. DML exact-pair reader still pending.",
   "features": [
     "quality-fast-policy",
     "scalar-events",
@@ -50,11 +50,11 @@
     "quality-yuv-staging-copy-elision"
   ],
   "sha256": {
-    "aji.dll": "4de66f2ca4dfecdd57c1be8f376ebe0e5fbcae60e378f138832bd726c389f0f6",
-    "aji_dml.dll": "2cf83e1faa2526c17df0ae7f786e3d003ae52c13adcd675c6cd405a6c353010b",
+    "aji.dll": "9d7f4973b21987c07598030d347c57230e174f9bbbdae0941214124367e2e757",
+    "aji_dml.dll": "2af638b23d22907247015e5814c65eaa3081051b3d0ad0be23f4ff2f1226bf30",
     "aji_migraphx.dll": "f3128836650a77761b2a5fa6570dc428f8d7bc51980b95f28cd81cef3f391549",
-    "aji_trt.dll": "04e898494b30d7a3abfefa66a6c9c1961ce54ae99be876a9d4611d0c0aba8d96",
-    "aji_trt_rtx.dll": "04e898494b30d7a3abfefa66a6c9c1961ce54ae99be876a9d4611d0c0aba8d96"
+    "aji_trt.dll": "cd78b8e6cf3543b247ae53555b3234bb8e91618861171873acfb372f81839c08",
+    "aji_trt_rtx.dll": "cd78b8e6cf3543b247ae53555b3234bb8e91618861171873acfb372f81839c08"
   },
   "player_qualification_source": "a22100c0fc9fb76fcabec01faf67b290cf565424",
   "prior_qualifications": [
@@ -82,18 +82,30 @@
         "validation": "NVIDIA job compiled/linked dispatcher,TRT andDML; no Windows GPU execution. Existing AMD module retained with its original source."
       },
       "scope": "Historical lot58 before Quality pad/staging changes"
+    },
+    {
+      "backend_source": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
+      "validation": "Lot59 Windows compile/link success39007945723: AH-345 unused Fast>3 score elision, AH-347 lazy fallback YUV pads, AH-355 Surface Quality staging copy elision. Full predictions and numerical boundaries preserved by code; Linux-only GPU parity receipt, no Windows GPU/FPS claim. DML exact-pair cache prepared; paired reader producer required for activation.",
+      "windows_build": {
+        "NVIDIA_RESULT": "success",
+        "AMD_RESULT": "not-reused-in-this-bundle",
+        "GITHUB_SHA": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
+        "GITHUB_RUN_ID": "39007945723",
+        "validation": "NVIDIA dispatcher/TRT/DML compile/link only; no Windows GPU execution. Original AMD module preserved."
+      },
+      "scope": "Historical lot59 .85 before batch extension"
     }
   ],
   "module_sources": {
-    "aji.dll": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
-    "aji_trt.dll": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
-    "aji_trt_rtx.dll": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
-    "aji_dml.dll": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
+    "aji.dll": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
+    "aji_trt.dll": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
+    "aji_trt_rtx.dll": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
+    "aji_dml.dll": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
     "aji_migraphx.dll": "652fbc6bdd3a9d815367deeb2df65538636705dc"
   },
   "directml_exact_pair": {
-    "backend_source": "8ff36e851f5efd035edcb5bd9ee55f7f9e242d21",
-    "build_run": 39007945723,
+    "backend_source": "d5b34469a3aa1cc30f107ba3122699d713de1dca",
+    "build_run": 39009958899,
     "compiled": true,
     "reader_required": "windows-mpv-source-ref.txt with exact-pair1 producer",
     "reader_delivery": "pending",
