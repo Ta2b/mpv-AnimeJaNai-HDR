@@ -59,3 +59,11 @@ add_executable(animejanai-vulkan-test smoke.cpp)
 target_link_libraries(animejanai-vulkan-test PRIVATE aji_vulkan)
 set_target_properties(animejanai-vulkan-test PROPERTIES BUILD_RPATH "$ORIGIN")
 install(TARGETS aji_vulkan animejanai-vulkan-test DESTINATION .)
+
+# Focused native qualification, opt-in; never run GPU controls during packaging.
+option(AJI_BUILD_SPAN_BOUNDARY_CHECK "Build the exact resident SPAN boundary control" OFF)
+if(AJI_BUILD_SPAN_BOUNDARY_CHECK)
+  add_executable(vulkan-span-boundary-check ../../tests/inference/vulkan_span_boundary_check.cpp)
+  target_include_directories(vulkan-span-boundary-check PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+  target_link_libraries(vulkan-span-boundary-check PRIVATE ncnn Vulkan::Vulkan OpenMP::OpenMP_CXX)
+endif()

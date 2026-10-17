@@ -2,6 +2,8 @@
 #include "aji_conf.h"
 #include "rife.h"
 #include "gpu.h"
+#include "layer.h"
+#include "span_resident.h"
 #include "tiles.h"
 #include "../common/stats_snapshot.h"
 #include "../common/source_identity.h"
@@ -23,7 +25,7 @@ namespace {
 std::mutex gpu_mutex;
 int contexts = 0;
 thread_local std::string create_error;
-struct Step { std::unique_ptr<ncnn::Net> net; AjiModelConf conf; };
+struct Step { std::unique_ptr<ncnn::Net> net; AjiModelConf conf; bool device_only=false; };
 // The bridge has no frame IDs: decoder buffers can be reused. Only the active RGB bytes,
 // compared according to the reuse policy (exact by default, including chroma), identify a
 // source. Approximate hits retain their original anchor to avoid accumulating drift.
@@ -56,6 +58,11 @@ struct Context {
     uint64_t count=0;
     double total_ms=0;
     bool cache=true, rife_gpu_cache=true;
+    bool span_resident=true, span_resident_failed=false;
+    std::unique_ptr<AjiSpanBoundary> span_boundary;
+    uint64_t span_resident_segments=0,span_resident_uploads=0,span_resident_downloads=0;
+    uint64_t span_host_adapters=0,span_resident_fallbacks=0;
+    std::string span_resident_reason="not-used";
     // Exact content remains the default. Similarity is opt-in: a numerical noise threshold
     // cannot distinguish every low-contrast movement from compression noise.
     aji::Sameness same{0,0};
@@ -68,7 +75,7 @@ struct Context {
     uint64_t rife_rgb_preparations=0, rife_packed_outputs=0;
     Context() { std::lock_guard<std::mutex> lock(gpu_mutex); if (!contexts++) ncnn::create_gpu_instance(); }
     ~Context() {
-        rife.reset(); steps.clear();
+        span_boundary.reset(); rife.reset(); steps.clear();
         std::lock_guard<std::mutex> lock(gpu_mutex); if (!--contexts) ncnn::destroy_gpu_instance();
     }
 };
@@ -101,6 +108,67 @@ void resize_step(ncnn::Mat &m, const AjiModelConf &conf) {
         resize(m,w,h);
     }
 }
+bool resident_net(const ncnn::Net &net) {
+    // A VkMat result alone does not prove that no layer returned to the CPU.
+    for(const auto *layer:net.layers())
+        if(layer->type!="Input"&&!layer->support_vulkan)return false;
+    return true;
+}
+bool identity_resize(int w,int h,const AjiModelConf &conf) {
+    const double f=conf.resize_height_before_upscale>0?conf.resize_height_before_upscale/h:
+        conf.resize_factor_before_upscale/100.0;
+    return f==1.0 || (std::max(2,(int)std::lround(w*f)/2*2)==w &&
+                      std::max(2,(int)std::lround(h*f)/2*2)==h);
+}
+ncnn::Mat resident_span(Context &c,const ncnn::Mat &input,size_t begin,size_t end) {
+    const auto *device=ncnn::get_gpu_device(c.gpu);
+    if(!c.span_boundary)c.span_boundary=std::make_unique<AjiSpanBoundary>(device,c.gpu);
+    AjiRifeWorkspace workspace(device); // returned last, after commands/tensors
+    ncnn::VkCompute command(device);
+    std::vector<ncnn::VkMat> owners;
+    std::vector<ncnn::Extractor> extractors;
+    owners.reserve(4*(end-begin));extractors.reserve(end-begin);
+    ncnn::VkMat current;
+    ncnn::Option opt=c.steps[begin].net->opt;
+    opt.blob_vkallocator=workspace.blob;opt.workspace_vkallocator=workspace.blob;
+    opt.staging_vkallocator=workspace.staging;
+    command.record_upload(input,current,opt);++c.span_resident_uploads;
+    require(!current.empty(),"SPAN resident source upload failed");
+    owners.push_back(current);
+    ncnn::Mat result;
+    for(size_t i=begin;i<end;++i) {
+        auto &net=*c.steps[i].net;
+        extractors.push_back(net.create_extractor());auto &ex=extractors.back();
+        ex.set_blob_vkallocator(workspace.blob);ex.set_workspace_vkallocator(workspace.blob);
+        ex.set_staging_vkallocator(workspace.staging);
+        require(ex.input("in0",current)==0,"SPAN resident input failed");
+        ncnn::VkMat output;
+        require(ex.extract("out0",output,command)==0&&!output.empty()&&output.c*output.elempack==3,
+                "SPAN resident inference failed");
+        owners.push_back(output);++c.span_inferences;
+        if(i+1<end) {
+            ncnn::Option next=c.steps[i+1].net->opt;
+            next.blob_vkallocator=workspace.blob;next.workspace_vkallocator=workspace.blob;
+            next.staging_vkallocator=workspace.staging;
+            current=c.span_boundary->record(output,command,next,owners);
+        } else {
+            ncnn::Option last=net.opt;
+            last.blob_vkallocator=workspace.blob;last.workspace_vkallocator=workspace.blob;
+            last.staging_vkallocator=workspace.staging;
+            command.record_download(output,result,last);++c.span_resident_downloads;
+        }
+    }
+    if(command.submit_and_wait()!=0) {
+        // A failed wait must not let resources go while a submission uses them.
+        ncnn::vkDeviceWaitIdle(device->vkdevice());
+        throw std::runtime_error("SPAN resident submission failed; reconfigure before retry");
+    }
+    require(!result.empty()&&result.c==3&&result.elempack==1&&result.elembits()==32,
+            "SPAN resident final download failed");
+    ++c.span_resident_segments;
+    const float denorm[3]={255,255,255};result.substract_mean_normalize(nullptr,denorm);
+    return result;
+}
 ncnn::Mat upscale(Context &c, ncnn::Mat m, bool already_resized=false) {
     for (size_t i=0; i<c.steps.size(); ++i) {
         auto &step=c.steps[i];
@@ -108,6 +176,25 @@ ncnn::Mat upscale(Context &c, ncnn::Mat m, bool already_resized=false) {
         require(m.w%2==0 && m.h%2==0,"AnimeJaNai unshuffle requires even dimensions");
         const float norm[3]={1.f/255,1.f/255,1.f/255};
         m.substract_mean_normalize(nullptr,norm);
+        size_t end=i+1;
+        int segment_w=m.w*2,segment_h=m.h*2;
+        if(c.span_resident&&step.device_only) {
+            while(end<c.steps.size()&&c.steps[end].device_only&&
+                  identity_resize(segment_w,segment_h,c.steps[end].conf)) {
+                ++end;segment_w*=2;segment_h*=2;
+            }
+        }
+        if(end>i+1) {
+            try { m=resident_span(c,m,i,end); }
+            catch(...) { c.span_resident_failed=true;throw; }
+            c.span_resident_reason="resident";i=end-1;continue;
+        }
+        ++c.span_host_adapters;
+        if(i+1<c.steps.size()) {
+            ++c.span_resident_fallbacks;
+            c.span_resident_reason=!c.span_resident?"disabled":
+                !step.device_only||!c.steps[i+1].device_only?"host-layer":"intermediate-resize";
+        }
         auto ex=step.net->create_extractor();
         require(ex.input("in0",m)==0,"NCNN model input failed");
         ncnn::Mat out;
@@ -279,6 +366,7 @@ void load_steps(Context &c) {
         step.net->set_vulkan_device(c.gpu);
         require(step.net->load_param((base+".param").c_str())==0 && step.net->load_model((base+".bin").c_str())==0,
             "Cannot load NCNN model " + model.name);
+        step.device_only=resident_net(*step.net);
         c.steps.push_back(std::move(step));
     }
 }
@@ -302,6 +390,12 @@ std::string format_stats(const Context &c) {
      <<"\nRIFE GPU input cache: "<<(c.cache && c.rife_gpu_cache?"on":"off")
      <<"\nRIFE cached uploads: "<<c.rife_uploads<<"\nRIFE GPU input hits: "<<c.rife_gpu_hits
      <<"\nRIFE cached tensor bytes: "<<bytes<<"\n";
+    f<<"SPAN resident segments: "<<c.span_resident_segments
+     <<"\nSPAN explicit resident uploads: "<<c.span_resident_uploads
+     <<"\nSPAN explicit resident downloads: "<<c.span_resident_downloads
+     <<"\nSPAN host adapters: "<<c.span_host_adapters
+     <<"\nSPAN resident fallbacks: "<<c.span_resident_fallbacks
+     <<"\nSPAN resident route: "<<c.span_resident_reason<<"\n";
     f<<"RIFE RGB preparations: "<<c.rife_rgb_preparations
      <<"\nRIFE direct RGB outputs: "<<c.rife_packed_outputs<<"\n";
     f<<"Source ID hits: "<<c.source_id_hits<<"\nSource byte comparisons: "<<c.source_byte_comparisons<<"\nSource ID rejected calls: "<<c.id_tracker.rejected_calls<<"\n";
@@ -340,6 +434,7 @@ extern "C" aji_vk_context *aji_vk_create(const char *conf, const char *models,
             }
             if (const char *v=std::getenv("AJI_REUSE_PEAK"); v && *v) c->same.peak=std::min(255,std::max(0,std::atoi(v)));
         }
+        if(const char *v=std::getenv("AJI_VK_RESIDENT_SPAN"))c->span_resident=std::strcmp(v,"0")!=0;
         c->gpu=choose_gpu(c->device); return c.release();
     } catch (const std::exception &e) { create_error=e.what();return nullptr; }
 }
@@ -350,6 +445,9 @@ extern "C" int aji_vk_configure(aji_vk_context *context,int width,int height,dou
         require(width%2==0 && height%2==0,"Vulkan spatial profiles require even source dimensions");
         c.pending_ids={};c.active_ids={};c.id_tracker={};c.source_id_hits=c.source_byte_comparisons=0;
         c.error.clear();c.stats_state="configured";c.last_frame_ms=0;
+        c.span_boundary.reset();c.span_resident_failed=false;
+        c.span_resident_segments=c.span_resident_uploads=c.span_resident_downloads=0;
+        c.span_host_adapters=c.span_resident_fallbacks=0;c.span_resident_reason="not-used";
         c.rife.reset();c.steps.clear();c.width=width;c.height=height;
         for (auto &frame:c.frames) frame=CachedFrame();
         c.pair=CachedPair();
@@ -400,6 +498,7 @@ extern "C" int aji_vk_process(aji_vk_context *context,const unsigned char *previ
     try {
         auto start=std::chrono::steady_clock::now();
         require(current && output && timestep>=0 && timestep<=1,"Invalid frame arguments");
+        require(!c.span_resident_failed,"SPAN resident context failed; reconfigure before retry");
         ncnn::Mat result;
         bool packed_output=false;
         CachedFrame *output_frame=nullptr;

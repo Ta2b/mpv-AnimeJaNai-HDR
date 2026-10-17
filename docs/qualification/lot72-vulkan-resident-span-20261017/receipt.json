@@ -1,0 +1,42 @@
+{
+  "identity": {
+    "baseline": "b718630e193c858770869267eb9b6eb507c4f23bcdcb0dbe9d899cccd534d4a4",
+    "candidate": "c04d95a0b7aa190b89552a55ec523ff77b3d76065feb36b5c0bbb200d8d0257f",
+    "conf": "40096c9aca3ae866ca8c7095849a409c42c6938c0b30f48fa9d0409ae41315e2",
+    "resize_conf": "ed9afd515d7b6e03c69433ba30af7b8b1076131e84a8def6732a49cf7ec7c3c2"
+  },
+  "input_sha256": "9f3b664a467183b93f42c7cd967fcb48723edfad24aa101fd8a1c09dbe3f5f31",
+  "source_size": [
+    128,
+    128
+  ],
+  "pixels_exact": true,
+  "output_sha256": "2a83161af4b3b29bc77adf0d7e99c5dae823abe28af2784e24534a3e7f0e2f9d",
+  "first_off_stats": "Stats state: running\nBackend: NCNN/Vulkan\nGPU: NVIDIA GeForce RTX 4070 Ti\nAnimeJaNai models: 2\nRIFE: off\nOutput: 512x512\nFrames: 1\nInference ms: 12.2103\nAverage inference ms: 12.2103\nSource cache: off\nHeld RIFE outputs reused: 0\nSource preparations: 0\nSource cache hits: 0\nSPAN inferences: 2\nRIFE inferences: 0\nPair preparations: 0\nRIFE GPU input cache: off\nRIFE cached uploads: 0\nRIFE GPU input hits: 0\nRIFE cached tensor bytes: 0\nSPAN resident segments: 0\nSPAN explicit resident uploads: 0\nSPAN explicit resident downloads: 0\nSPAN host adapters: 2\nSPAN resident fallbacks: 1\nSPAN resident route: disabled\nRIFE RGB preparations: 0\nRIFE direct RGB outputs: 0\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n",
+  "first_on_stats": "Stats state: running\nBackend: NCNN/Vulkan\nGPU: NVIDIA GeForce RTX 4070 Ti\nAnimeJaNai models: 2\nRIFE: off\nOutput: 512x512\nFrames: 1\nInference ms: 47.3066\nAverage inference ms: 47.3066\nSource cache: off\nHeld RIFE outputs reused: 0\nSource preparations: 0\nSource cache hits: 0\nSPAN inferences: 2\nRIFE inferences: 0\nPair preparations: 0\nRIFE GPU input cache: off\nRIFE cached uploads: 0\nRIFE GPU input hits: 0\nRIFE cached tensor bytes: 0\nSPAN resident segments: 1\nSPAN explicit resident uploads: 1\nSPAN explicit resident downloads: 1\nSPAN host adapters: 0\nSPAN resident fallbacks: 0\nSPAN resident route: resident\nRIFE RGB preparations: 0\nRIFE direct RGB outputs: 0\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n",
+  "full_call_ms": {
+    "off": [
+      3.452963999734493,
+      3.2144869983312674,
+      3.169242998410482
+    ],
+    "on": [
+      2.593057997728465,
+      2.2563439997611567,
+      2.33729499814217
+    ]
+  },
+  "resize_fallback": {
+    "pixels_exact": true,
+    "output_sha256": "1e1e03f224f8d3df9e323162e082baa9ec85e9f3df61720dbb191c680c73dfce",
+    "stats": "Stats state: running\nBackend: NCNN/Vulkan\nGPU: NVIDIA GeForce RTX 4070 Ti\nAnimeJaNai models: 2\nRIFE: off\nOutput: 256x256\nFrames: 1\nInference ms: 2.99764\nAverage inference ms: 2.99764\nSource cache: off\nHeld RIFE outputs reused: 0\nSource preparations: 0\nSource cache hits: 0\nSPAN inferences: 2\nRIFE inferences: 0\nPair preparations: 0\nRIFE GPU input cache: off\nRIFE cached uploads: 0\nRIFE GPU input hits: 0\nRIFE cached tensor bytes: 0\nSPAN resident segments: 0\nSPAN explicit resident uploads: 0\nSPAN explicit resident downloads: 0\nSPAN host adapters: 2\nSPAN resident fallbacks: 1\nSPAN resident route: intermediate-resize\nRIFE RGB preparations: 0\nRIFE direct RGB outputs: 0\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n"
+  },
+  "controlled_error": {
+    "before_submission": true,
+    "output_untouched": true,
+    "latched": true,
+    "reconfigure_exact": true
+  },
+  "passed": true,
+  "scope": "Linux Vulkan RTX4070Ti, two real SPAN128->256->512, no RIFE/HDR/physical display or other-GPU qualification"
+}

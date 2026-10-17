@@ -1,0 +1,6 @@
+[0 NVIDIA GeForce RTX 4070 Ti]  queueC=2[8]  queueT=1[2]  prefer-slm=1  rebar=1  r-score=80
+[0 NVIDIA GeForce RTX 4070 Ti]  fp16-p/s/u/a=1/1/1/1  int8-p/s/u/a=1/1/1/1  bf16-p/s=1/1
+[0 NVIDIA GeForce RTX 4070 Ti]  subgroup=32(32~32)  ops=1/1/1/1/1/1/1/1/1/1
+[0 NVIDIA GeForce RTX 4070 Ti]  fp16-cm=16x16x16/16x8x16/16x8x8  int8-cm=16x16x32/16x8x32  bf16-cm=16x16x16  fp8-cm=16x16x32  fp6-cm=0  fp4-cm=0
+PASS boundary storage=32: 196608 exact F32 values, finite FP16 domain, 255 then F32 1/255 preserved
+PASS boundary storage=16: 196608 exact F32 values, finite FP16 domain, 255 then F32 1/255 preserved
