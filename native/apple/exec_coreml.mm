@@ -12,6 +12,7 @@
 #include "engine.h"
 #include "mlpatch.h"
 #include "../common/placement_diagnostic.h"
+#include "coreml_program_key.h"
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -96,8 +97,25 @@ public:
             // it is loaded, not when it is compiled.
             require(!r.cache_dir.empty(), "Core ML: no cache folder for compiled models");
             const std::string content = coreml_template_tag(r.models_dir, r.model);
+            NSString *build = [[NSProcessInfo processInfo] operatingSystemVersionString];
+            NSString *framework = [[[NSBundle bundleForClass:[MLModel class]] objectForInfoDictionaryKey:@"CFBundleVersion"] description];
+            coreml::CompileEnvironment environment;
+            environment.os_build=std::string([build UTF8String]);
+            // A framework without its own version is still identified by the
+            // observed system build; never substitute a floating SDK label.
+            environment.framework_version=framework.length?std::string([framework UTF8String]):"system-build/"+environment.os_build;
+#if defined(__arm64__) || defined(__aarch64__)
+            environment.host_architecture="arm64";
+#elif defined(__x86_64__)
+            environment.host_architecture="x86_64";
+#else
+#error Unsupported Core ML host compiler architecture
+#endif
+            const std::string program=coreml::program_key(content,w_,h_,environment);
+            std::fprintf(stderr,"[aji] Core ML cache identity: p3-%s template %s compiler %s runtime %s host %s\n",
+                program.c_str(),content.c_str(),environment.framework_version.c_str(),environment.os_build.c_str(),environment.host_architecture.c_str());
             const fs::path folder = fs::path(r.cache_dir) / "native"
-                / (r.model + "-" + std::to_string(w_) + "x" + std::to_string(h_) + "-" + content);
+                / (r.model + "-" + std::to_string(w_) + "x" + std::to_string(h_) + "-p3-" + program);
             const fs::path compiled = folder / "model.mlmodelc";
             NSError *error = nil;
             NSFileManager *files = [NSFileManager defaultManager];
@@ -113,7 +131,7 @@ public:
                 require([files moveItemAtURL:made toURL:kept error:&error], "Core ML: could not keep the compiled model: " + text(error));
                 std::error_code ignored;
                 fs::remove_all(package, ignored);
-            }
+            } else std::fprintf(stderr,"[aji] Core ML compiled cache hit: %s program p3-%s\n",r.model.c_str(),program.c_str());
             NSURL *url = [NSURL fileURLWithPath:@(compiled.string().c_str())];
             MLModelConfiguration *configuration = [[MLModelConfiguration alloc] init];
             configuration.computeUnits = units;
@@ -151,7 +169,7 @@ public:
             // Core ML writes the result into this buffer instead of allocating one per picture.
             options_.outputBackings = @{@"output": (__bridge id)out_};
             detail::PlacementKey key;
-            key.template_content=content;key.model=r.model;key.width=w_;key.height=h_;
+            key.template_content="p3-"+program;key.model=r.model;key.width=w_;key.height=h_;
             key.units=(int)configuration.computeUnits;key.low_precision=configuration.allowLowPrecisionAccumulationOnGPU?1:0;
             key.os_build=std::string([[[NSProcessInfo processInfo] operatingSystemVersionString] UTF8String]);
             if (@available(macOS 14.4, *))key.reshape=(int)configuration.optimizationHints.reshapeFrequency;

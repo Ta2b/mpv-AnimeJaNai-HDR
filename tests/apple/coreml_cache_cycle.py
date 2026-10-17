@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -50,15 +51,19 @@ def main():
         return subprocess.check_output([str(args.identity.resolve()), str(models), name], text=True).strip()
 
     def compiled(content, name=model):
-        return cache / "native" / (name + "-256x256-" + content) / "model.mlmodelc"
+        matching = next(e for e in results["cases"].values() if e["content_tag"] == content and e["model"] == name)
+        suffix = "p3-" + matching["program_key"] if matching["program_key"] else content
+        return cache / "native" / (name + "-256x256-" + suffix) / "model.mlmodelc"
 
     def run(label, models, name=model, miss=True, fails=False):
         output = work / (label + ".rgb")
         process = subprocess.run([str(args.probe.resolve()), str(models), name, str(cache), str(output)],
                                  env={**os.environ, "AJI_COREML_NO_PLAN": "1"}, capture_output=True, text=True)
         (work / (label + ".log")).write_text(process.stdout + process.stderr)
+        program_key = re.search(r"Core ML cache identity: p3-([0-9a-f]{64})", process.stderr)
         evidence = {"returncode": process.returncode, "cache_miss": "compiled cache miss:" in process.stderr,
-                    "content_tag": tag(models, name)}
+                    "content_tag": tag(models, name), "model": name,
+                    "program_key": program_key.group(1) if program_key else None}
         results["cases"][label] = evidence
         if fails:
             assert process.returncode != 0 and "cache cleared, try again" in process.stderr, process.stderr
