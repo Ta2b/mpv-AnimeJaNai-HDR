@@ -109,6 +109,7 @@ local function provenance(path)
     local info=utils.file_info(path)
     if not info then return {path=path,present=false} end
     local resolved=run_capture({'readlink','-f',path}) or path
+    local is_link=run_capture({'readlink',path})~=nil -- the module entry itself, not a linked parent directory
     local stat=utils.file_info(resolved) or info
     local cached=digests[resolved]
     local digest
@@ -130,7 +131,7 @@ local function provenance(path)
     end
     local match='unknown'
     if declared~=nil and digest~=nil then match=(declared==digest) end
-    return {path=path,present=true,resolved=resolved,managed_link=resolved~=path,sha256=digest,declared_sha256=declared,declared_match=match}
+    return {path=path,present=true,resolved=resolved,managed_link=is_link,sha256=digest,declared_sha256=declared,declared_match=match}
 end
 -- AH-330: the launcher renames an old local copy of a managed module at startup and only
 -- writes to stderr; tell the player once per launch when the log gained a fresh line.
