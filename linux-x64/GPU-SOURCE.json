@@ -60,7 +60,7 @@
     "optional-configured-rife-semantics-v1"
   ],
   "sha256": {
-    "libaji.so": "de3ec718e173266800fe9940a0cd94605968d8c69f24df20834dc3324b73049d",
+    "libaji.so": "592a828989d3fa40228577bd103374568ef05277df89eb6f467ab965175764c3",
     "libaji_trt.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e",
     "libaji_trt_rtx.so": "4c1074ed7cd31361c99e991966e86a45e3092fb13531fe6a773c73cc9cdf302e"
   },
@@ -231,7 +231,7 @@
     }
   },
   "module_sources": {
-    "libaji.so": "463a0c73b6f2e77df09f908a3fef2bf5898cb5a1",
+    "libaji.so": "118c27252240efbb7d980d0e0b8ef358b6d4bc7e",
     "libaji_trt.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
     "libaji_trt_rtx.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
     "libaji_pipeline.so": "9d2c717f756c632c9c2d0acc53479fd8690586cb",
@@ -254,5 +254,11 @@
     "binary_source_declaration": "unknown (git absent from portable build image)",
     "loaded_image_path_is_not_a_mapped_pages_hash": true,
     "numeric_gpu_section_sha256": "23766330f0d82b1a69660abff608b3f0630ea9089f03be755eb4e06830d097cc"
+  },
+  "dispatcher_quality_contract": {
+    "backend_source": "118c27252240efbb7d980d0e0b8ef358b6d4bc7e",
+    "scope": "Linux only, selected inner-context forwarding; same-image create/configure/infer_rife/semantics, dependent-only symbol rejected",
+    "qualified": "Real DSO fixtures present/absent/dependent-only and bad version/size/null preserve output. Actual reader requested Quality receives effective Quality and inner TRT module path; older Quality refused, older explicit Fast accepted unknown. No numerical algorithm or measured FPS change.",
+    "rpath": false
   }
 }
