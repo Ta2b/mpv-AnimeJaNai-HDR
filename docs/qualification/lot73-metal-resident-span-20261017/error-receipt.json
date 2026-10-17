@@ -1,0 +1,19 @@
+{
+  "identity": {
+    "baseline": "67805bd1a0c6dea078fd0a14c26467cf7e81a9d207c4b14da69f4483b9dda190",
+    "candidate": "67805bd1a0c6dea078fd0a14c26467cf7e81a9d207c4b14da69f4483b9dda190",
+    "conf": "e53e82af2a17b48f120fd2c9887d34c9493bc8a8d2a2103e8a913d34872adb7f",
+    "resize_conf": "9423ce9774f6fe23205a65966ffcb3a2a19152291ddb63af479be5acd5a5a992"
+  },
+  "source_size": [
+    128,
+    128
+  ],
+  "controlled_second_graph_error": true,
+  "output_untouched": true,
+  "reconfigure_exact": true,
+  "output_sha256": "2aa215074dc7823a63043c1241bba5b3ec5df48fdd7478e8f02a818bbdc12a45",
+  "error": "Metal: invalid graph output",
+  "passed": true,
+  "scope": "native Apple Metal, two real SPAN128->256->512; explicit host staging/readBytes removed, default graph options unchanged; no driver-internal-copy or other-backend claim"
+}

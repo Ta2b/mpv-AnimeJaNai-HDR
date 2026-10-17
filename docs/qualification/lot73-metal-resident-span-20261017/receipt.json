@@ -1,0 +1,36 @@
+{
+  "identity": {
+    "baseline": "ab9e12814fa3ffb175e6b7d0b30151516835befc06844c41aea024c372acb807",
+    "candidate": "67805bd1a0c6dea078fd0a14c26467cf7e81a9d207c4b14da69f4483b9dda190",
+    "conf": "e53e82af2a17b48f120fd2c9887d34c9493bc8a8d2a2103e8a913d34872adb7f",
+    "resize_conf": "9423ce9774f6fe23205a65966ffcb3a2a19152291ddb63af479be5acd5a5a992"
+  },
+  "source_size": [
+    128,
+    128
+  ],
+  "pixels_exact": true,
+  "output_sha256": "2aa215074dc7823a63043c1241bba5b3ec5df48fdd7478e8f02a818bbdc12a45",
+  "off_stats": "Stats state: running\nBackend: Metal/GPU + Metal/GPU\nAnimeJaNai models: 2\nRIFE: off\nOutput: 512x512\nFrames: 1\nInference ms: 26.6654\nAverage inference ms: 26.6654\nModel ms: 26.6321\nAverage model ms: 26.6321\nAverage conversion ms: 0.033292\nModel total ms: 26.632083\nRecent ms: 26.6654\nFull frame ms: 26.6654\nResident SPAN eligible: no\nResident SPAN segments: 0\nExecutor host staging bytes: 245760\nExecutor explicit readback bytes: 983040\nTiles: 1x1 of 128x128, overlap 36 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Metal/GPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Metal/GPU: whole network on Apple Paravirtual device, half floats, rows of pixels (NHWC)\nTiles: 1x1 of 256x256, overlap 36 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Metal/GPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Metal/GPU: whole network on Apple Paravirtual device, half floats, rows of pixels (NHWC)\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n",
+  "on_stats": "Stats state: running\nBackend: Metal/GPU + Metal/GPU\nAnimeJaNai models: 2\nRIFE: off\nOutput: 512x512\nFrames: 1\nInference ms: 36.543\nAverage inference ms: 36.543\nModel ms: 36.4695\nAverage model ms: 36.4695\nAverage conversion ms: 0.073542\nModel total ms: 36.469458\nRecent ms: 36.543\nFull frame ms: 36.543\nResident SPAN eligible: yes\nResident SPAN segments: 1\nExecutor host staging bytes: 49152\nExecutor explicit readback bytes: 786432\nTiles: 1x1 of 128x128, overlap 36 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Metal/GPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Metal/GPU: whole network on Apple Paravirtual device, half floats, rows of pixels (NHWC)\nTiles: 1x1 of 256x256, overlap 36 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Metal/GPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Metal/GPU: whole network on Apple Paravirtual device, half floats, rows of pixels (NHWC)\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n",
+  "full_call_ms": {
+    "off": [
+      17.177749999973457,
+      16.947917000038615,
+      18.3909159999871
+    ],
+    "on": [
+      15.497332999984792,
+      16.41125000003285,
+      15.253000000029715
+    ]
+  },
+  "resize_fallback": {
+    "pixels_exact": true,
+    "sha256": "d1a927859c1c63e95e95fe03c6caaf6f97d6084456b4c574a6a7f7c13c0c34b7",
+    "stats": "Stats state: running\nBackend: Metal/GPU + Metal/GPU\nAnimeJaNai models: 2\nRIFE: off\nOutput: 256x256\nFrames: 1\nInference ms: 13.9869\nAverage inference ms: 13.9869\nModel ms: 13.8356\nAverage model ms: 13.8356\nAverage conversion ms: 0.151334\nModel total ms: 13.835583\nRecent ms: 13.9869\nFull frame ms: 13.9869\nResident SPAN eligible: no\nResident SPAN segments: 0\nExecutor host staging bytes: 98304\nExecutor explicit readback bytes: 393216\nTiles: 1x1 of 128x128, overlap 36 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Metal/GPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Metal/GPU: whole network on Apple Paravirtual device, half floats, rows of pixels (NHWC)\nTiles: 1x1 of 128x128, overlap 36 | computed 1 of 1 | reused since start: 0 % (reuse=off)\nDevices: [Metal/GPU: 0 ms a tile, 100 % of the tiles]\nPlacement: Metal/GPU: whole network on Apple Paravirtual device, half floats, rows of pixels (NHWC)\nSource ID hits: 0\nSource byte comparisons: 0\nSource ID rejected calls: 0\n"
+  },
+  "reconfigure_exact": true,
+  "passed": true,
+  "scope": "native Apple Metal, two real SPAN128->256->512; explicit host staging/readBytes removed, default graph options unchanged; no driver-internal-copy or other-backend claim"
+}
