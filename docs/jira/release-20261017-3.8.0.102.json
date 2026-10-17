@@ -1,0 +1,50 @@
+{
+  "release": "3.8.0.102",
+  "source": "714479b6de1e80499504fff019db390f90ebff96",
+  "publication_verified": true,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39028558058,
+      "headSha": "714479b6de1e80499504fff019db390f90ebff96",
+      "status": "completed",
+      "workflowName": "Release macOS"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39028557937,
+      "headSha": "714479b6de1e80499504fff019db390f90ebff96",
+      "status": "completed",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39028557979,
+      "headSha": "714479b6de1e80499504fff019db390f90ebff96",
+      "status": "completed",
+      "workflowName": "Release Linux"
+    }
+  ],
+  "assets_uploaded": 15,
+  "payload_check": {
+    "passed": true,
+    "archive_sha256": "15a4457f6535517ac1e36b508bc1b5b891925431caf8378cbb3e4087e0583225",
+    "managed_programs": 17,
+    "controller_sha256": "93837a4aeca8d018597049f2c89c9bac4fb25ed231518f2c0a9b94e54dcdff3b",
+    "controller_source_exact": true,
+    "preload_gate_present": true,
+    "launcher_source_exact": true,
+    "helper_sha256": "24d3ab7b692ab33719d9f5c7e99672393840a438135039f40c92e65f92596c92",
+    "manager_sha256": "efff2f3c24de70c7d97646efd845bb664476fb093f394bdd8aab60a4092f3a4e",
+    "manager_source": "b69968a8a30cedc83b28820ca14d014abcb36928",
+    "dylib_sha256": "7816d2a515cee72d8be4236aab946ba20f9117bdb5b887cf92816621d2268a45",
+    "dylib_unchanged_99": true,
+    "no_video_replay": true
+  },
+  "scope": "AH353 canonical macOS consumer with actual asynchronous preload gate; AH339 consumer alignment complete",
+  "qualification": "Reuse lot78 CLI/Lua proofs, lot81 actual mpv first playback before/after and error path; no source configuration changed. Native module identical .99, no video replay.",
+  "limits": [
+    "No new FPS or physical Apple GPU claim.",
+    "AH224 overall UX and engine parent scopes remain open."
+  ]
+}
