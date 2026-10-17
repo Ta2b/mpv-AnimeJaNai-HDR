@@ -800,7 +800,8 @@ public static class ProfileResolver
                     return 1;
                 if (_cache.TryGetValue(onnxPath, out var c) && c.Item1 == info.LastWriteTimeUtc && c.Item2 == info.Length)
                     return c.Item3;
-                var dims = InputDims(File.ReadAllBytes(onnxPath));
+                using var file = File.OpenRead(onnxPath);
+                var dims = InputDims(file);
                 var frames = 1;
                 if (dims is { Count: 5 } && dims[1] > 1 && dims[2] == 3)
                     frames = (int)dims[1];
@@ -817,9 +818,18 @@ public static class ProfileResolver
 
         // Dims of the first graph input that is not an initializer (-1 for
         // symbolic dims), or null.
-        public static List<long>? InputDims(byte[] data)
+        public static List<long>? InputDims(byte[] data) => ReadDims(new Reader(data, 0, data.Length));
+
+        // Seek over tensor/node payloads instead of allocating/reading weights.
+        // Child readers own their cursor and bounds, just like the byte[] reference.
+        public static List<long>? InputDims(Stream stream)
         {
-            var m = new Reader(data, 0, data.Length);
+            if(!stream.CanRead || !stream.CanSeek)throw new ArgumentException("ONNX metadata needs a readable seekable stream.",nameof(stream));
+            return ReadDims(new StreamReader(stream,stream.Position,stream.Length));
+        }
+
+        private static List<long>? ReadDims(IShapeReader m)
+        {
             while (m.More)
             {
                 var f = m.Tag(out var wire);
@@ -855,7 +865,7 @@ public static class ProfileResolver
             return null;
         }
 
-        private static string TensorName(Reader r)
+        private static string TensorName(IShapeReader r)
         {
             while (r.More)
             {
@@ -867,7 +877,7 @@ public static class ProfileResolver
             return string.Empty;
         }
 
-        private static (string, List<long>)? ValueInfo(Reader r)
+        private static (string, List<long>)? ValueInfo(IShapeReader r)
         {
             var name = string.Empty;
             List<long>? dims = null;
@@ -904,7 +914,7 @@ public static class ProfileResolver
             return dims == null ? null : (name, dims);
         }
 
-        private static List<long> Shape(Reader r)
+        private static List<long> Shape(IShapeReader r)
         {
             var dims = new List<long>();
             while (r.More)
@@ -930,7 +940,80 @@ public static class ProfileResolver
             return dims;
         }
 
-        private sealed class Reader(byte[] data, int pos, int end)
+        private interface IShapeReader
+        {
+            bool More {get;}
+            ulong Varint();
+            uint Tag(out int wire);
+            IShapeReader Sub();
+            string String();
+            void Skip(int wire);
+        }
+
+        private sealed class StreamReader(Stream stream,long pos,long end) : IShapeReader
+        {
+            private long _pos=pos;
+            private long Remaining => end-_pos;
+            public bool More => _pos<end;
+            private void Advance(ulong count)
+            {
+                if(count>(ulong)Remaining)throw new InvalidDataException("truncated field");
+                _pos+=(long)count;
+            }
+            private int Byte()
+            {
+                if(!More)throw new InvalidDataException("truncated varint");
+                if(stream.Position!=_pos)stream.Position=_pos;
+                int value=stream.ReadByte();
+                if(value<0)throw new InvalidDataException("truncated stream");
+                ++_pos;return value;
+            }
+            public ulong Varint()
+            {
+                ulong result=0;
+                for(int shift=0;shift<64;shift+=7)
+                {
+                    int b=Byte();
+                    if(shift==63 && b>1)throw new InvalidDataException("varint overflow");
+                    result|=(ulong)(b&0x7f)<<shift;
+                    if((b&0x80)==0)return result;
+                }
+                throw new InvalidDataException("varint too long");
+            }
+            public uint Tag(out int wire)
+            {
+                ulong tag=Varint();wire=(int)(tag&7);
+                if((tag>>3)==0 || (tag>>3)>0x1fffffff)throw new InvalidDataException("invalid field number");
+                return (uint)(tag>>3);
+            }
+            public IShapeReader Sub()
+            {
+                ulong length=Varint();long begin=_pos;Advance(length);
+                return new StreamReader(stream,begin,_pos);
+            }
+            public string String()
+            {
+                ulong length=Varint();long begin=_pos;Advance(length);
+                if(length>int.MaxValue)throw new InvalidDataException("metadata string too long");
+                byte[] bytes=new byte[(int)length];
+                if(stream.Position!=begin)stream.Position=begin;
+                stream.ReadExactly(bytes);
+                return System.Text.Encoding.UTF8.GetString(bytes);
+            }
+            public void Skip(int wire)
+            {
+                switch(wire)
+                {
+                    case 0:Varint();break;
+                    case 1:Advance(8);break;
+                    case 2:Advance(Varint());break;
+                    case 5:Advance(4);break;
+                    default:throw new InvalidDataException($"wire type {wire}");
+                }
+            }
+        }
+
+        private sealed class Reader(byte[] data, int pos, int end) : IShapeReader
         {
             private int _pos = pos;
 
@@ -957,6 +1040,8 @@ public static class ProfileResolver
                 wire = (int)(t & 7);
                 return (uint)(t >> 3);
             }
+
+            IShapeReader IShapeReader.Sub() => Sub();
 
             public Reader Sub()
             {
