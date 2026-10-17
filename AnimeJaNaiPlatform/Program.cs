@@ -43,7 +43,8 @@ try
         string conf=Get("--conf")??Path.Combine(root,"animejanai","animejanai.conf");
         string platform=Get("--platform")??(OperatingSystem.IsWindows()?"windows":OperatingSystem.IsMacOS()?"macos":"linux");
         var context=new ProfileResolver.Context(platform,Get("--backend")??"tensorrt",
-            Get("--inference-dir")??Path.Combine(root,"animejanai","inference"),Path.Combine(root,"animejanai","onnx"),
+            Get("--inference-dir")??Path.Combine(root,"animejanai","inference"),Get("--models-dir")??Path.Combine(root,"animejanai","onnx"),
+            Get("--rife-dir")??Path.Combine(root,"animejanai","rife"),
             PipelineFeatures:ulong.TryParse(Get("--pipeline-features"),out var features)?features:0);
         if(Get("--pipeline-features")==null&&platform=="linux")context=context with {PipelineFeatures=ProfileResolver.ReadPipelineFeatures(context.InferenceDirectory)};
         var plan=ProfileResolver.ResolveConfiguration(File.ReadAllText(conf),context,

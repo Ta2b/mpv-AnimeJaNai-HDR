@@ -57,20 +57,23 @@ local function read(path)
     return s
 end
 
-local function section(path, name)
-    local text = read(path)
-    if not text then return nil end
-    text = '\n' .. text:gsub('\r', '') .. '\n['
-    return text:match('\n%[' .. name .. '%]([^\n]*\n.-)\n%[')
+local function section_text(text,name)
+    local result,active=nil,false
+    for source_line in ((text or '')..'\n'):gmatch('([^\n]*)\n') do
+        local line=source_line:gsub('^%s+',''):gsub('%s+$','')
+        local header=line:match('^%[([^%]]+)%]$')
+        if header then
+            active=header:gsub('^%s+',''):gsub('%s+$',''):lower()==name
+            if active then result=result or {} end
+        elseif active and line:sub(1,1)~='#' and line:sub(1,1)~=';' then
+            local key,value=line:match('^([^=]+)=(.*)$')
+            if key then result[key:gsub('^%s+',''):gsub('%s+$',''):lower()]=value:gsub('^%s+',''):gsub('%s+$','') end
+        end
+    end
+    return result
 end
-
--- A [global] setting of the user's bank, or nil.
-local function global(key)
-    local text = section(user_bank, 'global')
-    if not text then return nil end
-    local value = ('\n' .. text):match('\n' .. key .. '%s*=%s*([^\n]*)')
-    return value and value:gsub('%s+$', '') or nil
-end
+local function section(path,name) return section_text(read(path),name) end
+local function global(key) return (section(user_bank,'global') or {})[key] end
 
 -- The user's bank when it has the profile; the application's own bank otherwise, so that a
 -- bank written by an earlier version still gets the profiles added since.
@@ -82,7 +85,7 @@ end
 
 local function profile_name(n)
     local path = bank_for(n)
-    return path and ('\n' .. (section(path, 'slot_' .. n) or '')):match('\nprofile_name=([^\n]*)')
+    return path and (section(path,'slot_'..n) or {}).profile_name
 end
 
 local function yes(value, fallback)
@@ -107,53 +110,101 @@ local function rife_dir()
     return bundle .. '/animejanai/rife'
 end
 
-local function select(value, quiet)
-    local wanted = tonumber(value)
-    if not wanted or wanted < 0 or wanted>9 or wanted ~= math.floor(wanted) then return end
-    local route,text
-    local bank_path=bank_for(wanted)
-    local file=bank_path and io.open(bank_path,'rb')
-    if file then
-        text=file:read('*a');file:close()
-        local w,h,fps=stages.source(mp)
-        route=stages.resolve(text,wanted,w,h,fps,'macos')
-    end
-    if route and (route.error or route.explicit and not route.legacy_equivalent) then mp.osd_message(route.error or 'Cette chaine mixte requiert Linux CUDA.',6);wanted=0;route=nil end
-    if wanted>0 and route and not route.inference_empty then
-        local prepared,error=runtime.prepare(bank_path,text,route,wanted)
-        if not prepared then mp.osd_message('Configuration temporaire indisponible : '..tostring(error),6);wanted=0;route=nil
-        else bank_path=prepared end
-    end
-    if wanted > 0 and not (route and route.inference_empty) and failed then
-        mp.osd_message('AnimeJaNai : moteur en échec pour cette session, voir le terminal.', 5)
-        wanted = 0
-    end
-    if wanted > 0 and not (route and route.inference_empty) and not utils.file_info(engine) then
-        mp.osd_message('AnimeJaNai : moteur introuvable dans l\'application.', 5)
-        wanted = 0
-    end
-    if wanted > 0 and not profile_name(wanted) then
-        mp.osd_message('AnimeJaNai : profil ' .. wanted .. ' vide', 4)
-        return
-    end
-    local list = mp.get_property_native('vf') or {}
-    for i = #list, 1, -1 do if list[i].label == 'aji' then table.remove(list, i) end end
-    if wanted > 0 and not (route and route.inference_empty) then
-        table.insert(list, 1, {name = 'animejanai-vulkan', label = 'aji', enabled = true, params = {
-            lib = engine, conf = bank_path, ['model-dir'] = models_dir(), ['rife-model-dir'] = rife_dir(),
-            device = setting_device(), stats = stats, slot = tostring(wanted)}})
-    end
-    os.remove(stats)   -- the measure below must not read the previous profile's figures
-    mp.set_property_native('vf', list)
-    slot = wanted
-    seen = -1
-    mp.set_property_native('user-data/animejanai-active-slot', slot)
-    mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and route or nil)
-    if not quiet then
-        mp.osd_message(slot == 0 and 'AnimeJaNai : désactivé'
-            or 'AnimeJaNai ' .. slot .. ' : ' .. tostring(profile_name(slot)), 4)
-    end
+local resolver_generation,pending_resolver,resolver_timer=0,nil,nil
+local applied_name,applied_device,applied_engine,deferred_slot
+local function cancel_resolver()
+    resolver_generation=resolver_generation+1
+    if resolver_timer then resolver_timer:kill();resolver_timer=nil end
+    local command=pending_resolver;pending_resolver=nil
+    if command then mp.abort_async_command(command) end
 end
+local function resolver_error(message)
+    mp.msg.error('AnimeJaNai profile: '..tostring(message))
+    mp.osd_message('AnimeJaNai : '..tostring(message),7)
+end
+local function apply_selection(wanted,route,bank_path,text,quiet,name,paths)
+    if wanted>0 and route and not route.inference_empty then
+        if failed then resolver_error('Moteur en échec pour cette session, voir le terminal.');return end
+        if not utils.file_info(engine) then resolver_error("Moteur introuvable dans l'application.");return end
+        local prepared,error=runtime.prepare(bank_path,text,route,wanted)
+        if not prepared then resolver_error('Configuration temporaire indisponible : '..tostring(error));return end
+        bank_path=prepared
+    end
+    local list=mp.get_property_native('vf') or {}
+    for i=#list,1,-1 do if list[i].label=='aji' then table.remove(list,i) end end
+    if wanted>0 and not route.inference_empty then
+        table.insert(list,1,{name='animejanai-vulkan',label='aji',enabled=true,params={
+            lib=engine,conf=bank_path,['model-dir']=paths.models,['rife-model-dir']=paths.rife,
+            device=(section_text(text,'global') or {}).apple_device or o.device,stats=stats,slot=tostring(wanted)}})
+    end
+    os.remove(stats)
+    mp.set_property_native('vf',list)
+    slot=wanted;seen=-1;applied_name=name
+    local settings=section_text(text,'global') or {}
+    applied_device=settings.apple_device or o.device;applied_engine=settings.backend or 'CoreML'
+    mp.set_property_native('user-data/animejanai-active-slot',slot)
+    mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and route or nil)
+    if not quiet then mp.osd_message(slot==0 and 'AnimeJaNai : désactivé' or 'AnimeJaNai '..slot..' : '..tostring(name),4) end
+end
+local function select(value,quiet)
+    local wanted=tonumber(value)
+    if not wanted or wanted<0 or wanted>9 or wanted~=math.floor(wanted) then return end
+    cancel_resolver()
+    if wanted==0 then deferred_slot=nil;apply_selection(0,nil,nil,nil,quiet);return end
+    local source=bank_for(wanted)
+    local text=source and read(source)
+    local name=(section_text(text,'slot_'..wanted) or {}).profile_name
+    if not text or not name then resolver_error('Profil '..wanted..' vide.');return end
+    local w,h,fps=stages.source(mp)
+    local route=stages.resolve(text,wanted,w,h,fps,'macos')
+    if route.unknown then deferred_slot=wanted;return end
+    deferred_slot=nil
+    local snapshot,error=runtime.store(text,'source-config')
+    if not snapshot then resolver_error('Configuration temporaire indisponible : '..tostring(error));return end
+    local helper=bundle..'/AnimeJaNaiPlatform'
+    if not utils.file_info(helper) then resolver_error("Résolveur de profil absent : mettre à jour l'application.");return end
+    local paths={models=models_dir(),rife=rife_dir()}
+    local args={helper,'--profile-plan','--root',data..'/..','--platform','macos','--backend','CoreML',
+        '--conf',snapshot,'--slot',tostring(wanted),'--inference-dir',bundle..'/animejanai/inference',
+        '--models-dir',paths.models,'--rife-dir',paths.rife}
+    args[#args+1]='--rule';args[#args+1]=tostring(route.chain or 0)
+    local generation=resolver_generation
+    local ok,command=pcall(mp.command_native_async,{name='subprocess',playback_only=false,capture_stdout=true,capture_stderr=true,args=args},function(success,result,failure_message)
+        if generation~=resolver_generation then return end
+        pending_resolver=nil
+        if resolver_timer then resolver_timer:kill();resolver_timer=nil end
+        if not success or not result or result.status~=0 then resolver_error('Résolveur indisponible : '..tostring(failure_message or result and result.stderr or 'échec du lancement'));return end
+        local parsed_ok,canonical=pcall(utils.parse_json,result.stdout or '')
+        if not parsed_ok or type(canonical)~='table' or canonical.schema~='animejanai.profile-plan.v1' or canonical.slot~=wanted then
+            resolver_error('Réponse du résolveur invalide ou incompatible.');return
+        end
+        if route.chain and canonical.rule~=route.chain then resolver_error('Règle de profil incohérente.');return end
+        if type(canonical.issues)~='table' or #canonical.issues>0 then
+            resolver_error(type(canonical.issues)=='table' and table.concat(canonical.issues,' ') or 'Plan de profil incomplet.');return
+        end
+        local hdr=canonical.profile_hdr
+        if hdr and (type(hdr)~='table' or hdr.schema~='animejanai.profile-plan.v1' or hdr.can_execute~=true) then
+            resolver_error('Conversion HDR du profil indisponible.');return
+        end
+        local plan=canonical.plan
+        if (plan and (type(plan)~='table' or plan.schema~='animejanai.profile-plan.v1' or plan.can_execute~=true)) or not route.inference_empty and not plan then
+            resolver_error('Ce profil ne peut pas être exécuté sur ce lecteur.');return
+        end
+        if plan and (plan.legacy_compatible~=true or route.explicit and route.legacy_equivalent~=plan.legacy_compatible) then
+            resolver_error('Ordre des étapes non représentable sur ce lecteur macOS.');return
+        end
+        if route.error then resolver_error(route.error);return end
+        route.resolved_plan=plan
+        apply_selection(wanted,route,snapshot,text,quiet,name,paths)
+    end)
+    if not ok then resolver_error('Impossible de lancer le résolveur : '..tostring(command));return end
+    pending_resolver=command
+    resolver_timer=mp.add_timeout(5,function()
+        if generation~=resolver_generation then return end
+        cancel_resolver();resolver_error('Le résolveur de profil a dépassé le délai de cinq secondes.')
+    end)
+end
+mp.register_event('shutdown',cancel_resolver)
 
 local function configured_slot()
     return tonumber(global('default_slot')) or tonumber(o.default_slot) or 1
@@ -173,7 +224,7 @@ end
 
 mp.add_hook('on_preloaded', -50, function()
     local current = mp.get_property_native('user-data/animejanai-active-slot')
-    select(current or start_slot(), true)
+    select(deferred_slot or current or start_slot(), true)
 end)
 
 -- The filter disables itself on error (unsupported source, engine failure): say so once and
@@ -295,8 +346,8 @@ local function status()
     local waiting = 'Le moteur prépare les modèles de ce profil : l\'image reste figée pendant ce temps.\n'
         .. 'La première fois, cela peut durer de quelques dizaines de secondes à quelques minutes\n'
         .. '(plus long avec RIFE) ; le résultat est gardé pour les fois suivantes.'
-    local text = 'AnimeJaNai ' .. version .. ' | moteur ' .. setting_engine() .. ' | cible ' .. setting_device() .. ' | profil ' .. slot
-        .. (slot > 0 and (' : ' .. tostring(profile_name(slot))) or ' : désactivé')
+    local text = 'AnimeJaNai ' .. version .. ' | moteur ' .. (applied_engine or setting_engine()) .. ' | cible ' .. (applied_device or setting_device()) .. ' | profil ' .. slot
+        .. (slot > 0 and (' : ' .. tostring(applied_name or profile_name(slot))) or ' : désactivé')
         .. (setting_auto() and not manual and ' | choix automatique' or '') .. '\n'
         .. (slot > 0 and (read(stats) or waiting) or '')
     mp.osd_message(text, 10)

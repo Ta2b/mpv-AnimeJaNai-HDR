@@ -563,14 +563,14 @@ public static class ProfileResolver
 {
     public const string Schema = "animejanai.profile-plan.v1";
     public sealed record Context(string Platform,string Backend,string InferenceDirectory,string ModelsDirectory,
-        string? RifeDirectory=null,ulong PipelineFeatures=0,string TemporalPolicy="fast");
+        string? RifeDirectory=null,ulong PipelineFeatures=0,string TemporalPolicy="fast",string AppleDevice="AUTO");
     public sealed record Requirement(string Kind,string Identity,string Path,bool Present,string? Pack=null);
     public sealed record ResolvedStage(string Id,string Kind,string Method,string Runtime,string Model,bool Enabled,
         string Status,string Reason,IReadOnlyList<Requirement> Requirements,int Group,string CadenceMultiplier);
     public sealed record Result(string Schema,IReadOnlyList<ResolvedStage> Stages,IReadOnlyList<string> Issues,
         string CadenceMultiplier,bool LegacyCompatible,bool CanExecute,string Qualification);
     public sealed record Configuration(string Schema,string Backend,int Slot,int? Rule,Result? Plan,
-        IReadOnlyList<Requirement> Requirements,IReadOnlyList<string> Issues);
+        IReadOnlyList<Requirement> Requirements,IReadOnlyList<string> Issues,Result? ProfileHdr=null);
     static string Opt(InterpolationPipeline.Stage s,string key,string fallback="")=>s.Options.TryGetValue(key,out var value)?value:fallback;
     public static bool LegacyCompatible(InterpolationPipeline.Plan plan,Context context)
     {
@@ -617,8 +617,8 @@ public static class ProfileResolver
         foreach(var s in plan.Stages)
         {
             var requirements=new List<Requirement>();var reasons=new List<string>();
-            void Require(string kind,string name,string path,string? pack=null)
-            {var r=new Requirement(kind,name,path,File.Exists(path),pack);requirements.Add(r);if(!r.Present)reasons.Add("Missing "+kind+": "+name);}
+            void Require(string kind,string name,string path,string? pack=null,bool directory=false)
+            {var r=new Requirement(kind,name,path,directory?Directory.Exists(path):File.Exists(path),pack);requirements.Add(r);if(!r.Present)reasons.Add("Missing "+kind+": "+name);}
             bool inference=s.Kind is "interpolate" or "upscale";
             if(s.Enabled)
             {
@@ -643,6 +643,8 @@ public static class ProfileResolver
                     if(module==null)reasons.Add("No declared reader for backend "+context.Backend+".");
                     else Require("reader",prefix+module+suffix,Path.Combine(context.InferenceDirectory,prefix+module+suffix),
                         module=="aji_ort"&&context.Platform=="linux"?"onnxruntime":null);
+                    if(context.Platform=="macos"&&module=="aji_ort")
+                        Require("runtime","libonnxruntime.1.dylib",Path.Combine(context.InferenceDirectory,"libonnxruntime.1.dylib"));
                     if(context.Backend=="tensorrt")
                     {
                         string runtimeFile=context.Platform=="windows"?"nvinfer_11.dll":"libnvinfer.so.11";
@@ -671,8 +673,19 @@ public static class ProfileResolver
                         if(string.IsNullOrWhiteSpace(s.Model))reasons.Add("Choose an upscaling model.");
                         else if(context.Backend=="vulkan")
                             foreach(var extension in new[]{".ncnn.param",".ncnn.bin"})Require("model",s.Model+extension,Path.Combine(context.ModelsDirectory,s.Model+extension));
-                        else if(context.Platform=="macos"&&context.Backend=="metal")Require("model",s.Model+".ajm",Path.Combine(context.ModelsDirectory,s.Model+".ajm"));
-                        else if(context.Platform=="macos"&&context.Backend=="coremlnative")Require("model",s.Model+".mlpatch",Path.Combine(context.ModelsDirectory,s.Model+".mlpatch"));
+                        else if(context.Platform=="macos"&&context.Backend is "metal" or "coremlnative")
+                        {
+                            var devices=context.AppleDevice.ToLowerInvariant().Split('+',StringSplitOptions.TrimEntries);
+                            bool templated=context.Backend=="coremlnative"||devices.Any(d=>d is "cpu" or "ane" or "npu");
+                            bool metal=context.Backend=="metal"&&devices.Any(d=>d is not ("cpu" or "ane" or "npu"));
+                            if(metal)
+                                foreach(string extension in new[]{".ajm",".ajw"})Require("model",s.Model+extension,Path.Combine(context.ModelsDirectory,s.Model+extension));
+                            if(templated)
+                            {
+                                Require("model",s.Model+".mlpatch",Path.Combine(context.ModelsDirectory,s.Model+".mlpatch"));
+                                Require("model-package",s.Model+".mlpackage",Path.Combine(context.ModelsDirectory,s.Model+".mlpackage"),directory:true);
+                            }
+                        }
                         else Require("model",s.Model+".onnx",Path.Combine(context.ModelsDirectory,s.Model+".onnx"));
                         int frames=int.TryParse(Opt(s,"frames","0"),out int configured)&&configured>0?configured:OnnxModelShape.TemporalFrames(Path.Combine(context.ModelsDirectory,s.Model+".onnx"));
                         if(ordered&&frames>1)reasons.Add("Temporal upscaling is unavailable in the ordered reader.");
@@ -716,11 +729,40 @@ public static class ProfileResolver
         var sections=Parse(text);var global=sections.GetValueOrDefault("global")??new();
         string backend=global.GetValueOrDefault("backend",context.Backend).ToLowerInvariant();
         int selected=slot??(int.TryParse(global.GetValueOrDefault("default_slot","0"),out int n)?n:0);
-        var requirements=new List<Requirement>();var issues=new List<string>();Result? selectedPlan=null;
-        context=context with {Backend=backend,TemporalPolicy=global.GetValueOrDefault("rife_engine","fast")};
+        var requirements=new List<Requirement>();var issues=new List<string>();Result? selectedPlan=null,profileHdr=null;
+        context=context with {Backend=backend,TemporalPolicy=global.GetValueOrDefault("rife_engine","fast"),AppleDevice=global.GetValueOrDefault("apple_device",context.AppleDevice)};
         if(selected>0&&sections.TryGetValue("slot_"+selected,out var section))
         {
             var chains=section.Keys.Select(k=>Regex.Match(k,@"^chain_([1-9][0-9]*)_")).Where(m=>m.Success).Select(m=>int.Parse(m.Groups[1].Value)).Distinct().Order();
+            // macOS applies its unique HDR request at profile scope, even when
+            // no inference rule matches. Resolve that independently rather than
+            // requiring every inactive rule's models or moving native stages.
+            if(context.Platform=="macos")
+            {
+                var hdrPlans=new List<InterpolationPipeline.Plan>();
+                foreach(var field in section.Where(k=>Regex.IsMatch(k.Key,@"^chain_[1-9][0-9]*_stage_[1-9][0-9]*_kind$")&&k.Value=="hdr"))
+                {
+                    string prefix=field.Key[..^4];
+                    string chainPrefix=field.Key[..field.Key.IndexOf("_stage_",StringComparison.Ordinal)];
+                    if(section.GetValueOrDefault(chainPrefix+"_pipeline_version")!="1")
+                    {issues.Add("Profile HDR: unsupported or missing pipeline version.");continue;}
+                    var single=section.Where(k=>k.Key.StartsWith(prefix,StringComparison.Ordinal))
+                        .ToDictionary(k=>"chain_1_stage_1_"+k.Key[prefix.Length..],k=>k.Value);
+                    single["chain_1_pipeline_version"]="1";single["chain_1_stage_count"]="1";
+                    try {hdrPlans.Add(InterpolationPipeline.Read(single,1,backend,context.TemporalPolicy,platform:context.Platform));}
+                    catch(InvalidDataException e){issues.Add("Profile HDR: "+e.Message);}
+                }
+                try
+                {
+                    InterpolationPipeline.ValidateProfile(hdrPlans);
+                    if(hdrPlans.Count>0)
+                    {
+                        profileHdr=Resolve(new(false,hdrPlans.SelectMany(p=>p.Stages).ToArray()),context);
+                        issues.AddRange(profileHdr.Issues);requirements.AddRange(profileHdr.Stages.SelectMany(s=>s.Requirements));
+                    }
+                }
+                catch(InvalidDataException e){issues.Add("Profile HDR: "+e.Message);}
+            }
             foreach(int chain in chains)
             {
                 if(rule!=null&&rule!=chain)continue;
@@ -733,7 +775,7 @@ public static class ProfileResolver
                 catch(InvalidDataException e){issues.Add("Rule "+chain+": "+e.Message);}
             }
         }
-        return new(Schema,backend,selected,rule,selectedPlan,requirements.DistinctBy(r=>r.Path).ToArray(),issues.Distinct().ToArray());
+        return new(Schema,backend,selected,rule,selectedPlan,requirements.DistinctBy(r=>r.Path).ToArray(),issues.Distinct().ToArray(),profileHdr);
     }
 }
 
