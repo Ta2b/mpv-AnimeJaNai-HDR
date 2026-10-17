@@ -36,7 +36,7 @@ with tempfile.TemporaryDirectory(prefix="aji-winbuild-reset-") as temporary:
             run("git", "-C", str(source), "reset", "--hard", pinned)
         projects.append(f'''
 ExternalProject_Add({name}
-  GIT_REPOSITORY "{upstream}" GIT_TAG {tag} SOURCE_DIR "{source}"
+  GIT_REPOSITORY "{upstream}" GIT_REMOTE_NAME origin GIT_TAG {tag} SOURCE_DIR "{source}"
   DOWNLOAD_COMMAND "" UPDATE_COMMAND "" CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND "")
 force_rebuild_git({name})
 get_property(stamp TARGET {name} PROPERTY _EP_STAMP_DIR)
@@ -55,7 +55,8 @@ include("{recipe}/cmake/custom_steps.cmake")
         source = root / name
         (source / "source.txt").write_text("uncommitted build patch")
         run("bash", str(stamp / "reset_head.sh"))
-        assert run("git", "-C", str(source), "rev-parse", "HEAD") == expected
+        actual = run("git", "-C", str(source), "rev-parse", "HEAD")
+        assert actual == expected, (name, actual, expected)
         assert (source / "source.txt").read_text() == content
         if name == "pinned":
             assert run("git", "-C", str(source), "rev-parse", "--abbrev-ref", "HEAD") == "HEAD"

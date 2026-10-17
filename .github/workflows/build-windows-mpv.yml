@@ -48,7 +48,9 @@ jobs:
           key: windows-mpv-static-1f8d2e7-${{ github.sha }}-${{ github.run_attempt }}
           restore-keys: windows-mpv-static-1f8d2e7-
       - name: Prepare exact sources and preserve Windows fixes
-        run: python native/windows-dml/prepare-winbuild.py mpv-winbuild-cmake winbuild
+        run: |
+          python native/windows-dml/prepare-winbuild.py mpv-winbuild-cmake winbuild
+          python tests/build/windows_pinned_cleanup_check.py mpv-winbuild-cmake
       - name: Build both static entry points
         working-directory: mpv-winbuild-cmake
         run: bash ../winbuild/build.sh -t 64 -c clang -s true
