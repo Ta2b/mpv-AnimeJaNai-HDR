@@ -1,0 +1,50 @@
+{
+  "release": "3.8.0.89",
+  "source": "37fd12cc9e73bc471e7a4841a413501ec82af9ca",
+  "publication_verified": true,
+  "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/releases/tag/3.8.0.89",
+  "asset_count": 15,
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 39014230942,
+      "headSha": "37fd12cc9e73bc471e7a4841a413501ec82af9ca",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39014230942",
+      "workflowName": "Release Windows"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39014230904,
+      "headSha": "37fd12cc9e73bc471e7a4841a413501ec82af9ca",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39014230904",
+      "workflowName": "Release Linux"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 39014230956,
+      "headSha": "37fd12cc9e73bc471e7a4841a413501ec82af9ca",
+      "url": "https://github.com/Ta2b/mpv-AnimeJaNai-HDR/actions/runs/39014230956",
+      "workflowName": "Release macOS"
+    }
+  ],
+  "changed_source_files_verified": {
+    "docs/qualification/lot67-downscale-comparison-20261017/README.md": "6b63972727363e0b2863c58bcbad6a202f0aa8625dd56d8cd97934a587a3f5fb",
+    "docs/qualification/lot67-downscale-comparison-20261017/receipt.json": "a0318c4bbd2d28978de62c2da84c0a341345dee661c00e7bb8a5151f0c22df6c",
+    "docs/qualification/lot67-downscale-comparison-20261017/machine.txt": "9c9d82184ff18ef664a64509d0a078fbe6e798c3457be2fcf0a0e45a49fcd5e7",
+    "tests/inference/downscale_comparison_probe.py": "9adf419f87f9980a286e97f9f2e2a1d4930bf3adbbf0fa00f9dc833262b39319",
+    "docs/reprise/20261017/AH-352.md": "29d9bcb95417a059708ee29e02a0faa1512ad5148538b74dbf3c94f13dbfcd6d",
+    "native/windows-dml/prepare-winbuild.py": "ff3b8e7ad2cd4ca1fbef83230c20390127b7dd6be007abcb106b3c2bea6203eb",
+    "tests/build/windows_pinned_cleanup_check.py": "b0a0761b281a07016197f50daa5a6384e909f4d49dfaebe31fbc3d8722c1554c",
+    ".github/workflows/build-windows-mpv.yml": "155a6b457d0e5412febaeb9cd9e6777bedb7fbf0d6b5aa6a00eb68009f244e3e"
+  },
+  "qualification_reuse": {
+    "macos_models": "3.8.0.88 unchanged converter/model inputs",
+    "unmodified_native_payloads": "3.8.0.87",
+    "managed_files_sync": "3.8.0.85"
+  },
+  "scope": "AH352 documentary conclusion and Windows producer recipe only; no product engine/video change",
+  "limits": [
+    "No payload redownload or video benchmark repeated for unchanged runtime inputs",
+    "Windows paired reader remains in producer39013899609; no DML activation claim"
+  ]
+}
