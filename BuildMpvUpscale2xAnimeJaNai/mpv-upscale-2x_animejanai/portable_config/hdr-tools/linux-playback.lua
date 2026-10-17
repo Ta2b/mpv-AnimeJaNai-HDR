@@ -79,7 +79,6 @@ local function ort_library()
     local native=hw.inference_dir..'/libaji_migraphx_rgb.so'
     return hw.backend=='migraphx' and utils.file_info(native) and native or hw.inference_dir..'/libaji_ort.so'
 end
-local function bridged() return hw.backend=='vulkan' or onnxruntime() end
 local function ready()
     hw.backend=(policy.read_bank(hw.conf) or {}).backend or 'tensorrt'
     hw.inference_available = not failed and not hw.bank_conflict and hw.backend=='tensorrt' and hw.vendor=='nvidia' and utils.file_info(hw.inference_dir..'/libaji.so')~=nil

@@ -1,0 +1,14 @@
+{
+  "ticket": "AH-340",
+  "status": "qualified-awaiting-publication",
+  "release": "3.8.0.83",
+  "base": "0f3f6bfb7e76ca15647d74fc5a91405d3072be69",
+  "gpu_bundle_unchanged": "5217111b754412338fe94d236d80f39dcd42b957",
+  "manager_unchanged": "2847c79961c0d14241234d2ef8799b399e4b6a9d",
+  "checks": [
+    "builder build0warnings0errors2.98s",
+    "luac -p",
+    "sh -n",
+    "copy31entriesexact7to5calls"
+  ]
+}

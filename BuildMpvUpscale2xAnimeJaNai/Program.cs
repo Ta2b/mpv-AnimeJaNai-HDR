@@ -1684,7 +1684,6 @@ record Platform(
     string ArchiveTool,
     string YtDlpName,
     string AjiAsset,
-    string ManagerAsset,
     string[] AjiLibs,
     string[] AjiTools,
     string[] ManagerOverlay,
@@ -1707,7 +1706,6 @@ record Platform(
         ArchiveTool: "7za.exe",
         YtDlpName: "yt-dlp.exe",
         AjiAsset: "aji-windows-x64.zip",
-        ManagerAsset: "AnimeJaNaiManager-portable-x64.zip",
         AjiLibs: new[] { "aji.dll", "aji_trt.dll", "aji_dml.dll" },
         AjiTools: new[] { "aji_harness.exe", "aji_harness_dml.exe", "aji_kernel_test.exe" },
         // Avalonia native libs + the Manager exe ride the overlay on Windows.
@@ -1731,7 +1729,6 @@ record Platform(
         ArchiveTool: "7zz",
         YtDlpName: "yt-dlp_linux",
         AjiAsset: "aji-linux-x64.tar.zst",
-        ManagerAsset: "AnimeJaNaiManager-portable-linux-x64.tar.zst",
         AjiLibs: new[] { "libaji.so", "libaji_trt.so" },
         AjiTools: new[] { "aji_harness", "aji_kernel_test" },
         // The self-contained Avalonia Manager ships flat at the install root

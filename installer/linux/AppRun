@@ -122,8 +122,6 @@ cp -rn "$HERE/portable_config/profiles/." "$DATA/portable_config/profiles/" 2>/d
 # Managed files (lua scripts, shaders, the conf templates) are refreshed from
 # the image EVERY launch - they're not user-edited, and version-gating them goes
 # stale if a build reuses a version string.
-cp -rf "$HERE/portable_config/scripts"               "$DATA/portable_config/" 2>/dev/null || true
-cp -rf "$HERE/portable_config/shaders"               "$DATA/portable_config/" 2>/dev/null || true
 cp -f  "$HERE/portable_config/input-animejanai.conf" "$DATA/portable_config/" 2>/dev/null || true
 conf="$DATA/portable_config/mpv-animejanai.conf"
 cp -f "$HERE/portable_config/mpv-animejanai.conf" "$conf" 2>/dev/null || true
