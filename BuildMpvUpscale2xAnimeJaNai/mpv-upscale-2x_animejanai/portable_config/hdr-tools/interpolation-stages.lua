@@ -252,6 +252,34 @@ function M.normalize(text,platform)
     end
     return table.concat(out,'\n')..'\n',info
 end
+-- The configuration handed to the filter. The filter asks the native ordered pipeline first
+-- whenever stage keys are present, and that pipeline does not fold an exact-size downscale
+-- (legacy_geometry) into the following upscale: it rejected such a rule and the filter
+-- failed, leaving every profile unapplied. A rule the legacy engine runs as it is therefore
+-- keeps only its regenerated legacy keys: the pipeline hands it to the classic chain (held
+-- drawings timeline, Fast warp). Rules that need the ordered pipeline keep their stages.
+function M.filter_view(text,platform)
+    platform=platform_name(platform)
+    local all=parse(text);local global=all.global or {};local strip={}
+    for name,sec in pairs(all) do if name:match('^slot_%d+$') then
+        for _,i in ipairs(ids(sec,'chain_','_')) do
+            if sec['chain_'..i..'_pipeline_version']=='1' and legacy(sec,i,global,platform) then
+                strip[name]=strip[name] or {};strip[name][i]=true
+            end
+        end
+    end end
+    if not next(strip) then return text end
+    local out,section={},nil
+    for line in (text..'\n'):gmatch('([^\n]*)\n') do
+        local name=line:match('^%s*%[([^%]]+)%]')
+        if name then section=trim(name):lower() end
+        local key=line:match('^%s*([^=%s#;]+)%s*=');key=key and key:lower()
+        local chain=key and tonumber(key:match('^chain_(%d+)_pipeline_version$') or key:match('^chain_(%d+)_stage_'))
+        if not (chain and section and strip[section] and strip[section][chain]) then out[#out+1]=line end
+    end
+    if out[#out]=='' then out[#out]=nil end
+    return table.concat(out,'\n')..'\n'
+end
 local function resolution(value,maximum)
     local a,b=(value or ''):match('^([^x]+)x([^x]+)$');a=a and a:lower()=='inf' and math.huge or tonumber(a) or 0;b=b and b:lower()=='inf' and math.huge or tonumber(b) or 0
     if maximum then if a==0 then a=math.huge end;if b==0 then b=math.huge end end
@@ -375,14 +403,24 @@ function M.runtime_configs(mp,utils,directory,label)
     -- last stage (hdr = {sdk_root, peak, contrast, saturation, middle_gray}).
     -- A legacy route receives TrueHDR through animejanai-rtx.conf instead.
     function runtime.prepare(path,text,route,slot,hdr)
-        if not route or not route.chain or route.inference_empty then return path end
-        if not text then return nil,'Cannot read the selected profile configuration.' end
+        if not text then
+            if not route or not route.chain or route.inference_empty then return path end
+            return nil,'Cannot read the selected profile configuration.'
+        end
+        -- Every copy handed to the filter is its view, also before the rule is known.
+        text=M.filter_view(text)
+        local view_path
+        local function plain()
+            view_path=view_path or runtime.store(text,'filter-view')
+            return view_path
+        end
+        if not route or not route.chain or route.inference_empty then return plain() end
         local policy=route.legacy_equivalent and route.runtime_policy or nil
         local global=(parse(text).global or {}).rife_engine or 'fast'
         global=global:lower();if global=='old' then global='quality' elseif global=='new' then global='fast' end
         if global==policy then policy=nil end
         local inject=hdr and not route.legacy_equivalent and route.explicit or false
-        if not policy and not inject then return path end
+        if not policy and not inject then return plain() end
         local target,pre='slot_'..tostring(slot),'chain_'..tostring(route.chain)..'_'
         local count=inject and number(parse(text)[target] or {},pre..'stage_count',0) or 0
         local lines,section,inserted,counted={},nil,false,false

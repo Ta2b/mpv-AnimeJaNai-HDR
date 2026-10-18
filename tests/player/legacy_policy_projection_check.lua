@@ -50,9 +50,10 @@ check('changed content creates an immutable new private file',changed~=private a
 local slot2=assert(runtime.prepare(source,text,result,2))
 check('cache distinguishes selected slots',slot2~=private)
 local fast=text:gsub('policy=quality','policy=fast');local fast_route=route(fast)
-check('Fast profile with matching global uses its original config',runtime.prepare(source,fast,fast_route,1)==source)
+local fast_view=runtime.prepare(source,fast,fast_route,1)
+check('Fast profile with matching global gets the filter view: legacy keys only, global policy unchanged',fast_view~=source and not read(fast_view):find('_stage_',1,true) and not read(fast_view):find('pipeline_version',1,true) and read(fast_view)==stages.filter_view(fast))
 local bad=route(text:gsub('chain_1_stage_3_kind=upscale','chain_1_stage_3_kind=interpolate'))
-check('nonprojectable graph never receives a policy override',not bad.legacy_equivalent and runtime.prepare(source,text,bad,1)==source)
+check('nonprojectable graph never receives a policy override',not bad.legacy_equivalent and read(runtime.prepare(source,text,bad,1))==stages.filter_view(text))
 local source_mp={get_property_native=function(key)
  if key=='track-list' then return {{type='video',selected=true,['demux-w']=1920,['demux-h']=1080,['demux-fps']=24}} end
 end}
