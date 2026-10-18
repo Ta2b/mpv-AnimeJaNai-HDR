@@ -222,7 +222,14 @@ export LD_LIBRARY_PATH="$HERE/mpv:$HERE/animejanai/inference:$INFDATA:$HERE/usr/
 # The Manager and launchers use the same active-stage dependency contract.
 # Resolve both required packs (for version refresh) and missing exact files.
 # Failure is nonfatal: playback reports the detailed resolver error.
-profile_components="$("$DATA/AnimeJaNaiPlatform" --profile-components --root "$DATA" 2>/dev/null || true)"
+# Every profile Ctrl+1..9 can select counts. Before the player's first start no bank is active
+# yet: the bank it is about to activate for this GPU is the one read.
+components_conf="$DATA/animejanai/animejanai.conf"
+if [ ! -f "$DATA/portable_config/profiles/active-bank.json" ]; then
+    if nvidia-smi -L >/dev/null 2>&1; then first_bank=linux-nvidia; else first_bank=linux-amd; fi
+    [ ! -f "$DATA/portable_config/profiles/$first_bank/animejanai.conf" ] || components_conf="$DATA/portable_config/profiles/$first_bank/animejanai.conf"
+fi
+profile_components="$("$DATA/AnimeJaNaiPlatform" --profile-components --all-slots --root "$DATA" --conf "$components_conf" 2>/dev/null || true)"
 needs_component() { printf '%s\n' "$profile_components" | grep -q "^$1:"; }
 missing_component() { printf '%s\n' "$profile_components" | grep -qx "$1:missing"; }
 

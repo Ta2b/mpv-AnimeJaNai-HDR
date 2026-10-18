@@ -13,17 +13,18 @@ var legacy=new Dictionary<string,string> {
     ["chain_1_model_2_temporal_scene_threshold"]="0.125"
 };
 var before=P.Read(legacy,1,temporalPolicy:"old");
-Check(before.MigratedLegacy&&before.Stages.Select(x=>x.Id).SequenceEqual(new[]{"legacy-rife","legacy-model-1","legacy-model-2"}),"Legacy RIFE-before order");
-Check(before.Stages[0].Policy=="quality"&&before.Stages[0].Model=="426"&&before.Stages[0].Options["ensemble"]=="yes","Legacy RIFE policy/model/ensemble");
-Check(before.Stages[0].Options["scene_detect_threshold"]=="0.173"&&before.Stages[1].Options["resize_height_before_upscale"]=="720","Legacy numerical settings");
+// The first model's attached resize is its own exact-size step, hoisted before RIFE-before as the old reader did.
+Check(before.MigratedLegacy&&before.Stages.Select(x=>x.Id).SequenceEqual(new[]{"legacy-model-1-resize","legacy-rife","legacy-model-1","legacy-model-2"}),"Legacy RIFE-before order");
+Check(before.Stages[1].Policy=="quality"&&before.Stages[1].Model=="426"&&before.Stages[1].Options["ensemble"]=="yes","Legacy RIFE policy/model/ensemble");
+Check(before.Stages[1].Options["scene_detect_threshold"]=="0.173"&&before.Stages[0].Options["target_height"]=="720"&&before.Stages[0].Options.ContainsKey("legacy_geometry")&&!before.Stages[2].Options.ContainsKey("resize_height_before_upscale"),"Legacy numerical settings");
 legacy["chain_1_rife_before_upscale"]="no";
 var after=P.Read(legacy,1,temporalPolicy:"quality");
-Check(after.Stages.Select(x=>x.Id).SequenceEqual(new[]{"legacy-model-1","legacy-model-2","legacy-rife"}),"Legacy RIFE-after order");
+Check(after.Stages.Select(x=>x.Id).SequenceEqual(new[]{"legacy-model-1-resize","legacy-model-1","legacy-model-2","legacy-rife"}),"Legacy RIFE-after order");
 Check(after.OutputCadence(new P.Rational(24000,1001))==new P.Rational(60000,1001),"Legacy 5/2 cadence");
 var plan=new P.Plan(false,new[]{
-    before.Stages[0] with {Factor=new P.Rational(2,1)},
+    before.Stages[1] with {Factor=new P.Rational(2,1)},
     new P.Stage("fruc-second","interpolate","nvidia-fruc","cuda",true,"",new P.Rational(2,1),"fast",new Dictionary<string,string>{{"sdk_library","/path with spaces/libNvOFFRUC.so"},{"future_option","keep-this"}}),
-    before.Stages[1],
+    before.Stages[2],
     new P.Stage("wan-disabled","preparation","wan2_2_fun_inp","external",false,"model",new P.Rational(1,1),"quality",new Dictionary<string,string>{{"workflow","my-workflow"}})
 });
 var saved=P.Write(plan,7);var loaded=P.Read(saved,7);

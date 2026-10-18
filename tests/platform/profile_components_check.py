@@ -17,6 +17,10 @@ with tempfile.TemporaryDirectory(prefix="aji-profile-components-") as temp:
  put();output=cli("--profile-components");assert "trt-runtime:missing" in output and "rife:present" in output;checks.append("exact active runtime missing, exact RIFE present")
  put(extra="chain_1_stage_1_ensemble=yes\n");assert "rife:missing" in cli("--profile-components");checks.append("another RIFE file does not satisfy ensemble")
  put(slot=0);assert not cli("--profile-components").strip();checks.append("off profile downloads no inference packs")
+ up="[slot_2]\nchain_1_pipeline_version=1\nchain_1_stage_count=1\nchain_1_stage_1_id=u\nchain_1_stage_1_kind=upscale\nchain_1_stage_1_method=onnx\nchain_1_stage_1_runtime=tensorrt\nchain_1_stage_1_model=m\n"
+ put(slot=2,extra=up);(rife/"rife_v4.26.onnx").unlink()
+ assert "rife" not in cli("--profile-components") and "rife:missing" in subprocess.check_output([sys.argv[1],sys.argv[2],"--profile-components","--all-slots","--root",str(root),"--platform","linux","--pipeline-features","15"],text=True)
+ (rife/"rife_v4.26.onnx").touch();checks.append("--all-slots adds the packs of every selectable profile, not only the startup one")
  put(backend="DirectML",runtime="directml");result=json.loads(cli("--profile-plan","windows"));assert result["plan"]["legacy_compatible"] and result["plan"]["can_execute"];checks.append("Quality stage projects with historical global Fast on Windows")
  put(backend="OpenVINO",runtime="openvino");assert "onnxruntime:missing" in cli("--profile-components");checks.append("active OpenVINO identifies missing runtime pack")
  result={"passed":True,"checks":checks,"scope":"Actual shared CLI with simulated files/platforms; no GPU execution"}

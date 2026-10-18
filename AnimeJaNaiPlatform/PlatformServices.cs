@@ -607,6 +607,13 @@ public static class ProfileResolver
         return "rife_v"+code[..1]+"."+(code.Length==2?code.Substring(1,1):code.Substring(1,2))+
             (code.Length==4&&code.EndsWith('1')?"_lite":"")+(ensemble?"_ensemble":"")+".onnx";
     }
+    // A link the Linux launcher makes into its AppImage dangles while no player is running;
+    // the launcher makes it again at the next start, so the file counts as installed.
+    static bool ManagedLink(string path)
+    {
+        try {return new FileInfo(path).LinkTarget!=null;}
+        catch(Exception e) when(e is IOException or UnauthorizedAccessException) {return false;}
+    }
     public static Result Resolve(InterpolationPipeline.Plan plan,Context context)
     {
         var issues=new List<string>();var output=new List<ResolvedStage>();
@@ -618,7 +625,7 @@ public static class ProfileResolver
         {
             var requirements=new List<Requirement>();var reasons=new List<string>();
             void Require(string kind,string name,string path,string? pack=null,bool directory=false)
-            {var r=new Requirement(kind,name,path,directory?Directory.Exists(path):File.Exists(path),pack);requirements.Add(r);if(!r.Present)reasons.Add("Missing "+kind+": "+name);}
+            {var r=new Requirement(kind,name,path,directory?Directory.Exists(path):File.Exists(path)||ManagedLink(path),pack);requirements.Add(r);if(!r.Present)reasons.Add("Missing "+kind+": "+name);}
             bool inference=s.Kind is "interpolate" or "upscale";
             if(s.Enabled)
             {

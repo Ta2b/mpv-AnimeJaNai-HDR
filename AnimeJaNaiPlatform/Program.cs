@@ -47,11 +47,20 @@ try
             Get("--rife-dir")??Path.Combine(root,"animejanai","rife"),
             PipelineFeatures:ulong.TryParse(Get("--pipeline-features"),out var features)?features:0);
         if(Get("--pipeline-features")==null&&platform=="linux")context=context with {PipelineFeatures=ProfileResolver.ReadPipelineFeatures(context.InferenceDirectory)};
-        var plan=ProfileResolver.ResolveConfiguration(File.ReadAllText(conf),context,
+        string text=File.ReadAllText(conf);
+        var plan=ProfileResolver.ResolveConfiguration(text,context,
             int.TryParse(Get("--slot"),out int slot)?slot:null,int.TryParse(Get("--rule"),out int rule)?rule:null);
         if(args[0]=="--profile-components")
-            foreach(var group in plan.Requirements.Where(r=>r.Pack!=null).GroupBy(r=>r.Pack))
+        {
+            // --all-slots: the packs of every profile Ctrl+1..9 can select, not only the startup one.
+            var requirements=plan.Requirements.ToList();
+            if(args.Contains("--all-slots"))
+                foreach(var name in ProfileResolver.Parse(text).Keys)
+                    if(System.Text.RegularExpressions.Regex.Match(name,@"^slot_([1-9])$") is {Success:true} m)
+                        requirements.AddRange(ProfileResolver.ResolveConfiguration(text,context,int.Parse(m.Groups[1].Value)).Requirements);
+            foreach(var group in requirements.Where(r=>r.Pack!=null).GroupBy(r=>r.Pack))
                 Console.WriteLine(group.Key+":"+(group.Any(r=>!r.Present)?"missing":"present"));
+        }
         else if(args[0]=="--profile-dependencies")
             foreach(var pack in plan.Requirements.Where(r=>!r.Present&&r.Pack!=null).Select(r=>r.Pack).Distinct())Console.WriteLine(pack);
         else Console.WriteLine(JsonSerializer.Serialize(plan,new JsonSerializerOptions {PropertyNamingPolicy=JsonNamingPolicy.SnakeCaseLower}));

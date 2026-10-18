@@ -14,7 +14,7 @@
 
 ## 2. Conception
 
-### 2.1 Vocabulaire (FR, l'interface passe en français ; EN conservé en ressource)
+### 2.1 Vocabulaire (interface en anglais d'abord, à la demande de l'auteur le 18/10 ; français ensuite, AH-382)
 
 profil → règle (condition de résolution/cadence) → étapes (traitement) → technologie. « Moteur » = backend d'inférence (TensorRT, Vulkan…). « Conversion HDR » = réglage global. Le lecteur parle déjà français (OSD).
 
@@ -37,7 +37,7 @@ profil → règle (condition de résolution/cadence) → étapes (traitement) �
 
 ### 2.5 Profils par défaut (Linux NVIDIA TensorRT)
 
-Remplacer les gabarits Vulkan (réductions 720p/360p/240p) par : « Qualité 1080p → 2160p », « Qualité 1080p → 2160p + RIFE ×2 », « Performance 720p → 1440p », « Léger 480p → 960p » ; les gabarits Vulkan restent pour `linux-amd`. Noms en français, sans « Linux Vulkan » quand le backend est TensorRT.
+Fait : « Balanced · 1080p → 2160p », « Performance · 1080p → 2160p + RIFE ×2 », « Performance · 720p → 1440p », « Performance · 720p → 1440p + RIFE ×2 », « RIFE ×2 · source resolution » (contrat §6 bis) ; les gabarits Vulkan restent pour `linux-amd`, renommés en anglais sans « Linux Vulkan ».
 
 ## 3. Lots de travail
 
@@ -45,10 +45,10 @@ Remplacer les gabarits Vulkan (réductions 720p/360p/240p) par : « Qualité 108
 
 Contrat §4 et §5 côté scripts : `interpolation-stages.lua` (`normalize`, projection générée, `resolve` sans HDR), `linux-playback.lua` (HDR global, instantané normalisé, étape HDR injectée pour la route ordonnée, sidecar supprimé quand non voulu), `linux-hdr.lua`, `pipeline-hdr.lua`, `gpu-policy.lua` ; `AppRun` exporte `ANIMEJANAI_IMAGE_DIR` ; tests Lua mis à jour ; profils par défaut `linux-nvidia`.
 
-### WP2 (Manager, **Fable 5.1 medium**, ultracode non, branche `impl/manager-v2-20261018`)
+### WP2 (Manager, **Fable 5.1 medium**, ultracode non, branche `impl/manager-v2-20261018`) — fait le 18/10 (voir ETAT-COURANT)
 
 1. `MainWindowViewModel.AddChain` : numéroter avant l'ajout ; `ParsedAnimeJaNaiConf` ignore une règle sans numéro ; à la sauvegarde, purger `chain__*`, les clés héritées des sections écrites, `hdr_stage_controlled`, et écrire `config_version=4` (`IniPreservingSave.Merge` conserve seulement les clés inconnues hors de ces familles).
-2. `InterpolationStages.cs` : retirer la catégorie HDR (`AddHdrStage`, `MethodChoices` hdr, `IsHdr`…) ; à la lecture, une étape `hdr` est retirée et convertie en réglage global (règle du contrat §5) avec avis unique (`ProfileMigrationNotice`) ; `WritePipeline` n'émet plus de projection héritée.
+2. `InterpolationStages.cs` : retirer la catégorie HDR (`AddHdrStage`, `MethodChoices` hdr, `IsHdr`…) ; à la lecture, une étape `hdr` est retirée et convertie en réglage global (règle du contrat §5) avec avis unique (`ProfileMigrationNotice`). Révisé : `WritePipeline` émet de nouveau la projection héritée, régénérée depuis les étapes (les moteurs Windows et macOS ne lisent qu'elle), les clés non régénérées étant supprimées.
 3. `HdrSettings.cs` : supprimer `ConversionInProfiles`/`RetireLegacyConversion` ; `HdrConversion` + `Backend` (`mpv`/`rtx`, plus de `auto` écrit) toujours écrits ; `MigrateLegacyHdr` supprimé.
 4. `OptionalSdkViewModel` / `PipelineReaderFeatures` / `InterpolationStage.InferenceDirectory` : repli sur `ANIMEJANAI_IMAGE_DIR/animejanai/inference` quand le fichier du dossier de données manque ou est un lien pendant ; `TrueHdrStatus` donne la cause exacte ; Réglages → bouton radio TrueHDR grisé avec cette cause.
 5. Résumé calculé (`UpscaleChain.Summary` : résolution de sortie et cadence depuis les étapes actives et les facteurs des modèles ONNX, lus via `OnnxInputShape`/noms `2x_`), affiché dans `MainWindow.axaml` sous le nom du profil ; avertissement « réduit sous la source ».

@@ -58,13 +58,17 @@ L'extension AnimeJaNai/RIFE AMD et NVIDIA est suivie dans
   automatique de fréquence restent des fonctions Windows. Les demandes
   incompatibles sont signalées et utilisent le rendu mpv.
 
-Sur AMD **et NVIDIA**, les nouvelles banques utilisent NCNN/Vulkan : Ctrl+1
-active AnimeJaNai Performance en 360p vers 720p, Ctrl+2 ajoute RIFE 4.6 ×2,
-Ctrl+3 active RIFE seul à la résolution source, Ctrl+4 traite en 720p vers 1440p.
-Ctrl+5 propose une base plus légère 240p vers 480p ; Ctrl+6 combine une base
-180p vers 360p et RIFE ×2. Ctrl+0 revient à la lecture normale. Performance Standard sans RIFE (profil 1) est actif par défaut sur une installation neuve,
-si les composants sont disponibles ; les réglages existants sont préservés.
-Les modèles SPAN Performance/Balanced Standard/Sharp sont convertis depuis les
+Sur NVIDIA, la banque de départ utilise TensorRT : Ctrl+1 « Balanced · 1080p → 2160p » (profil de
+démarrage), Ctrl+2 « Performance · 1080p → 2160p + RIFE ×2 », Ctrl+3 « Performance · 720p → 1440p »,
+Ctrl+4 la même avec RIFE ×2, Ctrl+5 « RIFE ×2 · source resolution » ; RIFE 4.26 Quality jusqu'à 31 i/s,
+upscale seul au-delà. Au premier lancement, le lanceur télécharge TensorRT, ses noyaux et les modèles RIFE
+ONNX dont ces profils ont besoin. Sur AMD, la banque utilise NCNN/Vulkan : Ctrl+1 active AnimeJaNai
+Performance en 360p vers 720p, Ctrl+2 ajoute RIFE 4.6 ×2, Ctrl+3 active RIFE seul à la résolution source,
+Ctrl+4 traite en 720p vers 1440p, Ctrl+5 propose une base plus légère 240p vers 480p, Ctrl+6 combine une
+base 180p vers 360p et RIFE ×2. Ctrl+0 revient à la lecture normale. Le Manager change de moteur avec les
+profils (contrat des profils, §5 bis) et propose « Add recommended profiles » pour le moteur choisi ; les
+réglages existants sont préservés.
+Pour Vulkan, les modèles SPAN Performance/Balanced Standard/Sharp sont convertis depuis les
 poids ONNX fournis ; aucune substitution de modèle n'est faite. Les sources SDR
 à dimensions paires sont acceptées ; modèles temporels, SD Compact et sources
 PQ/HLG ne sont pas pris en charge par ce premier pont RGB24. Le calcul tourne
