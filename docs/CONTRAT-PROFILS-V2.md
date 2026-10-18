@@ -54,7 +54,7 @@ Interdits dans un fichier v4 : `hdr_stage_controlled`, les étapes `kind=hdr`, l
 
 `conversion_in_profiles` est retiré : le lecteur l'ignore (toujours `no`), le Manager le supprime.
 
-Disponibilité de TrueHDR (Linux) : `libaji_trt_rtx.so` et `libaji_rtx.so` dans `inference/`, SDK Maxine à `ANIMEJANAI_VFX_SDK` ou `/usr/local/VideoFX` (`lib/libVideoFX.so`, `lib/libNVCVImage.so`, `features/nvvfxtruehdr/lib/libnvVFXTrueHDR.so`), GPU NVIDIA, backend TensorRT, sortie PQ. Le Manager et le lecteur appliquent la même liste (§6). `libaji_trt_rtx.so` vient avec la release ; **`libaji_rtx.so`, le pont vers le SDK, n'est dans aucune release** (compilé contre le SDK sur la machine, voir [LINUX-INFERENCE](LINUX-INFERENCE.md)) : sur une installation neuve, TrueHDR reste grisé avec cette cause même après l'import du SDK (AH-407).
+Disponibilité de TrueHDR (Linux) : `libaji_trt_rtx.so` et `libaji_rtx.so` dans `inference/`, SDK Maxine à `ANIMEJANAI_VFX_SDK` ou `/usr/local/VideoFX` (`lib/libVideoFX.so`, `lib/libNVCVImage.so`, `features/nvvfxtruehdr/lib/libnvVFXTrueHDR.so`), GPU NVIDIA, backend TensorRT, sortie PQ. Le Manager et le lecteur appliquent la même liste (§6). `libaji_trt_rtx.so` vient avec la release ; `libaji_rtx.so`, le pont vers le SDK, ne peut pas être livré : il est compilé contre le SDK de l'utilisateur. Depuis la 3.8.0.110, le Manager le construit lui-même (g++/c++/clang++, en-têtes gardés à l'import, source embarquée) juste après l'import complet du SDK, ou par « Build the TrueHDR bridge » (AH-407). Le lanceur exporte `ANIMEJANAI_VFX_SDK` vers le SDK résolu (importé par le Manager ou système), lu par `linux-playback.lua` et par le pont.
 
 ## 4. Ce que fait le lecteur (Linux, `hdr-tools/linux-playback.lua`)
 

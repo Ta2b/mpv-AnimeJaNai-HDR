@@ -23,6 +23,9 @@ if [ -f "$registry" ]; then
     fi
 fi
 vfx="${ANIMEJANAI_VFX_SDK:-${managed_vfx:-/usr/local/VideoFX}}"
+# The player scripts and the TrueHDR bridge (libaji_rtx.so) read the SDK root from this variable:
+# without it they would only look in /usr/local/VideoFX and miss an SDK imported by the Manager.
+if [ -z "${ANIMEJANAI_VFX_SDK:-}" ] && [ -d "$vfx/lib" ]; then export ANIMEJANAI_VFX_SDK="$vfx"; fi
 if { [ -f "$ANIMEJANAI_INFERENCE_DIR/libaji_rtx.so" ] || [ -f "$ANIMEJANAI_INFERENCE_DIR/libaji_pipeline.so" ]; } && [ -d "$vfx/lib" ]; then
     for dir in "$vfx/lib" "$vfx"/features/*/lib "$vfx/external/cuda/lib" "$vfx/external/tensorrt/lib"; do
         if [ -d "$dir" ]; then LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$dir"; fi
