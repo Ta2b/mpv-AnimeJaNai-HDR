@@ -24,7 +24,8 @@ elseif mode=='macos' then
 end
 local data=S.props['user-data']
 check('HDR-only profile stays selected without an inference engine or SDK',data['animejanai-active-slot']==1 and #S.props.vf==0)
-check('pure HDR request reaches the renderer without tagging native SDR',data['animejanai-pipeline-configured'] and data['animejanai-pipeline-configured'].hdr.method=='mpv' and S.props['video-params'].gamma=='bt.1886')
+local cfg=data['animejanai-pipeline-configured']
+check('profile HDR stage is ignored: the conversion is a global setting (CONTRAT-PROFILS-V2)',(cfg==nil or cfg.hdr==nil) and S.props['video-params'].gamma=='bt.1886')
 if mode=='linux' then S.msg('animejanai-select','0')
 elseif mode=='windows' then S.msg('aji-slot','0')
 elseif mode=='macos' then S.msg('animejanai-select','0') end

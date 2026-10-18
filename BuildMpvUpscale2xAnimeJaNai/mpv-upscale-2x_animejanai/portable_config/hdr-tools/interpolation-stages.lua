@@ -1,6 +1,9 @@
 -- Pure launch policy for ordered stages. Actual execution/capabilities belong
--- to the native module. Explicit chains own cadence and HDR stage requests;
--- only successful native pixel conversion can establish actual HDR output.
+-- to the native module. The stages are the only representation of a rule: the
+-- legacy engine keys (chain_N_rife*, chain_N_model_M_*) are a projection
+-- computed here for the runtime copy, never read as a source when a rule is
+-- explicit. HDR is a global setting of the player, not a stage: a profile HDR
+-- stage is ignored (docs/CONTRAT-PROFILS-V2.md).
 local M = {}
 local function trim(s) return (s or ''):match('^%s*(.-)%s*$') end
 local function parse(text)
@@ -32,48 +35,45 @@ local function ids(sec,prefix,suffix)
 end
 local function number(s,k,d) return tonumber(s[k]) or d end
 local function enabled(v) return (v or ''):lower()=='yes' end
-local function legacy_core(sec,chain,global)
+local KNOWN={id=true,kind=true,method=true,runtime=true,enabled=true,model=true,policy=true,factor_numerator=true,factor_denominator=true}
+local ORDER={'id','kind','method','runtime','enabled','model','factor_numerator','factor_denominator','policy'}
+local RIFE_OPTIONS={ensemble=true,scene_detect_threshold=true}
+local MODEL_OPTIONS={resize_factor_before_upscale=true,resize_height_before_upscale=true,frames=true,temporal_scene_threshold=true}
+-- Legacy projection of a prepared (hoisted) explicit rule: what the legacy engine
+-- needs (one RIFE before or after every ONNX model, known options only, runtime
+-- equal to the backend), or nil when the rule is not expressible by it. Mirrors
+-- legacy_equivalent() of the native pipeline configuration loader.
+local function project(sec,chain,global)
     local p='chain_'..chain..'_'
-    if sec[p..'pipeline_version']~='1' then return false end
-    local model_ids=ids(sec,p..'model_','_');local models={}
-    -- Match the existing backend's sequential model-index interpretation.
-    for i=1,#model_ids do models[i]=p..'model_'..i..'_' end
-    local model,rife,rife_index=0,false,nil
+    if sec[p..'pipeline_version']~='1' then return nil end
     local count=number(sec,p..'stage_count',-1)
-    if count<0 or count>16 or count%1~=0 then return false end
+    if count<0 or count>16 or count%1~=0 then return nil end
     local backend=(global.backend or 'TensorRT'):lower()
-    local policy=(global.rife_engine or 'fast'):lower();if policy=='old' then policy='quality' elseif policy=='new' then policy='fast' end
-    if policy~='quality' and policy~='fast' then return false end
+    local models,rife,rife_index={},nil,nil
     for i=1,count do
         local sp=p..'stage_'..i..'_'
-        if enabled(sec[sp..'enabled'] or 'yes') then
-            local kind=(sec[sp..'kind'] or ''):lower()
-            if (sec[sp..'runtime'] or ''):lower()~=backend then return false end
+        local kind=(sec[sp..'kind'] or ''):lower()
+        if kind~='hdr' and enabled(sec[sp..'enabled'] or 'yes') then
+            if (sec[sp..'runtime'] or ''):lower()~=backend then return nil end
+            local options={}
+            for key,value in pairs(sec) do if key:sub(1,#sp)==sp and not KNOWN[key:sub(#sp+1)] then options[key:sub(#sp+1)]=value end end
             if kind=='interpolate' then
-                if rife or not enabled(sec[p..'rife']) or (sec[sp..'method'] or ''):lower()~='rife' or
-                    number(sec,sp..'model',-1)~=number(sec,p..'rife_model',414) or
-                    number(sec,sp..'factor_numerator',1)*number(sec,p..'rife_factor_denominator',1)~=
-                        number(sec,sp..'factor_denominator',1)*number(sec,p..'rife_factor_numerator',1) or
-                    (sec[sp..'policy'] or 'quality'):lower()~=policy or
-                    enabled(sec[sp..'ensemble'])~=enabled(sec[p..'rife_ensemble']) or
-                    number(sec,sp..'scene_detect_threshold',.150)~=number(sec,p..'rife_scene_detect_threshold',.150) then return false end
-                if enabled(sec[p..'rife_before_upscale'] or 'yes') and model~=0 or
-                    not enabled(sec[p..'rife_before_upscale'] or 'yes') and model~=#models then return false end
-                rife,rife_index=true,i
+                if rife or (sec[sp..'method'] or ''):lower()~='rife' then return nil end
+                for key in pairs(options) do if not RIFE_OPTIONS[key] then return nil end end
+                local policy=(sec[sp..'policy'] or 'quality'):lower()
+                if policy~='quality' and policy~='fast' then return nil end
+                rife={model=sec[sp..'model'] or '',num=sec[sp..'factor_numerator'] or '1',den=sec[sp..'factor_denominator'] or '1',
+                    before=#models==0,ensemble=enabled(options.ensemble),scd=options.scene_detect_threshold,policy=policy}
+                rife_index=i
             elseif kind=='upscale' then
-                model=model+1;local mp=models[model]
-                if not mp or (sec[sp..'method'] or ''):lower()~='onnx' or (sec[sp..'model'] or '')~=(sec[mp..'name'] or '') then return false end
-                for key,default in pairs({resize_factor_before_upscale=100,resize_height_before_upscale=0,frames=0,temporal_scene_threshold=.150}) do
-                    if number(sec,sp..key,default)~=number(sec,mp..key,default) then return false end
-                end
-            else return false end
-            local known={id=true,kind=true,method=true,runtime=true,enabled=true,model=true,policy=true,factor_numerator=true,factor_denominator=true}
-            if kind=='interpolate' then known.ensemble=true;known.scene_detect_threshold=true
-            else known.resize_factor_before_upscale=true;known.resize_height_before_upscale=true;known.frames=true;known.temporal_scene_threshold=true end
-            for key in pairs(sec) do if key:sub(1,#sp)==sp and not known[key:sub(#sp+1)] then return false end end
+                if (sec[sp..'method'] or ''):lower()~='onnx' then return nil end
+                for key in pairs(options) do if not MODEL_OPTIONS[key] then return nil end end
+                if rife and not rife.before then return nil end
+                models[#models+1]={name=sec[sp..'model'] or '',options=options}
+            else return nil end
         end
     end
-    return model==#models and rife==enabled(sec[p..'rife']),rife_index
+    return {rife=rife,models=models,policy=rife and rife.policy or nil},rife_index
 end
 local function platform_name(value)
     if not value then
@@ -102,8 +102,7 @@ local function lower_for_inference(sec,chain,platform)
         local sp=pre..'stage_'..i..'_';local stage={source=i}
         for k,v in pairs(sec) do if k:sub(1,#sp)==sp then stage[k:sub(#sp+1)]=v end end
         for _,key in ipairs({'kind','method','runtime','policy'}) do if stage[key] then stage[key]=stage[key]:lower() end end
-        if enabled(stage.enabled or 'yes') and not (stage.kind=='hdr' and
-            (stage.method=='mpv' and stage.runtime=='gpu-next' or stage.method=='nvidia-truehdr' and stage.runtime=='rtx-video')) then active[#active+1]=stage end
+        if enabled(stage.enabled or 'yes') and stage.kind~='hdr' then active[#active+1]=stage end
     end
     local out={};local i=1
     while i<=#active do
@@ -134,22 +133,124 @@ local function lower_for_inference(sec,chain,platform)
     end
     copy[pre..'stage_count']=tostring(#out);return copy,mapping
 end
+-- Projectable explicit rule: true, the source index of its RIFE stage, its
+-- policy (owned by the stage, supplied through the runtime copy) and the
+-- projection itself; false otherwise.
 local function legacy(sec,chain,global,platform)
     local prepared,mapping=lower_for_inference(sec,chain,platform)
-    -- A projectable explicit RIFE stage owns its policy. The launcher supplies
-    -- it through a private runtime config, never through a hidden user setting.
-    local effective={};for k,v in pairs(global) do effective[k]=v end
-    local pre='chain_'..chain..'_';local policy
-    for i=1,number(prepared,pre..'stage_count',0) do local sp=pre..'stage_'..i..'_'
-        if prepared[sp..'kind']=='interpolate' then
-            if policy then return false end
-            policy=(prepared[sp..'policy'] or 'quality'):lower()
-            if policy~='quality' and policy~='fast' then return false end
+    local projection,index=project(prepared,chain,global)
+    if not projection then return false end
+    return true,index and mapping[index],projection.policy,projection
+end
+-- The legacy keys of one explicit rule, regenerated from its stages. A rule the
+-- legacy engine cannot express gets rife=no and no model: the native ordered
+-- pipeline executes it from the stage keys.
+local function projection_lines(sec,chain,global,platform)
+    local p='chain_'..chain..'_'
+    local same,_,_,projection=legacy(sec,chain,global,platform)
+    if not same then return {p..'rife=no'},false end
+    local lines,r={},projection.rife
+    lines[#lines+1]=p..'rife='..(r and 'yes' or 'no')
+    if r then
+        lines[#lines+1]=p..'rife_model='..r.model
+        lines[#lines+1]=p..'rife_factor_numerator='..r.num
+        lines[#lines+1]=p..'rife_factor_denominator='..r.den
+        lines[#lines+1]=p..'rife_before_upscale='..(r.before and 'yes' or 'no')
+        lines[#lines+1]=p..'rife_ensemble='..(r.ensemble and 'yes' or 'no')
+        if r.scd then lines[#lines+1]=p..'rife_scene_detect_threshold='..r.scd end
+    end
+    for i,m in ipairs(projection.models) do local mp=p..'model_'..i..'_'
+        lines[#lines+1]=mp..'name='..m.name
+        for _,key in ipairs({'resize_factor_before_upscale','resize_height_before_upscale','frames','temporal_scene_threshold'}) do
+            if m.options[key] then lines[#lines+1]=mp..key..'='..m.options[key] end
         end
     end
-    if policy then effective.rife_engine=policy end
-    local same,index=legacy_core(prepared,chain,effective)
-    return same,index and mapping[index],same and policy or nil
+    return lines,true
+end
+local function rebuild_section(entries,global,platform,info)
+    local sec={};for _,e in ipairs(entries) do if e.key then sec[e.key]=e.value end end
+    local chains=ids(sec,'chain_','_');local explicit={}
+    for _,i in ipairs(chains) do explicit[i]=sec['chain_'..i..'_pipeline_version']=='1' end
+    local out={}
+    for _,e in ipairs(entries) do
+        local n=e.key and tonumber(e.key:match('^chain_(%d+)_'))
+        if not e.key then out[#out+1]=e.raw
+        elseif e.key:match('^chain__') then info.phantom=info.phantom+1
+        elseif e.key=='hdr_stage_controlled' then info.markers=info.markers+1
+        elseif not n or not explicit[n] then out[#out+1]=e.raw
+        elseif e.key:match('^chain_%d+_stage_') then -- re-emitted below, HDR stages removed
+        elseif e.key:match('^chain_%d+_rife') or e.key:match('^chain_%d+_model_%d+_') then info.mirrors=info.mirrors+1
+        else out[#out+1]=e.raw end
+    end
+    for _,i in ipairs(chains) do if explicit[i] then
+        local p='chain_'..i..'_';local stages={}
+        for j=1,math.min(16,number(sec,p..'stage_count',0)) do local sp=p..'stage_'..j..'_'
+            if (sec[sp..'kind'] or ''):lower()=='hdr' then
+                info.hdr_dropped=info.hdr_dropped+1
+                if enabled(sec[sp..'enabled'] or 'yes') then info.hdr_active_dropped=info.hdr_active_dropped+1 end
+            else
+                local stage={}
+                for key,value in pairs(sec) do if key:sub(1,#sp)==sp then stage[key:sub(#sp+1)]=value end end
+                stages[#stages+1]=stage
+            end
+        end
+        local view={};for key,value in pairs(sec) do if not key:match('^'..p..'stage_') then view[key]=value end end
+        view[p..'stage_count']=tostring(#stages)
+        out[#out+1]=p..'stage_count='..#stages
+        for j,stage in ipairs(stages) do local sp=p..'stage_'..j..'_'
+            for _,key in ipairs(ORDER) do if stage[key] then out[#out+1]=sp..key..'='..stage[key];view[sp..key]=stage[key] end end
+            local rest={};for key in pairs(stage) do if not KNOWN[key] then rest[#rest+1]=key end end;table.sort(rest)
+            for _,key in ipairs(rest) do out[#out+1]=sp..key..'='..stage[key];view[sp..key]=stage[key] end
+        end
+        for _,line in ipairs(projection_lines(view,i,global,platform)) do out[#out+1]=line end
+    end end
+    return out
+end
+-- The runtime view of a profile file: HDR stages, profile HDR markers and phantom
+-- rules (empty number) removed; for every explicit rule the legacy keys are
+-- regenerated from its stages. Sections without an explicit rule are kept byte
+-- for byte and so is a file with nothing to change. The source file itself is
+-- never written. Returns the text and what was changed.
+function M.normalize(text,platform)
+    platform=platform_name(platform)
+    local all=parse(text);local global=all.global or {}
+    local info={hdr_dropped=0,hdr_active_dropped=0,phantom=0,markers=0,mirrors=0,sections=0}
+    local touch={}
+    for name,sec in pairs(all) do if name:match('^slot_%d+$') then
+        for key,value in pairs(sec) do
+            if key:match('^chain__') or key=='hdr_stage_controlled' or key:match('^chain_%d+_pipeline_version$') or
+                (key:match('^chain_%d+_stage_%d+_kind$') and value:lower()=='hdr') then touch[name]=true end
+        end
+    end end
+    if not next(touch) then return text,info end
+    local lines={};for line in (text..'\n'):gmatch('([^\n]*)\n') do lines[#lines+1]=line end
+    if lines[#lines]=='' then lines[#lines]=nil end
+    -- Entries of a touched section, merged over its repeated occurrences.
+    local entries,first,section={},{},nil
+    for index,line in ipairs(lines) do
+        local s=trim(line);local name=s:match('^%[([^%]]+)%]$')
+        if name then section=trim(name):lower();if touch[section] and not first[section] then first[section]=index;entries[section]={} end
+        elseif section and touch[section] then
+            local k,v
+            if s:sub(1,1)~='#' and s:sub(1,1)~=';' then k,v=s:match('^([^=]+)=(.*)$') end
+            local list=entries[section];list[#list+1]={raw=line,key=k and trim(k):lower() or nil,value=v and trim(v) or nil}
+        end
+    end
+    local out,skip={},false;section=nil
+    for index,line in ipairs(lines) do
+        local s=trim(line);local name=s:match('^%[([^%]]+)%]$')
+        if name then
+            section=trim(name):lower();skip=false
+            if touch[section] then
+                if first[section]==index then
+                    out[#out+1]=line;info.sections=info.sections+1
+                    for _,rebuilt in ipairs(rebuild_section(entries[section],global,platform,info)) do out[#out+1]=rebuilt end
+                end
+                skip=true
+            else out[#out+1]=line end
+        elseif not skip then out[#out+1]=line end
+    end
+    return table.concat(out,'\n')..'\n',info
 end
 local function resolution(value,maximum)
     local a,b=(value or ''):match('^([^x]+)x([^x]+)$');a=a and a:lower()=='inf' and math.huge or tonumber(a) or 0;b=b and b:lower()=='inf' and math.huge or tonumber(b) or 0
@@ -161,20 +262,6 @@ function M.resolve(text,slot,w,h,fps,platform)
     local all=parse(text);local sec=all['slot_'..tostring(slot)]
     if not sec then return {explicit=false,legacy_equivalent=true} end
     local chains=ids(sec,'chain_','_');local selected
-    local hdr_owned=enabled(sec.hdr_stage_controlled);local profile_hdr;local hdr_count=0
-    for _,i in ipairs(chains) do local cp='chain_'..i..'_'
-        for j=1,math.min(16,number(sec,cp..'stage_count',0)) do
-            local hp=cp..'stage_'..j..'_'
-            if sec[hp..'kind']=='hdr' then
-                hdr_owned=true;hdr_count=hdr_count+1
-                if enabled(sec[hp..'enabled'] or 'yes') then
-                    profile_hdr={method=sec[hp..'method'],runtime=sec[hp..'runtime'],peak=number(sec,hp..'peak',1000),options={}}
-                    for k,v in pairs(sec) do if k:sub(1,#hp)==hp then profile_hdr.options[k:sub(#hp+1)]=v end end
-                end
-            end
-        end
-    end
-    if hdr_count>1 then return {explicit=true,legacy_equivalent=false,hdr_stage_controlled=true,error='Only one HDR stage is allowed per profile.'} end
     w,h,fps=tonumber(w),tonumber(h),tonumber(fps)
     if w and h and fps and w>0 and h>0 and fps>0 then
         for _,i in ipairs(chains) do local p='chain_'..i..'_'
@@ -187,45 +274,43 @@ function M.resolve(text,slot,w,h,fps,platform)
         for _,i in ipairs(chains) do local p='chain_'..i..'_'
             if sec[p..'pipeline_version']=='1' then
                 for j=1,math.min(16,number(sec,p..'stage_count',0)) do local sp=p..'stage_'..j..'_'
-                    if enabled(sec[sp..'enabled'] or 'yes') and sec[sp..'kind']~='hdr' then empty=false end
+                    if enabled(sec[sp..'enabled'] or 'yes') and (sec[sp..'kind'] or ''):lower()~='hdr' then empty=false end
                 end
             elseif enabled(sec[p..'rife']) or #ids(sec,p..'model_','_')>0 then empty=false end
         end
-        if empty then return {explicit=true,legacy_equivalent=true,hdr_stage_controlled=hdr_owned,hdr=profile_hdr,inference_empty=true} end
+        if empty then return {explicit=true,legacy_equivalent=true,inference_empty=true} end
         -- Before on_preloaded there may be no selected stream geometry yet.
-        -- Defer HDR for a potentially mixed rule; legacy-only banks unchanged.
+        -- Defer a potentially mixed rule; legacy-only banks unchanged.
         for _,i in ipairs(chains) do local p='chain_'..i..'_'
             if sec[p..'pipeline_version'] and not legacy(sec,i,all.global or {},platform) then
-                return {explicit=true,legacy_equivalent=false,unknown=true,hdr_stage_controlled=hdr_owned}
+                return {explicit=true,legacy_equivalent=false,unknown=true}
             end
         end
-        return {explicit=false,legacy_equivalent=true,hdr_stage_controlled=hdr_owned}
+        return {explicit=false,legacy_equivalent=true}
     end
-    if not selected then return {explicit=false,legacy_equivalent=true,hdr_stage_controlled=hdr_owned,hdr=profile_hdr,inference_empty=true} end
+    if not selected then return {explicit=false,legacy_equivalent=true,inference_empty=true} end
     local p='chain_'..selected..'_';local explicit=sec[p..'pipeline_version']~=nil
     local equivalent,_,runtime_policy=true,nil,nil
     if explicit then equivalent,_,runtime_policy=legacy(sec,selected,all.global or {},platform) end
-    local route={explicit=explicit,legacy_equivalent=equivalent,chain=selected,runtime_policy=runtime_policy,factor_num=1,factor_den=1,stages={},hdr_stage_controlled=hdr_owned,hdr=profile_hdr,inference_empty=true}
+    local route={explicit=explicit,legacy_equivalent=equivalent,chain=selected,runtime_policy=runtime_policy,factor_num=1,factor_den=1,stages={},inference_empty=true}
     if explicit then for i=1,math.min(16,number(sec,p..'stage_count',0)) do local sp=p..'stage_'..i..'_'
-        if enabled(sec[sp..'enabled'] or 'yes') and sec[sp..'kind']~='hdr' then route.inference_empty=false end
-        if enabled(sec[sp..'enabled'] or 'yes') and sec[sp..'kind']=='interpolate' then
+        local kind=(sec[sp..'kind'] or ''):lower()
+        if enabled(sec[sp..'enabled'] or 'yes') and kind~='hdr' then route.inference_empty=false end
+        if enabled(sec[sp..'enabled'] or 'yes') and kind=='interpolate' then
             local n,d=number(sec,sp..'factor_numerator',1),number(sec,sp..'factor_denominator',1)
             route.stages[#route.stages+1]={method=sec[sp..'method'],numerator=n,denominator=d}
             if sec[sp..'method']=='nvidia-fruc' then route.error='FRUC has been removed. Disable or remove the preserved FRUC step in this profile.' end
             route.factor_num=route.factor_num*n;route.factor_den=route.factor_den*d
-        elseif enabled(sec[sp..'enabled'] or 'yes') and sec[sp..'kind']=='hdr' then
-            -- The unique profile HDR request is carried independently of its rule.
         end
     end end
     if not explicit then route.inference_empty=not enabled(sec[p..'rife']) and #ids(sec,p..'model_','_')==0 end
-    if profile_hdr and profile_hdr.method=='nvidia-truehdr' and profile_hdr.runtime=='cuda' then route.legacy_equivalent=false;route.inference_empty=false end
     if not explicit and enabled(sec[p..'rife']) then
         route.factor_num=number(sec,p..'rife_factor_numerator',1)
         route.factor_den=number(sec,p..'rife_factor_denominator',1)
     end
     return route
 end
--- Keep stage factors synchronized ONLY for a genuinely equivalent legacy rule.
+-- Keep stage factors synchronized ONLY for a genuinely projectable rule.
 -- True mixed chains retain their explicit factors. The source file is untouched.
 function M.sync_rewrite(text,p,q,rewrite_legacy,platform)
     platform=platform_name(platform)
@@ -284,22 +369,45 @@ function M.runtime_configs(mp,utils,directory,label)
         if not ok or not closed then os.remove(path);return nil,why or close_error end
         cache[key]=path;files[#files+1]=path;return path
     end
-    function runtime.prepare(path,text,route,slot)
-        if not route or not route.legacy_equivalent or not route.chain or not route.runtime_policy then return path end
+    -- The configuration the engines read for one selection: the rule's own RIFE
+    -- policy in [global] when the rule is projectable, and, for a rule the
+    -- ordered pipeline executes, the global TrueHDR conversion appended as its
+    -- last stage (hdr = {sdk_root, peak, contrast, saturation, middle_gray}).
+    -- A legacy route receives TrueHDR through animejanai-rtx.conf instead.
+    function runtime.prepare(path,text,route,slot,hdr)
+        if not route or not route.chain or route.inference_empty then return path end
         if not text then return nil,'Cannot read the selected profile configuration.' end
+        local policy=route.legacy_equivalent and route.runtime_policy or nil
         local global=(parse(text).global or {}).rife_engine or 'fast'
         global=global:lower();if global=='old' then global='quality' elseif global=='new' then global='fast' end
-        if global==route.runtime_policy then return path end
-        local lines,section,inserted={},nil,false
+        if global==policy then policy=nil end
+        local inject=hdr and not route.legacy_equivalent and route.explicit or false
+        if not policy and not inject then return path end
+        local target,pre='slot_'..tostring(slot),'chain_'..tostring(route.chain)..'_'
+        local count=inject and number(parse(text)[target] or {},pre..'stage_count',0) or 0
+        local lines,section,inserted,counted={},nil,false,false
         for line in (text..'\n'):gmatch('([^\n]*)\n') do
             local name=line:match('^%s*%[([^%]]+)%]%s*$')
             if name then section=trim(name):lower() end
-            local key=line:match('^%s*([^=%s]+)%s*=')
-            if not (section=='global' and key and key:lower()=='rife_engine') then lines[#lines+1]=line end
-            if name and section=='global' then lines[#lines+1]='rife_engine='..route.runtime_policy;inserted=true end
+            local key=line:match('^%s*([^=%s]+)%s*=');key=key and key:lower()
+            if policy and section=='global' and key=='rife_engine' then -- replaced below
+            elseif inject and section==target and key==pre..'stage_count' then lines[#lines+1]=pre..'stage_count='..(count+1);counted=true
+            else lines[#lines+1]=line end
+            if name and section=='global' and policy then lines[#lines+1]='rife_engine='..policy;inserted=true end
         end
-        if not inserted then lines[#lines+1]='[global]';lines[#lines+1]='rife_engine='..route.runtime_policy end
-        return runtime.store(table.concat(lines,'\n'),tostring(slot)..':'..tostring(route.chain)..':'..route.runtime_policy)
+        if lines[#lines]=='' then lines[#lines]=nil end
+        if policy and not inserted then lines[#lines+1]='[global]';lines[#lines+1]='rife_engine='..policy end
+        if inject then
+            local sp=pre..'stage_'..(count+1)..'_'
+            lines[#lines+1]='['..target..']'
+            if not counted then lines[#lines+1]=pre..'stage_count='..(count+1) end
+            for _,kv in ipairs({{'id','global-hdr'},{'kind','hdr'},{'method','nvidia-truehdr'},{'runtime','cuda'},{'enabled','yes'},{'model',''},
+                {'factor_numerator','1'},{'factor_denominator','1'},{'policy','quality'}}) do lines[#lines+1]=sp..kv[1]..'='..kv[2] end
+            for _,key in ipairs({'sdk_root','peak','contrast','saturation','middle_gray'}) do
+                if hdr[key]~=nil then lines[#lines+1]=sp..key..'='..tostring(hdr[key]) end
+            end
+        end
+        return runtime.store(table.concat(lines,'\n')..'\n',tostring(slot)..':'..tostring(route.chain)..':'..tostring(policy)..(inject and ':hdr' or ''))
     end
     function runtime.cleanup()
         for _,path in ipairs(files) do os.remove(path) end

@@ -39,15 +39,16 @@ local function apply(kind,enabled)
     output()
     local confirmed=enabled and native('option-info/target-colorspace-hint-strict')~=nil and options.linux_hdr_output~='sdr' and native('video-target-params/gamma')=='pq'
     -- TrueHDR applied inside the engine (linux-playback.lua): frames arrive as PQ / BT.2020.
+    -- The legacy route tags its TrueHDR request (user-data/animejanai-truehdr); the ordered
+    -- route carries it in the published route (hdr). Only PQ / BT.2020 output confirms it.
     local configured=hdr_route.route(mp,hw)
-    local owned=type(configured)=='table' and configured.hdr_stage_controlled
+    local requested=type(configured)=='table' and type(configured.hdr)=='table' and configured.hdr.method=='nvidia-truehdr'
     local out=native('video-out-params') or {}
-    local staged=owned and configured.hdr and configured.hdr.method=='nvidia-truehdr'
-        and out.gamma=='pq' and out.primaries=='bt.2020' and kind=='sdr' or false
+    local staged=requested and out.gamma=='pq' and out.primaries=='bt.2020' and kind=='sdr' or false
     mp.set_property_native('user-data/animejanai-pipeline-hdr',staged)
-    local truehdr=native('user-data/animejanai-truehdr')==true or staged
-    local effective=hdr_route.options(options,configured)
-    local backend=truehdr and 'rtx' or effective.hdr_conversion and 'mpv' or 'none'
+    local truehdr=native('user-data/animejanai-truehdr')==true or staged or (requested and kind=='sdr')
+    local effective=options
+    local backend=truehdr and 'rtx' or options.hdr_conversion and 'mpv' or 'none'
     state=grade.plan(effective,{vendor=hw.vendor,backend=backend,source=kind,output_hdr=confirmed,truehdr=truehdr,
         target_gamma=native('video-target-params/gamma'),target_peak=native('video-target-params/max-luma'),
         enabled=choice~='off',original=original},choice=='natural' and grade.presets.natural or nil)

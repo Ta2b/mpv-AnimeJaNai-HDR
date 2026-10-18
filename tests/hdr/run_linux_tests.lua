@@ -12,6 +12,7 @@ local function boot(vendor,libs)
         if c.name=='subprocess' then
             check('subprocess never invokes Windows tools', not c.args[1]:match('%.exe$'))
             if c.args[2]=='--probe' then return {status=0,stdout='{"vendor":"'..vendor..'","name":"GPU test","vulkan_device":"Vulkan '..vendor..'","adapters":[],"display_pci":["0000:00:02.0"]}'} end
+            if c.args[2]=='--profile-plan' then return {status=0,stdout='{"schema":"animejanai.profile-plan.v1","issues":[],"plan":{}}'} end
             return {status=0,stdout='{"conf":"'..ROOT..'/../animejanai/animejanai.conf"}'}
         end
         return command(c)
@@ -22,7 +23,7 @@ local function boot(vendor,libs)
     end end
     return S,u
 end
-write(ROOT..'/../animejanai/animejanai.conf','[global]\nbackend=TensorRT\ndefault_slot=0\n[slot_1]\nprofile_name=Performance\nchain_1_rife=no\n')
+write(ROOT..'/../animejanai/animejanai.conf','[global]\nbackend=TensorRT\ndefault_slot=0\n[slot_1]\nprofile_name=Performance\nchain_1_rife=no\nchain_1_model_1_name=SPAN\n')
 local S,u=boot('amd',true)
 dofile(ROOT..'/user-scripts/hardware_auto.lua')
 S.hook('on_load')
@@ -42,7 +43,7 @@ S.props.vf={{label='other',name='scale'}};S.msg('animejanai-select','1')
 check('opt-in adds Linux aji without losing other filters',#S.props.vf==2 and S.props.vf[1].params.lib:match('libaji%.so$'))
 S.msg('animejanai-select','0');check('disable retains unrelated filter',#S.props.vf==1 and S.props.vf[1].label=='other')
 -- Vulkan works independently of TensorRT on both vendors, and uses its own ABI.
-write(ROOT..'/../animejanai/animejanai.conf','[global]\nbackend=Vulkan\ndefault_slot=0\n[slot_1]\nprofile_name=Performance\nchain_1_rife=no\n[slot_2]\nprofile_name=RIFE\nchain_1_rife=yes\n')
+write(ROOT..'/../animejanai/animejanai.conf','[global]\nbackend=Vulkan\ndefault_slot=0\n[slot_1]\nprofile_name=Performance\nchain_1_rife=no\nchain_1_model_1_name=SPAN\n[slot_2]\nprofile_name=RIFE\nchain_1_rife=yes\nchain_1_model_1_name=SPAN\n')
 for _,vendor in ipairs({'amd','nvidia'}) do
     S,u=boot(vendor,false)
     S.files[ROOT..'/../animejanai/inference/libaji_vulkan.so']={is_dir=false}
@@ -87,8 +88,8 @@ for _,name in ipairs(loaded) do check('loader excludes Windows DLL '..name,not n
 -- ONNX Runtime engine: backend=MIGraphX / OpenVINO uses the bridged filter with libaji_ort.so
 do
   local playback=io.open(ROOT..'/hdr-tools/linux-playback.lua'):read('*a')
-  check('ort: engine library selected for the vendor providers', playback:find("ort and '/libaji_ort.so'",1,true)~=nil)
-  check('ort: availability follows the engine library', playback:find("/libaji_ort.so')~=nil",1,true)~=nil)
+  check('ort: engine library selected for the vendor providers', playback:find("ort and ort_library() or",1,true)~=nil and playback:find("'/libaji_ort.so'",1,true)~=nil)
+  check('ort: availability follows the engine library', playback:find("utils.file_info(ort_library())~=nil",1,true)~=nil)
   check('ort: software decoding with the host-frame bridge', playback:find("elseif ort then",1,true)~=nil)
 end
 -- TrueHDR inside the TensorRT engine (NVIDIA Maxine): engine library, settings file, PQ tag
@@ -102,7 +103,7 @@ do
   check('truehdr: tag removed when the engine did not apply it', playback:find("rtx.applied(read(stats_file) or '').hdr",1,true)~=nil)
   check('truehdr: grading follows the engine conversion',
     hdr:find("local backend=truehdr and 'rtx' or options.hdr_conversion and 'mpv' or 'none'",1,true)~=nil)
-  check('truehdr: SDK libraries only added with the stage installed', launcher:find('libaji_rtx.so" ] && [ -d "$vfx/lib" ]',1,true)~=nil)
+  check('truehdr: SDK libraries only added with the stage installed', launcher:find('libaji_pipeline.so" ]; } && [ -d "$vfx/lib" ]',1,true)~=nil)
   local rtx=dofile(ROOT..'/hdr-tools/rtx-stage.lua')
   local text=rtx.text({hdr=true,vsr=false,contrast=200,saturation=200,middle_gray=50,peak=1000})
   check('truehdr: settings file asks for TrueHDR without Super Resolution', text:find('hdr=yes\nvsr=no\n',1,true)~=nil and text:find('contrast=200',1,true)~=nil)

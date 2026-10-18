@@ -32,12 +32,32 @@ local grade = dofile(path('~~/hdr-tools/hdr-grade.lua'))
 local rtx_conf = path(rtx.file)
 local stats_file = path('~~/../animejanai/currentanimejanai.log')
 local stage_check
-local function stage_wanted()
-    return hw.backend=='tensorrt' and hw.vendor=='nvidia' and options.hdr_conversion
-        and options.hdr_backend~='mpv' and options.linux_hdr_output=='pq'
-        and utils.file_info(hw.inference_dir..'/libaji_trt_rtx.so')~=nil
-        and utils.file_info(hw.inference_dir..'/libaji_rtx.so')~=nil
+-- The Maxine SDK the engine loads for TrueHDR: the same three files the Manager checks.
+local function truehdr_sdk()
+    local root=os.getenv('ANIMEJANAI_VFX_SDK');if not root or root=='' then root='/usr/local/VideoFX' end
+    for _,name in ipairs({'/lib/libVideoFX.so','/lib/libNVCVImage.so','/features/nvvfxtruehdr/lib/libnvVFXTrueHDR.so'}) do
+        if not utils.file_info(root..name) then return nil end
+    end
+    return root
 end
+-- The global HDR conversion (docs/CONTRAT-PROFILS-V2.md, section 3): 'rtx' when NVIDIA
+-- TrueHDR can run inside the engine, 'mpv' when the renderer converts, 'none' when off.
+-- A profile never decides this; the conversion always follows the last inference stage.
+local function hdr_backend()
+    if not options.hdr_conversion then return 'none' end
+    if (options.hdr_backend=='rtx' or options.hdr_backend=='auto') and hw.backend=='tensorrt' and hw.vendor=='nvidia'
+        and options.linux_hdr_output=='pq' and utils.file_info(hw.inference_dir..'/libaji_trt_rtx.so')~=nil
+        and utils.file_info(hw.inference_dir..'/libaji_rtx.so')~=nil and truehdr_sdk() then return 'rtx' end
+    return 'mpv'
+end
+-- The TrueHDR stage appended to a rule the ordered pipeline executes (runtime copy only).
+local function hdr_stage_options()
+    local peak=tonumber(grade.display(options,hw.vendor).peak) or tonumber((mp.get_property_native('video-target-params/max-luma'))) or 1000
+    local function whole(v,d) return string.format('%d',math.floor((tonumber(v) or d)+0.5)) end
+    return {sdk_root=truehdr_sdk() or '/usr/local/VideoFX',peak=whole(peak,1000),contrast=whole(options.rtx_contrast,100),
+        saturation=whole(options.rtx_saturation,100),middle_gray=whole(options.rtx_middle_gray,50)}
+end
+local warned_hdr_stage=false
 -- Writes the settings read by the engine at configure; without the file the stage is off.
 local function write_stage(on)
     if not on then os.remove(rtx_conf);return end
@@ -195,8 +215,20 @@ end
 local function select(value, preload)
     local wanted = tonumber(value)
     if not wanted or wanted~=math.floor(wanted) or wanted<0 then return end
+    -- The display-cadence copy derives from the source read at preload: a source edited
+    -- since (Manager save, backend change) is read fresh until the next preload/reload.
     local selection_conf=hw.conf_active or hw.conf
+    if selection_conf~=hw.conf and last_conf~=nil and read(hw.conf)~=last_conf then selection_conf=hw.conf end
     local selected_text=read(selection_conf)
+    if selected_text then
+        -- Stages are the only representation: HDR stages and stale legacy keys never
+        -- reach the resolver, the bank or the engines (docs/CONTRAT-PROFILS-V2.md).
+        local info;selected_text,info=stages.normalize(selected_text,'linux')
+        if info.hdr_active_dropped>0 and not warned_hdr_stage then
+            warned_hdr_stage=true
+            mp.msg.info('Etape HDR de profil ignoree : la conversion HDR est un reglage global (Manager > Reglages).')
+        end
+    end
     if wanted>0 and wanted<1000 then
         local snapshot,error
         if selected_text then snapshot,error=runtime.store(selected_text,'source-config')
@@ -231,9 +263,13 @@ local function select(value, preload)
         mp.osd_message('Module de chaine absent. Lecture originale conservee.',6)
         wanted=0;selected_route=pipeline_route(0);mixed=false
     end
+    local vulkan=hw.backend=='vulkan'
+    local ort=onnxruntime()
+    local backend_hdr=hdr_backend()
+    local hdr_wanted=wanted>0 and not vulkan and not ort and not selected_route.inference_empty and backend_hdr=='rtx'
     local effective_conf=selection_conf
     if wanted>0 and not selected_route.inference_empty then
-        local prepared,error=runtime.prepare(effective_conf,selected_text,selected_route,wanted)
+        local prepared,error=runtime.prepare(effective_conf,selected_text,selected_route,wanted,hdr_wanted and hdr_stage_options() or nil)
         if not prepared then
             mp.osd_message('Configuration temporaire indisponible : '..tostring(error),6)
             wanted=0;selected_route=pipeline_route(0);mixed=false
@@ -243,21 +279,22 @@ local function select(value, preload)
     local requested_policy=stages.temporal_policy(selected_text,selected_route)
     local legacy_rife=not mixed and (selected_route.factor_num or 1)>(selected_route.factor_den or 1)
     local index
-    local hdr_wanted=wanted>0 and stage_wanted() and selected_route.legacy_equivalent and not selected_route.hdr_stage_controlled
+    -- Legacy route: the engine module with the final stage, animejanai-rtx.conf and the PQ tag.
+    -- Ordered route: the stage travels in the runtime copy; the filter negotiates its colors.
+    local stage=hdr_wanted and selected_route.legacy_equivalent
     for i,f in ipairs(list) do if f.label=='aji' then index=i end end
     if wanted==0 or selected_route.inference_empty then
         if index then table.remove(list,index);mp.set_property_native('vf',tag(list,false)) end
+        write_stage(false)
     elseif index and not preload and hw.backend=='tensorrt' and list[index].name=='animejanai'
         and list[index].params.conf==effective_conf
         and (not legacy_rife or list[index].params['rife-policy']==requested_policy)
-        and hdr_wanted==(mp.get_property_native('user-data/animejanai-truehdr')==true)
+        and stage==(mp.get_property_native('user-data/animejanai-truehdr')==true)
         and (not mixed or list[index].params['pipeline-lib']) then
         local ok,result=pcall(mp.commandv,'vf-command','aji','slot',tostring(wanted))
         if not ok or not result then mp.osd_message('Selection AnimeJaNai impossible',5);return end
         if mp.get_property_native('pause') then mp.command('no-osd seek 0 exact') end
     else
-        local vulkan=hw.backend=='vulkan'
-        local ort=onnxruntime()
         local f={name=(vulkan or ort) and 'animejanai-vulkan' or 'animejanai',label='aji',enabled=true,params={
             lib=ort and ort_library() or hw.inference_dir..(vulkan and '/libaji_vulkan.so' or '/libaji.so'),conf=effective_conf,
             ['model-dir']=path('~~/../animejanai/onnx'),['rife-model-dir']=path('~~/../animejanai/rife'),
@@ -279,9 +316,8 @@ local function select(value, preload)
             f.params['pipeline-lib']=hw.inference_dir..'/libaji_pipeline.so'
             f.params['pipeline-kernels']=hw.inference_dir..'/aji_pipeline.fatbin'
         end
-        local stage=not vulkan and not ort and hdr_wanted
-        if selected_route.explicit and not selected_route.legacy_equivalent and stage_wanted() then
-            mp.msg.info('Cette chaine produit du SDR ; mpv assure la conversion HDR.')
+        if hdr_wanted and not selected_route.legacy_equivalent then
+            mp.msg.info('Conversion TrueHDR ajoutee en fin de chaine ordonnee (reglage global).')
         end
         -- Same C interface as the dispatcher, loaded directly like aji_trt_rtx.dll on Windows.
         if stage then f.params.lib=hw.inference_dir..'/libaji_trt_rtx.so' end
@@ -303,7 +339,9 @@ local function select(value, preload)
     if wanted==0 or selected_route.inference_empty then decoder(hw.vendor=='nvidia' and 'nvdec' or 'auto-safe') end
     mp.set_property_native('user-data/animejanai-active-slot',slot)
     local route=selected_route -- diagnostics describe the configuration actually loaded
-    mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and (route.explicit or route.hdr_stage_controlled) and route or nil)
+    route.hdr_backend=slot>0 and backend_hdr or 'none'
+    route.hdr=(slot>0 and hdr_wanted and route.explicit and not route.legacy_equivalent) and {method='nvidia-truehdr',runtime='cuda'} or nil
+    mp.set_property_native('user-data/animejanai-pipeline-configured',slot>0 and route.explicit and route or nil)
     local description='cadence originale'
     if slot>0 and route.explicit and not route.legacy_equivalent then
         description=string.format('Chaine configuree x%s/%s',route.factor_num or '?',route.factor_den or '?')

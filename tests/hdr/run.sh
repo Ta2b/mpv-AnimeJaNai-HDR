@@ -23,5 +23,17 @@ for lua in "${interps[@]}"; do
     if AJ_ROOT="$scratch/portable_config" AJ_TEST_DIR="$here" "$lua" "$here/$t.lua"; then :; else status=1; fi
     rm -rf "$scratch"
   done
+  # Global HDR conversion and stage policy (CONTRAT-PROFILS-V2): env-based and positional runners.
+  for t in run_hdr_stage_tests "run_mpv_stage_tests --retired-only" "run_mpv_stage_tests --native-only" run_mpv_stage_tests; do
+    scratch="$(mktemp -d)"
+    mkdir -p "$scratch/portable_config/cache" "$scratch/animejanai"
+    cp -r "$overlay"/{hdr-tools,user-scripts,user-shaders,script-opts,profiles} "$scratch/portable_config/"
+    set -- $t
+    printf '%-8s %-18s ' "$lua" "$*"
+    if [[ "$1" == run_hdr_stage_tests ]]; then
+      if AJ_ROOT="$scratch/portable_config" AJ_TEST_DIR="$here" "$lua" "$here/$1.lua"; then :; else status=1; fi
+    elif "$lua" "$here/$1.lua" "$scratch/portable_config" "$here" "${2:-}"; then :; else status=1; fi
+    rm -rf "$scratch"
+  done
 done
 exit $status

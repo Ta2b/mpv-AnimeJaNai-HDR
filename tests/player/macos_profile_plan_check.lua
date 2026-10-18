@@ -32,8 +32,9 @@ if arg[3]=='hdr-only' then
     write(conf,'[global]\nbackend=CoreMLNative\n[slot_1]\nprofile_name=HDR\nchain_1_max_resolution=1x1\nchain_1_pipeline_version=1\nchain_1_stage_count=1\nchain_1_stage_1_id=h\nchain_1_stage_1_kind=hdr\nchain_1_stage_1_method=mpv\nchain_1_stage_1_runtime=gpu-next\nchain_1_stage_1_policy=quality\n')
     S.hook('on_preloaded');assert(#queue==1 and flag(queue[1],'--rule')=='0')
     complete(queue[1],{schema='animejanai.profile-plan.v1',slot=1,rule=0,issues={},profile_hdr={schema='animejanai.profile-plan.v1',can_execute=true}})
-    assert(#S.props.vf==0 and S.props['user-data']['animejanai-active-slot']==1 and S.props['user-data']['animejanai-pipeline-configured'].hdr.method=='mpv')
-    S.fire('shutdown');print('PASS no matching inference rule requests rule0; profile mpv HDR remains active without engine filter');return
+    local cfg=S.props['user-data']['animejanai-pipeline-configured']
+    assert(#S.props.vf==0 and S.props['user-data']['animejanai-active-slot']==1 and (cfg==nil or cfg.hdr==nil),'profile HDR stage ignored: the conversion is a global setting')
+    S.fire('shutdown');print('PASS no matching inference rule requests rule0; an HDR-only profile stays selected without engine filter and without a profile HDR request');return
 end
 S.hook('on_preloaded');assert(#queue==1 and #S.props.vf==0,'selection must await canonical plan asynchronously')
 local request=queue[1];local snapshot=flag(request,'--conf');assert(snapshot~=conf and read(snapshot)==config)

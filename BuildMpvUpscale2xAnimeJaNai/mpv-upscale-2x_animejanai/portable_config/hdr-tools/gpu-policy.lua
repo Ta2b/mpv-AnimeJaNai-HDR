@@ -98,7 +98,7 @@ function M.options()
     end
     o.frame_generation = tostring(o.frame_generation):lower() == 'amf' and 'amf' or 'off'
     o.conversion_in_profiles=bool(o.conversion_in_profiles)
-    o.hdr_conversion = not o.conversion_in_profiles and bool(o.hdr_conversion)
+    o.hdr_conversion = bool(o.hdr_conversion) -- conversion_in_profiles is retired: the conversion is global
     o.grade = bool(o.grade)
     o.grade_native_hdr = bool(o.grade_native_hdr)
     o.paper_white = number(o.paper_white, 203, 80, 400)

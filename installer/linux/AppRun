@@ -151,6 +151,9 @@ cp -f "$HERE/version.txt" "$DATA/version.txt"
 [ ! -f "$HERE/manifest.json" ] || cp -f "$HERE/manifest.json" "$DATA/manifest.json"
 export ANIMEJANAI_DATA_DIR="$DATA/animejanai"
 export ANIMEJANAI_ROOT="$DATA"
+# The Manager reads the engine modules through links into this image; they dangle once the
+# image is unmounted, so it falls back to the image itself when a data entry is missing.
+export ANIMEJANAI_IMAGE_DIR="$HERE"
 # The benchmark (clips, tool, launcher) stays in the image; the Manager's "Run Benchmarks"
 # looks for it in the data folder and the results are written next to animejanai.conf.
 if [ -d "$HERE/animejanai/benchmarks" ] && { [ -L "$DATA/animejanai/benchmarks" ] || [ ! -e "$DATA/animejanai/benchmarks" ]; }; then
