@@ -54,7 +54,7 @@ Interdits dans un fichier v4 : `hdr_stage_controlled`, les étapes `kind=hdr`, l
 
 `conversion_in_profiles` est retiré : le lecteur l'ignore (toujours `no`), le Manager le supprime.
 
-Disponibilité de TrueHDR (Linux) : `libaji_trt_rtx.so` et `libaji_rtx.so` dans `inference/`, SDK Maxine à `ANIMEJANAI_VFX_SDK` ou `/usr/local/VideoFX` (`lib/libVideoFX.so`, `lib/libNVCVImage.so`, `features/nvvfxtruehdr/lib/libnvVFXTrueHDR.so`), GPU NVIDIA, backend TensorRT, sortie PQ. Le Manager et le lecteur appliquent la même liste (§6). `libaji_trt_rtx.so` vient avec la release ; **`libaji_rtx.so`, le pont vers le SDK, n'est dans aucune release** (compilé contre le SDK sur la machine, voir [LINUX-INFERENCE](LINUX-INFERENCE.md)) : sur une installation neuve, TrueHDR reste grisé avec cette cause même après l'import du SDK.
+Disponibilité de TrueHDR (Linux) : `libaji_trt_rtx.so` et `libaji_rtx.so` dans `inference/`, SDK Maxine à `ANIMEJANAI_VFX_SDK` ou `/usr/local/VideoFX` (`lib/libVideoFX.so`, `lib/libNVCVImage.so`, `features/nvvfxtruehdr/lib/libnvVFXTrueHDR.so`), GPU NVIDIA, backend TensorRT, sortie PQ. Le Manager et le lecteur appliquent la même liste (§6). `libaji_trt_rtx.so` vient avec la release ; **`libaji_rtx.so`, le pont vers le SDK, n'est dans aucune release** (compilé contre le SDK sur la machine, voir [LINUX-INFERENCE](LINUX-INFERENCE.md)) : sur une installation neuve, TrueHDR reste grisé avec cette cause même après l'import du SDK (AH-407).
 
 ## 4. Ce que fait le lecteur (Linux, `hdr-tools/linux-playback.lua`)
 
@@ -105,7 +105,7 @@ Le Manager lit les modules dans `ANIMEJANAI_DATA_DIR/inference` ; sous AppImage 
 - `profiles/linux-nvidia` (installation neuve NVIDIA) : TensorRT, format 4, cinq profils — « Balanced · 1080p → 2160p » (démarrage), « Performance · 1080p → 2160p + RIFE ×2 », « Performance · 720p → 1440p », « Performance · 720p → 1440p + RIFE ×2 », « RIFE ×2 · source resolution ». Modèles Sharp1 ; RIFE 4.26 Quality avant l'upscale jusqu'à 31 i/s, une seconde règle (31–61 i/s) sans RIFE ; 720p = taille exacte Spline36 (référence héritée). Toutes les règles sont projetables (moteur de référence).
 - `profiles/linux-amd` : profils Vulkan inchangés, noms anglais (« Performance · 360p → 720p »…).
 - Manager, « Add recommended profiles » : mêmes définitions que la banque du moteur choisi (Vulkan → banque AMD, sinon banque NVIDIA), lues par l'import de profil, dans les emplacements libres ; un nom déjà présent est ignoré ; l'avis dit ce qui a été ajouté ou n'a pas trouvé de place (9 profils au plus).
-- Lanceur Linux : `AnimeJaNaiPlatform --profile-components --all-slots` ; les paquets de **tous** les profils sélectionnables (Ctrl+1…9) sont installés, pas seulement ceux du profil de démarrage. Avant le premier démarrage du lecteur (pas de `active-bank.json`), la banque que le lecteur va activer pour ce GPU est lue : sur NVIDIA, TensorRT, ses noyaux et les modèles RIFE ONNX sont téléchargés au premier lancement.
+- Lanceur Linux : `AnimeJaNaiPlatform --profile-components --all-slots` ; les paquets de **tous** les profils sélectionnables (Ctrl+1…9) sont installés, pas seulement ceux du profil de démarrage. Avant le premier démarrage du lecteur (pas de `active-bank.json`), la banque que le lecteur va activer pour ce GPU est lue : sur NVIDIA, TensorRT, ses noyaux et les modèles RIFE ONNX sont téléchargés au premier lancement (environ 1 Go, sans progression visible : AH-408).
 
 ## 7. Contrôles
 
